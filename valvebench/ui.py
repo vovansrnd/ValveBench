@@ -423,6 +423,9 @@ class LivePage(Gtk.Box):
 
         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         controls.set_size_request(310, -1)
+        # 0.1.18: expose the generator controls; they were created and connected
+        # to apply(), but had accidentally been omitted from the LivePage layout.
+        controls.append(group("Генератор", self.f, self.lv, self.route))
         controls.append(group("Параметры Gain Match", self.series_level, self.series_repeats, self.tol))
         controls.append(self.series_loop_btn)
         controls.append(self.series_reference_label)
