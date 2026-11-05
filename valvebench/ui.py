@@ -71,12 +71,13 @@ def textview():
 
 
 class Page(Gtk.Box):
-    """Слева параметры, справа график и отчёт."""
+    """Общая измерительная страница с постоянным статусом и управлением масштабом."""
 
     def __init__(self, win, *param_widgets, plot=None):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=14,
                          margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
         self.win = win
+        self._job_button_states = None
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         left.set_size_request(330, -1)
         for w in param_widgets:
@@ -85,14 +86,115 @@ class Page(Gtk.Box):
         sc.set_child(left)
         sc.set_size_request(350, -1)
         self.append(sc)
+
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         right.set_hexpand(True)
+        status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        status_bar.add_css_class("card")
+        status_bar.set_margin_bottom(3)
+        self.job_spinner = Gtk.Spinner()
+        self.job_status = Gtk.Label(
+            label="ГОТОВО К ИЗМЕРЕНИЮ · выбери параметры и нажми кнопку слева",
+            xalign=0, wrap=True)
+        self.job_status.add_css_class("title-4")
+        self.job_status.set_hexpand(True)
+        status_bar.append(self.job_spinner)
+        status_bar.append(self.job_status)
+        right.append(status_bar)
+
         self.plot = plot
         if plot is not None:
             right.append(plot)
+            scale_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
+            scale_bar.set_margin_top(2)
+            scale_bar.set_margin_bottom(4)
+            scale_bar.append(Gtk.Label(label="Масштаб Y:", xalign=0))
+            scale_bar.append(Gtk.Label(label="от", xalign=0))
+            self.y_min = Gtk.SpinButton.new_with_range(-300.0, 100.0, 0.1)
+            self.y_min.set_digits(2)
+            self.y_min.set_size_request(86, -1)
+            self.y_min.set_value(float(plot.ylim[0]))
+            scale_bar.append(self.y_min)
+            scale_bar.append(Gtk.Label(label="до", xalign=0))
+            self.y_max = Gtk.SpinButton.new_with_range(-300.0, 100.0, 0.1)
+            self.y_max.set_digits(2)
+            self.y_max.set_size_request(86, -1)
+            self.y_max.set_value(float(plot.ylim[1]))
+            scale_bar.append(self.y_max)
+            scale_bar.append(button("Применить", self.apply_plot_scale))
+            scale_bar.append(button("Авто", self.auto_plot_scale))
+            self.plot_scale_hint = Gtk.Label(label="", xalign=0)
+            self.plot_scale_hint.add_css_class("dim-label")
+            scale_bar.append(self.plot_scale_hint)
+            scale_bar.set_hexpand(True)
+            right.append(scale_bar)
+            plot.set_view_changed_callback(self._sync_plot_scale)
+        else:
+            self.y_min = self.y_max = self.plot_scale_hint = None
+
         self.buf, sw = textview()
         right.append(sw)
         self.append(right)
+
+    def _sync_plot_scale(self, ylim):
+        if self.y_min is None:
+            return
+        self.y_min.set_value(float(ylim[0]))
+        self.y_max.set_value(float(ylim[1]))
+        if self.plot.manual_ylim is None:
+            self.plot_scale_hint.set_text("авто")
+        else:
+            self.plot_scale_hint.set_text("ручной масштаб")
+
+    def apply_plot_scale(self):
+        if self.plot is None:
+            return
+        lo, hi = self.y_min.get_value(), self.y_max.get_value()
+        try:
+            self.plot.set_manual_ylim(lo, hi)
+            self.plot_scale_hint.set_text(f"Ручной диапазон {lo:g}…{hi:g}")
+        except ValueError as exc:
+            self.plot_scale_hint.set_text(str(exc))
+
+    def auto_plot_scale(self):
+        if self.plot is None:
+            return
+        self.plot.clear_manual_ylim()
+        self.plot_scale_hint.set_text("Автомасштаб")
+
+    @staticmethod
+    def _walk_widgets(root):
+        child = root.get_first_child()
+        while child is not None:
+            yield child
+            yield from Page._walk_widgets(child)
+            child = child.get_next_sibling()
+
+    def set_job_busy(self, busy):
+        if busy:
+            if self._job_button_states is None:
+                self._job_button_states = [(w, w.get_sensitive()) for w in self._walk_widgets(self)
+                                           if isinstance(w, Gtk.Button)]
+                for widget, _state in self._job_button_states:
+                    widget.set_sensitive(False)
+        elif self._job_button_states is not None:
+            for widget, was_sensitive in self._job_button_states:
+                widget.set_sensitive(was_sensitive)
+            self._job_button_states = None
+
+    def set_job_status(self, state, message, elapsed=None):
+        if state == "running":
+            self.job_spinner.start()
+            self.job_status.set_text(f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}")
+        else:
+            self.job_spinner.stop()
+            if state == "success":
+                suffix = f" · {elapsed:.1f} с" if elapsed is not None else ""
+                self.job_status.set_text(f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже")
+            elif state == "error":
+                self.job_status.set_text(f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}")
+            else:
+                self.job_status.set_text(message)
 
     def say(self, txt):
         self.buf.set_text(txt)
@@ -223,6 +325,11 @@ class LivePage(Gtk.Box):
         self.series_notes = Adw.EntryRow(title="Примечание")
         self.series_reference = None
         self.last_series = None
+        self._job_button_states = None
+        self.series_job_spinner = Gtk.Spinner()
+        self.series_job_status = Gtk.Label(label="ГОТОВО К ИЗМЕРЕНИЮ", xalign=0, wrap=True)
+        self.series_job_status.add_css_class("title-4")
+        self.series_job_status.set_hexpand(True)
         self.series_result_label = Gtk.Label(
             label="Сначала измерь петлю звуковой карты. Без этого результат усилителя не рассчитывается.",
             xalign=0, yalign=0, wrap=True, selectable=True)
@@ -232,7 +339,7 @@ class LivePage(Gtk.Box):
         self.series_result_label.add_css_class("title-4")
         self.series_reference_label = Gtk.Label(label="Эталон петли: не создан", xalign=0, wrap=True)
         self.series_reference_label.add_css_class("dim-label")
-        self.series_loop_btn = button("1. ИЗМЕРИТЬ ПЕТЛЮ КАРТЫ  (L→L, R→R)", self.measure_loopback, True)
+        self.series_loop_btn = button("1. ПРОВЕРИТЬ КАРТУ  ·  L→L, R→R", self.measure_loopback, True)
         self.series_dut_btn = button("2. ИЗМЕРИТЬ УСИЛИТЕЛЬ", self.measure_dut_series, True)
         self.series_dut_btn.set_sensitive(False)
 
@@ -293,6 +400,11 @@ class LivePage(Gtk.Box):
         header.append(self.clock_label)
         right.append(header)
         right.append(self.delta_view)
+        series_status = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        series_status.add_css_class("card")
+        series_status.append(self.series_job_spinner)
+        series_status.append(self.series_job_status)
+        right.append(series_status)
         series_scroller = Gtk.ScrolledWindow()
         series_scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         series_scroller.set_min_content_height(150)
@@ -328,6 +440,32 @@ class LivePage(Gtk.Box):
         self.series_level.connect("notify::value", lambda *_: self.refresh_gain_reference())
         self.refresh_gain_reference()
 
+    def set_job_busy(self, busy):
+        if busy:
+            if self._job_button_states is None:
+                self._job_button_states = [(w, w.get_sensitive()) for w in Page._walk_widgets(self)
+                                           if isinstance(w, Gtk.Button)]
+                for widget, _state in self._job_button_states:
+                    widget.set_sensitive(False)
+        elif self._job_button_states is not None:
+            for widget, was_sensitive in self._job_button_states:
+                widget.set_sensitive(was_sensitive)
+            self._job_button_states = None
+
+    def set_job_status(self, state, message, elapsed=None):
+        if state == "running":
+            self.series_job_spinner.start()
+            self.series_job_status.set_text(f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}")
+        else:
+            self.series_job_spinner.stop()
+            if state == "success":
+                suffix = f" · {elapsed:.1f} с" if elapsed is not None else ""
+                self.series_job_status.set_text(f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже")
+            elif state == "error":
+                self.series_job_status.set_text(f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}")
+            else:
+                self.series_job_status.set_text(message)
+
     def refresh_gain_reference(self):
         """Invalidate the in-session reference when card, rate or drive level changes.
 
@@ -343,11 +481,11 @@ class LivePage(Gtk.Box):
                        and abs(float(ref.get("generator_level_dbfs", 999.0)) - level) < 1e-6)
         if not matches:
             self.series_reference = None
-            self.series_reference_label.set_text("Эталон петли: нужен новый замер для текущих настроек")
+            self.series_reference_label.set_text("Сначала проверь измерительную карту (шаг 1)")
             self.series_dut_btn.set_sensitive(False)
         else:
             self.series_reference_label.set_text(
-                f"Эталон петли готов · {ref.get('created', '')} · {ref['fs']} Гц")
+                f"КОРРЕКЦИЯ КАРТЫ ГОТОВА · {ref['fs']} Гц · можно подключать усилитель")
             self.series_dut_btn.set_sensitive(True)
 
     def _series_metadata(self):
@@ -372,18 +510,23 @@ class LivePage(Gtk.Box):
             try:
                 reference = gainmatch.build_loopback_reference(result)
                 path = store.save_gain_reference(reference)
-            except (ValueError, OSError) as exc:
+            except (ValueError, OSError):
                 self.series_reference = None
                 self.series_dut_btn.set_sensitive(False)
-                self.series_result_label.set_text(f"Эталон не создан: {exc}")
                 self.refresh_gain_reference()
-                return
+                raise
             self.series_reference = reference
             self.series_dut_btn.set_sensitive(True)
             self.series_reference_label.set_text(
-                f"Эталон петли готов · {reference['created']} · {reference['fs']} Гц")
-            self.series_result_label.set_text(gainmatch.text_series(result))
-            self.win.toast(f"Эталон карты сохранён: {path}")
+                f"КОРРЕКЦИЯ КАРТЫ ГОТОВА · {reference['fs']} Гц · можно подключать усилитель")
+            valid_rows = sum(1 for row in result.get("rows", [])
+                             if row.get("valid") and row.get("repeat_stable"))
+            self.series_result_label.set_text(
+                "Проверка измерительной карты завершена.\n"
+                f"Надёжные частотные точки: {valid_rows} из {len(result.get('rows', []))}.\n"
+                "Карта сохранена как эталон. Теперь вместо петли подключи проверяемый усилитель "
+                "и нажми «2. ИЗМЕРИТЬ УСИЛИТЕЛЬ».")
+            self.win.toast("Карта проверена. Можно переходить к измерению усилителя.")
 
         self.win.run_job(job, done, "Шаг 1/2: измеряю собственную разницу каналов карты…")
 
@@ -813,15 +956,23 @@ class ResponsePage(Page):
         self.lv = spin("Уровень @1 кГц, dBFS", -90, -1, 1, -20, 1)
         self.mode = combo("Генератор", ["inverse-RIAA", "плоский"], 0,
                           "inverse-RIAA: на выходе корректора ровная линия")
-        self.iec = combo("Эталон", ["RIAA", "RIAA + IEC"], 0)
+        self.iec = combo("Целевая коррекция", ["RIAA · стандарт", "RIAA + IEC · срез НЧ"], 0,
+                         "RIAA — стандарт фонокорректора; IEC выбирай только при наличии такого rumble-фильтра")
         self.view = combo("Показывать", self.VIEWS, 0)
         self.res = None
         self.ref = None
-        plot = Plot(True, "Гц", "дБ")
+        plot = Plot(True, "Гц", "Отклонение от RIAA, дБ")
+        plot.set_view((20, 20000), (-0.5, 0.5))
         super().__init__(win, group("Свип (по Фарине)", self.lo, self.hi, self.dur, self.lv, self.mode, self.iec),
                          button("Измерить", self.go, True), group("Вид", self.view),
                          self._buttons(), plot=plot)
-        self.view.connect("notify::selected", lambda *_: self.draw())
+        self.view.connect("notify::selected", self.on_view_changed)
+
+    def on_view_changed(self, *_):
+        # Y ranges have different units in deviation / THD / phase views.
+        # Do not carry a manually entered dB range into degrees or percent.
+        self.plot.clear_manual_ylim()
+        self.draw()
 
     def _buttons(self):
         box = Gtk.Box(spacing=8)
@@ -870,19 +1021,25 @@ class ResponsePage(Page):
                                "color": "ref" if tag else c, "dash": bool(tag), "width": 1.4})
         if not traces:
             return
+        if v == 0:
+            traces.append({"x": [self.lo.get_value(), self.hi.get_value()], "y": [0.0, 0.0],
+                           "label": "0 дБ · норма", "color": "ref", "dash": True, "width": 1.0})
         f_lo = (self.res or self.ref)["f_lo"]
         f_hi = (self.res or self.ref)["f_hi"]
         self.plot.set_view((f_lo, f_hi), ylabel=ylabel)
         self.plot.set_traces(traces)
         if v == 0:
-            self.plot.set_view(ylim=(-3, 3))
-            ys = np.concatenate([t["y"] for t in self.plot.traces])
-            if ys.size and np.max(np.abs(ys)) > 3:
-                self.plot.autoscale_y()
+            # For a phono preamp, the useful question is normally a small
+            # deviation around the RIAA target, not a broad ±3 dB overview.
+            self.plot.set_view(ylim=(-0.5, 0.5))
+        elif v == 1:
+            self.plot.set_view(ylim=(-2.0, 2.0))
+        elif v == 2:
+            self.plot.autoscale_y(min_span=10.0)
         elif v == 3:
-            self.plot.autoscale_y(min_span=0.001)
+            self.plot.autoscale_y(min_span=0.01)
         else:
-            self.plot.autoscale_y()
+            self.plot.set_view(ylim=(-180.0, 180.0))
 
 
 class ImdPage(Page):
@@ -954,7 +1111,8 @@ class NoiseResponsePage(Page):
         self.hi = spin("Верхняя частота, Гц", 1000, 40000, 100, 20000, 0)
         self.iec = combo("Эталон коррекции", ["RIAA", "RIAA + IEC"], 0)
         self.view = combo("График", self.VIEWS, 0)
-        self.plot = Plot(True, "Частота, Гц", "Отклонение, дБ")
+        self.plot = Plot(True, "Частота, Гц", "Отклонение от RIAA, дБ")
+        self.plot.set_view((20, 20000), (-0.5, 0.5))
         self.live_toggle = Gtk.ToggleButton.new_with_label("Живая АЧХ")
         self.live_toggle.add_css_class("suggested-action")
         self.live_hint = Gtk.Label(label="Live подаёт непрерывный периодический шум через ЦАП и обновляет H1 по входу АЦП.",
@@ -973,7 +1131,7 @@ class NoiseResponsePage(Page):
                                           "В результат входят ЦАП, аттенюатор, DUT и АЦП; без петлевого профиля "
                                           "это относительное измерение."), xalign=0, wrap=True),
                          plot=self.plot)
-        self.view.connect("notify::selected", lambda *_: self.draw())
+        self.view.connect("notify::selected", self.on_view_changed)
         self.live_toggle.connect("toggled", self.on_live_toggle)
         self.res = None
         self.live_period = None
@@ -981,6 +1139,11 @@ class NoiseResponsePage(Page):
         self.live_timer = None
         self.live_busy = False
         self.live_sequence = 0
+
+    def on_view_changed(self, *_):
+        # Units change between dB and coherence; restore that view's useful default.
+        self.plot.clear_manual_ylim()
+        self.draw()
 
     def _settings(self):
         if self.hi.get_value() <= self.lo.get_value():
@@ -1017,12 +1180,16 @@ class NoiseResponsePage(Page):
             return
         traces = []
         key = ("riaa_dev_db", "fr_norm_db", "coherence")[self.view.get_selected()]
-        self.plot.set_view((self.lo.get_value(), self.hi.get_value()),
-                           ((0, 1.05) if key == "coherence" else (-40, 40) if key == "fr_norm_db" else (-6, 6)),
+        default_ylim = ((0, 1.05) if key == "coherence" else
+                        (-2.0, 2.0) if key == "fr_norm_db" else (-0.5, 0.5))
+        self.plot.set_view((self.lo.get_value(), self.hi.get_value()), default_ylim,
                            ylabel="Когерентность" if key == "coherence" else "дБ")
         for ch in ("L", "R"):
             r = self.res["ch"][ch]
             traces.append({"x": r["freq"], "y": r[key], "label": ch, "color": ch, "width": 1.5})
+        if key == "riaa_dev_db":
+            traces.append({"x": [self.lo.get_value(), self.hi.get_value()], "y": [0.0, 0.0],
+                           "label": "0 дБ · норма", "color": "ref", "dash": True, "width": 1.0})
         self.plot.set_traces(traces)
 
     def on_live_toggle(self, btn):
@@ -1179,7 +1346,10 @@ class VinylPage(Page):
             return
         test = ("3150", "phase", "xtalk-L", "xtalk-R", "sum", "skating", "resonance", "response")[self.test.get_selected()]
         start_s, duration_s = self.start.get_value(), self.duration.get_value()
-        self.win.status.set_text("Анализ записи TACET…")
+        self._vinyl_started = time.monotonic()
+        self.set_job_busy(True)
+        self.set_job_status("running", "читаю WAV и выполняю анализ")
+        self.win.status.set_text("Анализ TACET…")
         self.win.spinner.start()
 
         def work():
@@ -1213,11 +1383,17 @@ class VinylPage(Page):
 
     def _finish(self, result, err):
         self.win.spinner.stop()
-        self.win.status.set_text("")
+        elapsed = time.monotonic() - getattr(self, "_vinyl_started", time.monotonic())
         if err is not None:
+            self.win.status.set_text("Ошибка анализа")
             self.say(f"Ошибка анализа WAV:\n{type(err).__name__}: {err}")
+            self.set_job_status("error", f"{type(err).__name__}: {err}")
+            self.set_job_busy(False)
             return False
+        self.win.status.set_text(f"Готово · {elapsed:.1f} с")
         self.say(vinyl.text_result(result))
+        self.set_job_status("success", "", elapsed)
+        self.set_job_busy(False)
         if result["kind"] not in ("wow_flutter_unweighted", "arm_resonance", "skating_300", "frequency_response"):
             self.plot.set_traces([])
         if result["kind"] == "frequency_response":
@@ -1535,34 +1711,67 @@ class Window(Adw.ApplicationWindow):
 
     # ---- фоновые задачи
     def run_job(self, fn, done, msg="Измерение…"):
+        # Keep the status on the page that launched the measurement. It remains
+        # visible after completion; a disappearing header spinner was ambiguous.
+        page = self.stack.get_visible_child()
         if self.busy:
-            self.toast("Подожди окончания текущего измерения")
+            self.toast("Другое измерение ещё выполняется")
+            if hasattr(page, "set_job_status"):
+                page.set_job_status("error", "другое измерение ещё выполняется")
             return
         resume = self.live_on
         if resume:
             self.stop_live()
+        if hasattr(page, "set_job_status"):
+            page.set_job_status("running", "открываю аудиоустройство")
+        if hasattr(page, "set_job_busy"):
+            page.set_job_busy(True)
         try:
             rig = self.get_rig()  # GTK/device selections are read on the UI thread.
         except Exception as exc:  # noqa: BLE001
             self.toast(f"Не удалось открыть аудиоустройство: {exc}")
+            self.status.set_text("Ошибка устройства")
+            if hasattr(page, "set_job_busy"):
+                page.set_job_busy(False)
+            if hasattr(page, "set_job_status"):
+                page.set_job_status("error", f"не удалось открыть устройство: {exc}")
             if resume:
                 self.live_btn.set_active(True)
             return
         self.busy = True
-        self.status.set_text(msg)
+        started = time.monotonic()
+        self.status.set_text("Измерение…")
         self.spinner.start()
+        if hasattr(page, "set_job_status"):
+            page.set_job_status("running", msg)
 
         def finish(res, err):
+            elapsed = time.monotonic() - started
             self.busy = False
             self.spinner.stop()
-            self.status.set_text("")
+            # Restore previous button states before the result callback: a
+            # successful callback may enable the next workflow step (e.g. DUT
+            # measurement after loopback calibration).
+            if hasattr(page, "set_job_busy"):
+                page.set_job_busy(False)
+            if err is None:
+                try:
+                    done(res)
+                except Exception as exc:  # noqa: BLE001
+                    err = exc
             if err is not None:
-                self.toast(f"Ошибка: {err}")
-                page = self.stack.get_visible_child()
+                self.toast(f"Ошибка измерения: {err}")
+                self.status.set_text("Ошибка измерения")
                 if hasattr(page, "say"):
-                    page.say(f"Ошибка измерения:\n{err}")
+                    page.say(f"Измерение не выполнено:\n{type(err).__name__}: {err}")
+                elif hasattr(page, "series_result_label"):
+                    page.series_result_label.set_text(f"Измерение не выполнено:\n{type(err).__name__}: {err}")
+                if hasattr(page, "set_job_status"):
+                    page.set_job_status("error", f"{type(err).__name__}: {err}")
             else:
-                done(res)
+                self.status.set_text(f"Готово · {elapsed:.1f} с")
+                if hasattr(page, "set_job_status"):
+                    page.set_job_status("success", "", elapsed)
             if resume:
                 self.live_btn.set_active(True)
             return False

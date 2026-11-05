@@ -44,6 +44,10 @@ class Plot(Gtk.DrawingArea):
         self.xlim, self.ylim = (20.0, 20000.0), (-100.0, 0.0)
         self.traces = []
         self._mouse = None
+        # A manual Y range must survive redraws and new measurements until the
+        # user explicitly chooses Auto. This is important for sub-dB response plots.
+        self.manual_ylim = None
+        self._view_changed_callback = None
         self.set_content_width(520)
         self.set_content_height(320)
         self.set_hexpand(True)
@@ -55,11 +59,34 @@ class Plot(Gtk.DrawingArea):
         self.add_controller(mc)
 
     # ---- API
+    def set_view_changed_callback(self, callback):
+        self._view_changed_callback = callback
+        if callback is not None:
+            callback(self.ylim)
+
+    def _notify_view_changed(self):
+        if self._view_changed_callback is not None:
+            self._view_changed_callback(self.ylim)
+
+    def set_manual_ylim(self, lo, hi):
+        lo, hi = float(lo), float(hi)
+        if not math.isfinite(lo) or not math.isfinite(hi) or lo >= hi:
+            raise ValueError("Нижняя граница Y должна быть меньше верхней")
+        self.manual_ylim = (lo, hi)
+        self.ylim = self.manual_ylim
+        self._notify_view_changed()
+        self.queue_draw()
+
+    def clear_manual_ylim(self):
+        self.manual_ylim = None
+        self.autoscale_y()
+
     def set_view(self, xlim=None, ylim=None, xlabel=None, ylabel=None):
         if xlim:
             self.xlim = (float(xlim[0]), float(xlim[1]))
-        if ylim:
+        if ylim and self.manual_ylim is None:
             self.ylim = (float(ylim[0]), float(ylim[1]))
+            self._notify_view_changed()
         if xlabel is not None:
             self.xlabel = xlabel
         if ylabel is not None:
@@ -82,10 +109,13 @@ class Plot(Gtk.DrawingArea):
         self.queue_draw()
 
     def autoscale_y(self, pad=0.08, min_span=1.0):
+        if self.manual_ylim is not None:
+            return
         ys = np.concatenate([t["y"] for t in self.traces if t["y"].size] or [np.array([0.0, 1.0])])
         lo, hi = float(np.min(ys)), float(np.max(ys))
         span = max(hi - lo, min_span)
         self.ylim = (lo - span * pad, hi + span * pad)
+        self._notify_view_changed()
         self.queue_draw()
 
     # ---- мышь
