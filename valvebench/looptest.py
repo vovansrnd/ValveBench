@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import math
 import statistics
+import re
 import time
 from pathlib import Path
 
@@ -210,7 +211,7 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
             f"peak={peak_dbfs:.2f} dBFS · headroom={-peak_dbfs:.2f} dB · "
             f"{thd_text} · "
             f"THD+N={r['thdn_pct']:.6f}% ({r['thdn_db']:.1f} dBc; остаток {residual_dbfs:.1f} dBFS) · "
-            f"noise-only={r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)" + phase_text)
+            f"негармонический остаток={r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)" + phase_text)
         if r.get("line_floor_dbc") is not None:
             lines.append(f"      Средний однобиновый пол когерентного оценивателя: {r['line_floor_dbc']:.1f} dBc "
                          f"({r['level_dbfs'] + r['line_floor_dbc']:.1f} dBFS); порог линии {dsp.MARGIN_OK_DB:.0f} dB")
@@ -236,7 +237,8 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
     return lines, rows
 
 
-def series_validity(silence_rows, tone_rows, clock, max_noise_drift_db=1.0, max_silence_peak_dbfs=-60.0):
+def series_validity(silence_rows, tone_rows, clock, max_noise_drift_db=1.0, max_silence_peak_dbfs=-60.0,
+                    xrun_lines=()):
     """Причины, по которым серию нельзя считать достоверной (пустой список — всё в порядке)."""
     reasons = []
     if clock is not None and not clock.get("ok", True):
@@ -253,7 +255,19 @@ def series_validity(silence_rows, tone_rows, clock, max_noise_drift_db=1.0, max_
                 reasons.append(f"{ch}: шум тишины изменился на {d:+.1f} дБ за серию")
     if any(q.get("adc_clip") for q in tone_rows):
         reasons.append("были перегрузки входа АЦП")
+    if xrun_lines:
+        reasons.append("ALSA сообщил о пропусках буфера (XRUN/underrun/overrun): " + xrun_lines[0].strip()[:90])
     return reasons
+
+
+def validity_state(silence_rows, tone_rows, clock, silence_measured, xrun_lines=()):
+    """('OK'|'INVALID'|'INCOMPLETE', причины). INCOMPLETE — проверка стабильности фона не выполнялась."""
+    reasons = series_validity(silence_rows, tone_rows, clock, xrun_lines=xrun_lines)
+    if reasons:
+        return "INVALID", reasons
+    if not silence_measured:
+        return "INCOMPLETE", ["запись тишины отключена (--silence-seconds 0): стабильность фона не проверена"]
+    return "OK", []
 
 
 def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0, -40.0),
@@ -330,11 +344,12 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
                 lines.append(f"  [{ch}] noise 20–20k: {delta:+.2f} dB")
         lines.append("")
 
-    reasons = series_validity(rows, all_tone_rows, clock)
-    lines.append("SERIES VALIDITY: " + ("OK" if not reasons else "INVALID — " + "; ".join(reasons)))
+    xrun_lines = [l for l in lines if re.search(r"underrun|overrun|XRUN=[1-9]|xrun!", l, re.I)]
+    state, reasons = validity_state(rows, all_tone_rows, clock, silence_seconds > 0, xrun_lines)
+    lines.append("SERIES VALIDITY: " + state + (" — " + "; ".join(reasons) if reasons else ""))
     lines.append("")
     lines.append("REPEATABILITY SUMMARY · median [min…max]")
-    lines.append(" level   ch   ADC level dBFS   loop Δ dB   THD detected %   THD+N dBc   noise-only dBFS   H2 dBc   H3 dBc")
+    lines.append(" level   ch   ADC level dBFS   loop Δ dB   THD detected %   THD+N dBc   негарм. остаток dBFS   H2 dBc   H3 dBc")
     for level in levels:
         for ch in ("L", "R"):
             subset = [q for q in all_tone_rows if q["generator_dbfs"] == float(level) and q["channel"] == ch]
@@ -355,7 +370,7 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
         "INTERPRETATION NOTES",
         "- ADC fundamental level is normalized to a full-scale sine (dBFS).",
         "- THD+N dBc is relative to the measured fundamental; residual absolute dBFS is also printed.",
-        "- noise-only excludes the fundamental and detected harmonics; it is not the same as a silent-input noise measurement.",
+        "- «негармонический остаток» (noise-only) — всё, кроме основного тона и обнаруженных гармоник: шум, боковые полосы, посторонние линии. Это не шум тихого входа.",
         "- SILENCE BEFORE/AFTER is the integrated 20 Hz–20 kHz ADC noise while both DAC+ADC streams are open and DAC sends digital zero.",
         "- Hn values are reported dBc relative to the fundamental. The coherent estimator compares its one-bin averaged line against (a) broadband one-bin noise divided by the signal block count and (b) stable coherent spurs detected in the silence recording on the same DFT bin. This is a conservative engineering detector, not a formal uncertainty budget.",
         "- The separate ±5-Hz silence comparison integrates a wider band and is diagnostic only; do not compare its dB margin directly with the one-bin coherent threshold.",

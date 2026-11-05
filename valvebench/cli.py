@@ -4,13 +4,14 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
+import time
 from pathlib import Path
 
 from . import calib, measure as m, store, vinyl
 from .backend import AlsaCli, SimBackend, SimChannel, list_cards, parse_stream
 from .selftest import run_selftest, format_selftest
 from .looptest import run_loopback_report
-from . import scans
+from . import scans, passport
 from .measure import Rig
 
 
@@ -57,6 +58,18 @@ def main(argv=None):
     p.add_argument("--freqs", default="1000,997,1234", help="частоты тона, Гц, через запятую")
     p.add_argument("--level", type=float, default=-6.0)
     p.add_argument("--report", help="сохранить отчёт в файл")
+    p = sub.add_parser("passport", help="паспорт тракта: шум, остаток с тоном, H2/H3, проникновение (для A/B до/после доработки)")
+    p.add_argument("--label", default="", help="метка паспорта, напр. before")
+    p.add_argument("--rates", default="96000,192000", help="частоты дискретизации через запятую")
+    p.add_argument("--quick", action="store_true", help="быстро: одна частота (--rate), −1 dBFS, 3 повтора, ≈45 с")
+    p.add_argument("--out", help="файл паспорта (по умолчанию passport-<label>.json в текущем каталоге)")
+    p.add_argument("--compare", help="сравнить с ранее снятым паспортом (JSON)")
+    p = sub.add_parser("compare", help="сравнить два паспорта: лучше / хуже / в пределах разброса")
+    p.add_argument("before"); p.add_argument("after")
+    p = sub.add_parser("watch", help="живой монитор остатка L/R при тоне — для работы паяльником")
+    p.add_argument("--count", type=int, default=None, help="число замеров (по умолчанию до Ctrl+C)")
+    p.add_argument("--baseline", help="паспорт, с которым сравнивать (иначе — первые 3 замера)")
+    sub.add_parser("psdcheck", help="сверить плотность шума живого спектра с Welch и интегралом 20–20k")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=997); p.add_argument("--level", type=float, default=-12)
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=997)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
@@ -118,6 +131,64 @@ def main(argv=None):
             return 0
         except Exception as exc:  # noqa: BLE001
             print(f"LOOPBACK TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    if a.cmd == "compare":
+        text, _v = passport.compare_passports(passport.load(a.before), passport.load(a.after))
+        print(text)
+        return 0
+    if a.cmd in ("passport", "watch", "psdcheck"):
+        cfg = calib.load()
+        dev = a.dev or cfg["device"]
+
+        def make_rig(fs):
+            if a.sim:
+                be = SimBackend(SimChannel(gain=0.65, a2=5e-4, a3=3e-3, noise_dbfs=-105, mod_noise_dbc=-80, mod_jitter_db=4.0),
+                                SimChannel(gain=0.65, a2=2e-3, a3=1e-3, noise_dbfs=-103))
+            else:
+                if dev == "sim":
+                    ap.error("укажи --dev hw:N,0 или добавь --sim")
+                be = AlsaCli(dev, in_map=cfg["in_map"], out_map=cfg["out_map"])
+            rig = Rig(be, cfg, fs=int(fs), blocks=max(a.blocks, 4), settle=0.25)
+            rig.open()
+            return rig
+        try:
+            if a.cmd == "passport":
+                rates = [int(r) for r in a.rates.split(",") if r.strip()]
+                if a.quick:
+                    rates = [a.rate or cfg["fs"]]
+                    kw = dict(levels=(-1.0,), repeats=3, silence_s=4.0)
+                else:
+                    kw = {}
+                label = a.label or time.strftime("%H%M%S")
+                p = passport.run_passport(make_rig, rates, label, **kw)
+                text = passport.text_passport(p)
+                out = a.out or f"passport-{label}.json"
+                passport.save(p, out)
+                print(text)
+                print(f"\nPASSPORT_SAVED: {out}")
+                if a.compare:
+                    ctext, _v = passport.compare_passports(passport.load(a.compare), p)
+                    print("\n" + ctext)
+            elif a.cmd == "watch":
+                rig = make_rig(a.rate or cfg["fs"])
+                base = None
+                if a.baseline:
+                    bp = passport.load(a.baseline)["rates"].get(str(rig.fs))
+                    if bp:
+                        tl = bp["tone"]["L"][sorted(bp["tone"]["L"], key=lambda s: -float(s))[0]]
+                        tr = bp["tone"]["R"][sorted(bp["tone"]["R"], key=lambda s: -float(s))[0]]
+                        base = (tl["resid"], tr["resid"])
+                print("Остаток = всё, кроме тона и гармоник. Эталон для сравнения: "
+                      + ("паспорт" if base else "первые 3 замера") + ". Ctrl+C — выход.")
+                passport.watch_loop(rig, count=a.count, baseline=base, sleep=(lambda s: time.sleep(0.01)) if a.sim else time.sleep)
+            else:
+                passport.psd_check(make_rig(a.rate or cfg["fs"]))
+            return 0
+        except KeyboardInterrupt:
+            print("\nостановлено")
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2
     if a.cmd in ("levelscan", "freqscan"):
         try:

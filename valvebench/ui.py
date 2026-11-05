@@ -571,7 +571,7 @@ class SpectrumPage(Gtk.Box):
                 prev_line = self.avg_line_power[ch]
                 prev_bin = self.avg_bin_power[ch]
                 coeff_line = np.where(line_power >= prev_line, attack, release)
-                coeff_bin = np.where(bin_power >= prev_bin, attack, release)
+                coeff_bin = 0.5 * (attack + release)   # плотность шума: симметричное сглаживание (асимметрия завышала полку на ≈2 дБ)
                 self.avg_line_power[ch] = coeff_line * line_power + (1.0 - coeff_line) * prev_line
                 self.avg_bin_power[ch] = coeff_bin * bin_power + (1.0 - coeff_bin) * prev_bin
             if self.mode.get_selected() == 0:
@@ -621,7 +621,7 @@ class SpectrumPage(Gtk.Box):
 
 class ThdPage(Page):
     def __init__(self, win):
-        self.f = spin("Частота, Гц", 10, 40000, 1, 1000, 0)
+        self.f = spin("Частота, Гц", 10, 40000, 1, 997, 0)
         self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -20, 1)
         self.route = combo("Канал", ["L+R", "L", "R"], 0)
         self.lvls = Adw.EntryRow(title="Уровни для THD(уровень), dBFS")

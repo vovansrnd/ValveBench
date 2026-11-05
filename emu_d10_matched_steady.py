@@ -3,6 +3,13 @@
 
 Run from ValveBench project root:
     python3 emu_d10_matched_steady.py
+
+First calibrates D10 analogue volume so a -18 dBFS 997 Hz tone gives
+-23.4 dBFS at both E-MU ADC inputs (matching the internal E-MU loopback
+measurement). Then records 40 s D10-L-only and 40 s D10-R-only.
+The residual estimator removes DC + harmonics 1..20 by least-squares
+projection in every window, avoiding the non-coherent FFT leakage bug in
+the earlier steady test script.
 """
 from __future__ import annotations
 
@@ -24,11 +31,11 @@ FS = 192000
 TONE_HZ = 997.0
 TONE_DBFS = -18.0
 TARGET_ADC_DBFS = -23.4
-TARGET_TOL_DB = 1.0  # Вернули исходный допуск 5.0 дБ
-DAC_DEVICE = "hw:2,0"  # STRIX RAID DLX (Loopback)
-ADC_DEVICE = "hw:3,0"  # STRIX RAID DLX (Loopback)
+TARGET_TOL_DB = 1.0
+DAC_DEVICE = "hw:3,0"  # SMSL D10
+ADC_DEVICE = "hw:2,0"  # E-MU 0404
 ADC_FORMAT = "S24_3LE"
-DAC_FORMAT = "S24_3LE"  # Изменено на 24-битный формат для ASUS
+DAC_FORMAT = "S32_LE"  # already confirmed working with this D10
 LEAD = 1.0
 PLAY_SECONDS = 95
 CAPTURE_SECONDS = 97
@@ -62,14 +69,13 @@ def db10(x: float) -> float:
 
 
 def dbfs_from_power(power: float) -> float:
+    # Full-scale sine reference: 0 dBFS sine has peak 1 and RMS 1/sqrt(2).
     return 10.0 * math.log10(max(2.0 * float(power), 1e-300))
 
 
-def pack_s24_3le(x: np.ndarray) -> bytes:
-    """Упаковывает float64 синусоиду в 3-байтовый (24-битный) PCM поток."""
-    y = np.clip(np.rint(x * (2**23 - 1)), -(2**23), 2**23 - 1).astype("<i4")
-    # Переходим от 4-байтового представления к 3-байтовому, отбрасывая пустой старший байт
-    return y.view(np.uint8).reshape(-1, 4)[:, :3].tobytes()
+def pack_s32(x: np.ndarray) -> bytes:
+    y = np.clip(np.rint(x * (2**31 - 1)), -(2**31), 2**31 - 1).astype("<i4")
+    return y.tobytes()
 
 
 def unpack_s24_3le(path: Path) -> np.ndarray:
@@ -99,8 +105,7 @@ def tone_file(seconds: float, mode: str) -> np.ndarray:
 
 
 def write_s32(path: Path, x: np.ndarray) -> None:
-    # Использует корректную упаковку в 24 бит (3LE) вместо 32 бит
-    path.write_bytes(pack_s24_3le(x))
+    path.write_bytes(pack_s32(x))
 
 
 def play(path: Path) -> None:
@@ -108,7 +113,7 @@ def play(path: Path) -> None:
            "-r", str(FS), "-c", "2", str(path)]
     p = subprocess.run(cmd, capture_output=True, text=True)
     if p.returncode:
-        raise RuntimeError("Ошибка воспроизведения ASUS STRIX: " + (p.stderr or p.stdout).strip())
+        raise RuntimeError("Ошибка воспроизведения D10: " + (p.stderr or p.stdout).strip())
 
 
 def capture_with_playback(play_path: Path, capture_path: Path, capture_seconds: int) -> None:
@@ -120,7 +125,7 @@ def capture_with_playback(play_path: Path, capture_path: Path, capture_seconds: 
         play(play_path)
         _, err = rec.communicate(timeout=capture_seconds + 5)
         if rec.returncode:
-            raise RuntimeError("Ошибка записи ASUS STRIX: " + (err or "").strip())
+            raise RuntimeError("Ошибка записи E-MU: " + (err or "").strip())
     except Exception:
         if rec.poll() is None:
             rec.terminate()
@@ -132,6 +137,7 @@ def capture_with_playback(play_path: Path, capture_path: Path, capture_seconds: 
 
 
 def fit_tone(y: np.ndarray, initial_hz: float = TONE_HZ) -> tuple[float, float]:
+    """Estimate tone frequency and peak dBFS by least-squares sine/cosine fit."""
     y = np.asarray(y, dtype=np.float64)
     y = y - float(np.mean(y))
     n = len(y)
@@ -157,6 +163,7 @@ def fit_tone(y: np.ndarray, initial_hz: float = TONE_HZ) -> tuple[float, float]:
 
 
 def make_q(n: int, f0: float) -> np.ndarray:
+    """Orthonormal basis for DC and sine/cosine of harmonics 1..20."""
     t = np.arange(n, dtype=np.float64) / FS
     cols = [np.ones(n, dtype=np.float64)]
     for h in range(1, HARMONICS + 1):
@@ -189,230 +196,185 @@ def median(a: list[float]) -> float:
 
 
 def calibration_trial(outdir: Path, trial: int) -> tuple[float, float]:
-    tmp_in = outdir / f"calib_in_{trial}.raw"
-    tmp_out = outdir / f"calib_out_{trial}.raw"
-    
-    x = tone_file(2.5, "both")
-    write_s32(tmp_out, x)
-    
-    try:
-        capture_with_playback(tmp_out, tmp_in, 3)
-        y = unpack_s24_3le(tmp_in)
-        if len(y) < FS:
-            return -120.0, -120.0
-        
-        start_idx = int(1.0 * FS)
-        end_idx = int(2.0 * FS)
-        
-        _, v_l = fit_tone(y[start_idx:end_idx, 0])
-        _, v_r = fit_tone(y[start_idx:end_idx, 1])
-        return v_l, v_r
-    finally:
-        if tmp_in.exists(): tmp_in.unlink()
-        if tmp_out.exists(): tmp_out.unlink()
+    stimulus = outdir / f"calibration-{trial}.raw"
+    capture = outdir / f"calibration-{trial}-capture.raw"
+    write_s32(stimulus, tone_file(8.0, "both"))
+    print("  Короткий контрольный тон на обоих каналах D10…")
+    capture_with_playback(stimulus, capture, 10)
+    x = unpack_s24_3le(capture)
+    # Playback starts after LEAD; use a 5-second central region well inside tone.
+    i0 = int((LEAD + 1.5) * FS)
+    i1 = int((LEAD + 6.5) * FS)
+    levels = []
+    for ch in (0, 1):
+        f, level = fit_tone(x[i0:i1, ch])
+        levels.append(level)
+    stimulus.unlink(missing_ok=True)
+    capture.unlink(missing_ok=True)
+    return levels[0], levels[1]
 
 
-def generate_full_test_signal() -> np.ndarray:
-    """Генерирует тестовую последовательность согласно SEGMENTS (95 секунд)."""
-    total_n = int(round(PLAY_SECONDS * FS))
-    x = np.zeros((total_n, 2), dtype=np.float64)
-    t = np.arange(total_n, dtype=np.float64) / FS
+def make_main_stimulus(path: Path) -> None:
+    x = np.zeros((PLAY_SECONDS * FS, 2), dtype=np.float64)
     amp = 10.0 ** (TONE_DBFS / 20.0)
-    
-    # Левый канал
-    s_l = amp * np.sin(2.0 * np.pi * TONE_HZ * t)
-    mask_l_in = (t >= 3.0) & (t < 4.0)
-    s_l[mask_l_in] *= (t[mask_l_in] - 3.0)
-    mask_l_out = (t >= 44.0) & (t < 45.0)
-    s_l[mask_l_out] *= (45.0 - t[mask_l_out])
-    s_l[t < 3.0] = 0.0
-    s_l[t >= 45.0] = 0.0
-    x[:, 0] = s_l
-
-    # Правый канал
-    s_r = amp * np.sin(2.0 * np.pi * TONE_HZ * t)
-    mask_r_in = (t >= 50.0) & (t < 51.0)
-    s_r[mask_r_in] *= (t[mask_r_in] - 50.0)
-    mask_r_out = (t >= 91.0) & (t < 92.0)
-    s_r[mask_r_out] *= (92.0 - t[mask_r_out])
-    s_r[t < 50.0] = 0.0
-    s_r[t >= 92.0] = 0.0
-    x[:, 1] = s_r
-
-    return x
+    fade_n = int(round(FADE_SECONDS * FS))
+    ramp = 0.5 - 0.5 * np.cos(np.linspace(0.0, np.pi, fade_n, endpoint=True))
+    for ch, start, end in ((0, 3.0, 45.0), (1, 50.0, 92.0)):
+        n = int(round((end - start) * FS))
+        t = np.arange(n, dtype=np.float64) / FS
+        tone = amp * np.sin(2.0 * np.pi * TONE_HZ * t)
+        env = np.ones(n, dtype=np.float64)
+        env[:fade_n] = ramp
+        env[-fade_n:] = ramp[::-1]
+        x[int(start * FS):int(end * FS), ch] = tone * env
+    write_s32(path, x)
 
 
-def main():
-    print("ASUS STRIX RAID DLX · MATCHED-LEVEL LOOPBACK TEST")
-    print(f"ASUS DAC={DAC_DEVICE} → ASUS ADC={ADC_DEVICE} · Fs={FS} · Format={DAC_FORMAT}")
-    print(f"Цель: {TARGET_ADC_DBFS} dBFS на каждом входе (допуск ±{TARGET_TOL_DB} dB).")
-    
-    outdir = Path("temp")
-    outdir.mkdir(exist_ok=True)
-    
+def main() -> int:
+    need_program("arecord")
+    need_program("aplay")
+    root = Path.cwd()
+    outdir = root / "emu_measurements" / f"D10-matched-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    print("E-MU 0404 / SMSL D10 · MATCHED-LEVEL STEADY TEST")
+    print(f"D10={DAC_DEVICE} → E-MU ADC={ADC_DEVICE} · Fs={FS} · digital tone={TONE_DBFS:.1f} dBFS")
+    print(f"Цель: {TARGET_ADC_DBFS:.1f} dBFS на каждом входе E-MU (допуск ±{TARGET_TOL_DB:.1f} dB).")
+    print("Подключение: D10 3.5 мм L/R → E-MU L/R; оба входа Grounded Input; Phantom OFF.")
+    print("Не использовать D10 4.4 мм balanced. Не менять входные настройки E-MU.")
+    input("Подключи D10 и нажми Enter. Сначала будет короткая настройка уровня: ")
+
     trial = 1
     while True:
-        print("Нажмите Enter для запуска проверки уровня звукового тракта (или 'q' для выхода): ", end="")
-        choice = input().strip().lower()
-        if choice == 'q':
-            sys.exit(0)
-            
-        print("  Короткий контрольный тон на обоих каналах карты...")
-        l_dbfs, r_dbfs = calibration_trial(outdir, trial)
-        trial += 1
-        
-        dev_l = l_dbfs - TARGET_ADC_DBFS
-        dev_r = r_dbfs - TARGET_ADC_DBFS
-        
-        print(f"  ADC L={l_dbfs:.2f} dBFS ({dev_l:+.2f} dB до цели) · ADC R={r_dbfs:.2f} dBFS ({dev_r:+.2f} dB до цели)")
-        
-        if abs(dev_l) <= TARGET_TOL_DB and abs(dev_r) <= TARGET_TOL_DB:
-            print(" Уровень успешно согласован! Переходим к основному тесту.")
+        l, r = calibration_trial(outdir, trial)
+        dl, dr = TARGET_ADC_DBFS - l, TARGET_ADC_DBFS - r
+        print(f"  ADC L={l:.2f} dBFS ({dl:+.2f} dB до цели) · ADC R={r:.2f} dBFS ({dr:+.2f} dB до цели)")
+        if abs(dl) <= TARGET_TOL_DB and abs(dr) <= TARGET_TOL_DB:
+            ans = input("Уровни совпали с целью. Не трогая регулятор D10, нажми Enter для основного теста (q — выход): ").strip().lower()
+            if ans == "q":
+                return 0
             break
-        else:
-            req = (dev_l + dev_r) / 2.0
-            action = "УМЕНЬШИ" if req > 0 else "УВЕЛИЧЬ"
-            print(f"  {action} системный/аппаратный микшер карты примерно на {abs(req):.1f} dB и повторите.")
+        direction = "УВЕЛИЧЬ" if (dl + dr) / 2.0 > 0 else "УМЕНЬШИ" 
+        print(f"  {direction} громкость D10 примерно на {(dl + dr) / 2.0:+.1f} dB, затем повтори контроль.")
+        ans = input("Enter — повторить контроль, q — выйти: ").strip().lower()
+        if ans == "q":
+            print("Остановлено; основной тест не запускался.")
+            return 0
+        trial += 1
+        if trial > 12:
+            raise RuntimeError("Слишком много попыток настройки уровня; проверь D10/кабели/уровни.")
 
-    # --- ОСНОВНОЙ ДЛИННЫЙ ТЕСТ ---
-    print("\n[1/3] Накапливаем основной тестовый сигнал (95 сек)...")
-    full_signal = generate_full_test_signal()
-    play_file = outdir / "main_playback.raw"
-    cap_file = outdir / "main_capture.raw"
-    write_s32(play_file, full_signal)
-    
-    print("[2/3] Запуск одновременного Full-Duplex прогона...")
-    print("Пожалуйста, подождите 97 секунд...")
-    capture_with_playback(play_file, cap_file, CAPTURE_SECONDS)
-    
-    print("[3/3] Декодирование и БПФ-анализ по временным окнам...")
-    y_captured = unpack_s24_3le(cap_file)
-    
-    # Скользящий спектральный оконный анализ
-    w_size = int(round(WINDOW_SECONDS * FS))
-    w_hop = int(round(HOP_SECONDS * FS))
-    win = blackmanharris(w_size)
-    
-    # Сначала определяем точные частоты на участках L_steady и R_steady
-    # Поиск частоты тона для L
-    idx_l_steady_start = int(round((4.0 + LEAD) * FS))
-    idx_l_steady_end = int(round((44.0 + LEAD) * FS))
-    f0_l, adc_l_steady_level = fit_tone(y_captured[idx_l_steady_start:idx_l_steady_end, 0])
+    stimulus = outdir / "d10-stimulus-s32le.raw"
+    capture = outdir / "emu-capture-s24_3le.raw"
+    make_main_stimulus(stimulus)
+    print("Основной тест: 40 с L-only + 40 с R-only, плавные переходы; запись около 97 с.")
+    capture_with_playback(stimulus, capture, CAPTURE_SECONDS)
+    x = unpack_s24_3le(capture)
+    if len(x) < FS * 95:
+        raise RuntimeError(f"Запись короткая: {len(x)/FS:.2f} s, ожидалось ≥95 s")
+    wavfile.write(outdir / "emu-capture-float32.wav", FS, x.astype(np.float32))
+    # Keep the portable WAV and reports; remove large temporary raw files.
+    capture.unlink(missing_ok=True)
+    stimulus.unlink(missing_ok=True)
 
-    # Поиск частоты тона для R
-    idx_r_steady_start = int(round((51.0 + LEAD) * FS))
-    idx_r_steady_end = int(round((91.0 + LEAD) * FS))
-    f0_r, adc_r_steady_level = fit_tone(y_captured[idx_r_steady_start:idx_r_steady_end, 1])
+    # Frequency estimate in the middle 8 s of each driven channel.
+    fits = {}
+    for state, centre, ch in (("L_steady", 24.0, 0), ("R_steady", 71.0, 1)):
+        c0 = int((LEAD + centre - 4.0) * FS)
+        c1 = int((LEAD + centre + 4.0) * FS)
+        f, level = fit_tone(x[c0:c1, ch])
+        fits[state] = (f, level)
 
-    # Считаем базовый шум (Idle) на участке idle_pre
-    idx_idle_start = int(round((0.0 + LEAD) * FS))
-    idx_idle_end = int(round((3.0 + LEAD) * FS))
-    idle_windows = (idx_idle_end - idx_idle_start - w_size) // w_hop
-    
-    idle_powers_20_20k = {"L": [], "R": []}
-    for w in range(idle_windows):
-        off = idx_idle_start + w * w_hop
-        for ch_idx, ch_name in ((0, "L"), (1, "R")):
-            freqs, psd = window_psd(y_captured[off:off+w_size, ch_idx], win, w_size, FS)
-            mask_20_20k = (freqs >= 20.0) & (freqs <= 20000.0)
-            p_band = np.sum(psd[mask_20_20k]) * (freqs[1] - freqs[0])
-            idle_powers_20_20k[ch_name].append(p_band)
-            
-    idle_baseline_l = dbfs_from_power(np.median(idle_powers_20_20k["L"]))
-    idle_baseline_r = dbfs_from_power(np.median(idle_powers_20_20k["R"]))
+    nwin = int(round(WINDOW_SECONDS * FS))
+    hop = int(round(HOP_SECONDS * FS))
+    nfft = nwin * 2
+    win = blackmanharris(nwin, sym=False)
+    fgrid = np.fft.rfftfreq(nfft, 1.0 / FS)
+    band_audio = (fgrid >= 20.0) & (fgrid < 20000.0)
+    band_ultra = (fgrid >= 40000.0) & (fgrid < 96000.0)
+    q_by_state = {state: make_q(nwin, fit[0]) for state, fit in fits.items()}
+    rows = []
+    for start in range(0, len(x) - nwin + 1, hop):
+        cap_centre = (start + nwin / 2) / FS
+        pb_centre = cap_centre - LEAD
+        state = state_at(pb_centre)
+        row = {"capture_time_s": cap_centre, "playback_time_s": pb_centre, "state": state}
+        for ch, name in ((0, "L"), (1, "R")):
+            frame = x[start:start+nwin, ch]
+            f, p_raw = window_psd(frame, win, nfft, FS)
+            p_ultra = dbfs_from_power(float(np.sum(p_raw[band_ultra]) * (FS / nfft)))
+            if state in q_by_state:
+                q = q_by_state[state]
+                residual = frame - q @ (q.T @ frame)
+                _, p_res = window_psd(residual, win, nfft, FS)
+                p_audio = dbfs_from_power(float(np.sum(p_res[band_audio]) * (FS / nfft)))
+            else:
+                p_audio = dbfs_from_power(float(np.sum(p_raw[band_audio]) * (FS / nfft)))
+            row[f"{name}_20-20k_residual_dbfs"] = p_audio
+            row[f"{name}_40-96k_dbfs"] = p_ultra
+        rows.append(row)
 
-    # Полный прогон по всем окнам всей записи
-    total_frames = (len(y_captured) - w_size) // w_hop
-    results = []
-    all_excursions = [] # Для сбора топ-вылетов
+    idle_states = {"idle_pre", "idle_gap", "idle_post"}
+    baseline = {}
+    for ch in ("L", "R"):
+        baseline[ch] = median([float(r[f"{ch}_20-20k_residual_dbfs"]) for r in rows if r["state"] in idle_states])
 
-    for idx in range(total_frames):
-        offset = idx * w_hop
-        t_current = (offset + w_size / 2) / FS - LEAD
-        segment_name = state_at(t_current)
-        
-        for ch_idx, ch_name in ((0, "L"), (1, "R")):
-            freqs, psd = window_psd(y_captured[offset:offset+w_size, ch_idx], win, w_size, FS)
-            df = freqs[1] - freqs[0]
-            
-            # Полоса 20 Гц - 20 кГц
-            mask_20_20k = (freqs >= 20.0) & (freqs <= 20000.0)
-            # Фильтруем основной тон 997 Гц (вырезаем окно ±15 Гц), чтобы получить чистый шум
-            mask_tone = (freqs >= 997.0 - 15.0) & (freqs <= 997.0 + 15.0)
-            mask_noise_20_20k = mask_20_20k & (~mask_tone)
-            
-            p_20_20k = np.sum(psd[mask_noise_20_20k]) * df
-            db_20_20k = dbfs_from_power(p_20_20k)
-            
-            # Полоса 40 кГц - 96 кГц
-            mask_40_96k = (freqs >= 40000.0) & (freqs <= 96000.0)
-            p_40_96k = np.sum(psd[mask_40_96k]) * df
-            db_40_96k = dbfs_from_power(p_40_96k)
-            
-            results.append({
-                "segment": segment_name,
-                "ch": ch_name,
-                "db_20_20k": db_20_20k,
-                "db_40_96k": db_40_96k,
-                "t": t_current
-            })
-            
-            # Собираем данные для топа вылетов (интересует только поведение канала L во время steady стадий)
-            if segment_name in ("L_steady", "R_steady") and ch_name == "L":
-                baseline = idle_baseline_l
-                diff = db_20_20k - baseline
-                all_excursions.append((t_current, segment_name, db_20_20k, diff))
+    def stats(ch: str, state: str, key: str, base: float) -> tuple[float, float, float, int, int]:
+        vals = [float(r[key]) for r in rows if r["state"] == state]
+        if not vals:
+            return float("nan"), float("nan"), float("nan"), 0, 0
+        return median(vals), float(np.percentile(vals, 95)), max(vals), sum(v > base + 6.0 for v in vals), len(vals)
 
-    # Печать красивого финального текстового отчета в консоль
-    print("\n" + "="*80)
-    print("MEASURED TONE / CHANNEL MAP:")
-    print(f"  ASUS_L_only: ADC L={adc_l_steady_level:.2f} dBFS at {f0_l:.6f} Hz")
-    print(f"  ASUS_R_only: ADC R={adc_r_steady_level:.2f} dBFS at {f0_r:.6f} Hz")
-    print(f"  f0 difference={abs(f0_l - f0_r):.6f} Hz")
-    print(f"IDLE BASELINE: L={idle_baseline_l:.2f} dBFS · R={idle_baseline_r:.2f} dBFS")
-    
-    print(f"{'STATE':11s} {'ADC':4s} {'20-20k median / p95 / max dBFS':36s} {' >baseline+6dB':17s} {'40-96k median / p95 / max dBFS'}")
-    
-    for seg in ("L_steady", "R_steady"):
+    report = [
+        "E-MU 0404 / SMSL D10 · MATCHED-LEVEL STEADY-STATE REPORT",
+        f"Fs={FS} · ADC={ADC_FORMAT} · D10={DAC_FORMAT} · tone={TONE_HZ:.3f} Hz at {TONE_DBFS:.1f} dBFS",
+        f"Target ADC level={TARGET_ADC_DBFS:.1f}±{TARGET_TOL_DB:.1f} dBFS; window={WINDOW_SECONDS*1000:.0f} ms; hop={HOP_SECONDS*1000:.0f} ms",
+        "Residual: per-window least-squares removal of DC and harmonics 1..20; no fixed-bin notches.",
+        "40–96 kHz is raw-band level; audio residual values are measured after harmonic projection.",
+        "",
+        "MEASURED TONE / CHANNEL MAP:",
+        f"  D10_L_only: ADC L={fits['L_steady'][1]:.2f} dBFS at {fits['L_steady'][0]:.6f} Hz",
+        f"  D10_R_only: ADC R={fits['R_steady'][1]:.2f} dBFS at {fits['R_steady'][0]:.6f} Hz",
+        f"  f0 difference={abs(fits['L_steady'][0]-fits['R_steady'][0]):.6f} Hz",
+        f"IDLE BASELINE: L={baseline['L']:.2f} dBFS · R={baseline['R']:.2f} dBFS",
+        "STATE       ADC    20-20k median / p95 / max dBFS       >baseline+6dB       40-96k median / p95 / max dBFS",
+    ]
+    for state in ("L_steady", "R_steady"):
         for ch in ("L", "R"):
-            sub = [r for r in results if r["segment"] == seg and r["ch"] == ch]
-            if not sub: continue
-            
-            v_20 = [r["db_20_20k"] for r in sub]
-            v_40 = [r["db_40_96k"] for r in sub]
-            
-            med_20, p95_20, max_20 = np.median(v_20), np.percentile(v_20, 95), np.max(v_20)
-            med_40, p95_40, max_40 = np.median(v_40), np.percentile(v_40, 95), np.max(v_40)
-            
-            base = idle_baseline_l if ch == "L" else idle_baseline_r
-            over_count = sum(1 for v in v_20 if v > base + 6.0)
-            
-            print(f"{seg:11s} {ch:4s} {med_20:7.2f} / {p95_20:7.2f} / {max_20:7.2f}      {over_count:3d}/{len(v_20):3d}      {med_40:7.2f} / {p95_40:7.2f} / {max_40:7.2f}")
+            med, p95, mx, count, total = stats(ch, state, f"{ch}_20-20k_residual_dbfs", baseline[ch])
+            u = stats(ch, state, f"{ch}_40-96k_dbfs", median([float(r[f"{ch}_40-96k_dbfs"]) for r in rows if r["state"] in idle_states]))
+            report.append(f"{state:9s} {ch:>2s}  {med:8.2f} / {p95:8.2f} / {mx:8.2f}   {count:4d}/{total:<4d}   {u[0]:8.2f} / {u[1]:8.2f} / {u[2]:8.2f}")
+    report += ["", "TOP WINDOWS DURING STEADY TONE:"]
+    candidates = []
+    for ch in ("L", "R"):
+        key = f"{ch}_20-20k_residual_dbfs"
+        for r in rows:
+            if r["state"] in ("L_steady", "R_steady"):
+                candidates.append((float(r[key]), ch, r))
+    for level, ch, r in sorted(candidates, reverse=True)[:20]:
+        report.append(f"  ADC {ch} t={float(r['playback_time_s']):6.2f}s {r['state']:8s} {level:8.2f} dBFS ({level-baseline[ch]:+.2f} dB vs idle)")
+    report += ["", "Interpretation: compare this report with the E-MU internal-loopback corrected analysis at the same ADC tone level.",
+               "If left-channel excursions persist with D10 at matched level, suspect ADC-L/input-local coupling.",
+               "If D10 is clean at matched level but E-MU internal DAC loopback is not, suspicion shifts to DAC-L/output path or its interaction with the input.",
+               "This test alone cannot identify a specific PCB component."]
 
-    print("\nTOP WINDOWS DURING STEADY TONE:")
-    # Сортируем вылеты канала L по убыванию уровня (худшие сверху) и берем топ-20
-    all_excursions.sort(key=lambda x: x[2], reverse=True)
-    for t_val, seg_val, db_val, diff_val in all_excursions[:20]:
-        print(f"  ADC L t={t_val:6.2f}s {seg_val:10s} {db_val:7.2f} dBFS (+{diff_val:.2f} dB vs idle)")
-
-    print("\nInterpretation: compare this report with the E-MU internal-loopback corrected analysis at the same ADC tone level.")
-    print("If left-channel excursions persist with D10 at matched level, suspect ADC-L/input-local coupling.")
-    print("If D10 is clean at matched level but E-MU internal DAC loopback is not, suspicion shifts to DAC-L/output path or its interaction with the input.")
-    print("This test alone cannot identify a specific PCB component.")
-    print("="*80)
-
-    # Запись дублирующего лога в файл для истории
-    csv_path = Path("strix_steady_report.csv")
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["time_sec", "segment", "ch", "db_20_20k", "db_40_96k"])
+    (outdir / "summary.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+    with (outdir / "burst-timeline.csv").open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         writer.writeheader()
-        for r in results:
-            writer.writerow({"time_sec": r["t"], "segment": r["segment"], "ch": r["ch"], "db_20_20k": r["db_20_20k"], "db_40_96k": r["db_40_96k"]})
+        writer.writerows(rows)
+    print("\n".join(report))
+    print(f"\nРезультаты: {outdir}")
+    print("Нужные файлы: summary.txt, burst-timeline.csv, emu-capture-float32.wav")
+    return 0
 
-    if play_file.exists(): play_file.unlink()
-    if cap_file.exists(): cap_file.unlink()
 
-
-if __name__ == '__main__':
-    main()
-
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        print("\nОстановлено пользователем.", file=sys.stderr)
+        raise SystemExit(130)
+    except Exception as exc:
+        print(f"ОШИБКА: {type(exc).__name__}: {exc}", file=sys.stderr)
+        raise SystemExit(2)

@@ -5,7 +5,7 @@ import math
 import time
 import numpy as np
 
-from . import dsp, gainmatch, scans, looptest
+from . import dsp, gainmatch, scans, looptest, passport
 from .backend import SimBackend, SimChannel
 from .calib import Calibration
 from .measure import Rig, sweep, noise_response, noise_transfer_capture
@@ -304,6 +304,39 @@ def run_selftest():
     check("Валидность серии: правый канал с шумом +87 дБ помечается INVALID, чистый — OK",
           len(bad) >= 2 and all(x.startswith("R:") for x in bad) and good == [],
           f"причины: {bad}")
+
+    # --- 0.1.8: нестабильные линии, состояния валидности, сравнение паспортов
+    lv8 = np.array([-6.0, -12.0, -18.0, -24.0, -30.0])
+    noisy = scans.classify_slope(2, lv8, np.array([-110.0, -133.0, -141.0, -135.0, -145.0]), [True] * 5)
+    check("levelscan: точки с разбросом > 3 дБ получают kind=unstable, а не «фиксированная линия»",
+          noisy is not None and noisy["kind"] == "unstable", f"наклон={noisy['slope']:+.2f}, разброс={noisy['rms']:.1f} дБ")
+
+    sil_ok = [{"section": "SILENCE BEFORE", "channel": ch, "peak_dbfs": -95.0, "noise_unweighted_dbfs": -110.0} for ch in "LR"] + \
+             [{"section": "SILENCE AFTER", "channel": ch, "peak_dbfs": -95.0, "noise_unweighted_dbfs": -110.0} for ch in "LR"]
+    st_ok = looptest.validity_state(sil_ok, [], {"ok": True}, True, [])
+    st_inc = looptest.validity_state([], [], {"ok": True}, False, [])
+    st_xr = looptest.validity_state(sil_ok, [], {"ok": True}, True, ["  ! aplay: underrun!!! (at least 3.2 ms long)"])
+    check("Валидность серии: OK / INCOMPLETE (нет тишины) / INVALID (XRUN)",
+          st_ok[0] == "OK" and st_inc[0] == "INCOMPLETE" and st_xr[0] == "INVALID",
+          f"{st_ok[0]} / {st_inc[0]} / {st_xr[0]}")
+
+    def mk(resid_l, spread_l, label):
+        bands = {"20–20k": -110.0, "20k–40k": -108.0}
+        t = lambda r, sp: {"n": 3, "fund": -6.0, "h2": -110.0, "h3": -105.0, "resid": r, "resid_min": r - sp / 2,
+                           "resid_max": r + sp / 2, "spread": sp, "thdn": -95.0, "bands": {}, "lines": []}
+        sil = {ch: {"bands": dict(bands), "a_weighted": -112.0, "hum": [-130.0, -132.0, -134.0], "dc": -150.0,
+                    "peak": -80.0, "lines": []} for ch in "LR"}
+        return {"schema": 1, "label": label, "time": "t", "tone_hz": 997.0, "rates": {"192000": {
+            "fs": 192000, "silence": sil, "tone": {"L": {"-1": t(resid_l, spread_l)}, "R": {"-1": t(-109.7, 0.2)}},
+            "xtalk": {"L->R": -104.5, "R->L": -105.4}, "warnings": []}}}
+    base = mk(-95.5, 7.0, "до")
+    txt_b, vb = passport.compare_passports(base, mk(-108.8, 0.4, "после"))
+    txt_w, vw = passport.compare_passports(mk(-108.8, 0.4, "до"), base)
+    txt_s, vs = passport.compare_passports(base, mk(-97.0, 7.0, "тот же"))
+    check("Паспорт: A/B даёт ЛУЧШЕ после правки, ХУЖЕ после порчи, а сдвиг внутри разброса — без изменений",
+          vb["better"] >= 2 and vb["worse"] == 0 and vw["worse"] >= 2 and vw["better"] == 0
+          and not any(r["sign"] for r in vs["rows"] if "остаток с тоном" in r["name"]),
+          f"лучше={vb['better']}; хуже={vw['worse']}; сдвиг 1.5 дБ при разбросе 7 дБ → без вердикта")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}

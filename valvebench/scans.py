@@ -27,6 +27,7 @@ from . import dsp
 
 SLOPE_TOL = 0.8             # допуск на наклон, дБ/дБ
 MIN_SPAN_DB = 9.0           # диапазон уровней, нужный для оценки наклона
+MAX_FIT_RMS_DB = 3.0        # если точки не ложатся на прямую (разброс больше), наклону верить нельзя
 
 
 def tone_period_samples(f, fs):
@@ -62,7 +63,9 @@ def classify_slope(h, fund, absl, ok, tol=SLOPE_TOL):
         return None
     slope, icpt = np.polyfit(x, y, 1)
     rms = float(np.sqrt(np.mean((y - (slope * x + icpt)) ** 2)))
-    if abs(slope - h) <= tol:
+    if rms > MAX_FIT_RMS_DB:
+        kind = "unstable"
+    elif abs(slope - h) <= tol:
         kind = "distortion"
     elif abs(slope) <= tol:
         kind = "fixed"
@@ -75,6 +78,7 @@ _KIND_TEXT = {
     "distortion": "растёт с уровнем как у нелинейности",
     "fixed": "НЕ зависит от уровня: не нелинейность (периодичность/спур/смещение)",
     "mixed": "смешанная природа",
+    "unstable": "НЕСТАБИЛЬНАЯ: точки не ложатся на прямую, наклону верить нельзя",
 }
 
 
