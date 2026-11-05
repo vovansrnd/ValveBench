@@ -5,7 +5,7 @@ import math
 import time
 import numpy as np
 
-from . import dsp
+from . import dsp, gainmatch
 from .backend import SimBackend, SimChannel
 from .calib import Calibration
 from .measure import Rig, sweep, noise_response, noise_transfer_capture
@@ -141,6 +141,43 @@ def run_selftest():
     b2_freqs = [round(q["frequency_hz"]) for q in b2["segments"]]
     check("TACET B2 tone sequence", 20 in b2_freqs and 1000 in b2_freqs and len(b2["segments"]) >= 3,
           f"распознаны ступени: {b2_freqs}")
+
+    # Когерентные линии: гармоники ниже прежнего пола лобеного метода должны находиться,
+    # а недостоверные линии — помечаться границей, а не выдаваться за измерение.
+    fs2, n2 = 96000, 96000
+    rng2 = np.random.default_rng(7)
+    t2 = np.arange(8 * n2) / fs2
+    amp = 10 ** (-25.39 / 20)
+    xh = amp * np.sin(2 * np.pi * 1000 * t2)
+    for hh, dbc in ((2, -112.0), (3, -125.0)):
+        xh += amp * 10 ** (dbc / 20) * np.sin(2 * np.pi * hh * 1000 * t2 + 0.3 * hh)
+    xh += rng2.normal(0, 10 ** (-110 / 20) / math.sqrt(2) * math.sqrt(0.5 * fs2 / 20000), xh.size)
+    rh = dsp.analyze_tone(xh, fs2, 1000.0, n2, nharm=4, mains=0)
+    hb = {q["h"]: q for q in rh["harmonics"]}
+    check("Гармоники по когерентным линиям: H2 −112 / H3 −125 дБc под шумом −110 dBFS",
+          rh["line_mode"] == "rect" and abs(hb[2]["dbc"] + 112.0) < 1.5 and abs(hb[3]["dbc"] + 125.0) < 2.5
+          and hb[2]["credible"] and not hb[4]["credible"],
+          f"режим={rh['line_mode']}; H2={hb[2]['dbc']:.1f}, H3={hb[3]['dbc']:.1f}, H4 ≤{hb[4]['dbc']:.1f}; "
+          f"пол линии {rh['line_floor_dbc']:.1f} dBc")
+
+    # Gain Match: ΔG известной пары каналов, tare и классификация.
+    be = SimBackend(SimChannel(gain=3.0, a3=0.02, noise_dbfs=-90, hum50_dbfs=-50),
+                    SimChannel(gain=2.9, a3=0.02, noise_dbfs=-90, hum50_dbfs=-50))
+    be.open(fs2)
+    gi = np.arange(fs2)
+    gs = 0.1 * np.sin(2 * np.pi * 1000 * gi / fs2)
+    be.live_set_loop(np.column_stack((gs, gs)))
+    tr = gainmatch.GainTracker()
+    st = None
+    for k in range(30):
+        st = tr.update(be.live_recent(0.6), fs2, 1000.0, -20.0, 0, None, now=0.1 * k)
+    truth = 20 * math.log10(3.0 / 2.9)
+    tr.tare()
+    st2 = tr.update(be.live_recent(0.6), fs2, 1000.0, -20.0, 0, None, now=10.0)
+    check("Gain Match: ΔG пары 3.0/2.9 и ноль по эталону",
+          st["valid"] and abs(st["filt"] - truth) < 0.005 and abs(st2["delta"]) < 0.005
+          and gainmatch.classify(0.04, 0.05) == "ok" and gainmatch.pick_range(0.37, 0.05) == 0.5,
+          f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare {st2['delta']:+.4f} dB")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}

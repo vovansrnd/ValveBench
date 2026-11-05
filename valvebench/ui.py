@@ -14,6 +14,8 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from . import calib, dsp, measure as m, signals, store, vinyl  # noqa: E402
+from .gainmatch import GainTracker  # noqa: E402
+from .gainview import GainDeltaView  # noqa: E402
 from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices  # noqa: E402
 from .plot import Plot  # noqa: E402
 
@@ -204,10 +206,14 @@ class LivePage(Gtk.Box):
         self.clock_label = Gtk.Label(label="RMS · Peak · Hold", xalign=1)
         self.timer = None
         self.last_generator_settings = None
+        self.tracker = GainTracker()
+        self.delta_view = GainDeltaView()
+        self.tol = spin("Допуск ΔG, дБ", 0.01, 2.0, 0.01, 0.10, 2, "зелёная зона индикатора")
+        self._delta_error_shown = False
 
         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         controls.set_size_request(310, -1)
-        controls.append(group("Генератор — параметры", self.f, self.lv, self.route))
+        controls.append(group("Генератор — параметры", self.f, self.lv, self.route, self.tol))
         # Единственная кнопка генератора находится на главном измерительном экране.
         # Это тот же ToggleButton, состояние которого управляет аудиодвижком.
         self.gen_action = self.win.generator_btn
@@ -223,6 +229,8 @@ class LivePage(Gtk.Box):
         controls.append(hint)
         controls.append(self.vlabel)
         controls.append(button("Сбросить Peak Hold и CLIP", self.reset_holds))
+        controls.append(button("ΔG: принять текущую разность за ноль", self.tare_delta))
+        controls.append(button("ΔG: сбросить ноль", self.clear_tare))
         controls.append(self.status_label)
         controls.append(self.clip_label)
         controls.append(self.xrun_label)
@@ -246,6 +254,7 @@ class LivePage(Gtk.Box):
         self.clock_label.add_css_class("dim-label")
         header.append(self.clock_label)
         right.append(header)
+        right.append(self.delta_view)
 
         meters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=26)
         meters.set_vexpand(True)
@@ -277,6 +286,36 @@ class LivePage(Gtk.Box):
         self.meter_l.reset_holds()
         self.meter_r.reset_holds()
 
+    def tare_delta(self):
+        """Принять текущую ΔG за ноль: подай один и тот же сигнал в заведомо одинаковые каналы
+        (петля ЦАП→АЦП или эталонная лампа), нажми — и далее показывается разница относительно них."""
+        if self.tracker.last_raw is None:
+            self.win.toast("ΔG: пока нет измерения — подай тест в L + R")
+            return
+        self.tracker.tare()
+        self.win.toast(f"ΔG: ноль сдвинут на {self.tracker.tare_db:+.3f} дБ")
+
+    def clear_tare(self):
+        self.tracker.clear_tare()
+        self.win.toast("ΔG: ноль сброшен")
+
+    def _update_delta(self):
+        """Обновить индикатор ΔG. Сбой здесь не должен останавливать основные метры."""
+        try:
+            be, fs = self.win.be, self.win.rig_fs()
+            if not self.generator_active() or self.last_generator_settings is None:
+                self.delta_view.set_state({"valid": False, "msg": "Подай тестовый сигнал L + R"},
+                                          self.tol.get_value())
+                return
+            freq, gen_db, route = self.last_generator_settings
+            state = self.tracker.update(be.live_recent(0.6), fs, freq, gen_db, route,
+                                        self.win.cal, now=GLib.get_monotonic_time() / 1e6)
+            self.delta_view.set_state(state, self.tol.get_value())
+        except Exception as exc:  # noqa: BLE001
+            if not self._delta_error_shown:
+                self._delta_error_shown = True
+                self.win.toast(f"Индикатор ΔG отключён: {type(exc).__name__}: {exc}")
+
     def sync_generator_button(self, active, enabled):
         self.gen_action.set_sensitive(bool(enabled))
         if active:
@@ -293,6 +332,7 @@ class LivePage(Gtk.Box):
 
     def apply(self):
         be = self.win.be
+        self.tracker.reset()
         if be is None or not be.live_running:
             return
         if not self.generator_active():
@@ -403,6 +443,7 @@ class LivePage(Gtk.Box):
             self.clock_label.set_text("ΔG недоступна: тест подан только в один канал")
         else:
             self.clock_label.set_text("RMS / Peak / Peak Hold · входные уровни dBFS")
+        self._update_delta()
         return True
 
 

@@ -1,7 +1,0 @@
-__pycache__/
-*.py[cod]
-*.wav
-*.csv
-*.json
-.venv/
-venv/

@@ -165,12 +165,23 @@ def text_thd(res):
                  + (f" | вход DUT {fmt_v(inf['dut_in_v'])}" if inf["dut_in_v"] else "")
                  + (f" | усиление {inf['gain_db']:+.2f} дБ" if inf["gain_db"] is not None else ""))
         residual_dbfs = r["level_dbfs"] + r["thdn_db"]
-        L.append(f"  THD    {r['thd_pct']:.5f} %   ({r['thd_db']:.1f} дБ)")
+        if r.get("thd_bound"):
+            L.append(f"  THD    ≤ {r['thd_pct']:.5f} %   (≤ {r['thd_db']:.1f} дБ)  — гармоники не выше шума анализа; "
+                     "это верхняя граница, а не измеренное значение")
+        else:
+            extra = ""
+            if r.get("thd_upper_db") is not None and r["thd_upper_db"] - r["thd_db"] > 1.0:
+                extra = f"  [по достоверным линиям; верхняя граница {r['thd_upper_db']:.1f} дБ]"
+            L.append(f"  THD    {r['thd_pct']:.5f} %   ({r['thd_db']:.1f} дБ){extra}")
+        if r.get("line_floor_dbc") is not None:
+            L.append(f"  Пол анализа гармоник: {r['line_floor_dbc']:.1f} dBc ({r['level_dbfs'] + r['line_floor_dbc']:.1f} dBFS) "
+                     f"· когерентные линии, усреднение {r['blocks']} с")
         L.append(f"  THD+N  {r['thdn_pct']:.5f} %   ({r['thdn_db']:.1f} dBc; остаток {residual_dbfs:.1f} dBFS)")
         L.append(f"  Шум без гармоник в полосе 20 Гц–{min(20000, r.get('band_hi', 20000))} Гц: "
                  f"{r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)")
         L.append("  гармоники: " + "  ".join(
-            f"H{h['h']} {h['dbc']:.1f} dBc ({r['level_dbfs'] + h['dbc']:.1f} dBFS)" for h in r["harmonics"]))
+            f"H{h['h']} {'≤' if h.get('bound') else ''}{h['dbc']:.1f} dBc ({r['level_dbfs'] + h['dbc']:.1f} dBFS)"
+            for h in r["harmonics"]))
         if r["hum"]:
             L.append("  фон, дБc: " + "  ".join(f"{h['f']:.0f} Гц {h['dbc']:.1f}" for h in r["hum"]))
     return "\n".join(L + [f"! {w}" for w in res["warnings"]])
@@ -193,7 +204,8 @@ def thd_vs_level(rig, f=1000.0, levels=None, nharm=9):
             try:
                 r = rig._tone_an(w, c, k, nharm)
                 rows.append({"gen": lv, "in": r["level_dbfs"], "thd_pct": r["thd_pct"],
-                             "thdn_pct": r["thdn_pct"], "thd_db": r["thd_db"], "thdn_db": r["thdn_db"]})
+                             "thdn_pct": r["thdn_pct"], "thd_db": r["thd_db"], "thdn_db": r["thdn_db"],
+                             "bound": bool(r.get("thd_bound"))})
             except ValueError:
                 rows.append({"gen": lv, "in": None, "thd_pct": float("nan"), "thdn_pct": float("nan"),
                              "thd_db": float("nan"), "thdn_db": float("nan")})
@@ -207,7 +219,7 @@ def text_thd_level(res):
         L.append(f"\n[{c}]   ген dBFS   вх АЦП dBFS   THD %      THD+N %")
         for r in rows:
             L.append(f"      {r['gen']:7.1f}   {r['in'] if r['in'] is not None else float('nan'):10.2f}   "
-                     f"{r['thd_pct']:.5f}   {r['thdn_pct']:.5f}")
+                     f"{'≤' if r.get('bound') else ' '}{r['thd_pct']:.5f}   {r['thdn_pct']:.5f}")
     return "\n".join(L + [f"! {w}" for w in res["warnings"]])
 
 

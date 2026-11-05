@@ -113,6 +113,37 @@ class Block:
         return float(np.sum(self.freq[a:b] * p) / s) if s > 0 else f
 
 
+# ---------------------------------------------------- когерентные линии (rect)
+#
+# Когда ЦАП и АЦП тактируются одним кварцем (проверяется coh_err), тон — ровно
+# целое число периодов в окне. Тогда прямоугольное окно не даёт утечки, а каждая
+# гармоника занимает ОДИН бин: в линию попадает шум одного бина, а не 11 бинов
+# лепестка BH (≈ −10 дБ), плюс усреднение M окон (−10·log10 M). Для петли
+# E-MU это опускает измерительный пол гармоник с ≈ −117 до ≈ −139 дБc.
+
+COH_TOL_BINS = 0.002       # допустимая расстройка тона относительно сетки бинов
+MARGIN_OK_DB = 6.0         # линия «достоверна», если выше локального пола на столько
+
+
+def _rect_power(x):
+    """Мощность (rms²) каждого бина при прямоугольном окне."""
+    x = np.asarray(x, dtype=np.float64)
+    n = x.size
+    P = 2.0 * np.abs(np.fft.rfft(x)) ** 2 / (n * n)
+    P[0] *= 0.5
+    if n % 2 == 0:
+        P[-1] *= 0.5
+    return P
+
+
+def _local_floor(P, k, skip, half=40, guard=2):
+    """Средняя мощность бина рядом с линией k без самих линий (skip — булева маска)."""
+    lo, hi = max(1, k - half), min(P.size, k + half + 1)
+    idx = np.arange(lo, hi)
+    keep = (np.abs(idx - k) > guard) & ~skip[lo:hi]
+    return float(np.mean(P[idx[keep]])) if np.any(keep) else 0.0
+
+
 def _blocks(x, n):
     m = len(x) // n
     if m < 1:
@@ -145,38 +176,88 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     k0 = lo + int(np.argmax(Pdir[lo:hi]))
     f_est = Block.centroid(_Shim(ref, Pdir), k0 * df)
     coh_err = f_est / df - round(f_est / df)
-    if abs(coh_err) > 0.05:
-        warn.append(f"тон не когерентен окну (сдвиг {coh_err:+.2f} бина): частоты ЦАП и АЦП "
-                    "расходятся, усреднение отключено")
-        avg_block = ref
-        M_eff = 1
-    else:
-        avg_block = Block(blocks.mean(axis=0), fs)
-        M_eff = M
 
     half_f = min(half, max(1, (k0 - 1) // 2))
-    Pf = float(np.sum(avg_block.P[max(0, k0 - half_f): k0 + half_f + 1]))
-    if Pf <= 0:
-        raise ValueError("тон не найден")
-
     nyq_lim = 0.45 * fs
     b_lo, b_hi = band[0], min(band[1], nyq_lim)
+    coherent = abs(coh_err) <= COH_TOL_BINS and abs(f_est - k0 * df) <= COH_TOL_BINS * df
     harm = []
     masked = np.zeros(Pdir.size, dtype=bool)
     masked[max(0, k0 - half_f): k0 + half_f + 1] = True
-    ph = 0.0
-    for h in range(2, nharm + 1):
-        fh = h * f_est
-        if fh > b_hi:
-            break
-        kh = int(round(fh / df))
-        a, b = max(0, kh - half_f), kh + half_f + 1
-        p = float(np.sum(avg_block.P[a:b]))
-        masked[a:b] = True
-        ph += p
-        harm.append({"h": h, "f": fh, "dbc": db10(p / Pf) / 1.0 if p > 0 else -300.0,
-                     "pct": 100.0 * math.sqrt(p / Pf)})
-    # dbc выше посчитан как 10log10(P/Pf) = 20log10(A/A0) — корректно
+
+    if coherent:
+        # ---- гармоники по одиночным бинам синхронно усреднённого периода
+        Pr = _rect_power(blocks.mean(axis=0))
+        Pf = float(Pr[k0])
+        hk = []
+        for h in range(2, nharm + 1):
+            fh = h * k0 * df
+            if fh > b_hi:
+                break
+            hk.append((h, fh, int(round(fh / df))))
+        skip = np.zeros(Pr.size, dtype=bool)
+        for kk in [k0] + [k for _, _, k in hk]:
+            skip[max(0, kk - 2): kk + 3] = True
+        for m_ in range(1, 7):                                  # сетевой фон не считаем «полом»
+            km = int(round(m_ * mains / df)) if mains > 0 else 0
+            if 0 < km < Pr.size:
+                skip[max(0, km - 2): km + 3] = True
+        ph_corr = ph_raw = 0.0
+        floors = []
+        for h, fh, kh in hk:
+            p_line = float(Pr[kh])
+            p_floor = _local_floor(Pr, kh, skip)
+            margin = db10(p_line / p_floor) if p_floor > 0 and p_line > 0 else 99.0
+            ok = margin >= MARGIN_OK_DB
+            p_corr = max(p_line - p_floor, 0.0) if ok else 0.0
+            ph_corr += p_corr
+            ph_raw += p_line
+            floors.append(p_floor)
+            masked[max(0, kh - half_f): kh + half_f + 1] = True
+            shown = p_corr if ok else p_line          # недостоверная линия — верхняя граница
+            harm.append({"h": h, "f": fh, "dbc": db10(shown / Pf) if shown > 0 else -300.0,
+                         "pct": 100.0 * math.sqrt(shown / Pf), "bound": not ok,
+                         "raw_dbc": db10(p_line / Pf) if p_line > 0 else -300.0,
+                         "floor_dbc": db10(p_floor / Pf) if p_floor > 0 else -300.0,
+                         "margin_db": margin, "credible": ok})
+        ph = ph_corr
+        thd_upper = math.sqrt(ph_raw / Pf)
+        thd_bound = bool(hk) and not any(hh["credible"] for hh in harm)
+        if thd_bound:                      # ни одной достоверной гармоники: честно — только «не выше»
+            ph = ph_raw
+        line_floor_dbc = db10(float(np.mean(floors)) / Pf) if floors else None
+        line_mode = "rect"
+        avg_block = Block(blocks.mean(axis=0), fs)
+    else:
+        if abs(coh_err) > 0.05:
+            warn.append(f"тон не когерентен окну (сдвиг {coh_err:+.2f} бина): частоты ЦАП и АЦП "
+                        "расходятся, усреднение отключено")
+            avg_block = ref
+        else:
+            avg_block = Block(blocks.mean(axis=0), fs)
+            warn.append(f"сдвиг тона {coh_err:+.4f} бина > {COH_TOL_BINS}: гармоники по лепестку BH "
+                        "(пол линии выше на ≈10 дБ)")
+        Pf = float(np.sum(avg_block.P[max(0, k0 - half_f): k0 + half_f + 1]))
+        if Pf <= 0:
+            raise ValueError("тон не найден")
+        ph = 0.0
+        for h in range(2, nharm + 1):
+            fh = h * f_est
+            if fh > b_hi:
+                break
+            kh = int(round(fh / df))
+            a, b = max(0, kh - half_f), kh + half_f + 1
+            p = float(np.sum(avg_block.P[a:b]))
+            masked[a:b] = True
+            ph += p
+            harm.append({"h": h, "f": fh, "dbc": db10(p / Pf) if p > 0 else -300.0,
+                         "pct": 100.0 * math.sqrt(p / Pf), "bound": False, "credible": None})
+        thd_upper = math.sqrt(ph / Pf)
+        thd_bound = False
+        line_floor_dbc = None
+        line_mode = "bh"
+    if Pf <= 0:
+        raise ValueError("тон не найден")
     thd = math.sqrt(ph / Pf)
 
     ka, kb = max(1, int(b_lo / df)), min(Pdir.size, int(b_hi / df) + 1)
@@ -205,8 +286,10 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     return {
         "f0": f_est, "n": n, "blocks": M, "coh_err_bins": coh_err,
         "level_dbfs": rms_dbfs(math.sqrt(Pf)), "rms": math.sqrt(Pf),
-        "harmonics": harm,
+        "harmonics": harm, "line_mode": line_mode, "line_floor_dbc": line_floor_dbc,
         "thd_pct": 100.0 * thd, "thd_db": db20(thd),
+        "thd_upper_pct": 100.0 * thd_upper, "thd_upper_db": db20(thd_upper),
+        "thd_bound": thd_bound,
         "thdn_pct": 100.0 * math.sqrt(p_dn / Pf_dir), "thdn_db": db10(p_dn / Pf_dir),
         "noise_dbc": db10(p_n / Pf_dir),            # шум+фон без гармоник
         "noise_dbfs": rms_dbfs(math.sqrt(p_n)),

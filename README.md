@@ -1,4 +1,4 @@
-# ValveBench 0.1.3
+# ValveBench 0.1.4
 
 **ValveBench** — измерительная лаборатория для разработки и настройки аналоговых аудиотрактов, прежде всего ламповых фонокорректоров. Linux / Ubuntu, Python, GTK4 + Libadwaita, NumPy/SciPy, ALSA.
 
