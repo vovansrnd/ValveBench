@@ -69,7 +69,10 @@ class GainTracker:
         if value is None:
             value = self.last_raw
         if value is not None:
-            self.tare_db += value
+            # "Принять текущее значение за ноль" задаёт новую опорную точку.
+            # Нельзя накапливать поправку при повторном нажатии: это сдвинет
+            # индикатор в противоположную сторону на уже учтённую ΔG.
+            self.tare_db = float(value)
             self.reset()
         return self.tare_db
 
@@ -81,8 +84,10 @@ class GainTracker:
         """ring — последний захват (N, 2). Возвращает словарь состояния для индикатора."""
         n = int(round(WINDOW_S * fs))
         if route != 0:
+            self.reset()
             return {"valid": False, "msg": "ΔG: подай тест в оба канала (L + R)"}
         if ring is None or len(ring) < n:
+            self.reset()
             return {"valid": False, "msg": "накопление данных…"}
         seg = ring[-n:]
         amps, phs, res = [], [], []
@@ -91,8 +96,12 @@ class GainTracker:
             amps.append(a); phs.append(ph); res.append(r)
         lv = [to_db(a / 1.0) for a in amps]               # dBFS пика синуса (0 dBFS = полный синус)
         if min(amps) < 1e-6:
+            self.reset()
             return {"valid": False, "msg": "на входе нет тона: проверь кабели и частоту"}
         snr = [to_db(a / math.sqrt(2.0)) - to_db(max(r, 1e-12)) for a, r in zip(amps, res)]
+        if min(snr) < 15.0:
+            self.reset()
+            return {"valid": False, "msg": f"недостаточный SNR для сравнения каналов ({min(snr):.1f} dB; нужно ≥15 dB)"}
         gains = None
         calibrated = False
         if cal is not None:

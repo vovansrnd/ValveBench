@@ -104,9 +104,10 @@ class Rig:
         return {"dut_in_v": self.cal.dut_in_v(gen_dbfs, ch), "out_v": self.cal.in_v(rec_dbfs, ch),
                 "gain_db": self.cal.gain_db(gen_dbfs, rec_dbfs, ch)}
 
-    def _tone_an(self, win, ch, k, nharm=9):
+    def _tone_an(self, win, ch, k, nharm=9, coherent_line_floors=None):
         return dsp.analyze_tone(win[:, ch], self.fs, self.f_of(k), self.n, nharm=nharm,
-                                band=(20.0, self.cal["band_hi"]), mains=self.cal["mains"])
+                                band=(20.0, self.cal["band_hi"]), mains=self.cal["mains"],
+                                coherent_line_floors=coherent_line_floors)
 
 
 # ------------------------------------------------------------------ проверка такта
@@ -166,13 +167,15 @@ def text_thd(res):
                  + (f" | усиление {inf['gain_db']:+.2f} дБ" if inf["gain_db"] is not None else ""))
         residual_dbfs = r["level_dbfs"] + r["thdn_db"]
         if r.get("thd_bound"):
-            L.append(f"  THD    ≤ {r['thd_pct']:.5f} %   (≤ {r['thd_db']:.1f} дБ)  — гармоники не выше шума анализа; "
-                     "это верхняя граница, а не измеренное значение")
+            L.append(f"  THD    не обнаружен выше порога достоверности; сырая сумма гармонических бинов "
+                     f"(включая шум): {r['thd_upper_pct']:.5f} % ({r['thd_upper_db']:.1f} дБ)")
+        elif r.get("thd_partial"):
+            L.append(f"  THD обнаруженных гармоник: {r['thd_pct']:.5f} % ({r['thd_db']:.1f} дБ); "
+                     f"неразрешённые линии: сырой суммарный уровень {r['thd_upper_pct']:.5f} % ({r['thd_upper_db']:.1f} дБ)")
         else:
-            extra = ""
-            if r.get("thd_upper_db") is not None and r["thd_upper_db"] - r["thd_db"] > 1.0:
-                extra = f"  [по достоверным линиям; верхняя граница {r['thd_upper_db']:.1f} дБ]"
-            L.append(f"  THD    {r['thd_pct']:.5f} %   ({r['thd_db']:.1f} дБ){extra}")
+            L.append(f"  THD    {r['thd_pct']:.5f} %   ({r['thd_db']:.1f} дБ)")
+        if r.get("phase_coherence") is not None:
+            L.append(f"  Фазовая согласованность блоков: {r['phase_coherence']:.4f}")
         if r.get("line_floor_dbc") is not None:
             L.append(f"  Пол анализа гармоник: {r['line_floor_dbc']:.1f} dBc ({r['level_dbfs'] + r['line_floor_dbc']:.1f} dBFS) "
                      f"· когерентные линии, усреднение {r['blocks']} с")
@@ -205,7 +208,8 @@ def thd_vs_level(rig, f=1000.0, levels=None, nharm=9):
                 r = rig._tone_an(w, c, k, nharm)
                 rows.append({"gen": lv, "in": r["level_dbfs"], "thd_pct": r["thd_pct"],
                              "thdn_pct": r["thdn_pct"], "thd_db": r["thd_db"], "thdn_db": r["thdn_db"],
-                             "bound": bool(r.get("thd_bound"))})
+                             "bound": bool(r.get("thd_bound")), "partial": bool(r.get("thd_partial")),
+                             "thd_upper_pct": r.get("thd_upper_pct"), "thd_upper_db": r.get("thd_upper_db")})
             except ValueError:
                 rows.append({"gen": lv, "in": None, "thd_pct": float("nan"), "thdn_pct": float("nan"),
                              "thd_db": float("nan"), "thdn_db": float("nan")})

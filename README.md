@@ -1,4 +1,4 @@
-# ValveBench 0.1.4
+# ValveBench 0.1.5
 
 **ValveBench** — измерительная лаборатория для разработки и настройки аналоговых аудиотрактов, прежде всего ламповых фонокорректоров. Linux / Ubuntu, Python, GTK4 + Libadwaita, NumPy/SciPy, ALSA.
 
@@ -89,7 +89,7 @@
 2. Проверяет отношение частот ЦАП/АЦП контрольным тоном 1 кГц.
 3. Повторяет измерение тона на нескольких уровнях.
 4. Считает уровни ADC, потери петли, THD, THD+N, остаток в dBFS, шум без гармоник, H2…H9, цифровой запас и повторяемость.
-5. Сравнивает каждую гармоническую линию с измеренным локальным шумовым полом в окне около ±5 Гц. Линия менее чем на 6 дБ выше локального пола помечается как сомнительная; это диагностическая подсказка, не формальный бюджет неопределённости.
+5. Для когерентного THD сравнивает каждую линию с широкополосным шумом в том же одном DFT-бине (с поправкой на усреднение блоков) и с устойчивыми узкополосными spur, обнаруженными в предварительной записи тишины на тех же бинах. Отдельно печатает широкую проверку шумового окружения ±5 Гц; она диагностическая и не является тем же порогом, что одно-биновое решение.
 6. Повторно записывает тишину после серии, чтобы можно было увидеть изменение фона.
 
 В отчёте `THD+N dBc` — остаток относительно измеренного основного тона; рядом выводится абсолютный остаток dBFS. Например, при основном тоне −25 dBFS и THD+N −85 dBc остаток будет примерно −110 dBFS. Это не означает шумовой пол −85 dBFS.
@@ -149,3 +149,21 @@
 - Настройки и калибровка: `~/.config/valvebench/config.json`.
 - Результаты измерений JSON: `~/.local/share/valvebench/`.
 - Текст/CSV loopback: путь задаётся параметрами `--report` и `--csv`.
+
+
+## 0.1.5: coherent harmonic analysis
+
+Когерентное измерение фазонормирует комплексные гармоники по фазе фундаментального тона каждого блока; смотрите `phase coherence` в отчёте. Если линии ниже порога, THD не выдаётся как точное значение: см. `THD detected lines` / `raw harmonic-bin sum`. Порог когерентной линии — 10 dB над суммой оценки случайного однобинового шума (с поправкой на число блоков) и устойчивого spur, найденного в предварительной записи тишины. Это инженерная классификация, а не метрологическая неопределённость.
+
+
+## 0.1.5 — coherent harmonic floor and Gain Match validation
+
+The coherent THD estimator phase-normalizes harmonic phasors per block. It uses a
+one-bin broadband noise estimate from neighbouring bins and an additional silent-input
+profile for stable coherent spurs at the exact harmonic bins. These floors are combined
+before a line is marked as detected. The wider ±5 Hz silence comparison remains a
+separate diagnostic and is not the same bandwidth as the coherent single-bin decision.
+
+Run the deterministic software checks with `./run.sh selftest`. For the E-MU hardware
+loopback, use the direct ALSA `hw:2,0` line-output-to-line-input connection and compare
+repeated results; do not treat simulator values as physical measurements.

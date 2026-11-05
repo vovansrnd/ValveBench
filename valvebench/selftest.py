@@ -155,10 +155,87 @@ def run_selftest():
     rh = dsp.analyze_tone(xh, fs2, 1000.0, n2, nharm=4, mains=0)
     hb = {q["h"]: q for q in rh["harmonics"]}
     check("Гармоники по когерентным линиям: H2 −112 / H3 −125 дБc под шумом −110 dBFS",
-          rh["line_mode"] == "rect" and abs(hb[2]["dbc"] + 112.0) < 1.5 and abs(hb[3]["dbc"] + 125.0) < 2.5
+          rh["line_mode"] == "rect-phase-normalized" and abs(hb[2]["dbc"] + 112.0) < 1.5 and abs(hb[3]["dbc"] + 125.0) < 2.5
           and hb[2]["credible"] and not hb[4]["credible"],
           f"режим={rh['line_mode']}; H2={hb[2]['dbc']:.1f}, H3={hb[3]['dbc']:.1f}, H4 ≤{hb[4]['dbc']:.1f}; "
           f"пол линии {rh['line_floor_dbc']:.1f} dBc")
+
+    # Сдвиг фазы между отдельными блоками не должен гасить фундамент и гармоники.
+    # Такой сдвиг может возникнуть при изменении точки старта захвата; гармоники
+    # нелинейного отклика должны сохранять фазу относительно h*phi(fundamental).
+    phase_blocks = []
+    for j in range(8):
+        tt = np.arange(n2) / fs2
+        ph = 0.47 * j
+        sig = amp * np.sin(2 * np.pi * 1000 * tt + ph)
+        sig += amp * 10 ** (-112.0 / 20) * np.sin(2 * np.pi * 2000 * tt + 2 * ph + 0.4)
+        sig += amp * 10 ** (-125.0 / 20) * np.sin(2 * np.pi * 3000 * tt + 3 * ph - 0.2)
+        phase_blocks.append(sig)
+    xphase = np.concatenate(phase_blocks)
+    rp = dsp.analyze_tone(xphase, fs2, 1000.0, n2, nharm=4, mains=0)
+    hp = {q["h"]: q for q in rp["harmonics"]}
+    check("Когерентные гармоники сохраняются при фазовом дрейфе между блоками",
+          rp["line_mode"] == "rect-phase-normalized" and abs(rp["level_dbfs"] - (-25.39)) < 0.1
+          and abs(hp[2]["raw_dbc"] + 112.0) < 0.1 and abs(hp[3]["raw_dbc"] + 125.0) < 0.2
+          and rp["phase_coherence"] < 0.8,
+          f"уровень={rp['level_dbfs']:.2f} dBFS; H2={hp[2]['raw_dbc']:.1f}; H3={hp[3]['raw_dbc']:.1f}; "
+          f"phase coherence={rp['phase_coherence']:.3f}")
+
+    # Чистый когерентный тон с белым шумом не должен выдавать случайные бины
+    # за достоверные гармоники при консервативном пороге 10 dB.
+    rng3 = np.random.default_rng(1234)
+    t3 = np.arange(8 * n2) / fs2
+    clean = amp * np.sin(2 * np.pi * 1000 * t3)
+    clean += rng3.normal(0, 10 ** (-110 / 20) / math.sqrt(2) * math.sqrt(0.5 * fs2 / 20000), clean.size)
+    rc = dsp.analyze_tone(clean, fs2, 1000.0, n2, nharm=9, mains=0)
+    check("Чистый тон + шум: случайные гармоники не проходят порог достоверности",
+          not any(q["credible"] for q in rc["harmonics"]),
+          f"достоверных линий={sum(q['credible'] for q in rc['harmonics'])}; "
+          f"порог={dsp.MARGIN_OK_DB:.1f} dB")
+
+    # Профиль тишины должен отделять устойчивую одночастотную линию от белого шума.
+    fs3, n3, m3 = 96000, 96000, 10
+    tt3 = np.arange(m3 * n3) / fs3
+    rng4 = np.random.default_rng(4401)
+    base_noise = rng4.normal(0.0, 1.0e-8, tt3.size)
+    spur_amp = dsp.dbfs_to_amp(-140.0)
+    silent_with_spur = base_noise + spur_amp * np.sin(2 * np.pi * 3000.0 * tt3 + 0.2)
+    spur_profile = dsp.coherent_spur_profile(silent_with_spur, fs3, n3)
+    k3 = 3000
+    spur_level = dsp.rms_dbfs(math.sqrt(spur_profile["spur_power"][k3]))
+    spur_coh = float(spur_profile["phase_coherence"][k3])
+    noise_only = rng4.normal(0.0, 1.0e-8, tt3.size)
+    noise_profile = dsp.coherent_spur_profile(noise_only, fs3, n3)
+    noise_spur = float(noise_profile["spur_power"][k3])
+    check("Silence profile: stable 3-kHz spur is found, random noise is rejected",
+          abs(spur_level + 140.0) < 2.0 and spur_coh > 0.95 and noise_spur == 0.0,
+          f"spur={spur_level:.1f} dBFS, coherence={spur_coh:.3f}; noise-only spur power={noise_spur:.2e}")
+
+    # Устойчивый spur, присутствующий и в тишине, не должен объявляться новой
+    # гармоникой; достаточно сильная добавочная гармоника поверх него должна.
+    t_signal = np.arange(4 * n3) / fs3
+    main_amp = dsp.dbfs_to_amp(-20.0)
+    spur_component = spur_amp * np.sin(2 * np.pi * 3000.0 * t_signal + 0.2)
+    weak_h3_amp = dsp.dbfs_to_amp(-137.0)  # лишь на 3 dB выше baseline spur по мощности
+    weak_signal = (main_amp * np.sin(2 * np.pi * 1000.0 * t_signal) + spur_component
+                   + weak_h3_amp * np.sin(2 * np.pi * 3000.0 * t_signal + 0.2)
+                   + rng4.normal(0.0, 1.0e-8, t_signal.size))
+    p_spur = float(spur_profile["spur_power"][k3])
+    weak_result = dsp.analyze_tone(weak_signal, fs3, 1000.0, n3, nharm=4, mains=0,
+                                   coherent_line_floors={3: p_spur})
+    weak_harm = next(q for q in weak_result["harmonics"] if q["h"] == 3)
+
+    strong_h3_amp = dsp.dbfs_to_amp(-125.0)
+    strong_signal = (main_amp * np.sin(2 * np.pi * 1000.0 * t_signal) + spur_component
+                     + strong_h3_amp * np.sin(2 * np.pi * 3000.0 * t_signal + 0.2)
+                     + rng4.normal(0.0, 1.0e-8, t_signal.size))
+    strong_result = dsp.analyze_tone(strong_signal, fs3, 1000.0, n3, nharm=4, mains=0,
+                                     coherent_line_floors={3: p_spur})
+    strong_harm = next(q for q in strong_result["harmonics"] if q["h"] == 3)
+    check("THD gate includes stationary spur from silence baseline",
+          not weak_harm["credible"] and strong_harm["credible"]
+          and weak_harm["stable_spur_floor_dbfs"] is not None,
+          f"weak H3 margin={weak_harm['margin_db']:.1f} dB (rejected); strong H3 margin={strong_harm['margin_db']:.1f} dB (accepted)")
 
     # Gain Match: ΔG известной пары каналов, tare и классификация.
     be = SimBackend(SimChannel(gain=3.0, a3=0.02, noise_dbfs=-90, hum50_dbfs=-50),
@@ -174,10 +251,16 @@ def run_selftest():
     truth = 20 * math.log10(3.0 / 2.9)
     tr.tare()
     st2 = tr.update(be.live_recent(0.6), fs2, 1000.0, -20.0, 0, None, now=10.0)
-    check("Gain Match: ΔG пары 3.0/2.9 и ноль по эталону",
+    tr.tare()  # повторное принятие того же текущего значения не должно удвоить поправку
+    st3 = tr.update(be.live_recent(0.6), fs2, 1000.0, -20.0, 0, None, now=10.1)
+    tr.clear_tare()
+    st4 = tr.update(be.live_recent(0.6), fs2, 1000.0, -20.0, 0, None, now=10.2)
+    check("Gain Match: ΔG пары 3.0/2.9, повторный tare и сброс нуля",
           st["valid"] and abs(st["filt"] - truth) < 0.005 and abs(st2["delta"]) < 0.005
+          and abs(st3["delta"]) < 0.005 and abs(st4["delta"] - truth) < 0.005
           and gainmatch.classify(0.04, 0.05) == "ok" and gainmatch.pick_range(0.37, 0.05) == 0.5,
-          f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare {st2['delta']:+.4f} dB")
+          f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare={st2['delta']:+.4f}; "
+          f"повторный tare={st3['delta']:+.4f}; после сброса={st4['delta']:+.4f}")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}

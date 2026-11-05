@@ -71,33 +71,60 @@ def _capture_silence(rig: Rig, seconds: float, label: str) -> tuple[list[str], l
     return lines, rows, x
 
 
-def _noise_profiles(captures, fs):
-    """Average silent-input PSDs per channel for local harmonic confidence checks."""
+def _noise_profiles(captures, fs, n):
+    """Silent-input profiles: Welch PSD plus coherent narrow lines on exact DFT bins."""
     profiles = {}
     if not captures:
         return profiles
     per_channel = {"L": [], "R": []}
+    joined = {"L": [], "R": []}
     for capture in captures:
         for c, ch in ((0, "L"), (1, "R")):
-            result = dsp.analyze_noise(capture[:, c], fs, band=(20.0, min(20000.0, 0.45 * fs)))
+            seg = np.asarray(capture[:, c], dtype=np.float64)
+            result = dsp.analyze_noise(seg, fs, band=(20.0, min(20000.0, 0.45 * fs)))
             per_channel[ch].append((result["freq"], 10.0 ** (np.asarray(result["dens_dbfs"]) / 10.0)))
+            joined[ch].append(seg)
     for ch, entries in per_channel.items():
         freq = entries[0][0]
         density = np.mean([entry[1] for entry in entries], axis=0)
-        profiles[ch] = (freq, density, float(freq[1] - freq[0]))
+        silence = np.concatenate(joined[ch])
+        coherent = dsp.coherent_spur_profile(silence, fs, n, min_blocks=3)
+        profiles[ch] = {
+            "freq": freq,
+            "density": density,
+            "df": float(freq[1] - freq[0]),
+            "coherent": coherent,
+        }
     return profiles
 
 
 def _local_floor_dbfs(profile, f0, half_width_hz=5.0):
-    """Integrated silent-input noise near one harmonic, on the same sine dBFS reference."""
+    """Integrated silent-input noise around a line (broad ±5-Hz diagnostic only)."""
     if profile is None:
         return None
-    freq, density_ratio, df = profile
+    freq, density_ratio, df = profile["freq"], profile["density"], profile["df"]
     sel = (freq >= f0 - half_width_hz) & (freq <= f0 + half_width_hz)
     if not np.any(sel):
         return None
     power_ratio = float(np.sum(density_ratio[sel]) * df)
     return 10.0 * math.log10(max(power_ratio, 1e-300))
+
+
+def _coherent_line_floors(profile, frequency, rig, nharm=9):
+    """Stable silent-input spur power at harmonics, using the exact analysis bins."""
+    if profile is None or "coherent" not in profile:
+        return {}
+    coherent = profile["coherent"]
+    out = {}
+    for h in range(2, nharm + 1):
+        f = frequency * h
+        k = int(round(f / coherent["df"]))
+        if 0 <= k < len(coherent["spur_power"]):
+            coh = float(coherent["phase_coherence"][k])
+            p = float(coherent["spur_power"][k])
+            if coh >= coherent["coherence_min"] and p > 0.0:
+                out[h] = p
+    return out
 
 
 def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise_profiles=None) -> tuple[list[str], list[dict]]:
@@ -108,12 +135,15 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
     lines = [f"  Повтор {repeat}: DAC={level_dbfs:.1f} dBFS, f={rig.f_of(k):.3f} Гц"]
     rows = []
     for c, ch in ((0, "L"), (1, "R")):
-        r = rig._tone_an(win, c, k, nharm=9)
+        profile = (noise_profiles or {}).get(ch)
+        stable_floors = _coherent_line_floors(profile, frequency, rig, nharm=9)
+        r = rig._tone_an(win, c, k, nharm=9, coherent_line_floors=stable_floors)
         peak = float(np.max(np.abs(win[:, c])))
         peak_dbfs = float(dsp.db20(peak))
         loss = float(r["level_dbfs"] - level_dbfs)
         residual_dbfs = float(r["level_dbfs"] + r["thdn_db"])
         harmonics = {int(h["h"]): float(h["dbc"]) for h in r["harmonics"]}
+        harmonic_meta = {int(h["h"]): h for h in r["harmonics"]}
         row = {
             "frequency_hz": float(rig.f_of(k)), "generator_dbfs": float(level_dbfs),
             "repeat": int(repeat), "channel": ch,
@@ -121,6 +151,12 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
             "loop_gain_db": loss, "peak_dbfs": peak_dbfs,
             "headroom_db": -peak_dbfs,
             "thd_pct": float(r["thd_pct"]), "thd_db": float(r["thd_db"]),
+            "thd_upper_pct": float(r.get("thd_upper_pct", r["thd_pct"])),
+            "thd_upper_db": float(r.get("thd_upper_db", r["thd_db"])),
+            "thd_bound": bool(r.get("thd_bound", False)),
+            "thd_partial": bool(r.get("thd_partial", False)),
+            "line_mode": str(r.get("line_mode", "unknown")),
+            "phase_coherence": r.get("phase_coherence"),
             "thdn_pct": float(r["thdn_pct"]), "thdn_db": float(r["thdn_db"]),
             "thdn_residual_dbfs": residual_dbfs,
             "noise_only_dbfs": float(r["noise_dbfs"]),
@@ -129,16 +165,25 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
         }
         for h in range(2, 10):
             row[f"H{h}_dbc"] = harmonics.get(h)
+            if h in harmonic_meta:
+                hm = harmonic_meta[h]
+                row[f"H{h}_credible"] = hm.get("credible")
+                row[f"H{h}_margin_db"] = hm.get("margin_db")
+                row[f"H{h}_raw_dbc"] = hm.get("raw_dbc")
+                row[f"H{h}_floor_dbc"] = hm.get("floor_dbc")
+                row[f"H{h}_random_floor_dbc"] = hm.get("random_floor_dbc")
+                row[f"H{h}_stable_spur_floor_dbfs"] = hm.get("stable_spur_floor_dbfs")
+                row[f"H{h}_phase_coherence"] = hm.get("phase_coherence")
         rows.append(row)
-        htxt = " ".join(f"H{h} {harmonics[h]:.1f}" for h in range(2, 10) if h in harmonics)
+        htxt = " ".join(f"H{h} {'≤' if harmonic_meta[h].get('bound') else ''}{harmonics[h]:.1f}"
+                        for h in range(2, 10) if h in harmonics)
         confidence = {}
-        profile = (noise_profiles or {}).get(ch)
         if profile is not None:
             for h in range(2, 10):
                 if h in harmonics:
                     hf = frequency * h
                     local_floor = _local_floor_dbfs(profile, hf)
-                    abs_level = float(r["level_dbfs"] + harmonics[h])
+                    abs_level = float(r["level_dbfs"] + harmonic_meta[h].get("raw_dbc", harmonics[h]))
                     if local_floor is not None:
                         margin = abs_level - local_floor
                         confidence[h] = {"harmonic_abs_dbfs": abs_level,
@@ -147,18 +192,37 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
                         row[f"H{h}_absolute_dbfs"] = abs_level
                         row[f"H{h}_local_noise_dbfs"] = local_floor
                         row[f"H{h}_margin_db"] = margin
+        if r.get("thd_bound"):
+            thd_text = (f"THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов "
+                        f"(включает шум)={r.get('thd_upper_pct', r['thd_pct']):.6f}% "
+                        f"({r.get('thd_upper_db', r['thd_db']):.1f} dB)")
+        elif r.get("thd_partial"):
+            thd_text = (f"THD обнаруженных линий={r['thd_pct']:.6f}% ({r['thd_db']:.1f} dB); "
+                        f"сырая сумма бинов={r.get('thd_upper_pct', r['thd_pct']):.6f}% "
+                        f"({r.get('thd_upper_db', r['thd_db']):.1f} dB, включает шум)")
+        else:
+            thd_text = f"THD={r['thd_pct']:.6f}% ({r['thd_db']:.1f} dB)"
+        phase_text = (f" · phase coherence={r['phase_coherence']:.3f}"
+                      if r.get("phase_coherence") is not None else "")
         lines.append(
             f"    [{ch}] ADC fundamental={r['level_dbfs']:.2f} dBFS · loop Δ={loss:+.2f} dB · "
             f"peak={peak_dbfs:.2f} dBFS · headroom={-peak_dbfs:.2f} dB · "
-            f"THD={r['thd_pct']:.6f}% ({r['thd_db']:.1f} dB) · "
+            f"{thd_text} · "
             f"THD+N={r['thdn_pct']:.6f}% ({r['thdn_db']:.1f} dBc; остаток {residual_dbfs:.1f} dBFS) · "
-            f"noise-only={r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)")
+            f"noise-only={r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)" + phase_text)
+        if r.get("line_floor_dbc") is not None:
+            lines.append(f"      Средний однобиновый пол когерентного оценивателя: {r['line_floor_dbc']:.1f} dBc "
+                         f"({r['level_dbfs'] + r['line_floor_dbc']:.1f} dBFS); порог линии {dsp.MARGIN_OK_DB:.0f} dB")
+        baseline_lines = [(h, hm) for h, hm in harmonic_meta.items() if hm.get("stable_spur_floor_dbfs") is not None]
+        if baseline_lines:
+            lines.append("      Устойчивые линии в записи тишины (учтены в пороге): " + " · ".join(
+                f"H{h}: {hm['stable_spur_floor_dbfs']:.1f} dBFS" for h, hm in baseline_lines))
         lines.append(f"      Гармоники относительно основного тона, dBc: {htxt}")
         if confidence:
-            ctext = " · ".join(f"H{h}: {v['margin_db']:+.1f} dB над локальным шумом "
+            ctext = " · ".join(f"H{h}: {v['margin_db']:+.1f} dB над шумом, интегрированным в ±5 Гц "
                                 f"(линия {v['harmonic_abs_dbfs']:.1f}, шум {v['local_noise_dbfs']:.1f} dBFS)"
                                 for h, v in confidence.items())
-            lines.append(f"      Достоверность линий (шумовая запись, полоса ±5 Гц): {ctext}")
+            lines.append(f"      Консервативное сравнение с шумовой записью (полоса ±5 Гц): {ctext}")
             weak = [h for h, v in confidence.items() if v["margin_db"] < 6.0]
             if weak:
                 lines.append(f"      ! Гармоники H{', H'.join(map(str, weak))} ближе 6 dB к локальному шумовому полу; не считать их точной характеристикой DAC/ADC.")
@@ -214,7 +278,7 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
 
     all_tone_rows = []
     if clock["ok"]:
-        profiles = _noise_profiles(silence_captures, rig.fs) if silence_captures else None
+        profiles = _noise_profiles(silence_captures, rig.fs, rig.n) if silence_captures else None
         for level in levels:
             lines.append(f"TONE LEVEL {float(level):.1f} dBFS")
             for repeat in range(1, repeats + 1):
@@ -243,16 +307,17 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
         lines.append("")
 
     lines.append("REPEATABILITY SUMMARY · median [min…max]")
-    lines.append(" level   ch   ADC level dBFS   loop Δ dB   THD %       THD+N dBc   noise-only dBFS   H2 dBc   H3 dBc")
+    lines.append(" level   ch   ADC level dBFS   loop Δ dB   THD detected %   THD+N dBc   noise-only dBFS   H2 dBc   H3 dBc")
     for level in levels:
         for ch in ("L", "R"):
             subset = [q for q in all_tone_rows if q["generator_dbfs"] == float(level) and q["channel"] == ch]
             if not subset:
                 continue
+            thd_prefix = "≤ " if all(q.get("thd_bound") for q in subset) else ("partial " if any(q.get("thd_partial") for q in subset) else "")
             lines.append(
                 f" {float(level):6.1f}  {ch}   {_fmt([q['adc_fundamental_dbfs'] for q in subset], 2):>17s} "
                 f"{_fmt([q['loop_gain_db'] for q in subset], 2):>12s} "
-                f"{_fmt([q['thd_pct'] for q in subset], 6):>12s} "
+                f"{thd_prefix}{_fmt([q['thd_pct'] for q in subset], 6):>12s} "
                 f"{_fmt([q['thdn_db'] for q in subset], 2):>12s} "
                 f"{_fmt([q['noise_only_dbfs'] for q in subset], 2):>17s} "
                 f"{_fmt([q.get('H2_dbc') for q in subset], 1):>9s} "
@@ -265,7 +330,9 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
         "- THD+N dBc is relative to the measured fundamental; residual absolute dBFS is also printed.",
         "- noise-only excludes the fundamental and detected harmonics; it is not the same as a silent-input noise measurement.",
         "- SILENCE BEFORE/AFTER is the integrated 20 Hz–20 kHz ADC noise while both DAC+ADC streams are open and DAC sends digital zero.",
-        "- Hn values are reported dBc relative to the fundamental. Local confidence compares each harmonic line with silent-input noise integrated over ±5 Hz; a margin below 6 dB is flagged as near/below the floor (diagnostic, not a formal uncertainty budget).",
+        "- Hn values are reported dBc relative to the fundamental. The coherent estimator compares its one-bin averaged line against (a) broadband one-bin noise divided by the signal block count and (b) stable coherent spurs detected in the silence recording on the same DFT bin. This is a conservative engineering detector, not a formal uncertainty budget.",
+        "- The separate ±5-Hz silence comparison integrates a wider band and is diagnostic only; do not compare its dB margin directly with the one-bin coherent threshold.",
+        "- Coherent harmonics are phase-normalized per block using h·phase(fundamental); phase_coherence reports stability of the fundamental phase across blocks.",
         "- ADC CLIP means samples reached 0.98 FS; it cannot detect every analogue front-end overload.",
         "- XRUN means ALSA playback underrun or capture overrun. It is a buffer-service failure, not clipping.",
         f"Total elapsed: {time.monotonic() - started:.1f} s",

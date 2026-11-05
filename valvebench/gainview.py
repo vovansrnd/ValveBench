@@ -81,7 +81,7 @@ class GainDeltaView(Gtk.DrawingArea):
 
         # справа: стабильность, уровни, фаза
         sig = st.get("sigma")
-        lines = [f"σ {'±%.4f dB' % sig if sig is not None else '…'} · 3 с",
+        lines = [f"разброс {'%.4f dB' % sig if sig is not None else '…'} · 3 с",
                  f"L {st['level_dbfs'][0]:.2f} · R {st['level_dbfs'][1]:.2f} dBFS",
                  f"SNR {min(st['snr_db']):.0f} dB · ΔΦ {st['phase_deg']:+.2f}°"]
         if st.get("gain_db"):

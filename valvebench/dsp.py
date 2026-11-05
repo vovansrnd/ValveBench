@@ -122,7 +122,7 @@ class Block:
 # E-MU это опускает измерительный пол гармоник с ≈ −117 до ≈ −139 дБc.
 
 COH_TOL_BINS = 0.002       # допустимая расстройка тона относительно сетки бинов
-MARGIN_OK_DB = 6.0         # линия «достоверна», если выше локального пола на столько
+MARGIN_OK_DB = 10.0        # консервативный порог для одного бина с поправкой на множественные проверки
 
 
 def _rect_power(x):
@@ -151,17 +151,77 @@ def _blocks(x, n):
     return np.asarray(x[: m * n], dtype=np.float64).reshape(m, n)
 
 
+def coherent_spur_profile(x, fs, n, min_blocks=3, coherence_min=None):
+    """Оценить устойчивые одночастотные линии в записи тишины по DFT-бинам.
+
+    Возвращает мощность *когерентных узкополосных составляющих* в каждом
+    прямоугольном DFT-бине (RMS², в тех же единицах, что и мощность линии в
+    analyze_tone), а также фазовую концентрацию. Широкополосный случайный шум
+    не должен попадать в этот профиль: из |mean(C)|² вычитается ожидаемая
+    шумовая составляющая mean(|C|²)/M. Линия принимается как стационарная,
+    только если её фазовая концентрация >= coherence_min.
+
+    Это дополнительный фон для гармонического детектора, не полноценная
+    метрологическая оценка неопределённости. Требуются полные окна одинаковой
+    длины n; для 1-Гц разрешения при 96 кГц обычно n=96000.
+    """
+    blocks = _blocks(np.asarray(x, dtype=np.float64), int(n))
+    m = int(blocks.shape[0])
+    if m < int(min_blocks):
+        raise ValueError(f"для профиля устойчивых линий нужно минимум {min_blocks} блоков, получено {m}")
+    if coherence_min is None:
+        # При малом числе блоков случайные комплексные шумовые векторы могут
+        # случайно выглядеть когерентными. Порог ужесточается для короткой
+        # silent-записи, чтобы не объявлять случайный бин устойчивым spur.
+        coherence_min = 0.99 if m <= 3 else (0.95 if m <= 5 else (0.90 if m <= 7 else 0.85))
+    blocks = blocks - np.mean(blocks, axis=1, keepdims=True)
+    X = np.fft.rfft(blocks, axis=1)
+    C = (2.0 / n) * X
+    if n % 2 == 0:
+        C[:, -1] *= 0.5
+    C[:, 0] *= 0.5
+    p_each = (np.abs(C) ** 2) / 2.0
+    mean_c = np.mean(C, axis=0)
+    mean_p = np.mean(p_each, axis=0)
+    coherence = np.abs(mean_c) / np.sqrt(np.maximum(np.mean(np.abs(C) ** 2, axis=0), 1e-300))
+    # Смещение |mean(C)|², которое остаётся даже у чистого случайного шума.
+    noise_bias = mean_p / max(m, 1)
+    p_coherent = np.maximum((np.abs(mean_c) ** 2) / 2.0 - noise_bias, 0.0)
+    p_coherent[coherence < float(coherence_min)] = 0.0
+    return {
+        "freq": np.fft.rfftfreq(int(n), 1.0 / float(fs)),
+        "spur_power": p_coherent,
+        "phase_coherence": coherence,
+        "mean_bin_power": mean_p,
+        "blocks": m,
+        "df": float(fs) / int(n),
+        "coherence_min": float(coherence_min),
+    }
+
+
 # --------------------------------------------------------------- один тон
 
 
-def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=HALF):
-    """THD, THD+N, гармоники, фон. x — установившийся сигнал из M·n отсчётов.
+def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=HALF,
+                 coherent_line_floors=None):
+    """THD, THD+N, гармоники и фон по установившемуся тону.
 
-    THD    — по синхронно усреднённому периоду: шум подавляется в √M раз, поэтому
-             гармоники ниже шумового пола видны.
-    THD+N  — по неусреднённым окнам (мощности усредняются): настоящий шум.
-             Фундаментальный лепесток исключается маской, а не вычитанием
-             мощностей — иначе ошибка оценки несущей забивает результат.
+    THD+N считается по усреднённым мощностям окон Блэкмана–Харриса; лепесток
+    несущей исключается маской.
+
+    При когерентном тоне гармоники оцениваются по прямоугольному DFT-бину.
+    Комплексные коэффициенты гармоник каждого блока нормируются на фазу
+    фундаментального тона (phi_h - h*phi_1), поэтому усреднение не теряет
+    сигнал при фазовом сдвиге между границами блоков. Это не заменяет проверку
+    когерентности частоты внутри окна: её по-прежнему задаёт coh_err.
+
+    Локальный широкополосный пол для coherent-оценки — средняя мощность
+    соседнего DFT-бина на один исходный блок, делённая на M для оценки среднего
+    комплексного коэффициента. Дополнительно coherent_line_floors может
+    передать мощность устойчивых одночастотных линий, заранее найденных в
+    записи тишины на тех же DFT-бинах. Она НЕ делится на M: стабильный spur не
+    исчезает от усреднения. Порог 10 dB — инженерный критерий обнаружения,
+    а не формальный доверительный интервал.
     """
     blocks = _blocks(x, n)
     M = blocks.shape[0]
@@ -172,7 +232,9 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     warn = []
 
     k0 = ref.k(f0)
-    lo, hi = max(1, k0 - 3), k0 + 4
+    lo, hi = max(1, k0 - 3), min(Pdir.size, k0 + 4)
+    if hi <= lo:
+        raise ValueError("частота основного тона вне анализируемой полосы")
     k0 = lo + int(np.argmax(Pdir[lo:hi]))
     f_est = Block.centroid(_Shim(ref, Pdir), k0 * df)
     coh_err = f_est / df - round(f_est / df)
@@ -185,113 +247,176 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     masked = np.zeros(Pdir.size, dtype=bool)
     masked[max(0, k0 - half_f): k0 + half_f + 1] = True
 
+    # Фаза несущей по каждому блоку — полезна и для когерентной оценки, и для
+    # диагностики: низкая coherence может указывать на фазовые сбросы/потерю
+    # отсчётов, даже если средний спектральный пик остался в нужном бине.
+    phase_coherence = None
+    phase_spread_deg = None
+
     if coherent:
-        # ---- гармоники по одиночным бинам синхронно усреднённого периода
-        Pr = _rect_power(blocks.mean(axis=0))
-        Pf = float(Pr[k0])
+        X = np.fft.rfft(blocks, axis=1)
+        fundamental = (2.0 / n) * X[:, k0]
+        fund_phase = np.angle(fundamental)
+        phase_coherence = float(abs(np.mean(np.exp(1j * fund_phase))))
+        phase_spread_deg = float(np.degrees(np.sqrt(max(0.0, -2.0 * np.log(max(phase_coherence, 1e-15))))))
+        fund_amp = np.abs(fundamental)
+        # Усредняем амплитуду, а не комплексный коэффициент: фазовые сдвиги
+        # между блоками не должны искусственно уменьшать измеренный уровень.
+        fund_peak = float(np.mean(fund_amp))
+        Pf = fund_peak * fund_peak / 2.0
+
+        # Средняя мощность одного исходного блока нужна для оценки шума в
+        # одном DFT-бине. Среднее комплексных коэффициентов по M блокам имеет
+        # шумовую мощность примерно в M раз ниже.
+        Psingle = np.mean((2.0 * np.abs(X) ** 2 / (n * n)), axis=0)
+        Psingle[0] *= 0.5
+        if n % 2 == 0:
+            Psingle[-1] *= 0.5
         hk = []
         for h in range(2, nharm + 1):
             fh = h * k0 * df
             if fh > b_hi:
                 break
-            hk.append((h, fh, int(round(fh / df))))
-        skip = np.zeros(Pr.size, dtype=bool)
+            kh = int(round(fh / df))
+            if kh <= 0 or kh >= Psingle.size:
+                break
+            hk.append((h, fh, kh))
+
+        skip = np.zeros(Psingle.size, dtype=bool)
         for kk in [k0] + [k for _, _, k in hk]:
-            skip[max(0, kk - 2): kk + 3] = True
-        for m_ in range(1, 7):                                  # сетевой фон не считаем «полом»
+            skip[max(0, kk - 2): min(Psingle.size, kk + 3)] = True
+        for m_ in range(1, 7):
             km = int(round(m_ * mains / df)) if mains > 0 else 0
-            if 0 < km < Pr.size:
-                skip[max(0, km - 2): km + 3] = True
-        ph_corr = ph_raw = 0.0
+            if 0 < km < Psingle.size:
+                skip[max(0, km - 2): min(Psingle.size, km + 3)] = True
+
+        detected_power = 0.0
+        raw_power = 0.0
         floors = []
         for h, fh, kh in hk:
-            p_line = float(Pr[kh])
-            p_floor = _local_floor(Pr, kh, skip)
-            margin = db10(p_line / p_floor) if p_floor > 0 and p_line > 0 else 99.0
-            ok = margin >= MARGIN_OK_DB
-            p_corr = max(p_line - p_floor, 0.0) if ok else 0.0
-            ph_corr += p_corr
-            ph_raw += p_line
-            floors.append(p_floor)
-            masked[max(0, kh - half_f): kh + half_f + 1] = True
-            shown = p_corr if ok else p_line          # недостоверная линия — верхняя граница
-            harm.append({"h": h, "f": fh, "dbc": db10(shown / Pf) if shown > 0 else -300.0,
-                         "pct": 100.0 * math.sqrt(shown / Pf), "bound": not ok,
-                         "raw_dbc": db10(p_line / Pf) if p_line > 0 else -300.0,
-                         "floor_dbc": db10(p_floor / Pf) if p_floor > 0 else -300.0,
-                         "margin_db": margin, "credible": ok})
-        ph = ph_corr
-        thd_upper = math.sqrt(ph_raw / Pf)
-        thd_bound = bool(hk) and not any(hh["credible"] for hh in harm)
-        if thd_bound:                      # ни одной достоверной гармоники: честно — только «не выше»
-            ph = ph_raw
-        line_floor_dbc = db10(float(np.mean(floors)) / Pf) if floors else None
-        line_mode = "rect"
-        avg_block = Block(blocks.mean(axis=0), fs)
+            # Для нелинейного гармонического отклика фаза h-й гармоники
+            # изменяется на h*phi1 при изменении фазы основного тона.
+            # Удаляем эту фазу перед комплексным усреднением блоков.
+            z = (2.0 / n) * X[:, kh] * np.exp(-1j * h * fund_phase)
+            z_mean = np.mean(z)
+            p_observed = float(abs(z_mean) ** 2 / 2.0)
+            p_floor_one_block = _local_floor(Psingle, kh, skip)
+            p_random_mean = max(p_floor_one_block / max(M, 1), 1e-300)
+            p_stable_spur = max(float((coherent_line_floors or {}).get(h, 0.0)), 0.0)
+            p_noise_mean = p_random_mean + p_stable_spur
+            margin = db10(p_observed / p_noise_mean) if p_observed > 0 else -300.0
+            credible = bool(margin >= MARGIN_OK_DB)
+            p_corrected = max(p_observed - p_noise_mean, 0.0)
+            p_used = p_corrected if credible else p_observed
+            raw_power += p_observed
+            if credible:
+                detected_power += p_corrected
+            floors.append(p_noise_mean)
+
+            # Фазовая концентрация гармоники после нормировки на h*phi1.
+            z_rms = float(np.sqrt(np.mean(np.abs(z) ** 2)))
+            harmonic_phase_coherence = float(abs(np.mean(z)) / z_rms) if z_rms > 0 else 0.0
+            masked[max(0, kh - half_f): min(masked.size, kh + half_f + 1)] = True
+            harm.append({
+                "h": h, "f": fh,
+                "dbc": db10(p_used / Pf) if p_used > 0 and Pf > 0 else -300.0,
+                "pct": 100.0 * math.sqrt(p_used / Pf) if Pf > 0 else 0.0,
+                "bound": not credible, "credible": credible,
+                "raw_dbc": db10(p_observed / Pf) if p_observed > 0 and Pf > 0 else -300.0,
+                "floor_dbc": db10(p_noise_mean / Pf) if p_noise_mean > 0 and Pf > 0 else -300.0,
+                "random_floor_dbc": db10(p_random_mean / Pf) if p_random_mean > 0 and Pf > 0 else -300.0,
+                "stable_spur_floor_dbc": db10(p_stable_spur / Pf) if p_stable_spur > 0 and Pf > 0 else None,
+                "stable_spur_floor_dbfs": rms_dbfs(math.sqrt(p_stable_spur)) if p_stable_spur > 0 else None,
+                "margin_db": margin,
+                "phase_coherence": harmonic_phase_coherence,
+            })
+
+        thd = math.sqrt(max(detected_power, 0.0) / Pf) if Pf > 0 else 0.0
+        thd_upper = math.sqrt(max(raw_power, 0.0) / Pf) if Pf > 0 else 0.0
+        credible_count = sum(1 for hh in harm if hh["credible"])
+        thd_bound = bool(hk) and credible_count == 0
+        thd_partial = bool(hk) and 0 < credible_count < len(hk)
+        line_floor_dbc = db10(float(np.mean(floors)) / Pf) if floors and Pf > 0 else None
+        line_mode = "rect-phase-normalized"
+        if phase_coherence is not None and phase_coherence < 0.8:
+            warn.append(f"фаза несущей между блоками нестабильна (coherence={phase_coherence:.3f}); "
+                        "гармоники усреднены с нормировкой на фазу несущей")
     else:
         if abs(coh_err) > 0.05:
-            warn.append(f"тон не когерентен окну (сдвиг {coh_err:+.2f} бина): частоты ЦАП и АЦП "
-                        "расходятся, усреднение отключено")
-            avg_block = ref
+            warn.append(f"тон не когерентен окну (сдвиг {coh_err:+.2f} бина): "
+                        "гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса")
         else:
-            avg_block = Block(blocks.mean(axis=0), fs)
-            warn.append(f"сдвиг тона {coh_err:+.4f} бина > {COH_TOL_BINS}: гармоники по лепестку BH "
-                        "(пол линии выше на ≈10 дБ)")
-        Pf = float(np.sum(avg_block.P[max(0, k0 - half_f): k0 + half_f + 1]))
+            warn.append(f"сдвиг тона {coh_err:+.4f} бина превышает допуск {COH_TOL_BINS:.3f}: "
+                        "гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса")
+        # В некогерентном режиме нельзя усреднять временные блоки: при фазовом
+        # дрейфе это может погасить сигнал. Усредняем мощности спектров.
+        fund_mask = np.zeros(Pdir.size, dtype=bool)
+        fund_mask[max(0, k0 - half_f): min(Pdir.size, k0 + half_f + 1)] = True
+        Pf = float(np.sum(Pdir[fund_mask]))
         if Pf <= 0:
             raise ValueError("тон не найден")
         ph = 0.0
+        raw_power = 0.0
         for h in range(2, nharm + 1):
             fh = h * f_est
             if fh > b_hi:
                 break
             kh = int(round(fh / df))
-            a, b = max(0, kh - half_f), kh + half_f + 1
-            p = float(np.sum(avg_block.P[a:b]))
+            a, b = max(0, kh - half_f), min(Pdir.size, kh + half_f + 1)
+            p = float(np.sum(Pdir[a:b]))
             masked[a:b] = True
             ph += p
+            raw_power += p
             harm.append({"h": h, "f": fh, "dbc": db10(p / Pf) if p > 0 else -300.0,
-                         "pct": 100.0 * math.sqrt(p / Pf), "bound": False, "credible": None})
-        thd_upper = math.sqrt(ph / Pf)
+                         "pct": 100.0 * math.sqrt(p / Pf), "bound": False, "credible": None,
+                         "raw_dbc": db10(p / Pf) if p > 0 else -300.0,
+                         "floor_dbc": None, "margin_db": None, "phase_coherence": None})
+        thd = math.sqrt(ph / Pf)
+        thd_upper = thd
         thd_bound = False
+        thd_partial = False
         line_floor_dbc = None
-        line_mode = "bh"
+        line_mode = "bh-power"
+
     if Pf <= 0:
         raise ValueError("тон не найден")
-    thd = math.sqrt(ph / Pf)
 
     ka, kb = max(1, int(b_lo / df)), min(Pdir.size, int(b_hi / df) + 1)
     sel = np.zeros(Pdir.size, dtype=bool)
     sel[ka:kb] = True
-    # THD+N = всё в полосе, кроме лепестка основного тона
+    # THD+N = всё в полосе, кроме лепестка основного тона.
     fund_mask = np.zeros(Pdir.size, dtype=bool)
-    fund_mask[max(0, k0 - half_f): k0 + half_f + 1] = True
+    fund_mask[max(0, k0 - half_f): min(Pdir.size, k0 + half_f + 1)] = True
     p_dn = float(np.sum(Pdir[sel & ~fund_mask]))
     p_n = float(np.sum(Pdir[sel & ~masked]))
     Pf_dir = float(np.sum(Pdir[fund_mask]))
 
     hum = []
     if mains > 0:
-        for m in range(1, 7):
-            fm = m * mains
+        for m_ in range(1, 7):
+            fm = m_ * mains
             if fm > b_hi or fm < b_lo:
                 continue
             if any(abs(fm - h * f_est) < (half_f + 2) * df for h in range(1, nharm + 2)):
                 continue
-            p = float(np.sum(Pdir[max(0, int(round(fm / df)) - 3): int(round(fm / df)) + 4]))
+            km = int(round(fm / df))
+            p = float(np.sum(Pdir[max(0, km - 3): min(Pdir.size, km + 4)]))
             hum.append({"f": fm, "dbfs": rms_dbfs(math.sqrt(p)),
-                        "dbc": db10(p / Pf_dir)})
+                        "dbc": db10(p / Pf_dir) if Pf_dir > 0 else -300.0})
 
     spec_amp = np.sqrt(np.mean([b.amp ** 2 for b in raw], axis=0))
+    level_power = Pf if line_mode.startswith("rect") else Pf
     return {
         "f0": f_est, "n": n, "blocks": M, "coh_err_bins": coh_err,
-        "level_dbfs": rms_dbfs(math.sqrt(Pf)), "rms": math.sqrt(Pf),
+        "phase_coherence": phase_coherence, "phase_spread_deg": phase_spread_deg,
+        "level_dbfs": rms_dbfs(math.sqrt(level_power)), "rms": math.sqrt(level_power),
         "harmonics": harm, "line_mode": line_mode, "line_floor_dbc": line_floor_dbc,
         "thd_pct": 100.0 * thd, "thd_db": db20(thd),
         "thd_upper_pct": 100.0 * thd_upper, "thd_upper_db": db20(thd_upper),
-        "thd_bound": thd_bound,
-        "thdn_pct": 100.0 * math.sqrt(p_dn / Pf_dir), "thdn_db": db10(p_dn / Pf_dir),
-        "noise_dbc": db10(p_n / Pf_dir),            # шум+фон без гармоник
+        "thd_bound": thd_bound, "thd_partial": thd_partial,
+        "thdn_pct": 100.0 * math.sqrt(p_dn / Pf_dir) if Pf_dir > 0 else 0.0,
+        "thdn_db": db10(p_dn / Pf_dir) if Pf_dir > 0 else -300.0,
+        "noise_dbc": db10(p_n / Pf_dir) if Pf_dir > 0 else -300.0,
         "noise_dbfs": rms_dbfs(math.sqrt(p_n)),
         "hum": hum, "warnings": warn,
         "freq": ref.freq, "spec_db": db20(spec_amp),
