@@ -85,9 +85,14 @@ def main(argv=None):
     p.add_argument("--window", type=float, default=0.1, help="окно анализа, секунд")
     p.add_argument("--hop", type=float, default=0.1, help="шаг анализа, секунд")
     p.add_argument("--harmonics", type=int, default=20, help="сколько гармоник вычитать LS-проекцией")
+    p.add_argument("--idle-seconds", type=float, default=15.0, help="длительность тишины до и после теста")
+    p.add_argument("--gap-seconds", type=float, default=8.0, help="пауза между L-only и R-only")
     p.add_argument("--play-format", default="auto", help="auto, S24_3LE, S24_LE, S32_LE, S16_LE")
     p.add_argument("--rec-format", default="auto", help="auto, S24_3LE, S24_LE, S32_LE, S16_LE")
     p.add_argument("--outdir", default="emu_measurements", help="каталог для summary/CSV/WAV")
+    p = sub.add_parser("steady-compare", help="свести несколько steady.json в одну сравнительную таблицу")
+    p.add_argument("runs", nargs="+", help="пути к steady.json или каталогам измерений")
+    p.add_argument("--csv", help="дополнительно сохранить таблицу в CSV")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=997); p.add_argument("--level", type=float, default=-12)
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=997)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
@@ -118,8 +123,11 @@ def main(argv=None):
         for no, name in cards:
             print(f"card {no}: {name}")
             for direction, alts in parse_stream(no).items():
+                grouped = {}
                 for alt in alts:
-                    print(f"  {direction:8s} format={alt.fmt} channels={alt.channels} rates={','.join(map(str, alt.rates))}")
+                    grouped.setdefault((alt.fmt, alt.channels), set()).update(alt.rates)
+                for (fmt, channels), rates in sorted(grouped.items()):
+                    print(f"  {direction:8s} format={fmt} channels={channels} rates={','.join(map(str, sorted(rates)))}")
         devices = list_duplex_devices()
         print("\nДуплексные PCM endpoints (можно использовать как --dev / --play-dev / --rec-dev):")
         if not devices:
@@ -161,7 +169,8 @@ def main(argv=None):
                 play_dev=a.play_dev, rec_dev=a.rec_dev, fs=a.rate or 192000,
                 tone_hz=a.tone, tone_level_dbfs=a.tone_level, target_dbfs=a.target,
                 tolerance_db=a.tolerance, duration_s=a.duration, window_s=a.window,
-                hop_s=a.hop, max_harmonics=a.harmonics, play_format=a.play_format,
+                hop_s=a.hop, max_harmonics=a.harmonics, idle_s=a.idle_seconds,
+                gap_s=a.gap_seconds, play_format=a.play_format,
                 rec_format=a.rec_format, out_root=a.outdir)
             return 0
         except KeyboardInterrupt:
@@ -169,6 +178,24 @@ def main(argv=None):
             return 130
         except Exception as exc:
             print(f"STEADY TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    if a.cmd == "steady-compare":
+        try:
+            text, rows = steady.compare_steady_runs(a.runs)
+            print(text)
+            if a.csv:
+                if not rows:
+                    raise ValueError("Нет измерений для записи CSV")
+                import csv as _csv
+                out = Path(a.csv)
+                out.parent.mkdir(parents=True, exist_ok=True)
+                with out.open("w", newline="", encoding="utf-8") as fh:
+                    writer = _csv.DictWriter(fh, fieldnames=list(rows[0]))
+                    writer.writeheader(); writer.writerows(rows)
+                print(f"CSV сохранён: {out}")
+            return 0
+        except Exception as exc:
+            print(f"STEADY COMPARE ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2
     if a.cmd in ("passport", "watch", "psdcheck"):
         cfg = calib.load()

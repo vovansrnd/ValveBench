@@ -137,49 +137,54 @@ def _tone_chunk(start: int, count: int, fs: int, f: float, amplitude: float,
 
 
 def _write_test_program(path: Path, fmt: str, fs: int, f: float, level_dbfs: float,
-                        play_seconds: float = 95.0) -> None:
-    """Write the timed L-only/R-only test in one-second chunks; phase is continuous."""
+                        duration_s: float = 40.0, idle_s: float = 15.0,
+                        gap_s: float = 8.0, fade_s: float = 1.0) -> float:
+    """Write a continuous L-only/R-only program with long digital-silence sections.
+
+    Long pre/post idle periods make the noise baseline less vulnerable to rare
+    events. The function returns the exact playback duration.
+    """
+    duration_s, idle_s, gap_s, fade_s = map(float, (duration_s, idle_s, gap_s, fade_s))
+    if duration_s < 5 or idle_s < 3 or gap_s < 2 or fade_s < 0.1:
+        raise ValueError("Требуются duration≥5 s, idle≥3 s, gap≥2 s, fade≥0.1 s")
     amp = 10.0 ** (level_dbfs / 20.0)
+    l_fade_start = idle_s
+    l_steady_start = l_fade_start + fade_s
+    l_steady_end = l_steady_start + duration_s
+    l_fade_end = l_steady_end + fade_s
+    r_fade_start = l_fade_end + gap_s
+    r_steady_start = r_fade_start + fade_s
+    r_steady_end = r_steady_start + duration_s
+    r_fade_end = r_steady_end + fade_s
+    play_seconds = r_fade_end + idle_s
     total = int(round(play_seconds * fs))
-    chunk = fs  # one second per write
+    chunk = fs
     with path.open("wb") as fh:
         for start in range(0, total, chunk):
             count = min(chunk, total - start)
             local = np.arange(start, start + count, dtype=np.float64) / fs
-            # 0–3 idle, 3–4 L fade in, 4–44 L steady, 44–45 fade out,
-            # 45–50 gap, 50–51 R fade in, 51–91 R steady, 91–92 fade out.
             left = np.zeros(count, dtype=np.float64)
             right = np.zeros(count, dtype=np.float64)
-            # Total layout is 3 s idle, 1 s fade-in, L steady, 1 s fade-out,
-            # 5 s gap, 1 s fade-in, R steady, 1 s fade-out, 3 s idle.
-            # duration is recovered from the known total length: play_seconds = 15 + 2*duration.
-            duration = (play_seconds - 15.0) / 2.0
-            l_stop = 4.0 + duration
-            l_end = l_stop + 1.0
-            r_fade_start = l_end + 5.0
-            r_steady_start = r_fade_start + 1.0
-            r_stop = r_steady_start + duration
-            r_end = r_stop + 1.0
-            idx_l = (local >= 3.0) & (local < l_end)
-            idx_r = (local >= r_fade_start) & (local < r_end)
+            idx_l = (local >= l_fade_start) & (local < l_fade_end)
+            idx_r = (local >= r_fade_start) & (local < r_fade_end)
             if np.any(idx_l):
-                env = np.ones(np.count_nonzero(idx_l), dtype=np.float64)
                 tt = local[idx_l]
-                fi = (tt < 4.0)
-                fo = (tt >= l_stop)
-                env[fi] = tt[fi] - 3.0
-                env[fo] = l_end - tt[fo]
-                left[idx_l] = amp * env * np.sin(2.0 * np.pi * f * local[idx_l])
+                env = np.ones(tt.size, dtype=np.float64)
+                fi = tt < l_steady_start
+                fo = tt >= l_steady_end
+                env[fi] = (tt[fi] - l_fade_start) / fade_s
+                env[fo] = (l_fade_end - tt[fo]) / fade_s
+                left[idx_l] = amp * env * np.sin(2.0 * np.pi * f * tt)
             if np.any(idx_r):
-                env = np.ones(np.count_nonzero(idx_r), dtype=np.float64)
                 tt = local[idx_r]
-                fi = (tt < r_steady_start)
-                fo = (tt >= r_stop)
-                env[fi] = tt[fi] - r_fade_start
-                env[fo] = r_end - tt[fo]
-                right[idx_r] = amp * env * np.sin(2.0 * np.pi * f * local[idx_r])
-            data = np.column_stack((left, right))
-            fh.write(to_pcm(data, fmt))
+                env = np.ones(tt.size, dtype=np.float64)
+                fi = tt < r_steady_start
+                fo = tt >= r_steady_end
+                env[fi] = (tt[fi] - r_fade_start) / fade_s
+                env[fo] = (r_fade_end - tt[fo]) / fade_s
+                right[idx_r] = amp * env * np.sin(2.0 * np.pi * f * tt)
+            fh.write(to_pcm(np.column_stack((left, right)), fmt))
+    return play_seconds
 
 
 def _tone_fit(y: np.ndarray, fs: int, nominal_hz: float) -> tuple[float, float]:
@@ -301,17 +306,88 @@ def _make_projection(n: int, fs: int, f0: float, max_harmonics: int) -> np.ndarr
     return q
 
 
-def _band_dbfs(x: np.ndarray, fs: int, lo: float, hi: float, window: np.ndarray) -> float:
+def _ultrasonic_band_edges(fs: int) -> list[tuple[str, float, float]]:
+    """Return fixed 10-kHz bands clipped to the actual Nyquist frequency."""
+    nyquist = float(fs) / 2.0
+    out = []
+    def tag_khz(value: float) -> str:
+        khz = value / 1000.0
+        if math.isclose(khz, round(khz), rel_tol=0.0, abs_tol=1e-9):
+            return str(int(round(khz)))
+        return f"{khz:g}".replace(".", "p")
+    for lo, nominal_hi in ((40000, 50000), (50000, 60000), (60000, 70000),
+                           (70000, 80000), (80000, 90000), (90000, 96000)):
+        hi = min(float(nominal_hi), nyquist)
+        if hi > lo:
+            label = f"{tag_khz(float(lo))}_{tag_khz(hi)}k"
+            out.append((label, float(lo), hi))
+    return out
+
+
+def _window_spectrum(x: np.ndarray, fs: int, window: np.ndarray):
+    """One-sided power spectral density in mean-square/Hz."""
     n = len(x)
     spec = np.fft.rfft(np.asarray(x, dtype=np.float64) * window)
-    power = np.abs(spec) ** 2 / (fs * float(np.sum(window ** 2)))
+    psd = np.abs(spec) ** 2 / (fs * float(np.sum(window ** 2)))
     if n > 1:
-        power[1:-1] *= 2.0
-    freqs = np.fft.rfftfreq(n, 1.0 / fs)
-    mask = (freqs >= lo) & (freqs <= min(hi, fs / 2.0))
-    df = fs / n
-    variance = float(np.sum(power[mask]) * df)
-    return 10.0 * math.log10(max(2.0 * variance, 1e-300))
+        if n % 2 == 0:
+            psd[1:-1] *= 2.0
+        else:
+            psd[1:] *= 2.0
+    return np.fft.rfftfreq(n, 1.0 / fs), psd, fs / n
+
+
+def _band_metrics(freqs: np.ndarray, psd: np.ndarray, df: float,
+                  lo: float, hi: float) -> dict | None:
+    """Integrated level plus median and 95th-percentile ASD in a band.
+
+    ASD is expressed as dBFS/sqrt(Hz), with the same peak-sine dBFS
+    convention used by the rest of ValveBench. The equivalent ASD is the
+    integrated band level divided by the square root of the occupied bandwidth.
+    """
+    mask = (freqs >= lo) & (freqs < hi)
+    if not np.any(mask) and math.isclose(hi, float(freqs[-1]), rel_tol=0.0, abs_tol=df * 0.51):
+        mask = (freqs >= lo) & (freqs <= hi)
+    if not np.any(mask):
+        return None
+    vals = np.maximum(psd[mask], 1e-300)
+    width = float(np.count_nonzero(mask) * df)
+    power = float(np.sum(vals) * df)
+    band_dbfs = 10.0 * math.log10(max(2.0 * power, 1e-300))
+    median_asd = 10.0 * math.log10(max(2.0 * float(np.median(vals)), 1e-300))
+    p95_asd = 10.0 * math.log10(max(2.0 * float(np.percentile(vals, 95)), 1e-300))
+    equiv_asd = band_dbfs - 10.0 * math.log10(max(width, 1e-300))
+    return {"dbfs": band_dbfs, "asd_median_dbfs_sqrt_hz": median_asd,
+            "asd_p95_dbfs_sqrt_hz": p95_asd,
+            "equivalent_asd_dbfs_sqrt_hz": equiv_asd,
+            "bins": int(np.count_nonzero(mask)), "bandwidth_hz": width}
+
+
+def _band_dbfs(x: np.ndarray, fs: int, lo: float, hi: float, window: np.ndarray) -> float:
+    """Compatibility helper used by tests and older report code."""
+    freqs, psd, df = _window_spectrum(x, fs, window)
+    metric = _band_metrics(freqs, psd, df, lo, min(hi, fs / 2.0))
+    return float(metric["dbfs"]) if metric is not None else float("nan")
+
+
+def _burst_episodes(rows: list[dict], threshold_dbfs: float, hop_s: float) -> dict:
+    """Group adjacent threshold windows into episodes; windows are not events."""
+    selected = sorted((r for r in rows if r["residual_20_20k_dbfs"] > threshold_dbfs),
+                      key=lambda r: r["time_s"])
+    if not selected:
+        return {"windows": 0, "episodes": 0, "longest_s": 0.0, "peak_dbfs": None}
+    groups = []
+    current = [selected[0]]
+    for row in selected[1:]:
+        if row["time_s"] - current[-1]["time_s"] <= hop_s * 1.51:
+            current.append(row)
+        else:
+            groups.append(current)
+            current = [row]
+    groups.append(current)
+    return {"windows": len(selected), "episodes": len(groups),
+            "longest_s": max(len(group) * hop_s for group in groups),
+            "peak_dbfs": max(r["residual_20_20k_dbfs"] for r in selected)}
 
 
 def _analyse_channel(y: np.ndarray, fs: int, state_ranges: dict[str, tuple[float, float]],
@@ -324,7 +400,9 @@ def _analyse_channel(y: np.ndarray, fs: int, state_ranges: dict[str, tuple[float
     win = blackmanharris(n, sym=False)
     q_cache = {}
     out = []
-    baseline_values = []
+    baseline_pre_values = []
+    baseline_post_values = []
+    band_edges = _ultrasonic_band_edges(fs)
     for state, (start_s, end_s) in state_ranges.items():
         start = int(round(start_s * fs)); end = min(len(y), int(round(end_s * fs)))
         for off in range(start, max(start, end - n + 1), hop):
@@ -334,6 +412,8 @@ def _analyse_channel(y: np.ndarray, fs: int, state_ranges: dict[str, tuple[float
             t_mid = (off + n / 2.0) / fs
             if state.startswith("idle"):
                 residual = raw - float(np.mean(raw))
+                removed_harmonics = 0
+                f_state = None
             else:
                 f_state = float(f0.get(state, f0.get("default"))) if isinstance(f0, dict) else float(f0)
                 if f_state not in q_cache:
@@ -341,20 +421,45 @@ def _analyse_channel(y: np.ndarray, fs: int, state_ranges: dict[str, tuple[float
                 q = q_cache[f_state]
                 coeff = q.T @ raw
                 residual = raw - q @ coeff
+                removed_harmonics = int((q.shape[1] - 1) // 2)
             lev20 = _band_dbfs(residual, fs, 20.0, 20000.0, win)
-            # Below 80 kHz sample rate the requested ultrasonic band does not exist.
-            # Do not print an artificial -300 dBFS value as if it were a measurement.
-            lev40 = (_band_dbfs(raw, fs, 40000.0, fs / 2.0, win)
-                     if fs / 2.0 > 40000.0 else None)
+            freqs, psd, df = _window_spectrum(raw, fs, win)
+            raw_bands = {label: _band_metrics(freqs, psd, df, lo, hi)
+                         for label, lo, hi in band_edges}
+            valid_band_power = [v["dbfs"] for v in raw_bands.values() if v is not None]
+            lev40 = (10.0 * math.log10(sum(10.0 ** (v / 10.0) for v in valid_band_power))
+                     if valid_band_power else None)
             row = {"time_s": t_mid, "state": state, "channel": channel,
                    "residual_20_20k_dbfs": lev20, "raw_40_nyquist_dbfs": lev40,
-                   "residual_removed_harmonics": 0 if state.startswith("idle") else int((q.shape[1] - 1) // 2),
-                   "projection_frequency_hz": None if state.startswith("idle") else f_state}
+                   "raw_ultrasonic_bands": raw_bands,
+                   "residual_removed_harmonics": removed_harmonics,
+                   "projection_frequency_hz": f_state}
             out.append(row)
             if state == "idle_pre":
-                baseline_values.append(lev20)
+                baseline_pre_values.append(lev20)
+            elif state == "idle_post":
+                baseline_post_values.append(lev20)
+
+    baseline_values = baseline_pre_values + baseline_post_values
+    base_pre = float(np.median(baseline_pre_values)) if baseline_pre_values else float("nan")
+    base_post = float(np.median(baseline_post_values)) if baseline_post_values else None
     base = float(np.median(baseline_values)) if baseline_values else float("nan")
-    summary = {"baseline_dbfs": base, "states": {}}
+    drift = (base_post - base_pre) if base_post is not None and math.isfinite(base_pre) else None
+    idle_band_summary = {}
+    for label, _lo, _hi in band_edges:
+        idle_band_summary[label] = {}
+        for idle_state in ("idle_pre", "idle_post"):
+            idle_rows = [r for r in out if r["state"] == idle_state]
+            band_values = [r["raw_ultrasonic_bands"].get(label) for r in idle_rows]
+            band_values = [v for v in band_values if v is not None]
+            idle_band_summary[label][idle_state] = (
+                {"dbfs_median": float(np.median([v["dbfs"] for v in band_values])),
+                 "asd_median_dbfs_sqrt_hz": float(np.median([v["asd_median_dbfs_sqrt_hz"] for v in band_values]))}
+                if band_values else None)
+    summary = {"baseline_dbfs": base, "baseline_pre_dbfs": base_pre,
+               "baseline_post_dbfs": base_post, "baseline_drift_db": drift,
+               "baseline_stable": (abs(drift) <= 3.0 if drift is not None else None),
+               "idle_ultrasonic_bands": idle_band_summary, "states": {}}
     for state in ("L_steady", "R_steady"):
         vals = [r for r in out if r["state"] == state]
         v20 = np.asarray([r["residual_20_20k_dbfs"] for r in vals], dtype=float)
@@ -362,15 +467,166 @@ def _analyse_channel(y: np.ndarray, fs: int, state_ranges: dict[str, tuple[float
         v40 = np.asarray(v40_values, dtype=float)
         if not v20.size:
             continue
+        burst_info = _burst_episodes(vals, base + 6.0, hop_seconds)
+        band_summary = {}
+        for label, _lo, _hi in band_edges:
+            bvalues = [r["raw_ultrasonic_bands"].get(label) for r in vals]
+            bvalues = [v for v in bvalues if v is not None]
+            if not bvalues:
+                band_summary[label] = None
+                continue
+            band_levels = np.asarray([v["dbfs"] for v in bvalues], dtype=float)
+            asd_median = np.asarray([v["asd_median_dbfs_sqrt_hz"] for v in bvalues], dtype=float)
+            asd_p95 = np.asarray([v["asd_p95_dbfs_sqrt_hz"] for v in bvalues], dtype=float)
+            band_summary[label] = {
+                "dbfs_median": float(np.median(band_levels)),
+                "dbfs_p95": float(np.percentile(band_levels, 95)),
+                "dbfs_max": float(np.max(band_levels)),
+                "asd_median_dbfs_sqrt_hz": float(np.median(asd_median)),
+                "asd_p95_dbfs_sqrt_hz": float(np.median(asd_p95)),
+            }
         summary["states"][state] = {
             "windows": int(v20.size),
             "residual_20_20k": {"median": float(np.median(v20)), "p95": float(np.percentile(v20, 95)),
-                                "max": float(np.max(v20)), "bursts": int(np.count_nonzero(v20 > base + 6.0)),
+                                "max": float(np.max(v20)), "bursts": burst_info["windows"],
+                                "episodes": burst_info["episodes"],
+                                "longest_episode_s": burst_info["longest_s"],
                                 "threshold_dbfs": base + 6.0},
             "raw_40_nyquist": ({"median": float(np.median(v40)), "p95": float(np.percentile(v40, 95)),
                                 "max": float(np.max(v40))} if v40.size else None),
+            "raw_ultrasonic_bands": band_summary,
         }
     return out, summary
+
+
+def _shared_excursion_stats(rows: list[dict], summaries: dict, hop_s: float) -> dict:
+    """Compare L/R residual excursions at matching times, state by state."""
+    result = {}
+    base_l = summaries["L"]["baseline_dbfs"]
+    base_r = summaries["R"]["baseline_dbfs"]
+    for state in ("L_steady", "R_steady"):
+        by_channel = {
+            ch: {round(r["time_s"], 6): r for r in rows
+                 if r["state"] == state and r["channel"] == ch}
+            for ch in ("L", "R")
+        }
+        common_times = sorted(set(by_channel["L"]) & set(by_channel["R"]))
+        if not common_times:
+            result[state] = {"windows": 0, "correlation_db": None,
+                             "both_excursion_windows": 0, "either_excursion_windows": 0,
+                             "shared_episodes": 0}
+            continue
+        lv = np.asarray([by_channel["L"][t]["residual_20_20k_dbfs"] for t in common_times])
+        rv = np.asarray([by_channel["R"][t]["residual_20_20k_dbfs"] for t in common_times])
+        corr = float(np.corrcoef(lv, rv)[0, 1]) if lv.size > 1 and np.std(lv) > 1e-12 and np.std(rv) > 1e-12 else None
+        lm = lv > base_l + 6.0
+        rm = rv > base_r + 6.0
+        both = lm & rm
+        either = lm | rm
+        # Treat consecutive shared windows as one common-mode episode.
+        shared_rows = [{"time_s": t, "residual_20_20k_dbfs": 1.0}
+                       for t, flag in zip(common_times, both) if flag]
+        shared = _burst_episodes(shared_rows, 0.0, hop_s)
+        result[state] = {
+            "windows": int(lv.size), "correlation_db": corr,
+            "L_excursion_windows": int(np.count_nonzero(lm)),
+            "R_excursion_windows": int(np.count_nonzero(rm)),
+            "both_excursion_windows": int(np.count_nonzero(both)),
+            "either_excursion_windows": int(np.count_nonzero(either)),
+            "shared_episodes": int(shared["episodes"]),
+        }
+    return result
+
+
+def compare_steady_runs(paths: list[str | Path]) -> tuple[str, list[dict]]:
+    """Build one concise comparison table from previously saved steady.json files.
+
+    Inputs may be JSON files or run directories. This does not claim that
+    different physical pairings are the same instrument; the pair and settings
+    remain explicit in every row.
+    """
+    rows = []
+    for item in paths:
+        path = Path(item)
+        if path.is_dir():
+            path = path / "steady.json"
+        if not path.is_file():
+            raise FileNotFoundError(f"Не найден steady.json: {path}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        channel_map = data.get("channel_map", {})
+        analysis = data.get("analysis", {})
+        l_map = channel_map.get("PLAY_L_only", {})
+        r_map = channel_map.get("PLAY_R_only", {})
+        l_state = analysis.get("L", {}).get("states", {})
+        r_state = analysis.get("R", {}).get("states", {})
+        l_on_l = l_state.get("L_steady", {})
+        r_on_r = r_state.get("R_steady", {})
+        l_res = l_on_l.get("residual_20_20k", {})
+        r_res = r_on_r.get("residual_20_20k", {})
+        l_ultra = l_on_l.get("raw_40_nyquist", {}) or {}
+        r_ultra = r_on_r.get("raw_40_nyquist", {}) or {}
+        row = {
+            "report": str(path),
+            "playback": data.get("playback_device", "?"),
+            "capture": data.get("capture_device", "?"),
+            "playback_label": data.get("playback_label", ""),
+            "capture_label": data.get("capture_label", ""),
+            "sample_rate": data.get("sample_rate"),
+            "playback_format": data.get("playback_format", "?"),
+            "capture_format": data.get("capture_format", "?"),
+            "baseline_L_dbfs": analysis.get("L", {}).get("baseline_dbfs"),
+            "baseline_R_dbfs": analysis.get("R", {}).get("baseline_dbfs"),
+            "L_to_R_crosstalk_dbc": l_map.get("cross_channel_leakage_db"),
+            "R_to_L_crosstalk_dbc": r_map.get("cross_channel_leakage_db"),
+            "L_residual_median_dbfs": l_res.get("median"),
+            "L_residual_p95_dbfs": l_res.get("p95"),
+            "L_burst_windows": l_res.get("bursts"),
+            "L_burst_episodes": l_res.get("episodes"),
+            "R_residual_median_dbfs": r_res.get("median"),
+            "R_residual_p95_dbfs": r_res.get("p95"),
+            "R_burst_windows": r_res.get("bursts"),
+            "R_burst_episodes": r_res.get("episodes"),
+            "L_ultrasonic_40_nyquist_dbfs": l_ultra.get("median"),
+            "R_ultrasonic_40_nyquist_dbfs": r_ultra.get("median"),
+            "series_level_valid": data.get("series_level_valid"),
+            "baseline_L_stable": analysis.get("L", {}).get("baseline_stable"),
+            "baseline_R_stable": analysis.get("R", {}).get("baseline_stable"),
+        }
+        rows.append(row)
+    headers = ("№", "ЦАП → АЦП", "Fs", "Шум тишины L/R", "Xtalk L→R / R→L",
+               "Остаток L med/P95", "Остаток R med/P95", "Эпизоды L/R", "40k–Nyq L/R")
+    lines = ["СРАВНЕНИЕ ИЗМЕРЕНИЙ VALVEBENCH STEADY", "Разные пары устройств приведены как отдельные измерительные конфигурации.",
+             " | ".join(headers), " | ".join(("---",) * len(headers))]
+    for i, r in enumerate(rows, 1):
+        def fmt(v, suffix=""):
+            return "n/a" if v is None else f"{float(v):.1f}{suffix}"
+        play_name = f"{r['playback_label']} [{r['playback']}]" if r["playback_label"] else r["playback"]
+        capture_name = f"{r['capture_label']} [{r['capture']}]" if r["capture_label"] else r["capture"]
+        pair = f"{play_name} → {capture_name}"
+        lines.append(" | ".join((
+            str(i), pair, str(r["sample_rate"]),
+            f"{fmt(r['baseline_L_dbfs'])}/{fmt(r['baseline_R_dbfs'])}",
+            f"{fmt(r['L_to_R_crosstalk_dbc'])}/{fmt(r['R_to_L_crosstalk_dbc'])}",
+            f"{fmt(r['L_residual_median_dbfs'])}/{fmt(r['L_residual_p95_dbfs'])}",
+            f"{fmt(r['R_residual_median_dbfs'])}/{fmt(r['R_residual_p95_dbfs'])}",
+            f"{r['L_burst_episodes'] if r['L_burst_episodes'] is not None else 'n/a'}/"
+            f"{r['R_burst_episodes'] if r['R_burst_episodes'] is not None else 'n/a'}",
+            f"{fmt(r['L_ultrasonic_40_nyquist_dbfs'])}/{fmt(r['R_ultrasonic_40_nyquist_dbfs'])}",
+        )))
+    return "\n".join(lines), rows
+
+
+def _device_label(device: str) -> str:
+    """Resolve a current ALSA card number to its current procfs label for the report."""
+    match = re.match(r"^hw:(\d+)(?:,(\d+))?$", str(device))
+    if not match:
+        return str(device)
+    card_no = int(match.group(1))
+    try:
+        from .backend import list_cards
+        return next((name for number, name in list_cards() if number == card_no), f"ALSA card {card_no}")
+    except Exception:
+        return f"ALSA card {card_no}"
 
 
 def _estimate_long_tone(y: np.ndarray, fs: int, nominal_hz: float, start_s: float, duration_s: float) -> tuple[float, float]:
@@ -384,6 +640,7 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
                     tone_level_dbfs: float = -18.0, target_dbfs: float = -23.4,
                     tolerance_db: float = 1.0, duration_s: float = 40.0,
                     window_s: float = 0.1, hop_s: float = 0.1, max_harmonics: int = 20,
+                    idle_s: float = 15.0, gap_s: float = 8.0,
                     play_format: str = "auto", rec_format: str = "auto",
                     out_root: str | Path = "emu_measurements", input_fn=input,
                     print_fn=print) -> Path:
@@ -392,6 +649,8 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
         raise ValueError("Частота должна быть в диапазоне 48–384 кГц")
     if duration_s < 5 or duration_s > 300:
         raise ValueError("Длительность одного канала должна быть 5–300 секунд")
+    if idle_s < 3 or idle_s > 120 or gap_s < 2 or gap_s > 60:
+        raise ValueError("idle должен быть 3–120 с, gap — 2–60 с")
     if not (20.0 <= tone_hz <= min(20000.0, fs * 0.4)):
         raise ValueError("Частота тона вне допустимой полосы")
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -427,29 +686,42 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     if choice == "q":
         return outdir
 
-    play_seconds = 2.0 * duration_s + 15.0
+    fade_s = 1.0
+    play_seconds = 2.0 * duration_s + 2.0 * idle_s + gap_s + 4.0 * fade_s
     capture_seconds = play_seconds + 2.0
     play_file = outdir / "steady-playback.raw"
     capture_file = outdir / "steady-capture.raw"
     wav_file = outdir / "capture-float32.wav"
     csv_file = outdir / "timeline.csv"
-    _write_test_program(play_file, play.fmt, fs, tone_hz, tone_level_dbfs, play_seconds)
-    print_fn(f"Основной тест: L-only {duration_s:.0f} с + R-only {duration_s:.0f} с; запись около {capture_seconds:.0f} с.")
-    _capture_and_play(play_file, capture_file, play, capture, fs, capture_seconds, lead_seconds=1.0)
+    written_seconds = _write_test_program(play_file, play.fmt, fs, tone_hz, tone_level_dbfs,
+                                          duration_s, idle_s, gap_s, fade_s)
+    if abs(written_seconds - play_seconds) > 1.0 / fs:
+        raise RuntimeError("Внутренняя ошибка расписания тестовой последовательности")
+    print_fn(f"Основной тест: тишина {idle_s:.0f} с → L-only {duration_s:.0f} с → пауза {gap_s:.0f} с "
+             f"→ R-only {duration_s:.0f} с → тишина {idle_s:.0f} с; запись около {capture_seconds:.0f} с.")
+    lead_seconds = 1.0
+    _capture_and_play(play_file, capture_file, play, capture, fs, capture_seconds, lead_seconds=lead_seconds)
     raw = from_pcm(capture_file.read_bytes(), capture.fmt, capture.channels)
     if raw.shape[0] < int(fs * (play_seconds + 1.0)):
         raise RuntimeError(f"Запись короче ожидаемой: {raw.shape[0] / fs:.2f} с")
     wavfile.write(wav_file, fs, raw.astype(np.float32))
 
-    # The playback schedule has 3 s idle, 1 s fade, duration_s steady, 1 s fade,
-    # 5 s gap, 1 s fade, duration_s steady, 1 s fade, then 3 s idle.
-    l_start, l_end = 5.0, 5.0 + duration_s
-    r_start, r_end = 12.0 + duration_s, 12.0 + 2.0 * duration_s
-    # Capture starts one second before playback; these ranges are capture-relative.
-    ranges = {"idle_pre": (1.0, 3.5), "L_steady": (l_start, l_end),
-              "idle_gap": (6.0 + duration_s, 9.0 + duration_s),
-              "R_steady": (r_start, r_end),
-              "idle_post": (13.0 + 2.0 * duration_s, 16.0 + 2.0 * duration_s)}
+    # Capture starts lead_seconds before playback. Exclude half-second margins
+    # from idle states so USB/driver start/stop settling does not define baseline.
+    l_start_play = idle_s + fade_s
+    l_end_play = l_start_play + duration_s
+    gap_start_play = l_end_play + fade_s
+    r_start_play = gap_start_play + gap_s + fade_s
+    r_end_play = r_start_play + duration_s
+    post_start_play = r_end_play + fade_s
+    ranges = {
+        "idle_pre": (lead_seconds + 0.5, lead_seconds + idle_s - 0.5),
+        "L_steady": (lead_seconds + l_start_play, lead_seconds + l_end_play),
+        "idle_gap": (lead_seconds + gap_start_play + 0.5, lead_seconds + r_start_play - 0.5),
+        "R_steady": (lead_seconds + r_start_play, lead_seconds + r_end_play),
+        "idle_post": (lead_seconds + post_start_play + 0.5,
+                      lead_seconds + post_start_play + idle_s - 0.5),
+    }
     summaries = {}
     all_rows = []
     tone_levels = {}
@@ -458,7 +730,8 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     # First estimate the active output frequency from its matching ADC channel.
     # Then project that same coherent frequency onto BOTH ADC channels so that
     # the report contains a real L/R channel map, not only the driven channel.
-    for state, driven_idx, state_start in (("L_steady", 0, l_start), ("R_steady", 1, r_start)):
+    for state, driven_idx, state_start in (("L_steady", 0, ranges["L_steady"][0]),
+                                           ("R_steady", 1, ranges["R_steady"][0])):
         est_start = state_start + 1.0
         f_est, _lev = _estimate_long_tone(raw[:, driven_idx], fs, tone_hz, est_start, min(4.0, duration_s - 1.0))
         f_by_state[state] = f_est
@@ -487,11 +760,25 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
                                        window_s, hop_s, max_harmonics)
         all_rows.extend(rows)
         summaries[ch] = stats
+    shared_stats = _shared_excursion_stats(all_rows, summaries, hop_s)
+    band_labels = [label for label, _lo, _hi in _ultrasonic_band_edges(fs)]
+    csv_fields = ["time_s", "state", "channel", "residual_20_20k_dbfs", "raw_40_nyquist_dbfs",
+                  "residual_removed_harmonics", "projection_frequency_hz"]
+    for label in band_labels:
+        csv_fields.extend((f"raw_{label}_dbfs", f"raw_{label}_asd_median_dbfs_sqrt_hz",
+                           f"raw_{label}_asd_p95_dbfs_sqrt_hz"))
     with csv_file.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["time_s", "state", "channel", "residual_20_20k_dbfs",
-                                                "raw_40_nyquist_dbfs", "residual_removed_harmonics",
-                                                "projection_frequency_hz"])
-        writer.writeheader(); writer.writerows(all_rows)
+        writer = csv.DictWriter(fh, fieldnames=csv_fields)
+        writer.writeheader()
+        for row in all_rows:
+            flat = {k: row.get(k) for k in csv_fields if k not in {f"raw_{b}_{s}" for b in band_labels for s in
+                                                                    ("dbfs", "asd_median_dbfs_sqrt_hz", "asd_p95_dbfs_sqrt_hz")}}
+            for label in band_labels:
+                m = row.get("raw_ultrasonic_bands", {}).get(label)
+                flat[f"raw_{label}_dbfs"] = m.get("dbfs") if m else None
+                flat[f"raw_{label}_asd_median_dbfs_sqrt_hz"] = m.get("asd_median_dbfs_sqrt_hz") if m else None
+                flat[f"raw_{label}_asd_p95_dbfs_sqrt_hz"] = m.get("asd_p95_dbfs_sqrt_hz") if m else None
+            writer.writerow(flat)
 
     # Remove the temporary raw data and playback file; WAV/CSV retain the evidence.
     for tmp in (play_file, capture_file):
@@ -513,8 +800,25 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
                       f"main Δtarget={val['main_level_delta_db']:+.2f} dB [{status}]")
     series_valid = all(v["main_level_within_target"] for v in tone_map.values())
     report.append("SERIES LEVEL VALIDITY: " + ("OK" if series_valid else "INVALID — measured main tone differs from target"))
-    report.append("STEADY RESIDUALS: median / p95 / max dBFS; bursts > idle +6 dB")
-    report.append("STATE       ADC    20–20k median / p95 / max             bursts        40k–Nyquist median / p95 / max")
+    report.append("IDLE BASELINE STABILITY (pre/post, dBFS; drift >3 dB is warning):")
+    for ch in ("L", "R"):
+        s = summaries[ch]
+        post_text = f"{s['baseline_post_dbfs']:.2f}" if s["baseline_post_dbfs"] is not None else "n/a"
+        drift_text = f"{s['baseline_drift_db']:+.2f} dB" if s["baseline_drift_db"] is not None else "n/a"
+        stable_text = "stable" if s["baseline_stable"] is True else ("DRIFT" if s["baseline_stable"] is False else "not checked")
+        report.append(f"  ADC {ch}: pre={s['baseline_pre_dbfs']:.2f}; post={post_text}; drift={drift_text} [{stable_text}]")
+    report.append("IDLE ULTRASONIC BASELINE (integrated dBFS; ASD median dBFS/√Hz; pre → post):")
+    for ch in ("L", "R"):
+        for label, band in summaries[ch]["idle_ultrasonic_bands"].items():
+            pre = band.get("idle_pre")
+            post = band.get("idle_post")
+            if pre is None and post is None:
+                continue
+            ptxt = f"{pre['dbfs_median']:.2f}/{pre['asd_median_dbfs_sqrt_hz']:.2f}" if pre else "n/a"
+            qtxt = f"{post['dbfs_median']:.2f}/{post['asd_median_dbfs_sqrt_hz']:.2f}" if post else "n/a"
+            report.append(f"  ADC {ch} {label}: {ptxt} → {qtxt}")
+    report.append("STEADY RESIDUALS: median / p95 / max dBFS; burst windows are grouped into episodes; threshold=idle +6 dB")
+    report.append("STATE       ADC    20–20k median / p95 / max              windows  episodes  longest-event  40k–Nyquist median / p95 / max")
     for ch in ("L", "R"):
         st = summaries[ch]
         report.append(f"IDLE BASELINE ADC {ch}: {st['baseline_dbfs']:.2f} dBFS")
@@ -526,7 +830,18 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
             high_band = (f"{b['median']:8.2f} / {b['p95']:8.2f} / {b['max']:8.2f}"
                          if b is not None else "       n/a /      n/a /      n/a")
             report.append(f"{state:10s} {ch:3s}  {a['median']:8.2f} / {a['p95']:8.2f} / {a['max']:8.2f}  "
-                          f"{a['bursts']:4d}/{q['windows']:<4d}  {high_band}")
+                          f"{a['bursts']:4d}/{q['windows']:<4d}  {a['episodes']:4d}  {a['longest_episode_s']:6.2f} s  {high_band}")
+            for label, band in q["raw_ultrasonic_bands"].items():
+                if band is None:
+                    continue
+                report.append(f"    {label:7s}: level median/p95/max={band['dbfs_median']:.2f}/{band['dbfs_p95']:.2f}/{band['dbfs_max']:.2f} dBFS; "
+                              f"ASD median/p95={band['asd_median_dbfs_sqrt_hz']:.2f}/{band['asd_p95_dbfs_sqrt_hz']:.2f} dBFS/√Hz")
+    report.append("SIMULTANEOUS L/R EXCURSIONS (same windows, each channel's idle+6 dB threshold):")
+    for state, st in shared_stats.items():
+        corr = f"{st['correlation_db']:+.3f}" if st["correlation_db"] is not None else "n/a"
+        report.append(f"  {state}: corr(residual dB)={corr}; L={st.get('L_excursion_windows', 0)}, "
+                      f"R={st.get('R_excursion_windows', 0)}, simultaneous={st['both_excursion_windows']}, "
+                      f"shared episodes={st['shared_episodes']} of {st['windows']} windows")
     report.append("TOP WINDOWS BY 20–20k RESIDUAL:")
     for ch in ("L", "R"):
         base = summaries[ch]["baseline_dbfs"]
@@ -539,20 +854,24 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     report.append("- Fundamental level is measured in the actual ADC recording; it is not inferred from the ALSA mixer percentage.")
     report.append("- Harmonics H1..Hn are removed by least-squares projection separately for each analysis window.")
     report.append("- 40k–Nyquist is a raw band level; no harmonic subtraction is applied there (H1..H20 are below 20 kHz at 997 Hz).")
-    report.append("- A burst count is a threshold statistic over overlapping or adjacent windows, not a count of independent physical events.")
+    report.append("- Burst windows are not independent physical events; adjacent windows are grouped into episodes.")
+    report.append("- Idle baseline uses both long pre-test and post-test silence; their difference is reported separately.")
+    report.append("- Ultrasonic bands report integrated dBFS and median/p95 spectral density in dBFS/√Hz.")
     report.append("- This test localizes DAC/ADC paths; it does not identify a PCB component.")
     report.append("- Cross-channel tone levels are coherent projections at the measured source frequency, not broadband residual levels.")
     summary = "\n".join(report) + "\n"
     (outdir / "summary.txt").write_text(summary, encoding="utf-8")
     machine_report = {
         "schema": 1, "created": stamp, "playback_device": play_dev, "capture_device": rec_dev,
+        "playback_label": _device_label(play_dev), "capture_label": _device_label(rec_dev),
         "playback_format": play.fmt, "capture_format": capture.fmt, "sample_rate": fs,
         "tone_hz_nominal": tone_hz, "tone_level_dbfs": tone_level_dbfs,
         "target_adc_dbfs": target_dbfs, "tolerance_db": tolerance_db,
         "calibration_trials": calibration_history, "series_level_valid": series_valid,
         "duration_per_channel_s": duration_s, "window_s": window_s, "hop_s": hop_s,
+        "idle_seconds_each_end": idle_s, "gap_seconds": gap_s,
         "max_harmonics_removed": max_harmonics, "measured_tones": tone_levels,
-        "channel_map": tone_map, "analysis": summaries,
+        "channel_map": tone_map, "analysis": summaries, "simultaneous_excursions": shared_stats,
     }
     (outdir / "steady.json").write_text(json.dumps(machine_report, ensure_ascii=False, indent=2), encoding="utf-8")
     print_fn(summary)

@@ -196,7 +196,9 @@ class Plot(Gtk.DrawingArea):
             cr.save()
             cr.translate(W - 5.0, mt + ph / 2.0)
             cr.rotate(-math.pi / 2.0)
-            label = "дБFS/bin"
+            # Mirror the active left-axis quantity: amplitude and PSD modes
+            # have different units, even though both axes share the same dB ticks.
+            label = self.ylabel
             cr.move_to(-cr.text_extents(label).x_advance / 2.0, 0)
             cr.show_text(label)
             cr.restore()

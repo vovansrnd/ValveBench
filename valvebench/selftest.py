@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import math
 import time
+import tempfile
+import json
+from pathlib import Path
 import numpy as np
 
 from . import dsp, gainmatch, scans, looptest, passport, steady
@@ -403,6 +406,119 @@ def run_selftest():
     hi_band_na = stats_48["states"]["L_steady"]["raw_40_nyquist"] is None
     check("steady: ultrasonic band below Nyquist is reported as N/A, not a false -300 dBFS",
           hi_band_na, f"raw 40k–Nyquist={stats_48['states']['L_steady']['raw_40_nyquist']}")
+
+    # 0.1.10: high-frequency spectrum is broken into real bands clipped to Nyquist.
+    bands_192 = steady._ultrasonic_band_edges(192000)
+    bands_176 = steady._ultrasonic_band_edges(176400)
+    bands_96 = steady._ultrasonic_band_edges(96000)
+    check("steady: ultrasonic band map is clipped to the actual Nyquist frequency",
+          [x[0] for x in bands_192] == ["40_50k", "50_60k", "60_70k", "70_80k", "80_90k", "90_96k"]
+          and [x[0] for x in bands_176][-1] == "80_88p2k"
+          and [x[0] for x in bands_96] == ["40_48k"],
+          f"192k={[x[0] for x in bands_192]}; 176.4k={bands_176[-1][0]}; 96k={[x[0] for x in bands_96]}")
+
+    # Integrated band level and ASD normalization must describe the same measured power.
+    fs_band = 192000
+    n_band = 19200
+    t_band = np.arange(n_band, dtype=np.float64) / fs_band
+    rng_band = np.random.default_rng(1910)
+    x_band = rng_band.normal(0.0, 1e-4, n_band)
+    win_band = np.ones(n_band, dtype=np.float64)
+    f_band, p_band, df_band = steady._window_spectrum(x_band, fs_band, win_band)
+    m_band = steady._band_metrics(f_band, p_band, df_band, 40000, 50000)
+    expected_eq_asd = m_band["dbfs"] - 10.0 * math.log10(m_band["bandwidth_hz"])
+    check("steady: ultrasonic band ASD normalization matches integrated band power",
+          abs(m_band["equivalent_asd_dbfs_sqrt_hz"] - expected_eq_asd) < 1e-9
+          and m_band["bins"] > 0,
+          f"band={m_band['dbfs']:.2f} dBFS; equivalent ASD={m_band['equivalent_asd_dbfs_sqrt_hz']:.2f} dBFS/√Hz")
+
+    # A narrow ultrasonic component must land in its own band, not be hidden in 40k-Nyquist.
+    hf_t = np.arange(fs_band, dtype=np.float64) / fs_band
+    hf = 10 ** (-40.0 / 20.0) * np.sin(2.0 * np.pi * 45000.0 * hf_t)
+    hf_win = np.ones(hf.size, dtype=np.float64)
+    hf_f, hf_psd, hf_df = steady._window_spectrum(hf, fs_band, hf_win)
+    hf_40_50 = steady._band_metrics(hf_f, hf_psd, hf_df, 40000, 50000)
+    hf_50_60 = steady._band_metrics(hf_f, hf_psd, hf_df, 50000, 60000)
+    check("steady: a 45-kHz line is isolated in the 40–50-kHz band",
+          abs(hf_40_50["dbfs"] + 40.0) < 0.1 and hf_50_60["dbfs"] < -120.0,
+          f"40–50k={hf_40_50['dbfs']:.2f} dBFS; 50–60k={hf_50_60['dbfs']:.1f} dBFS")
+
+    # Baseline excursions are grouped into episodes, rather than reported only as window counts.
+    burst_rows = [{"time_s": t, "residual_20_20k_dbfs": v}
+                  for t, v in ((0.05, -90), (0.15, -89), (0.25, -88),
+                              (0.55, -87), (0.75, -110))]
+    burst_groups = steady._burst_episodes(burst_rows, -100.0, 0.1)
+    check("steady: adjacent burst windows are grouped into physical episodes",
+          burst_groups["windows"] == 4 and burst_groups["episodes"] == 2
+          and abs(burst_groups["longest_s"] - 0.3) < 1e-9,
+          f"windows={burst_groups['windows']}; episodes={burst_groups['episodes']}; longest={burst_groups['longest_s']:.2f}s")
+
+    # Common-mode statistics must distinguish simultaneous from one-channel events.
+    common_rows = []
+    for tt, lv, rv in ((1.05, -90, -91), (1.15, -89, -90), (1.25, -90, -110),
+                       (1.35, -110, -110), (1.45, -110, -90)):
+        common_rows.extend((
+            {"time_s": tt, "state": "L_steady", "channel": "L", "residual_20_20k_dbfs": lv},
+            {"time_s": tt, "state": "L_steady", "channel": "R", "residual_20_20k_dbfs": rv},
+        ))
+    common_summary = {"L": {"baseline_dbfs": -110.0}, "R": {"baseline_dbfs": -110.0}}
+    common_stats = steady._shared_excursion_stats(common_rows, common_summary, 0.1)["L_steady"]
+    check("steady: simultaneous L/R excursions are counted separately",
+          common_stats["both_excursion_windows"] == 2
+          and common_stats["either_excursion_windows"] == 4
+          and common_stats["shared_episodes"] == 1,
+          f"both={common_stats['both_excursion_windows']}; either={common_stats['either_excursion_windows']}; shared episodes={common_stats['shared_episodes']}")
+
+    # The new program must contain long pre/post silence while keeping total duration exact.
+    with tempfile.TemporaryDirectory(prefix="valvebench-steady-") as td:
+        test_program = Path(td) / "test.raw"
+        test_duration = steady._write_test_program(test_program, "S24_3LE", 48000, 997.0,
+                                                   -18.0, duration_s=5, idle_s=3, gap_s=2)
+        expected_duration = 2 * 5 + 2 * 3 + 2 + 4
+        check("steady: long baseline test program has symmetric pre/post silence",
+              abs(test_duration - expected_duration) < 1e-9
+              and test_program.stat().st_size == int(expected_duration * 48000 * 2 * 3),
+              f"duration={test_duration:.1f}s; expected={expected_duration}s; bytes={test_program.stat().st_size}")
+
+    # A changed post-run idle floor must be visible as baseline drift.
+    drift_fs = 48000
+    drift_t = np.arange(drift_fs * 3, dtype=np.float64) / drift_fs
+    drift_rng = np.random.default_rng(101010)
+    drift_signal = drift_rng.normal(0.0, 1e-5, drift_t.size)
+    post = drift_t >= 2.2
+    drift_signal[post] = drift_rng.normal(0.0, 1e-4, np.count_nonzero(post))
+    tone_mask = (drift_t >= 1.0) & (drift_t < 2.0)
+    drift_signal[tone_mask] += 10 ** (-23.4 / 20) * np.sin(2 * np.pi * 997.0 * drift_t[tone_mask])
+    _drift_rows, drift_stats = steady._analyse_channel(
+        drift_signal, drift_fs,
+        {"idle_pre": (0.0, 0.8), "L_steady": (1.0, 2.0), "idle_post": (2.2, 3.0)},
+        "L", 997.0, -23.4, 0.1, 0.1, 20)
+    check("steady: idle pre/post drift is reported instead of silently folding into baseline",
+          drift_stats["baseline_stable"] is False and drift_stats["baseline_drift_db"] > 15.0,
+          f"pre={drift_stats['baseline_pre_dbfs']:.2f}; post={drift_stats['baseline_post_dbfs']:.2f}; "
+          f"drift={drift_stats['baseline_drift_db']:+.2f} dB")
+
+    # Comparison command must preserve all source pairings rather than averaging unlike devices.
+    with tempfile.TemporaryDirectory(prefix="valvebench-steady-compare-") as td:
+        p_json = Path(td) / "steady.json"
+        sample = {"playback_device": "hw:3,0", "capture_device": "hw:2,0", "sample_rate": 192000,
+                  "playback_format": "S24_3LE", "capture_format": "S24_3LE", "series_level_valid": True,
+                  "channel_map": {"PLAY_L_only": {"cross_channel_leakage_db": -82.0},
+                                  "PLAY_R_only": {"cross_channel_leakage_db": -83.0}},
+                  "analysis": {}}
+        for ch in ("L", "R"):
+            sample["analysis"][ch] = {"baseline_dbfs": -100.0, "states": {}}
+            for state in ("L_steady", "R_steady"):
+                sample["analysis"][ch]["states"][state] = {
+                    "residual_20_20k": {"median": -95.0, "p95": -88.0, "bursts": 5, "episodes": 2},
+                    "raw_40_nyquist": {"median": -78.0},
+                }
+        p_json.write_text(json.dumps(sample), encoding="utf-8")
+        compare_text, compare_rows = steady.compare_steady_runs([p_json])
+        check("steady-compare: report keeps explicit DAC→ADC pairing and metrics",
+              len(compare_rows) == 1 and compare_rows[0]["playback"] == "hw:3,0"
+              and compare_rows[0]["capture"] == "hw:2,0" and "hw:3,0 → hw:2,0" in compare_text,
+              f"rows={len(compare_rows)}; row={compare_rows[0] if compare_rows else None}")
 
     # ALSA format probing preference/fallback is tested without real hardware.
     old_probe = steady._probe_play
