@@ -1,0 +1,65 @@
+E-MU 0404 · CROSSTALK DETAIL
+Fs=192000 Hz · blocks=8 · generator=-6.0 dBFS
+Repeats=3
+All levels are absolute dBFS, referenced to a full-scale sine.
+    100 Hz  L→R  rep=1: ADC main=  -11.89  ADC leak= -128.65  Xtalk=-116.76 dB  coh=0.994  COHERENT
+    100 Hz  R→L  rep=1: ADC main=  -11.71  ADC leak= -122.06  Xtalk=-110.35 dB  coh=0.994  COHERENT
+    100 Hz  L→R  rep=2: ADC main=  -11.89  ADC leak= -128.22  Xtalk=-116.33 dB  coh=0.991  COHERENT
+    100 Hz  R→L  rep=2: ADC main=  -11.71  ADC leak= -122.41  Xtalk=-110.70 dB  coh=0.994  COHERENT
+    100 Hz  L→R  rep=3: ADC main=  -11.89  ADC leak= -128.39  Xtalk=-116.50 dB  coh=0.993  COHERENT
+    100 Hz  R→L  rep=3: ADC main=  -11.71  ADC leak= -122.41  Xtalk=-110.70 dB  coh=0.994  COHERENT
+   1000 Hz  L→R  rep=1: ADC main=  -11.86  ADC leak= -116.17  Xtalk=-104.31 dB  coh=1.000  COHERENT
+   1000 Hz  R→L  rep=1: ADC main=  -11.68  ADC leak= -116.01  Xtalk=-104.33 dB  coh=1.000  COHERENT
+   1000 Hz  L→R  rep=2: ADC main=  -11.86  ADC leak= -116.19  Xtalk=-104.32 dB  coh=1.000  COHERENT
+   1000 Hz  R→L  rep=2: ADC main=  -11.68  ADC leak= -115.97  Xtalk=-104.28 dB  coh=1.000  COHERENT
+   1000 Hz  L→R  rep=3: ADC main=  -11.86  ADC leak= -116.21  Xtalk=-104.35 dB  coh=1.000  COHERENT
+   1000 Hz  R→L  rep=3: ADC main=  -11.68  ADC leak= -116.01  Xtalk=-104.33 dB  coh=1.000  COHERENT
+  10000 Hz  L→R  rep=1: ADC main=  -11.89  ADC leak=  -97.19  Xtalk= -85.30 dB  coh=1.000  COHERENT
+  10000 Hz  R→L  rep=1: ADC main=  -11.71  ADC leak=  -97.44  Xtalk= -85.72 dB  coh=1.000  COHERENT
+  10000 Hz  L→R  rep=2: ADC main=  -11.89  ADC leak=  -97.19  Xtalk= -85.29 dB  coh=1.000  COHERENT
+  10000 Hz  R→L  rep=2: ADC main=  -11.71  ADC leak=  -97.43  Xtalk= -85.72 dB  coh=1.000  COHERENT
+  10000 Hz  L→R  rep=3: ADC main=  -11.89  ADC leak=  -97.19  Xtalk= -85.30 dB  coh=1.000  COHERENT
+  10000 Hz  R→L  rep=3: ADC main=  -11.71  ADC leak=  -97.44  Xtalk= -85.73 dB  coh=1.000  COHERENT
+
+REPEATABILITY SUMMARY · median [min...max]
+
+100 Hz · L→R
+  ADC main    :   -11.89 [-11.89 ... -11.89]
+  ADC leak    :  -128.39 [-128.65 ... -128.22]
+  Xtalk       :  -116.50 [-116.76 ... -116.33]
+  Coherence   :     0.99 [0.99 ... 0.99]
+
+100 Hz · R→L
+  ADC main    :   -11.71 [-11.71 ... -11.71]
+  ADC leak    :  -122.41 [-122.41 ... -122.06]
+  Xtalk       :  -110.70 [-110.70 ... -110.35]
+  Coherence   :     0.99 [0.99 ... 0.99]
+  Directional asymmetry L→R minus R→L: -5.80 dB
+
+1000 Hz · L→R
+  ADC main    :   -11.86 [-11.86 ... -11.86]
+  ADC leak    :  -116.19 [-116.21 ... -116.17]
+  Xtalk       :  -104.32 [-104.35 ... -104.31]
+  Coherence   :     1.00 [1.00 ... 1.00]
+
+1000 Hz · R→L
+  ADC main    :   -11.68 [-11.68 ... -11.68]
+  ADC leak    :  -116.01 [-116.01 ... -115.97]
+  Xtalk       :  -104.33 [-104.33 ... -104.28]
+  Coherence   :     1.00 [1.00 ... 1.00]
+  Directional asymmetry L→R minus R→L: +0.01 dB
+
+10000 Hz · L→R
+  ADC main    :   -11.89 [-11.89 ... -11.89]
+  ADC leak    :   -97.19 [-97.19 ... -97.19]
+  Xtalk       :   -85.30 [-85.30 ... -85.29]
+  Coherence   :     1.00 [1.00 ... 1.00]
+
+10000 Hz · R→L
+  ADC main    :   -11.71 [-11.71 ... -11.71]
+  ADC leak    :   -97.44 [-97.44 ... -97.43]
+  Xtalk       :   -85.72 [-85.73 ... -85.72]
+  Coherence   :     1.00 [1.00 ... 1.00]
+  Directional asymmetry L→R minus R→L: +0.43 dB
+
+END

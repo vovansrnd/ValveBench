@@ -31,10 +31,16 @@ def _fmt_f(f):
     return f"{f / 1000:g}k" if f >= 1000 else f"{f:g}"
 
 
+def plot_margins(right_y_axis: bool = False):
+    """Drawing margins in logical pixels; reserve a label column on the right when requested."""
+    return 58.0, (48.0 if right_y_axis else 14.0), 30.0, 38.0
+
+
 class Plot(Gtk.DrawingArea):
-    def __init__(self, xlog=True, xlabel="Гц", ylabel="дБ"):
+    def __init__(self, xlog=True, xlabel="Гц", ylabel="дБ", right_y_axis=False):
         super().__init__()
         self.xlog, self.xlabel, self.ylabel = xlog, xlabel, ylabel
+        self.right_y_axis = bool(right_y_axis)
         self.xlim, self.ylim = (20.0, 20000.0), (-100.0, 0.0)
         self.traces = []
         self._mouse = None
@@ -101,7 +107,7 @@ class Plot(Gtk.DrawingArea):
     def _draw(self, area, cr, W, H, *_):
         fg = self.get_color()
         fs = 13.0
-        ml, mr, mt, mb = 58.0, 14.0, 30.0, 38.0
+        ml, mr, mt, mb = plot_margins(self.right_y_axis)
         pw, ph = W - ml - mr, H - mt - mb
         if pw < 50 or ph < 50:
             return
@@ -127,6 +133,9 @@ class Plot(Gtk.DrawingArea):
             lab = f"{v:g}"
             ext = cr.text_extents(lab)
             cr.move_to(ml - 6 - ext.x_advance, y + fs * 0.35); cr.show_text(lab)
+            if self.right_y_axis:
+                cr.move_to(ml + pw + 9.0, y + fs * 0.35)
+                cr.show_text(lab)
             v += step
         if self.xlog:
             xs = []
@@ -181,6 +190,16 @@ class Plot(Gtk.DrawingArea):
         rgba(0.8)
         cr.move_to(ml + pw - cr.text_extents(self.xlabel).x_advance, H - 6); cr.show_text(self.xlabel)
         cr.move_to(6, 18); cr.show_text(self.ylabel)
+        if self.right_y_axis:
+            # Mirrored dB scale makes the high-frequency end readable without
+            # repeatedly tracking tick labels across the full plot width.
+            cr.save()
+            cr.translate(W - 5.0, mt + ph / 2.0)
+            cr.rotate(-math.pi / 2.0)
+            label = "дБFS/bin"
+            cr.move_to(-cr.text_extents(label).x_advance / 2.0, 0)
+            cr.show_text(label)
+            cr.restore()
 
         # кривые
         cr.save()

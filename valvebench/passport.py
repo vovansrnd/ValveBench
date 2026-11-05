@@ -26,7 +26,7 @@ from scipy.ndimage import median_filter
 
 from . import dsp
 
-SCHEMA = 1
+SCHEMA = 2
 TONE_HZ = 997.0
 EXCESS_TOL_DB = 1.0
 
@@ -153,7 +153,16 @@ def run_rate(rig, levels=(-1.0, -12.0), repeats=3, silence_s=8.0, nharm=9, progr
     Каждый повтор — ОТДЕЛЬНОЕ открытие карты (rig.run): наводки от преобразователя питания
     зависят от момента запуска потоков, и разброс между открытиями — часть паспорта."""
     fs = rig.fs
-    out = {"fs": fs, "blocks": rig.blocks, "warnings": []}
+    be = rig.be
+    io_config = {
+        "backend": getattr(be, "name", type(be).__name__),
+        "device": getattr(be, "hw", getattr(be, "name", "?")),
+        "capture_format": getattr(be, "fmt_in", None),
+        "playback_format": getattr(be, "fmt_out", None),
+        "capture_channels": getattr(be, "ch_in", None),
+        "playback_channels": getattr(be, "ch_out", None),
+    }
+    out = {"fs": fs, "blocks": rig.blocks, "io_config": io_config, "warnings": []}
     progress(f"  [{fs} Гц] тишина {silence_s:.0f} с…")
     x, notes = capture_silence(rig, silence_s)
     out["warnings"] += notes
@@ -210,10 +219,16 @@ def run_rate(rig, levels=(-1.0, -12.0), repeats=3, silence_s=8.0, nharm=9, progr
 
 
 def run_passport(make_rig, rates=(96000, 192000), label="", levels=(-1.0, -12.0), repeats=3,
-                 silence_s=8.0, progress=print):
-    """make_rig(fs) -> открытый Rig. Возвращает dict паспорта."""
+                 silence_s=8.0, progress=print, metadata=None):
+    """make_rig(fs) -> открытый Rig. Возвращает dict паспорта.
+
+    metadata stores the full measurement configuration so an A/B comparison
+    can refuse silently incomparable runs.
+    """
     p = {"schema": SCHEMA, "label": label, "time": time.strftime("%Y-%m-%d %H:%M:%S"),
-         "tone_hz": TONE_HZ, "rates": {}}
+         "tone_hz": TONE_HZ, "levels_dbfs": [float(v) for v in levels],
+         "repeats": int(repeats), "silence_seconds": float(silence_s),
+         "rates": {}, "metadata": dict(metadata or {})}
     for fs in rates:
         rig = make_rig(int(fs))
         p["device"] = getattr(rig.be, "hw", getattr(rig.be, "name", "?"))
@@ -280,11 +295,51 @@ def _verdict(delta, tol):
     return "≈ в пределах разброса", 0
 
 
-def compare_passports(a, b):
-    """Возвращает (текст, {'better':n,'worse':n,'same':n,'rows':[...]}). Меньше — лучше для всех строк."""
+def passport_mismatches(a, b):
+    """Differences that make a strict before/after comparison unsafe."""
+    mismatches = []
+    if a.get("device") and b.get("device") and a.get("device") != b.get("device"):
+        mismatches.append(f"устройства различаются: {a.get('device')} → {b.get('device')}")
+    keys = ("tone_hz", "levels_dbfs", "repeats", "silence_seconds")
+    for key in keys:
+        va, vb = a.get(key), b.get(key)
+        if va is not None and vb is not None and va != vb:
+            mismatches.append(f"{key}: {va!r} → {vb!r}")
+    ma, mb = a.get("metadata", {}), b.get("metadata", {})
+    for key in ("in_map", "out_map", "format", "blocks"):
+        va, vb = ma.get(key), mb.get(key)
+        if va is not None and vb is not None and va != vb:
+            mismatches.append(f"{key}: {va!r} → {vb!r}")
+    for rate in sorted(set(a.get("rates", {})) & set(b.get("rates", {})), key=int):
+        io_a = a["rates"][rate].get("io_config")
+        io_b = b["rates"][rate].get("io_config")
+        if io_a and io_b and io_a != io_b:
+            mismatches.append(f"PCM-конфигурация на {int(rate) / 1000:g} кГц различается: {io_a} → {io_b}")
+    return mismatches
+
+
+def compare_passports(a, b, allow_mismatch=False):
+    """Return text + row stats; refuse unlike devices/configs unless explicitly allowed."""
+    mismatches = passport_mismatches(a, b)
+    common_rates = set(a.get("rates", {})) & set(b.get("rates", {}))
+    if mismatches and not allow_mismatch:
+        raise ValueError("Паспорта нельзя строго сравнить: " + "; ".join(mismatches)
+                         + ". Для исследовательского сравнения разных карт укажи --allow-device-mismatch.")
+    shared_rates = sorted(set(a.get("rates", {})) & set(b.get("rates", {})), key=int)
+    if not shared_rates:
+        raise ValueError("У паспортов нет общих частот дискретизации")
     rows, L = [], []
     L.append(f"СРАВНЕНИЕ: «{a.get('label') or 'до'}» ({a['time']}) → «{b.get('label') or 'после'}» ({b['time']})")
-    for fs in sorted(set(a["rates"]) & set(b["rates"]), key=int):
+    if mismatches:
+        L.append("ПРЕДУПРЕЖДЕНИЕ: это не строгое A/B-сравнение: " + "; ".join(mismatches))
+    elif not a.get("metadata") or not b.get("metadata"):
+        L.append("ПРЕДУПРЕЖДЕНИЕ: старый паспорт не содержит полной конфигурации; проверь физическую распайку и настройки вручную.")
+    missing_io = [fs for fs in shared_rates if bool(a["rates"][fs].get("io_config")) != bool(b["rates"][fs].get("io_config"))]
+    if missing_io:
+        L.append("ПРЕДУПРЕЖДЕНИЕ: в одном из паспортов нет фактических ALSA PCM-форматов для "
+                 + ", ".join(f"{int(fs)/1000:g} кГц" for fs in missing_io)
+                 + "; совместимость форматов проверить вручную.")
+    for fs in shared_rates:
         da, db_ = a["rates"][fs], b["rates"][fs]
         L.append(f"\n=== {int(fs) / 1000:g} кГц ===")
         L.append(f"{'показатель':46s} {'до':>9s} {'после':>9s} {'Δ':>7s}   вердикт")
@@ -335,6 +390,7 @@ def compare_passports(a, b):
                 "Общий вердикт: ХУЖЕ." if worse > better and better == 0 else
                 "Общий вердикт: смешанный — смотри строки выше." if better and worse else
                 "Общий вердикт: заметных изменений нет."))
+    L.append("Примечание: счётчик показателей — не единый индекс качества; оценивай прежде всего остаток, разброс, THD и проникновение отдельно.")
     return "\n".join(L), {"better": better, "worse": worse, "same": same, "rows": rows}
 
 

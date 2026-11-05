@@ -58,12 +58,62 @@ def _pcm_hw_devices(tool):
     return found
 
 
-def list_duplex_devices():
-    """Список ALSA hw:CARD,DEV, присутствующих и в playback, и в capture.
+def supported_pcm_rates(hw, direction):
+    """Advertised 2-channel rates for one direction of an ALSA hw:C,D PCM.
 
-    HDMI-only выходы исключаются: измерительные приборы требуют одновременно
-    ЦАП и АЦП. Устройства выбираются по пересечению aplay -l и arecord -l,
-    а не по одному лишь номеру звуковой карты.
+    ALSA USB stream descriptors are card-scoped, not reliably PCM-device-scoped;
+    this is a capability hint. Exact format/rate support is confirmed by opening
+    the requested PCM before a measurement.
+    """
+    if direction not in ("Playback", "Capture"):
+        raise ValueError("direction must be Playback or Capture")
+    m = re.match(r"^hw:(\d+)(?:,(\d+))?$", str(hw))
+    if not m:
+        return ()
+    streams = parse_stream(int(m.group(1)))
+    rates = {rate for alt in streams[direction] if alt.channels >= 2 for rate in alt.rates}
+    return tuple(sorted(rates))
+
+
+def supported_duplex_rates(hw):
+    """Known common rates for a full-duplex hw:CARD,DEV endpoint.
+
+    ALSA's USB stream descriptor is card-scoped, so this is a conservative
+    advertised capability list, not a substitute for opening the exact PCM.
+    The measurement backend still reports an ALSA error if a particular
+    endpoint does not accept one of these rates.
+    """
+    m = re.match(r"^hw:(\d+)(?:,(\d+))?$", str(hw))
+    if not m:
+        return ()
+    streams = parse_stream(int(m.group(1)))
+    playback = {rate for alt in streams["Playback"] if alt.channels >= 2 for rate in alt.rates}
+    capture = {rate for alt in streams["Capture"] if alt.channels >= 2 for rate in alt.rates}
+    return tuple(sorted(playback & capture))
+
+
+def list_pcm_devices():
+    """Return independently enumerated playback/capture ALSA PCM endpoints.
+
+    Unlike list_duplex_devices(), this also reports DAC-only and ADC-only
+    interfaces, which is important for the separate-device steady test.
+    """
+    names = dict(list_cards())
+    result = {"Playback": [], "Capture": []}
+    for direction, tool in (("Playback", "aplay"), ("Capture", "arecord")):
+        for card, device in sorted(_pcm_hw_devices(tool)):
+            hw = f"hw:{card},{device}"
+            label = names.get(card, f"ALSA card {card}")
+            result[direction].append((hw, f"{hw} — {label}, PCM {device}"))
+    return result
+
+
+def list_duplex_devices():
+    """Список всех ALSA PCM endpoints, которые реально есть и в playback, и capture.
+
+    HDMI-only выходы исключаются. Каждая пара card/device отображается отдельно:
+    например, многоканальная USB-карта может предоставить разные PCM endpoints
+    для наушников, линейных выходов и дополнительных интерфейсов.
     """
     playback = _pcm_hw_devices("aplay")
     capture = _pcm_hw_devices("arecord")
@@ -72,7 +122,9 @@ def list_duplex_devices():
     for card, device in sorted(playback & capture):
         label = names.get(card, f"ALSA card {card}")
         hw = f"hw:{card},{device}"
-        result.append((hw, f"{hw} — {label}, device {device}"))
+        rates = supported_duplex_rates(hw)
+        rate_text = ", ".join(f"{r / 1000:g}" for r in rates) if rates else "проверка частот при открытии"
+        result.append((hw, f"{hw} — {label}, PCM {device} · {rate_text} кГц"))
     return result
 
 
@@ -573,9 +625,11 @@ class SimChannel:
     def __init__(self, gain=1.0, a2=0.0, a3=0.0, riaa=False, iec=False,
                  noise_dbfs=-110.0, hum50_dbfs=-120.0, hum100_dbfs=-125.0, clip=1.0,
                  quant_bits=None, mod_noise_dbc=None, mod_jitter_db=0.0, spurs=()):
-        # mod_noise_dbc — шум, пропорциональный сигналу (AM-шум), mod_jitter_db — разброс его
-        # уровня от прогона к прогону (имитация нестабильной наводки); spurs — ((Гц, dBFS), ...).
-        self.mod_noise_dbc, self.mod_jitter_db, self.spurs = mod_noise_dbc, mod_jitter_db, tuple(spurs)
+        # mod_noise_dbc — шум, пропорциональный сигналу; jitter моделирует его разброс.
+        # spurs — последовательность (частота, dBFS) синтетических стационарных линий.
+        self.mod_noise_dbc = mod_noise_dbc
+        self.mod_jitter_db = float(mod_jitter_db)
+        self.spurs = tuple(spurs)
         # quant_bits — разрядность «преобразователя»: квантование точно периодического
         # сигнала даёт линии на гармониках тона с уровнем, не зависящим от амплитуды.
         self.quant_bits = quant_bits
@@ -612,10 +666,10 @@ class SimBackend(Backend):
             y = np.fft.irfft(Y, nf)[: len(x)]
         y = y * c.gain
         if c.mod_noise_dbc is not None:
-            g = 10 ** ((c.mod_noise_dbc + self.rng.uniform(-c.mod_jitter_db, c.mod_jitter_db)) / 20)
+            g = 10 ** ((float(c.mod_noise_dbc) + self.rng.uniform(-c.mod_jitter_db, c.mod_jitter_db)) / 20.0)
             y = y * (1.0 + g * self.rng.standard_normal(len(y)))
         for hz, db in c.spurs:
-            y = y + dsp.dbfs_to_amp(db) * np.sin(2 * np.pi * hz * tt + 0.3)
+            y = y + dsp.dbfs_to_amp(db) * np.sin(2 * np.pi * float(hz) * tt + 0.3)
         if c.quant_bits:
             q = 2.0 ** (int(c.quant_bits) - 1)
             y = np.round(y * q) / q

@@ -16,7 +16,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from . import calib, dsp, measure as m, signals, store, vinyl  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
-from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices  # noqa: E402
+from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates  # noqa: E402
 from .plot import Plot  # noqa: E402
 
 RATES = [44100, 48000, 88200, 96000, 176400, 192000]
@@ -483,7 +483,7 @@ class SpectrumPage(Gtk.Box):
         self.avg_mode.set_selected(1)
         self.state = Gtk.Label(label="Аудиопоток выключен", xalign=0)
         self.state.add_css_class("dim-label")
-        self.plot = Plot(True, "Частота, Гц", "Уровень, dBFS/bin")
+        self.plot = Plot(True, "Частота, Гц", "Уровень, dBFS/bin", right_y_axis=True)
         self.plot.set_content_height(540)
         self.plot.set_vexpand(True)
         self.plot.set_hexpand(True)
@@ -571,7 +571,9 @@ class SpectrumPage(Gtk.Box):
                 prev_line = self.avg_line_power[ch]
                 prev_bin = self.avg_bin_power[ch]
                 coeff_line = np.where(line_power >= prev_line, attack, release)
-                coeff_bin = 0.5 * (attack + release)   # плотность шума: симметричное сглаживание (асимметрия завышала полку на ≈2 дБ)
+                # PSD/noise density must not have attack/release bias: the asymmetric
+                # envelope detector elevated the apparent continuous noise floor.
+                coeff_bin = 0.5 * (attack + release)
                 self.avg_line_power[ch] = coeff_line * line_power + (1.0 - coeff_line) * prev_line
                 self.avg_bin_power[ch] = coeff_bin * bin_power + (1.0 - coeff_bin) * prev_bin
             if self.mode.get_selected() == 0:
@@ -1202,8 +1204,15 @@ class Window(Adw.ApplicationWindow):
         else:
             self.invalid_saved_device = None
         self.dev.set_selected(sel)
-        self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in RATES])
-        self.rate.set_selected(RATES.index(self.cal["fs"]) if self.cal["fs"] in RATES else 3)
+        selected_hw = self.cards[sel][0]
+        self.rate_values = self._rates_for_device(selected_hw)
+        self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in self.rate_values])
+        preferred_rate = int(self.cal["fs"])
+        rate_sel = (self.rate_values.index(preferred_rate) if preferred_rate in self.rate_values
+                    else min(range(len(self.rate_values)), key=lambda i: abs(self.rate_values[i] - preferred_rate)))
+        self.rate.set_selected(rate_sel)
+        self.cal["fs"] = self.rate_values[rate_sel]
+        self._updating_rate = False
         self.live_btn = Gtk.ToggleButton(label="АУДИО ВЫКЛ")
         self.live_btn.add_css_class("pill")
         self.live_btn.connect("toggled", self.on_live)
@@ -1258,17 +1267,35 @@ class Window(Adw.ApplicationWindow):
         if self.invalid_saved_device:
             self.toast(f"Сохранённое устройство {self.invalid_saved_device} не найдено. Выбран симулятор; выбери нужную карту вверху.")
 
+    def _rates_for_device(self, dev):
+        if dev == "sim":
+            return list(RATES)
+        advertised = supported_duplex_rates(dev)
+        available = [r for r in RATES if r in advertised]
+        # Some USB drivers do not expose stream0 reliably. Keep the explicit
+        # selector usable; the selected PCM is probed by ALSA when opened.
+        return available or list(RATES)
+
     def on_device_changed(self, *_):
         dev, _label = self.cards[self.dev.get_selected()]
         self.cal["device"] = dev
+        old_rate = int(self.cal.get("fs", 96000))
+        self.rate_values = self._rates_for_device(dev)
+        new_index = (self.rate_values.index(old_rate) if old_rate in self.rate_values
+                     else min(range(len(self.rate_values)), key=lambda i: abs(self.rate_values[i] - old_rate)))
+        self._updating_rate = True
+        self.rate.set_model(Gtk.StringList.new([f"{r / 1000:g} кГц" for r in self.rate_values]))
+        self.rate.set_selected(new_index)
+        self._updating_rate = False
+        self.cal["fs"] = self.rate_values[new_index]
         self.reset_rig()
-        # Сохраняем выбор сразу: внешний debug-процесс должен видеть
-        # текущее устройство, даже пока GUI остаётся открытым.
         calib.save(self.cal)
 
     def on_rate_changed(self, *_):
+        if getattr(self, "_updating_rate", False):
+            return
         self.reset_rig()
-        # Частота также является частью конфигурации аппаратного потока.
+        self.cal["fs"] = self.rig_fs()
         calib.save(self.cal)
 
     def on_page_changed(self, *_):
@@ -1279,7 +1306,7 @@ class Window(Adw.ApplicationWindow):
 
     # ---- стенд
     def rig_fs(self):
-        return RATES[self.rate.get_selected()]
+        return self.rate_values[self.rate.get_selected()]
 
     def make_backend(self):
         dev = self.cards[self.dev.get_selected()][0]

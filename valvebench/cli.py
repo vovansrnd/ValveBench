@@ -8,10 +8,11 @@ import time
 from pathlib import Path
 
 from . import calib, measure as m, store, vinyl
-from .backend import AlsaCli, SimBackend, SimChannel, list_cards, parse_stream
+from .backend import (AlsaCli, SimBackend, SimChannel, list_cards, parse_stream,
+                      list_pcm_devices, list_duplex_devices, supported_duplex_rates, supported_pcm_rates)
 from .selftest import run_selftest, format_selftest
 from .looptest import run_loopback_report
-from . import scans, passport
+from . import scans, passport, steady
 from .measure import Rig
 
 
@@ -42,6 +43,7 @@ def main(argv=None):
     ap.add_argument("--save", action="store_true", help="сохранить результат в JSON")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("cards", help="карты и объявленные режимы (формат/каналы/частоты)")
+    sub.add_parser("devices", help="отдельные PCM endpoints ЦАП/АЦП и общий полный дуплекс")
     sub.add_parser("clock", help="проверка частоты ЦАП/АЦП физическим loopback")
     p = sub.add_parser("loopback", help="серия аппаратных тестов ЦАП→АЦП с повторениями и шумом тишины")
     p.add_argument("--f", type=float, default=997.0, help="частота контрольного тона (997 Гц — простая, как в AES17)")
@@ -58,18 +60,34 @@ def main(argv=None):
     p.add_argument("--freqs", default="1000,997,1234", help="частоты тона, Гц, через запятую")
     p.add_argument("--level", type=float, default=-6.0)
     p.add_argument("--report", help="сохранить отчёт в файл")
-    p = sub.add_parser("passport", help="паспорт тракта: шум, остаток с тоном, H2/H3, проникновение (для A/B до/после доработки)")
-    p.add_argument("--label", default="", help="метка паспорта, напр. before")
-    p.add_argument("--rates", default="96000,192000", help="частоты дискретизации через запятую")
-    p.add_argument("--quick", action="store_true", help="быстро: одна частота (--rate), −1 dBFS, 3 повтора, ≈45 с")
-    p.add_argument("--out", help="файл паспорта (по умолчанию passport-<label>.json в текущем каталоге)")
-    p.add_argument("--compare", help="сравнить с ранее снятым паспортом (JSON)")
-    p = sub.add_parser("compare", help="сравнить два паспорта: лучше / хуже / в пределах разброса")
+    p = sub.add_parser("passport", help="паспорт измерительного тракта: тишина, тон, гармоники, остаток, проникновение")
+    p.add_argument("--label", default="", help="метка серии: before / after / имя карты")
+    p.add_argument("--rates", default="diagnostic", help="частоты через запятую, diagnostic (96/176.4/192 только поддерживаемые) или supported")
+    p.add_argument("--quick", action="store_true", help="одна частота --rate, уровень -1 dBFS, 3 повтора")
+    p.add_argument("--out", help="путь JSON-файла паспорта")
+    p.add_argument("--compare", help="путь к паспорту для A/B-сравнения")
+    p.add_argument("--allow-device-mismatch", action="store_true", help="разрешить исследовательское сравнение разных карт/конфигураций")
+    p = sub.add_parser("compare", help="сравнить два паспорта A/B")
     p.add_argument("before"); p.add_argument("after")
-    p = sub.add_parser("watch", help="живой монитор остатка L/R при тоне — для работы паяльником")
-    p.add_argument("--count", type=int, default=None, help="число замеров (по умолчанию до Ctrl+C)")
-    p.add_argument("--baseline", help="паспорт, с которым сравнивать (иначе — первые 3 замера)")
-    sub.add_parser("psdcheck", help="сверить плотность шума живого спектра с Welch и интегралом 20–20k")
+    p.add_argument("--allow-device-mismatch", action="store_true", help="разрешить сравнение разных карт/конфигураций с предупреждением")
+    p = sub.add_parser("watch", help="непрерывный монитор негармонического остатка L/R при тоне")
+    p.add_argument("--count", type=int, default=None, help="число замеров; по умолчанию до Ctrl+C")
+    p.add_argument("--baseline", help="JSON-паспорт для сравнения")
+    sub.add_parser("psdcheck", help="сверить живой PSD со Welch и интегралом")
+    p = sub.add_parser("steady", help="длительный matched-level тест с отдельными ЦАП и АЦП (можно разных карт)")
+    p.add_argument("--play-dev", required=True, help="ALSA PCM ЦАП, например hw:3,0")
+    p.add_argument("--rec-dev", required=True, help="ALSA PCM АЦП, например hw:2,0")
+    p.add_argument("--tone", type=float, default=997.0, help="частота тестового тона, Гц")
+    p.add_argument("--tone-level", type=float, default=-18.0, help="цифровой уровень ЦАП, dBFS")
+    p.add_argument("--target", type=float, default=-23.4, help="целевой уровень на АЦП, dBFS")
+    p.add_argument("--tolerance", type=float, default=1.0, help="допуск согласования уровня, дБ")
+    p.add_argument("--duration", type=float, default=40.0, help="длительность L-only и R-only, секунд")
+    p.add_argument("--window", type=float, default=0.1, help="окно анализа, секунд")
+    p.add_argument("--hop", type=float, default=0.1, help="шаг анализа, секунд")
+    p.add_argument("--harmonics", type=int, default=20, help="сколько гармоник вычитать LS-проекцией")
+    p.add_argument("--play-format", default="auto", help="auto, S24_3LE, S24_LE, S32_LE, S16_LE")
+    p.add_argument("--rec-format", default="auto", help="auto, S24_3LE, S24_LE, S32_LE, S16_LE")
+    p.add_argument("--outdir", default="emu_measurements", help="каталог для summary/CSV/WAV")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=997); p.add_argument("--level", type=float, default=-12)
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=997)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
@@ -102,7 +120,134 @@ def main(argv=None):
             for direction, alts in parse_stream(no).items():
                 for alt in alts:
                     print(f"  {direction:8s} format={alt.fmt} channels={alt.channels} rates={','.join(map(str, alt.rates))}")
+        devices = list_duplex_devices()
+        print("\nДуплексные PCM endpoints (можно использовать как --dev / --play-dev / --rec-dev):")
+        if not devices:
+            print("  не найдены; проверь arecord -l и aplay -l")
+        for hw, label in devices:
+            print("  " + label)
         return 0
+    if a.cmd == "devices":
+        pcm = list_pcm_devices()
+        for direction in ("Playback", "Capture"):
+            title = "ЦАП / воспроизведение" if direction == "Playback" else "АЦП / запись"
+            print(f"\n{title}:")
+            if not pcm[direction]:
+                print("  устройств не найдено")
+            for hw, label in pcm[direction]:
+                rates = supported_pcm_rates(hw, direction)
+                rate_text = ",".join(map(str, rates)) if rates else "stream0 не сообщает; проверять открытием"
+                print(f"  {label} · advertised {direction.lower()} rates={rate_text}")
+        duplex = list_duplex_devices()
+        print("\nПолный дуплекс на одном PCM:")
+        if not duplex:
+            print("  нет; для измерения между разными картами используй --play-dev и --rec-dev")
+        for hw, label in duplex:
+            print("  " + label)
+        print("\nВНИМАНИЕ: номера card:N меняются после переподключения USB; перед опытом снова запусти cards/devices.")
+        return 0
+    if a.cmd == "compare":
+        try:
+            text, _stats = passport.compare_passports(passport.load(a.before), passport.load(a.after),
+                                                       allow_mismatch=a.allow_device_mismatch)
+            print(text)
+            return 0
+        except Exception as exc:
+            print(f"COMPARE ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    if a.cmd == "steady":
+        try:
+            steady.run_steady_test(
+                play_dev=a.play_dev, rec_dev=a.rec_dev, fs=a.rate or 192000,
+                tone_hz=a.tone, tone_level_dbfs=a.tone_level, target_dbfs=a.target,
+                tolerance_db=a.tolerance, duration_s=a.duration, window_s=a.window,
+                hop_s=a.hop, max_harmonics=a.harmonics, play_format=a.play_format,
+                rec_format=a.rec_format, out_root=a.outdir)
+            return 0
+        except KeyboardInterrupt:
+            print("\nОстановлено пользователем.")
+            return 130
+        except Exception as exc:
+            print(f"STEADY TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    if a.cmd in ("passport", "watch", "psdcheck"):
+        cfg = calib.load()
+        dev = "sim" if a.sim else (a.dev or cfg["device"])
+
+        def make_rig(fs):
+            if a.sim:
+                be = SimBackend(
+                    SimChannel(gain=0.65, a2=5e-4, a3=3e-3, riaa=False, noise_dbfs=-105,
+                               mod_noise_dbc=-80, mod_jitter_db=4.0),
+                    SimChannel(gain=0.65, a2=2e-3, a3=1e-3, riaa=False, noise_dbfs=-103))
+            else:
+                if dev == "sim":
+                    raise ValueError("Укажи --dev hw:N,0 или добавь --sim")
+                be = AlsaCli(dev, in_map=cfg["in_map"], out_map=cfg["out_map"])
+            rig = Rig(be, cfg, fs=int(fs), blocks=max(a.blocks, 4), settle=0.25)
+            rig.open()
+            return rig
+        try:
+            if a.cmd == "passport":
+                if a.quick:
+                    rates = [a.rate or cfg["fs"]]
+                    levels, repeats, silence_s = (-1.0,), 3, 4.0
+                else:
+                    rates_arg = a.rates.strip().lower()
+                    known = (44100, 48000, 88200, 96000, 176400, 192000)
+                    if rates_arg == "diagnostic":
+                        if dev == "sim":
+                            rates = [96000, 192000]
+                        else:
+                            advertised = set(supported_duplex_rates(dev))
+                            rates = [r for r in (96000, 176400, 192000) if r in advertised]
+                    elif rates_arg == "supported":
+                        rates = [r for r in supported_duplex_rates(dev) if r in known]
+                    else:
+                        rates = [int(v.strip()) for v in a.rates.split(",") if v.strip()]
+                        unsupported = [r for r in rates if dev != "sim" and supported_duplex_rates(dev)
+                                       and r not in supported_duplex_rates(dev)]
+                        if unsupported:
+                            raise ValueError(f"Устройство {dev} не объявляет частоты {unsupported}; доступно {supported_duplex_rates(dev)}")
+                    if not rates:
+                        raise ValueError(f"Не удалось определить подходящие частоты для {dev}; задай --rates явно после ./run.sh cli cards")
+                    levels, repeats, silence_s = (-1.0, -12.0), 3, 8.0
+                label = a.label or time.strftime("%Y%m%d-%H%M%S")
+                metadata = {"in_map": list(cfg["in_map"]), "out_map": list(cfg["out_map"]),
+                            "blocks": max(a.blocks, 4), "device": dev}
+                p = passport.run_passport(make_rig, rates, label, levels=levels, repeats=repeats,
+                                          silence_s=silence_s, metadata=metadata)
+                report = passport.text_passport(p)
+                out = Path(a.out or f"passport-{label}.json")
+                out.parent.mkdir(parents=True, exist_ok=True)
+                passport.save(p, out)
+                print(report)
+                print(f"\nPASSPORT_SAVED: {out}")
+                if a.compare:
+                    ctext, _stats = passport.compare_passports(passport.load(a.compare), p,
+                                                               allow_mismatch=a.allow_device_mismatch)
+                    print("\n" + ctext)
+            elif a.cmd == "watch":
+                rig = make_rig(a.rate or cfg["fs"])
+                base = None
+                if a.baseline:
+                    bp = passport.load(a.baseline)["rates"].get(str(rig.fs))
+                    if bp:
+                        tl = bp["tone"]["L"][sorted(bp["tone"]["L"], key=lambda q: -float(q))[0]]
+                        tr = bp["tone"]["R"][sorted(bp["tone"]["R"], key=lambda q: -float(q))[0]]
+                        base = (tl["resid"], tr["resid"])
+                print("Негармонический остаток = всё, кроме тона и обнаруженных гармоник. Ctrl+C — выход.")
+                passport.watch_loop(rig, count=a.count, baseline=base)
+            else:
+                psd_result = passport.psd_check(make_rig(a.rate or cfg["fs"]))
+                print("PSD_CHECK_COMPLETE")
+            return 0
+        except KeyboardInterrupt:
+            print("\nОстановлено пользователем.")
+            return 130
+        except Exception as exc:
+            print(f"PASSPORT ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
     if a.cmd == "loopback":
         try:
             levels = [float(v.strip()) for v in a.levels.split(",") if v.strip()]
@@ -131,64 +276,6 @@ def main(argv=None):
             return 0
         except Exception as exc:  # noqa: BLE001
             print(f"LOOPBACK TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
-            return 2
-    if a.cmd == "compare":
-        text, _v = passport.compare_passports(passport.load(a.before), passport.load(a.after))
-        print(text)
-        return 0
-    if a.cmd in ("passport", "watch", "psdcheck"):
-        cfg = calib.load()
-        dev = a.dev or cfg["device"]
-
-        def make_rig(fs):
-            if a.sim:
-                be = SimBackend(SimChannel(gain=0.65, a2=5e-4, a3=3e-3, noise_dbfs=-105, mod_noise_dbc=-80, mod_jitter_db=4.0),
-                                SimChannel(gain=0.65, a2=2e-3, a3=1e-3, noise_dbfs=-103))
-            else:
-                if dev == "sim":
-                    ap.error("укажи --dev hw:N,0 или добавь --sim")
-                be = AlsaCli(dev, in_map=cfg["in_map"], out_map=cfg["out_map"])
-            rig = Rig(be, cfg, fs=int(fs), blocks=max(a.blocks, 4), settle=0.25)
-            rig.open()
-            return rig
-        try:
-            if a.cmd == "passport":
-                rates = [int(r) for r in a.rates.split(",") if r.strip()]
-                if a.quick:
-                    rates = [a.rate or cfg["fs"]]
-                    kw = dict(levels=(-1.0,), repeats=3, silence_s=4.0)
-                else:
-                    kw = {}
-                label = a.label or time.strftime("%H%M%S")
-                p = passport.run_passport(make_rig, rates, label, **kw)
-                text = passport.text_passport(p)
-                out = a.out or f"passport-{label}.json"
-                passport.save(p, out)
-                print(text)
-                print(f"\nPASSPORT_SAVED: {out}")
-                if a.compare:
-                    ctext, _v = passport.compare_passports(passport.load(a.compare), p)
-                    print("\n" + ctext)
-            elif a.cmd == "watch":
-                rig = make_rig(a.rate or cfg["fs"])
-                base = None
-                if a.baseline:
-                    bp = passport.load(a.baseline)["rates"].get(str(rig.fs))
-                    if bp:
-                        tl = bp["tone"]["L"][sorted(bp["tone"]["L"], key=lambda s: -float(s))[0]]
-                        tr = bp["tone"]["R"][sorted(bp["tone"]["R"], key=lambda s: -float(s))[0]]
-                        base = (tl["resid"], tr["resid"])
-                print("Остаток = всё, кроме тона и гармоник. Эталон для сравнения: "
-                      + ("паспорт" if base else "первые 3 замера") + ". Ctrl+C — выход.")
-                passport.watch_loop(rig, count=a.count, baseline=base, sleep=(lambda s: time.sleep(0.01)) if a.sim else time.sleep)
-            else:
-                passport.psd_check(make_rig(a.rate or cfg["fs"]))
-            return 0
-        except KeyboardInterrupt:
-            print("\nостановлено")
-            return 0
-        except Exception as exc:  # noqa: BLE001
-            print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2
     if a.cmd in ("levelscan", "freqscan"):
         try:

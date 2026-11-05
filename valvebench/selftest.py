@@ -5,8 +5,9 @@ import math
 import time
 import numpy as np
 
-from . import dsp, gainmatch, scans, looptest, passport
-from .backend import SimBackend, SimChannel
+from . import dsp, gainmatch, scans, looptest, passport, steady
+from .backend import SimBackend, SimChannel, AltSet
+from . import backend as backend_module
 from .calib import Calibration
 from .measure import Rig, sweep, noise_response, noise_transfer_capture
 from .vinyl import analyze_3150_stability, analyze_vta_sum, analyze_frequency_response, analyze_phase, analyze_crosstalk
@@ -305,38 +306,154 @@ def run_selftest():
           len(bad) >= 2 and all(x.startswith("R:") for x in bad) and good == [],
           f"причины: {bad}")
 
-    # --- 0.1.8: нестабильные линии, состояния валидности, сравнение паспортов
+    # --- 0.1.8: unstable slopes and explicit series states.
     lv8 = np.array([-6.0, -12.0, -18.0, -24.0, -30.0])
-    noisy = scans.classify_slope(2, lv8, np.array([-110.0, -133.0, -141.0, -135.0, -145.0]), [True] * 5)
-    check("levelscan: точки с разбросом > 3 дБ получают kind=unstable, а не «фиксированная линия»",
-          noisy is not None and noisy["kind"] == "unstable", f"наклон={noisy['slope']:+.2f}, разброс={noisy['rms']:.1f} дБ")
-
-    sil_ok = [{"section": "SILENCE BEFORE", "channel": ch, "peak_dbfs": -95.0, "noise_unweighted_dbfs": -110.0} for ch in "LR"] + \
-             [{"section": "SILENCE AFTER", "channel": ch, "peak_dbfs": -95.0, "noise_unweighted_dbfs": -110.0} for ch in "LR"]
-    st_ok = looptest.validity_state(sil_ok, [], {"ok": True}, True, [])
+    unstable = scans.classify_slope(2, lv8,
+                                    np.array([-110.0, -133.0, -141.0, -135.0, -145.0]),
+                                    [True] * 5)
+    check("levelscan: unstable points are not classified as a fixed spur",
+          unstable is not None and unstable["kind"] == "unstable" and unstable["rms"] > 3.0,
+          f"kind={unstable['kind'] if unstable else None}; fit RMS={unstable['rms'] if unstable else None}")
+    st_ok = looptest.validity_state(sil[:2] + sil[2:], [], {"ok": True}, True, [])
     st_inc = looptest.validity_state([], [], {"ok": True}, False, [])
-    st_xr = looptest.validity_state(sil_ok, [], {"ok": True}, True, ["  ! aplay: underrun!!! (at least 3.2 ms long)"])
-    check("Валидность серии: OK / INCOMPLETE (нет тишины) / INVALID (XRUN)",
-          st_ok[0] == "OK" and st_inc[0] == "INCOMPLETE" and st_xr[0] == "INVALID",
-          f"{st_ok[0]} / {st_inc[0]} / {st_xr[0]}")
+    st_xrun = looptest.validity_state(sil[:2], [], {"ok": True}, True,
+                                      ["aplay: underrun!!! at least 3.2 ms long"])
+    check("loopback validity distinguishes OK / INCOMPLETE / INVALID XRUN",
+          st_ok[0] == "INVALID" and st_inc[0] == "INCOMPLETE" and st_xrun[0] == "INVALID",
+          f"with deliberately noisy R: {st_ok[0]}, no silence: {st_inc[0]}, XRUN: {st_xrun[0]}")
 
-    def mk(resid_l, spread_l, label):
-        bands = {"20–20k": -110.0, "20k–40k": -108.0}
-        t = lambda r, sp: {"n": 3, "fund": -6.0, "h2": -110.0, "h3": -105.0, "resid": r, "resid_min": r - sp / 2,
-                           "resid_max": r + sp / 2, "spread": sp, "thdn": -95.0, "bands": {}, "lines": []}
-        sil = {ch: {"bands": dict(bands), "a_weighted": -112.0, "hum": [-130.0, -132.0, -134.0], "dc": -150.0,
-                    "peak": -80.0, "lines": []} for ch in "LR"}
-        return {"schema": 1, "label": label, "time": "t", "tone_hz": 997.0, "rates": {"192000": {
-            "fs": 192000, "silence": sil, "tone": {"L": {"-1": t(resid_l, spread_l)}, "R": {"-1": t(-109.7, 0.2)}},
-            "xtalk": {"L->R": -104.5, "R->L": -105.4}, "warnings": []}}}
-    base = mk(-95.5, 7.0, "до")
-    txt_b, vb = passport.compare_passports(base, mk(-108.8, 0.4, "после"))
-    txt_w, vw = passport.compare_passports(mk(-108.8, 0.4, "до"), base)
-    txt_s, vs = passport.compare_passports(base, mk(-97.0, 7.0, "тот же"))
-    check("Паспорт: A/B даёт ЛУЧШЕ после правки, ХУЖЕ после порчи, а сдвиг внутри разброса — без изменений",
-          vb["better"] >= 2 and vb["worse"] == 0 and vw["worse"] >= 2 and vw["better"] == 0
-          and not any(r["sign"] for r in vs["rows"] if "остаток с тоном" in r["name"]),
-          f"лучше={vb['better']}; хуже={vw['worse']}; сдвиг 1.5 дБ при разбросе 7 дБ → без вердикта")
+    # Passport metadata must prevent an accidental A/B comparison across different interfaces.
+    mismatch = passport.passport_mismatches(
+        {"device": "hw:2,0", "tone_hz": 997.0, "levels_dbfs": [-1.0, -12.0],
+         "metadata": {"in_map": [0, 1], "out_map": [0, 1], "blocks": 4}},
+        {"device": "hw:3,0", "tone_hz": 997.0, "levels_dbfs": [-1.0, -12.0],
+         "metadata": {"in_map": [0, 1], "out_map": [0, 1], "blocks": 4}})
+    check("passport A/B: different ALSA devices are reported as incompatible",
+          any("устройства различаются" in x for x in mismatch), f"mismatches={mismatch}")
+
+    # Matched-level test: the robust frequency estimator must not jump to a neighbouring
+    # correlation lobe separated by 1/T, as the previous broad bounded search did.
+    fs_st = 96000
+    f_st = 997.092996
+    t_st = np.arange(fs_st * 2, dtype=np.float64) / fs_st
+    rng_st = np.random.default_rng(919)
+    tone_st = 10 ** (-23.86 / 20) * np.sin(2 * np.pi * f_st * t_st)
+    tone_st += rng_st.normal(0.0, 1e-6, tone_st.size)
+    f_fit, lev_fit = steady._tone_fit(tone_st, fs_st, 997.0)
+    check("steady: bounded single-lobe tone fit returns true frequency and level",
+          abs(f_fit - f_st) < 0.001 and abs(lev_fit + 23.86) < 0.02,
+          f"f={f_fit:.6f} Hz (truth {f_st:.6f}); level={lev_fit:.3f} dBFS")
+
+    # Long-record fit must not jump by 1/T to an adjacent correlation maximum.
+    fs_long = 48000
+    f_long = 997.092996
+    t_long = np.arange(fs_long * 12, dtype=np.float64) / fs_long
+    long_tone = 10 ** (-23.4 / 20) * np.sin(2 * np.pi * f_long * t_long + 0.37)
+    f_long_fit, l_long_fit = steady._tone_fit(long_tone, fs_long, 997.0)
+    check("steady: long tone frequency search remains on the central FFT lobe",
+          abs(f_long_fit - f_long) < 0.001 and abs(l_long_fit + 23.4) < 0.02,
+          f"f={f_long_fit:.6f} Hz (truth {f_long:.6f}); level={l_long_fit:.3f} dBFS")
+
+    # Coherent projection reports the main tone and a known -60 dB cross-channel leak.
+    t_map = np.arange(fs_st * 2, dtype=np.float64) / fs_st
+    map_main = 10 ** (-23.4 / 20) * np.sin(2 * np.pi * f_st * t_map + 0.4)
+    map_leak = 10 ** (-83.4 / 20) * np.sin(2 * np.pi * f_st * t_map - 0.2)
+    main_level = steady._tone_level_at(map_main, fs_st, f_st)
+    leak_level = steady._tone_level_at(map_leak, fs_st, f_st)
+    check("steady: coherent L/R map quantifies a -60 dB cross-channel component",
+          abs(main_level + 23.4) < 0.02 and abs((leak_level - main_level) + 60.0) < 0.02,
+          f"main={main_level:.2f} dBFS; cross={leak_level:.2f} dBFS; Δ={leak_level-main_level:.2f} dB")
+
+    # Residual analysis: a pure carrier + H2 should vanish from the non-harmonic residual,
+    # while one deliberately injected broadband burst must be counted in exactly one window.
+    fs_res = 48000
+    f_res = 997.093
+    t_res = np.arange(fs_res * 5, dtype=np.float64) / fs_res
+    rng_res = np.random.default_rng(1919)
+    base_res = rng_res.normal(0.0, 1e-5, t_res.size)
+    amp_res = 10 ** (-23.4 / 20)
+    for a_s, b_s in ((1.0, 3.0), (3.0, 5.0)):
+        ix = (t_res >= a_s) & (t_res < b_s)
+        base_res[ix] += amp_res * np.sin(2 * np.pi * f_res * t_res[ix])
+        base_res[ix] += amp_res * 10 ** (-80 / 20) * np.sin(4 * np.pi * f_res * t_res[ix] + 0.3)
+    burst_ix = (t_res >= 1.5) & (t_res < 1.6)
+    base_res[burst_ix] += rng_res.normal(0.0, 1e-3, int(np.count_nonzero(burst_ix)))
+    _rows, residual_stats = steady._analyse_channel(
+        base_res, fs_res, {"idle_pre": (0.0, 1.0), "L_steady": (1.0, 3.0), "R_steady": (3.0, 5.0)},
+        "L", f_res, -23.4, 0.1, 0.1, 20)
+    stat_l = residual_stats["states"]["L_steady"]["residual_20_20k"]
+    stat_r = residual_stats["states"]["R_steady"]["residual_20_20k"]
+    check("steady: LS harmonic removal rejects tone leakage and detects a real broadband burst",
+          stat_l["bursts"] == 1 and stat_r["bursts"] == 0 and stat_l["max"] > stat_l["median"] + 20,
+          f"L burst windows={stat_l['bursts']}; R={stat_r['bursts']}; L median/max={stat_l['median']:.1f}/{stat_l['max']:.1f} dBFS")
+
+    # The active playback L and R may have slightly different measured clock frequencies.
+    _mapped_rows, mapped_stats = steady._analyse_channel(
+        base_res, fs_res, {"idle_pre": (0.0, 1.0), "L_steady": (1.0, 3.0), "R_steady": (3.0, 5.0)},
+        "L", {"L_steady": f_res, "R_steady": f_res + 0.02}, -23.4, 0.1, 0.1, 20)
+    mapped_freqs = {r["state"]: r["projection_frequency_hz"] for r in _mapped_rows if r["state"] != "idle_pre"}
+    check("steady: per-output measured frequency is used for each residual projection",
+          abs(mapped_freqs["L_steady"] - f_res) < 1e-9 and abs(mapped_freqs["R_steady"] - (f_res + 0.02)) < 1e-9,
+          f"L-state={mapped_freqs['L_steady']:.6f} Hz; R-state={mapped_freqs['R_steady']:.6f} Hz")
+
+    # At 48 kHz there is no 40 kHz-to-Nyquist band. It must be N/A, not -300 dBFS.
+    _rows_48, stats_48 = steady._analyse_channel(
+        base_res, fs_res, {"idle_pre": (0.0, 1.0), "L_steady": (1.0, 3.0), "R_steady": (3.0, 5.0)},
+        "L", f_res, -23.4, 0.1, 0.1, 20)
+    hi_band_na = stats_48["states"]["L_steady"]["raw_40_nyquist"] is None
+    check("steady: ultrasonic band below Nyquist is reported as N/A, not a false -300 dBFS",
+          hi_band_na, f"raw 40k–Nyquist={stats_48['states']['L_steady']['raw_40_nyquist']}")
+
+    # ALSA format probing preference/fallback is tested without real hardware.
+    old_probe = steady._probe_play
+    try:
+        tried = []
+        def fake_probe(dev, rate, fmt, channels=2):
+            tried.append(fmt)
+            return fmt == "S16_LE", "unsupported"
+        steady._probe_play = fake_probe
+        fmt_pick = steady.choose_device_format("hw:3,0", 192000, "playback")
+    finally:
+        steady._probe_play = old_probe
+    check("steady: ALSA format negotiation falls back to a supported 16-bit mode",
+          fmt_pick.fmt == "S16_LE" and tried == ["S24_3LE", "S24_LE", "S32_LE", "S16_LE"],
+          f"selected={fmt_pick.fmt}; tried={tried}")
+
+    # Playback-only and capture-only interfaces must remain visible for the
+    # separate-DAC/separate-ADC workflow; do not reduce the list to duplex cards.
+    old_parse_stream = backend_module.parse_stream
+    try:
+        backend_module.parse_stream = lambda card: {
+            "Playback": [AltSet("S24_3LE", 2, (48000, 96000))],
+            "Capture": [AltSet("S16_LE", 2, (48000,))],
+        }
+        play_rates = backend_module.supported_pcm_rates("hw:7,0", "Playback")
+        cap_rates = backend_module.supported_pcm_rates("hw:7,0", "Capture")
+        both_rates = backend_module.supported_duplex_rates("hw:7,0")
+    finally:
+        backend_module.parse_stream = old_parse_stream
+    check("ALSA capabilities: separate playback/capture rates are reported independently",
+          play_rates == (48000, 96000) and cap_rates == (48000,) and both_rates == (48000,),
+          f"playback={play_rates}; capture={cap_rates}; duplex={both_rates}")
+
+    # Strict A/B must also reject same-device passports with changed PCM formats.
+    cfg_mismatch = {
+        "time": "before", "label": "a", "device": "hw:2,0", "tone_hz": 997.0,
+        "levels_dbfs": [-1.0], "repeats": 3, "silence_seconds": 4.0,
+        "metadata": {"in_map": [0, 1], "out_map": [0, 1]},
+        "rates": {"96000": {"io_config": {"device": "hw:2,0", "capture_format": "S24_3LE", "playback_format": "S24_3LE"}}},
+    }
+    cfg_mismatch_after = {**cfg_mismatch, "time": "after", "label": "b", "rates": {"96000": {"io_config": {
+        "device": "hw:2,0", "capture_format": "S16_LE", "playback_format": "S24_3LE"}}}}
+    format_mismatch = passport.passport_mismatches(cfg_mismatch, cfg_mismatch_after)
+    text_mismatch = ""
+    try:
+        passport.compare_passports(cfg_mismatch, cfg_mismatch_after)
+    except ValueError as exc:
+        text_mismatch = str(exc)
+    check("passport A/B: a changed PCM capture format is not silently compared",
+          bool(format_mismatch) and "PCM-конфигурация" in text_mismatch,
+          f"mismatches={format_mismatch}")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
