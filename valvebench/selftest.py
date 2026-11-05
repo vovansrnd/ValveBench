@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 
 from . import dsp, gainmatch, scans, looptest, passport, steady
+from . import pcm as pcm_mod
+from .pcm import to_pcm
 from .backend import SimBackend, SimChannel, AltSet
 from . import backend as backend_module
 from .calib import Calibration
@@ -629,6 +631,33 @@ def run_selftest():
           and state_ranges["idle_gap"] == (58.5, 65.5)
           and state_ranges["R_steady"] == (67.25, 106.75),
           f"guard={guard_s:.2f}s; L={state_ranges['L_steady']}; gap={state_ranges['idle_gap']}; R={state_ranges['R_steady']}")
+
+
+    # 0.1.12-P0: потоковый декодер и WAV-писатель; память ограничена блоком.
+    with tempfile.TemporaryDirectory(prefix="valvebench-p0-") as td:
+        td = Path(td)
+        rng_p0 = np.random.default_rng(1204)
+        n_p0 = 3 * 48000 * 2
+        x_p0 = rng_p0.normal(0.0, 0.1, (n_p0 // 2, 2))
+        raw_p0 = td / "cap.raw"
+        raw_p0.write_bytes(to_pcm(x_p0, "S24_3LE"))
+        reader_p0 = pcm_mod.StreamPcmReader(raw_p0, "S24_3LE", 2)
+        full_p0 = pcm_mod.from_pcm(raw_p0.read_bytes(), "S24_3LE", 2)
+        part_p0 = reader_p0.read_frames(1000, 120000)   # границы блоков внутри
+        wav_p0 = td / "cap.wav"
+        frames_p0 = pcm_mod.stream_to_float32_wav(raw_p0, "S24_3LE", 2, wav_p0, 48000)
+        from scipy.io import wavfile as _wav
+        fs_w, data_w = _wav.read(wav_p0)
+        check("P0: StreamPcmReader.read_frames совпадает с from_pcm (включая границы блоков)",
+              reader_p0.frames == n_p0 // 2
+              and np.array_equal(part_p0, full_p0[1000:121000]),
+              f"frames={reader_p0.frames}; макс. расхождение="
+              f"{float(np.max(np.abs(part_p0 - full_p0[1000:121000]))):.2e}")
+        check("P0: stream_to_float32_wav → scipy-читаемый float32 WAV со точными значениями",
+              frames_p0 == n_p0 // 2 and fs_w == 48000 and data_w.dtype == np.float32
+              and np.array_equal(data_w, full_p0.astype(np.float32)),
+              f"frames={frames_p0}; dtype={data_w.dtype}; макс. расхождение с float32(decoded)="
+              f"{float(np.max(np.abs(data_w - full_p0.astype(np.float32)))):.2e}")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}

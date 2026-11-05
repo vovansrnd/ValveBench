@@ -25,11 +25,11 @@ from pathlib import Path
 
 import numpy as np
 from scipy import fft as sp_fft
-from scipy.io import wavfile
 from scipy.optimize import minimize_scalar
 from scipy.signal.windows import blackmanharris, hann
 
-from .pcm import FORMATS, to_pcm, from_pcm
+from .pcm import (FORMATS, to_pcm, from_pcm, stream_to_float32_wav,
+                  FLOAT32_WAV_HEADER)
 
 
 @dataclass
@@ -318,7 +318,8 @@ def _tone_continuity_track(y: np.ndarray, fs: int, state: str, channel: str,
     fits only the fundamental in short windows and flags a dropout when it stays
     at least `threshold_below_db` below the measured steady carrier reference.
     """
-    y = np.asarray(y, dtype=np.float64)
+    # 0.1.12-P0: y может быть memmap-колонкой float32 — вся запись в float64
+    # не материализуется, окна конвертируются в _tone_level_at.
     if subwindow_ms <= 0 or threshold_below_db <= 0 or min_episode_ms <= 0:
         raise ValueError("Параметры контроля несущей должны быть положительными")
     # Keep at least five cycles in each fit. At the default 997 Hz this is 10 ms;
@@ -853,10 +854,15 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
              f"→ R-only {duration_s:.0f} с → тишина {idle_s:.0f} с; запись около {capture_seconds:.0f} с.")
     lead_seconds = 1.0
     _capture_and_play(play_file, capture_file, play, capture, fs, capture_seconds, lead_seconds=lead_seconds)
-    raw = from_pcm(capture_file.read_bytes(), capture.fmt, capture.channels)
+    # 0.1.12-P0: capture декодируется потоково в float32 WAV, анализ читает окна
+    # через memmap — пик памяти не зависит от длительности записи. Числа те же:
+    # float32 точно хранит S24_3LE/S16_LE (мантисса 24 бита).
+    frames = stream_to_float32_wav(capture_file, capture.fmt, capture.channels,
+                                   wav_file, fs)
+    raw = np.memmap(wav_file, dtype="<f4", mode="r", offset=FLOAT32_WAV_HEADER,
+                    shape=(frames, capture.channels))
     if raw.shape[0] < int(fs * (play_seconds + 1.0)):
         raise RuntimeError(f"Запись короче ожидаемой: {raw.shape[0] / fs:.2f} с")
-    wavfile.write(wav_file, fs, raw.astype(np.float32))
 
     # Capture starts lead_seconds before playback. Exclude half-second margins
     # from idle states so USB/driver start/stop settling does not define baseline.
