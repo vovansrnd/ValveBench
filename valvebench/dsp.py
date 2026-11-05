@@ -48,6 +48,31 @@ def dbfs_to_amp(dbfs):
     return 10.0 ** (np.asarray(dbfs, dtype=np.float64) / 20.0)
 
 
+def spectrum_view_limits(fs, preset=2):
+    """Frequency limits for the live spectrum presets.
+
+    Preset 0: conventional audio band (20 Hz–20 kHz).
+    Preset 1: extended band (10 Hz–40 kHz).
+    Preset 2: all positive frequencies through Nyquist (10 Hz–Fs/2).
+    The upper edge is always clipped to the actual Nyquist frequency.
+    """
+    fs = float(fs)
+    if not math.isfinite(fs) or fs <= 0:
+        raise ValueError("Fs must be a finite positive number")
+    nyquist = fs / 2.0
+    if preset == 0:
+        lo, hi = 20.0, min(20000.0, nyquist)
+    elif preset == 1:
+        lo, hi = 10.0, min(40000.0, nyquist)
+    elif preset == 2:
+        lo, hi = 10.0, nyquist
+    else:
+        raise ValueError(f"unknown spectrum band preset: {preset}")
+    if hi <= lo:
+        raise ValueError(f"Fs={fs:g} Hz is too low for spectrum band preset {preset}")
+    return lo, hi
+
+
 def coherent_freq(f, fs, n):
     """Ближайшая к f частота, кратная fs/n (целое число периодов в n отсчётах)."""
     k = max(1, int(round(f * n / fs)))

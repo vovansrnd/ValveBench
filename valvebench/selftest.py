@@ -51,6 +51,18 @@ def run_selftest():
           f"full-scale sine={line_level:+.3f} dBFS; integrated ASD={asd_integrated_dbfs:.2f} dBFS; "
           f"time-domain noise={expected_noise_dbfs:.2f} dBFS")
 
+    limits_192 = dsp.spectrum_view_limits(192000, 2)
+    limits_96 = dsp.spectrum_view_limits(96000, 2)
+    limits_44 = dsp.spectrum_view_limits(44100, 2)
+    nyquist_bins = [float(np.fft.rfftfreq(8192, 1.0 / fs)[-1]) for fs in
+                    (44100, 96000, 176400, 192000)]
+    expected_nyquist = [fs / 2.0 for fs in (44100, 96000, 176400, 192000)]
+    check("Spectrum range reaches exact Nyquist at supported sample rates",
+          limits_192 == (10.0, 96000.0) and limits_96 == (10.0, 48000.0)
+          and limits_44 == (10.0, 22050.0) and nyquist_bins == expected_nyquist,
+          f"view limits: 192k={limits_192}, 96k={limits_96}, 44.1k={limits_44}; "
+          f"FFT endpoints={nyquist_bins}")
+
     # Двухтоновый CCIF: вводим продукт 1 кГц на -60 dBc.
     x2 = 0.3*np.sin(2*np.pi*19000*t) + 0.3*np.sin(2*np.pi*20000*t) + 0.0003*np.sin(2*np.pi*1000*t)
     ri = dsp.analyze_imd(x2, fs, 19000, 20000, n, mode="ccif", band_hi=21000)
@@ -278,8 +290,9 @@ def run_selftest():
     sc = scans.run_freq_scan(rq, (1000.0, 997.0, 1234.0), level=-6.0)
     vd = scans.freq_scan_verdict(sc)
     per = {r["f"]: r["period"] for r in sc["rows"] if r["ch"] == "L"}
-    check("Тон 1000 Гц на 48 кГц периодичен (48 отсч.), 997 Гц — нет; квантование даёт линии только на периодичном",
-          per[1000.0] == 48 and per[997.0] == 48000 and len(vd) >= 1 and "артефакт периодичности" in vd[0],
+    check("Freqscan distinguishes short-period 1000 Hz and long-period 997 Hz (not aperiodic)",
+          per[1000.0] == 48 and per[997.0] == 48000 and len(vd) >= 1
+          and "короткопериодичном" in vd[0] and "длиннопериодичном" in vd[0],
           f"периоды={per}; вывод: {vd[0] if vd else 'нет'}")
 
     sil = [{"section": "SILENCE BEFORE", "channel": "L", "peak_dbfs": -95.0, "noise_unweighted_dbfs": -110.0},

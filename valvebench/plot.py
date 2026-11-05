@@ -142,13 +142,40 @@ class Plot(Gtk.DrawingArea):
             labs = []
             while x <= self.xlim[1] + 1e-9:
                 labs.append((x, f"{x:g}")); x += st
+        # Draw all major grid lines. On a logarithmic spectrum ending at a
+        # non-decade frequency (for example 96 kHz), explicitly label the
+        # right boundary so the Nyquist limit is visible to the user.
+        endpoint_label = None
+        endpoint_left = None
+        if self.xlog:
+            endpoint = self.xlim[1]
+            endpoint_label = _fmt_f(endpoint)
+            endpoint_width = cr.text_extents(endpoint_label).x_advance
+            endpoint_left = ml + pw - endpoint_width
         for x, lab in labs:
             px = self._tx(x, ml, pw)
             rgba(0.13)
             cr.move_to(px, mt); cr.line_to(px, mt + ph); cr.stroke()
             rgba(0.75)
             ext = cr.text_extents(lab)
-            cr.move_to(px - ext.x_advance / 2, mt + ph + fs + 4); cr.show_text(lab)
+            label_left = px - ext.x_advance / 2
+            label_right = label_left + ext.x_advance
+            # Avoid printing e.g. "50k 96k" on top of itself at the far edge.
+            overlaps_endpoint = (endpoint_left is not None and
+                                 label_right >= endpoint_left - 4 and
+                                 label_left <= ml + pw)
+            is_endpoint = self.xlog and math.isclose(
+                x, self.xlim[1], rel_tol=1e-9, abs_tol=1e-9)
+            if not overlaps_endpoint or is_endpoint:
+                cr.move_to(px - ext.x_advance / 2, mt + ph + fs + 4)
+                cr.show_text(lab)
+        if endpoint_label is not None and not any(
+                math.isclose(x, self.xlim[1], rel_tol=1e-9, abs_tol=1e-9)
+                for x, _ in labs):
+            rgba(0.75)
+            ext = cr.text_extents(endpoint_label)
+            cr.move_to(ml + pw - ext.x_advance, mt + ph + fs + 4)
+            cr.show_text(endpoint_label)
         rgba(0.9)
         cr.rectangle(ml, mt, pw, ph); cr.stroke()
         rgba(0.8)

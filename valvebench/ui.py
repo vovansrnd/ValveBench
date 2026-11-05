@@ -472,8 +472,13 @@ class SpectrumPage(Gtk.Box):
         self.floor.set_selected(2)
         self.top = Gtk.DropDown.new_from_strings(["0", "−20", "−40", "−60", "−80"])
         self.top.set_selected(0)
-        self.band = Gtk.DropDown.new_from_strings(["20 Гц – 20 кГц", "10 Гц – 40 кГц"])
-        self.band.set_selected(0)
+        self.band = Gtk.DropDown.new_from_strings([
+            "20 Гц – 20 кГц",
+            "10 Гц – 40 кГц",
+            "10 Гц – Fs/2 (весь спектр до Найквиста)",
+        ])
+        # В основном режиме показываем весь доступный положительный спектр.
+        self.band.set_selected(2)
         self.avg_mode = Gtk.DropDown.new_from_strings(["Без усреднения", "Быстрое", "Сглаженное"])
         self.avg_mode.set_selected(1)
         self.state = Gtk.Label(label="Аудиопоток выключен", xalign=0)
@@ -505,7 +510,9 @@ class SpectrumPage(Gtk.Box):
         help_label = Gtk.Label(
             label="Амплитуда линий: dBFS/bin, уровень синусоидальной составляющей в каждом бине. "
                   "Плотность шума: dBFS/√Гц, позволяет сравнивать шумовую полку при разном FFT. "
-                  "Δf=Fs/N; ENBW окна Блэкмана–Харриса около 2·Δf. Уровень тона и плотность шума — разные величины.",
+                  "Δf=Fs/N; ENBW окна Блэкмана–Харриса около 2·Δf. Уровень тона и плотность шума — разные величины. "
+                  "Режим Fs/2 показывает последний положительный FFT-бин (частоту Найквиста). "
+                  "Выше слышимой полосы АЧХ аналогового тракта может быть не нормирована.",
             xalign=0, wrap=True)
         help_label.add_css_class("dim-label")
         self.append(help_label)
@@ -583,8 +590,16 @@ class SpectrumPage(Gtk.Box):
         yhi = float([0, -20, -40, -60, -80][self.top.get_selected()])
         if ylo >= yhi:
             ylo, yhi = (-160.0, 0.0) if self.mode.get_selected() == 0 else (-200.0, -60.0)
-        self.plot.set_view((xlo, min(20000.0 if self.band.get_selected() == 0 else 40000.0, 0.45 * fs)),
-                           (ylo, yhi), xlabel="Частота, Гц", ylabel=ylabel)
+        band_index = self.band.get_selected()
+        xlo, xhi = dsp.spectrum_view_limits(fs, band_index)
+        if band_index == 0:
+            band_name = f"{xlo:.0f} Гц–{xhi:.0f} Гц"
+        elif band_index == 1:
+            band_name = f"{xlo:.0f} Гц–{xhi:.0f} Гц"
+        else:
+            band_name = f"{xlo:.0f} Гц–{xhi:.0f} Гц (Fs/2)"
+        self.plot.set_view((xlo, xhi), (ylo, yhi),
+                           xlabel="Частота, Гц", ylabel=ylabel)
         if self.plot.ylim[0] >= self.plot.ylim[1]:
             self.plot.set_view(ylim=(-160, 0))
         self.plot.set_traces(traces)
@@ -597,7 +612,8 @@ class SpectrumPage(Gtk.Box):
         xruns = status.get("xruns")
         xrun_text = "XRUN: счётчик недоступен" if xruns is None else f"XRUN: {xruns}"
         mode_name = "линейчатый спектр" if self.mode.get_selected() == 0 else "спектральная плотность шума"
-        self.state.set_text(f"{source} · {mode_name} · N={n:,} · Δf={df:.3f} Гц · ENBW={enbw:.2f} Гц · "
+        self.state.set_text(f"{source} · {mode_name} · полоса {band_name} · N={n:,} · "
+                            f"Δf={df:.3f} Гц · ENBW={enbw:.2f} Гц · "
                             f"окно {n/fs:.3f} с · обновление ≥{refresh_ms} мс · {xrun_text} · "
                             f"ADC frames={status.get('capture_frames', 0):,}")
         return True
