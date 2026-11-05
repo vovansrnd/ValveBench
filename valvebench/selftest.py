@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import numpy as np
 
-from . import dsp, gainmatch, scans, looptest, passport, steady
+from . import dsp, gainmatch, scans, looptest, passport, steady, store
 from . import pcm as pcm_mod
 from . import io_health as io_health_mod
 from .pcm import to_pcm
@@ -280,6 +280,50 @@ def run_selftest():
           and gainmatch.classify(0.04, 0.05) == "ok" and gainmatch.pick_range(0.37, 0.05) == 0.5,
           f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare={st2['delta']:+.4f}; "
           f"повторный tare={st3['delta']:+.4f}; после сброса={st4['delta']:+.4f}")
+
+    # Multi-frequency gain comparison: known flat 1.5x / 1.0x channels.
+    cal_gm = Calibration()
+    cal_gm["out_fs_vrms"] = [2.0, 2.0]
+    cal_gm["in_fs_vrms"] = [2.0, 2.0]
+    be_gm = SimBackend(SimChannel(gain=1.5, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
+                       SimChannel(gain=1.0, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130), seed=17)
+    rig_gm = Rig(be_gm, cal_gm, fs=48000, blocks=2, settle=0.15)
+    rig_gm.open()
+    series_gm = gainmatch.measure_series(rig_gm, level_dbfs=-24.0, repeats=2,
+                                         metadata={"dut": "synthetic flat 1.5x / 1.0x"})
+    expected_gm = 20.0 * math.log10(1.5)
+    deltas_gm = [row["delta_gain_db"] for row in series_gm["rows"]]
+    levels_valid_gm = all(row["valid"] for row in series_gm["rows"])
+    check("Gain Match series: 100/1k/10k calibrated ΔG and repeat validity",
+          len(series_gm["rows"]) == 3 and series_gm["calibrated"] and levels_valid_gm
+          and all(abs(value - expected_gm) < 0.03 for value in deltas_gm)
+          and all(row["channels"]["L"]["repeats"] and row["channels"]["R"]["repeats"]
+                  for row in series_gm["rows"]),
+          f"ΔG={['%.4f' % v for v in deltas_gm]} dB; истина={expected_gm:.4f} dB; "
+          f"валидны={levels_valid_gm}")
+
+    # An uncalibrated ADC-level difference must never be labelled as true gain.
+    rig_gm_raw = Rig(SimBackend(SimChannel(gain=1.5, noise_dbfs=-125),
+                                SimChannel(gain=1.0, noise_dbfs=-125), seed=19),
+                     Calibration(), fs=48000, blocks=2, settle=0.1)
+    rig_gm_raw.open()
+    series_gm_raw = gainmatch.measure_series(rig_gm_raw, level_dbfs=-24.0, repeats=1)
+    raw_row = series_gm_raw["rows"][1]
+    check("Gain Match series: no voltage calibration → report ADC delta, not ΔG",
+          not series_gm_raw["calibrated"] and raw_row["delta_gain_db"] is None
+          and abs(raw_row["delta_output_db"] - expected_gm) < 0.03
+          and "без калибровки" in gainmatch.text_series(series_gm_raw),
+          f"ΔADC={raw_row['delta_output_db']:.4f} dB; ΔG={raw_row['delta_gain_db']}")
+
+    with tempfile.TemporaryDirectory(prefix="valvebench-gain-series-") as tmp_gain:
+        gain_json, gain_csv = store.save_gain_series(series_gm, tmp_gain)
+        saved_gain = json.loads(Path(gain_json).read_text(encoding="utf-8"))
+        csv_lines = Path(gain_csv).read_text(encoding="utf-8").splitlines()
+        check("Gain Match series: JSON+CSV saved with DUT/tube metadata",
+              len(saved_gain["rows"]) == 3 and len(csv_lines) == 4
+              and saved_gain["metadata"].get("dut") == "synthetic flat 1.5x / 1.0x"
+              and saved_gain["metadata"].get("tubes") is None,
+              f"JSON rows={len(saved_gain['rows'])}; CSV data rows={len(csv_lines)-1}; metadata preserved")
 
     # --- 0.1.6: наклоны гармоник, периодичность тона, валидность серии
     lv = np.array([-6.0, -12.0, -18.0, -24.0, -30.0])

@@ -14,6 +14,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from . import calib, dsp, measure as m, signals, store, vinyl  # noqa: E402
+from . import gainmatch  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
 from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates  # noqa: E402
@@ -211,9 +212,26 @@ class LivePage(Gtk.Box):
         self.tol = spin("Допуск ΔG, дБ", 0.01, 2.0, 0.01, 0.10, 2, "зелёная зона индикатора")
         self._delta_error_shown = False
 
+        # Повторяемая частотная серия: измерение усиления обоих каналов
+        # на 100 Гц / 1 кГц / 10 кГц с автоматическим сохранением JSON+CSV.
+        self.series_level = spin("Уровень серии, dBFS", -80.0, -0.5, 0.5, -30.0, 1,
+                                 "Начинай с малого уровня; проверь запас АЦП")
+        self.series_repeats = spin("Повторов на частоту", 1, 5, 1, 3, 0,
+                                   "Повторы чередуются по частотам")
+        self.series_dut = Adw.EntryRow(title="Устройство / модель")
+        self.series_tubes = Adw.EntryRow(title="Лампы / позиции")
+        self.series_notes = Adw.EntryRow(title="Примечание")
+        self.series_result_label = Gtk.Label(label="Частотная серия ещё не измерялась",
+                                             xalign=0, yalign=0, wrap=True, selectable=True)
+        self.series_result_label.add_css_class("monospace")
+        self.last_series = None
+
         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         controls.set_size_request(310, -1)
         controls.append(group("Генератор — параметры", self.f, self.lv, self.route, self.tol))
+        controls.append(group("Серия Gain Match · 100 / 1k / 10k", self.series_level, self.series_repeats))
+        controls.append(group("Карточка измерения", self.series_dut, self.series_tubes, self.series_notes))
+        controls.append(button("Измерить усиление на трёх частотах", self.measure_series, True))
         # Единственная кнопка генератора находится на главном измерительном экране.
         # Это тот же ToggleButton, состояние которого управляет аудиодвижком.
         self.gen_action = self.win.generator_btn
@@ -255,6 +273,12 @@ class LivePage(Gtk.Box):
         header.append(self.clock_label)
         right.append(header)
         right.append(self.delta_view)
+        series_scroller = Gtk.ScrolledWindow()
+        series_scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        series_scroller.set_min_content_height(118)
+        series_scroller.set_max_content_height(170)
+        series_scroller.set_child(self.series_result_label)
+        right.append(series_scroller)
 
         meters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=26)
         meters.set_vexpand(True)
@@ -281,6 +305,31 @@ class LivePage(Gtk.Box):
         for w in (self.f, self.lv):
             w.connect("notify::value", lambda *_: self.apply())
         self.route.connect("notify::selected", lambda *_: self.apply())
+
+    def measure_series(self):
+        """Run and save the fixed 100 Hz / 1 kHz / 10 kHz gain comparison."""
+        metadata = {
+            "dut": self.series_dut.get_text().strip(),
+            "tubes": self.series_tubes.get_text().strip(),
+            "notes": self.series_notes.get_text().strip(),
+        }
+        metadata = {key: value for key, value in metadata.items() if value}
+        level = float(self.series_level.get_value())
+        repeats = int(self.series_repeats.get_value())
+
+        def job(rig):
+            return gainmatch.measure_series(rig, level_dbfs=level, repeats=repeats, metadata=metadata)
+
+        def done(result):
+            self.last_series = result
+            self.series_result_label.set_text(gainmatch.text_series(result))
+            try:
+                json_path, csv_path = store.save_gain_series(result)
+                self.win.toast(f"Gain Match сохранён: {json_path} · CSV: {csv_path}")
+            except OSError as exc:
+                self.win.toast(f"Измерено, но не удалось сохранить результат: {exc}")
+
+        self.win.run_job(job, done, "Gain Match: измерение 100 / 1000 / 10000 Гц…")
 
     def reset_holds(self):
         self.meter_l.reset_holds()

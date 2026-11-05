@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import math
+import time
 from collections import deque
 
 import numpy as np
@@ -132,3 +133,184 @@ class GainTracker:
                 "level_dbfs": lv, "snr_db": snr, "phase_deg": dphi,
                 "gain_db": gains, "calibrated": calibrated, "tare_db": self.tare_db,
                 "msg": ""}
+
+
+SERIES_FREQUENCIES = (100.0, 1000.0, 10000.0)
+MIN_SERIES_SNR_DB = 15.0
+
+
+def measure_series(rig, frequencies=SERIES_FREQUENCIES, level_dbfs=-30.0, repeats=3, metadata=None):
+    """Measure L/R gain at several frequencies in one coherent DAC→ADC run.
+
+    Each frequency is repeated in every pass (100, 1k, 10k, 100, ...), which
+    makes slow drift visible instead of measuring all repetitions of one
+    frequency back-to-back.  Absolute G is reported only when both DAC and ADC
+    channels have voltage calibration.  Without it, ``delta_output_db`` is
+    explicitly an ADC-level difference, not a calibrated gain difference.
+    """
+    freqs = tuple(float(f) for f in frequencies)
+    if not freqs or len(freqs) < 2:
+        raise ValueError("для серии Gain Match нужны минимум две частоты")
+    if any(not math.isfinite(f) or f <= 0 or f >= rig.fs / 2 for f in freqs):
+        raise ValueError("частоты должны быть положительными и ниже Найквиста")
+    if len({round(f, 9) for f in freqs}) != len(freqs):
+        raise ValueError("частоты в серии не должны повторяться")
+    level_dbfs = float(level_dbfs)
+    if not math.isfinite(level_dbfs) or not -80.0 <= level_dbfs <= -0.5:
+        raise ValueError("уровень генератора должен быть в диапазоне −80…−0.5 dBFS")
+    repeats = int(repeats)
+    if not 1 <= repeats <= 10:
+        raise ValueError("число повторов должно быть от 1 до 10")
+
+    tones = {}
+    segments = []
+    order = []
+    for rep in range(repeats):
+        for requested_f in freqs:
+            k, amplitude = rig.amp_tone(requested_f, level_dbfs)
+            actual_f = float(rig.f_of(k))
+            tones[requested_f] = (k, actual_f)
+            segments.append(([(k, amplitude)], [(k, amplitude)], None))
+            order.append((requested_f, rep + 1, actual_f, k))
+
+    windows, warnings = rig.run(segments)
+    per_frequency = {f: {"L": [], "R": []} for f in freqs}
+    for order_item, window in zip(order, windows):
+        requested_f, rep, actual_f, _k = order_item
+        for ch_index, channel in enumerate(("L", "R")):
+            signal = np.asarray(window[:, ch_index], dtype=np.float64)
+            # Reuse the production tone analyser: unlike a fixed-frequency LS
+            # fit, it estimates the captured f0 and remains valid with small
+            # independent DAC/ADC clock offsets.
+            analysis = rig._tone_an(window, ch_index, tones[requested_f][0], nharm=3)
+            measured_f = float(analysis["f0"])
+            level = float(analysis["level_dbfs"])
+            snr = max(0.0, -float(analysis["thdn_db"]))
+            residual_dbfs = level - snr
+            peak = float(np.max(np.abs(signal))) if signal.size else 0.0
+            clipped = peak >= 0.98
+            reasons = []
+            if not math.isfinite(level) or level <= -120.0:
+                reasons.append("tone_missing")
+            if snr < MIN_SERIES_SNR_DB:
+                reasons.append("low_snr")
+            if clipped:
+                reasons.append("adc_clip")
+
+            gain = rig.cal.gain_db(level_dbfs, level, ch_index)
+            input_v = rig.cal.dut_in_v(level_dbfs, ch_index)
+            output_v = rig.cal.in_v(level, ch_index)
+            per_frequency[requested_f][channel].append({
+                "repeat": rep,
+                "frequency_hz": measured_f,
+                "level_dbfs": level,
+                "residual_dbfs": residual_dbfs,
+                "snr_db": snr,
+                "phase_coherence": analysis.get("phase_coherence"),
+                "peak_dbfs": to_db(peak),
+                "clipped": clipped,
+                "valid": not reasons,
+                "validity_reasons": reasons,
+                "gain_db": None if gain is None else float(gain),
+                "input_vrms": input_v,
+                "output_vrms": output_v,
+            })
+
+    rows = []
+    for requested_f in freqs:
+        channels = {}
+        for channel in ("L", "R"):
+            samples = per_frequency[requested_f][channel]
+            levels = [q["level_dbfs"] for q in samples]
+            gains = [q["gain_db"] for q in samples if q["gain_db"] is not None]
+            snrs = [q["snr_db"] for q in samples]
+            channels[channel] = {
+                "level_dbfs": float(np.median(levels)),
+                "level_min_dbfs": float(min(levels)),
+                "level_max_dbfs": float(max(levels)),
+                "level_spread_db": float(max(levels) - min(levels)),
+                "residual_dbfs": float(np.median([q["residual_dbfs"] for q in samples])),
+                "snr_db": float(np.median(snrs)),
+                "gain_db": float(np.median(gains)) if len(gains) == repeats else None,
+                "input_vrms": samples[0]["input_vrms"],
+                "output_vrms": float(np.median([q["output_vrms"] for q in samples if q["output_vrms"] is not None]))
+                               if any(q["output_vrms"] is not None for q in samples) else None,
+                "valid": all(q["valid"] for q in samples),
+                "validity_reasons": sorted({reason for q in samples for reason in q["validity_reasons"]}),
+                "repeats": samples,
+            }
+        calibrated = channels["L"]["gain_db"] is not None and channels["R"]["gain_db"] is not None
+        delta_output = channels["L"]["level_dbfs"] - channels["R"]["level_dbfs"]
+        delta_gain = (channels["L"]["gain_db"] - channels["R"]["gain_db"]) if calibrated else None
+        per_repeat_delta = [l["level_dbfs"] - r["level_dbfs"]
+                            for l, r in zip(per_frequency[requested_f]["L"], per_frequency[requested_f]["R"])]
+        rows.append({
+            "requested_frequency_hz": requested_f,
+            "frequency_hz": tones[requested_f][1],
+            "channels": channels,
+            "calibrated": calibrated,
+            "delta_gain_db": delta_gain,
+            "delta_output_db": float(delta_output),
+            "delta_output_spread_db": float(max(per_repeat_delta) - min(per_repeat_delta)),
+            "valid": channels["L"]["valid"] and channels["R"]["valid"],
+        })
+
+    backend = rig.be
+    result = {
+        "kind": "gain_match_series",
+        "schema": 1,
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "device": getattr(backend, "hw", getattr(backend, "name", type(backend).__name__)),
+        "backend": getattr(backend, "name", type(backend).__name__),
+        "fs": int(rig.fs),
+        "generator_level_dbfs": level_dbfs,
+        "frequencies_hz": [row["frequency_hz"] for row in rows],
+        "repeats": repeats,
+        "blocks": int(rig.blocks),
+        "settle_seconds": float(rig.settle),
+        "calibrated": all(row["calibrated"] for row in rows),
+        "calibration": {
+            "out_fs_vrms": list(rig.cal["out_fs_vrms"]),
+            "in_fs_vrms": list(rig.cal["in_fs_vrms"]),
+            "att_db": float(rig.cal["att_db"]),
+            "method": "single-point voltage calibration",
+            "frequency_dependent_loopback_correction": False,
+        },
+        "rows": rows,
+        "metadata": dict(metadata or {}),
+        "warnings": list(warnings),
+    }
+    return result
+
+
+def text_series(result):
+    """Compact human-readable summary for CLI/GUI."""
+    calibrated = bool(result.get("calibrated"))
+    lines = [f"GAIN MATCH · Fs {result['fs']} Гц · генератор {result['generator_level_dbfs']:.1f} dBFS · "
+             f"{result['repeats']} повтора(ов)",
+             f"{'Гц':>8s}  {'L dBFS':>9s}  {'R dBFS':>9s}  {'Δ ADC':>9s}  "
+             f"{'G L':>9s}  {'G R':>9s}  {'ΔG':>9s}  статус"]
+    for row in result["rows"]:
+        left, right = row["channels"]["L"], row["channels"]["R"]
+        gl = f"{left['gain_db']:+.3f}" if left["gain_db"] is not None else "—"
+        gr = f"{right['gain_db']:+.3f}" if right["gain_db"] is not None else "—"
+        dg = f"{row['delta_gain_db']:+.3f}" if row["delta_gain_db"] is not None else "—"
+        status = "OK" if row["valid"] else "ПРОВЕРИТЬ"
+        if not row["calibrated"]:
+            status += " · не калибровано"
+        lines.append(f"{row['frequency_hz']:8.1f}  {left['level_dbfs']:9.2f}  {right['level_dbfs']:9.2f}  "
+                     f"{row['delta_output_db']:+9.3f}  {gl:>9s}  {gr:>9s}  {dg:>9s}  {status}")
+        lines.append(f"          SNR L/R {left['snr_db']:.1f}/{right['snr_db']:.1f} dB · "
+                     f"разброс ΔADC {row['delta_output_spread_db']:.3f} dB")
+    if not calibrated:
+        lines.append("G и ΔG недоступны без калибровки напряжения ЦАП L/R и АЦП L/R; ΔADC — только разность уровней на входах АЦП.")
+    else:
+        lines.append("Примечание: напряжения откалиброваны в одной точке; частотная коррекция петли ЦАП/АЦП не применена. На 100/10k результат включает АЧХ измерительной карты.")
+    if result.get("metadata"):
+        meta = result["metadata"]
+        for key, title in (("dut", "Устройство"), ("tubes", "Лампы"), ("notes", "Примечание")):
+            if meta.get(key):
+                lines.append(f"{title}: {meta[key]}")
+    if result.get("warnings"):
+        lines.extend(f"! {warning}" for warning in result["warnings"])
+    return "\n".join(lines)
