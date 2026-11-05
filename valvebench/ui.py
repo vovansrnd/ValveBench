@@ -209,29 +209,47 @@ class LivePage(Gtk.Box):
         self.last_generator_settings = None
         self.tracker = GainTracker()
         self.delta_view = GainDeltaView()
-        self.tol = spin("Допуск ΔG, дБ", 0.01, 2.0, 0.01, 0.10, 2, "зелёная зона индикатора")
+        self.tol = spin("Допуск разницы L/R, дБ", 0.01, 2.0, 0.01, 0.20, 2, "для итогового заключения Gain Match")
         self._delta_error_shown = False
 
-        # Повторяемая частотная серия: измерение усиления обоих каналов
-        # на 100 Гц / 1 кГц / 10 кГц с автоматическим сохранением JSON+CSV.
-        self.series_level = spin("Уровень серии, dBFS", -80.0, -0.5, 0.5, -30.0, 1,
-                                 "Начинай с малого уровня; проверь запас АЦП")
+        # Двухшаговый Gain Match: сначала измеряется собственная L/R-ошибка
+        # петли звуковой карты, затем она вычитается из измерения DUT.
+        self.series_level = spin("Уровень теста, dBFS", -80.0, -0.5, 0.5, -30.0, 1,
+                                 "Один и тот же уровень для петли и усилителя")
         self.series_repeats = spin("Повторов на частоту", 1, 5, 1, 3, 0,
-                                   "Повторы чередуются по частотам")
+                                   "Три частоты измеряются вперемешку")
         self.series_dut = Adw.EntryRow(title="Устройство / модель")
         self.series_tubes = Adw.EntryRow(title="Лампы / позиции")
         self.series_notes = Adw.EntryRow(title="Примечание")
-        self.series_result_label = Gtk.Label(label="Частотная серия ещё не измерялась",
-                                             xalign=0, yalign=0, wrap=True, selectable=True)
-        self.series_result_label.add_css_class("monospace")
+        self.series_reference = None
         self.last_series = None
+        self.series_result_label = Gtk.Label(
+            label="Сначала измерь петлю звуковой карты. Без этого результат усилителя не рассчитывается.",
+            xalign=0, yalign=0, wrap=True, selectable=True)
+        self.series_result_label.set_hexpand(True)
+        self.series_result_label.set_margin_top(8)
+        self.series_result_label.set_margin_bottom(8)
+        self.series_result_label.add_css_class("title-4")
+        self.series_reference_label = Gtk.Label(label="Эталон петли: не создан", xalign=0, wrap=True)
+        self.series_reference_label.add_css_class("dim-label")
+        self.series_loop_btn = button("1. ИЗМЕРИТЬ ПЕТЛЮ КАРТЫ  (L→L, R→R)", self.measure_loopback, True)
+        self.series_dut_btn = button("2. ИЗМЕРИТЬ УСИЛИТЕЛЬ", self.measure_dut_series, True)
+        self.series_dut_btn.set_sensitive(False)
 
         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         controls.set_size_request(310, -1)
-        controls.append(group("Генератор — параметры", self.f, self.lv, self.route, self.tol))
-        controls.append(group("Серия Gain Match · 100 / 1k / 10k", self.series_level, self.series_repeats))
-        controls.append(group("Карточка измерения", self.series_dut, self.series_tubes, self.series_notes))
-        controls.append(button("Измерить усиление на трёх частотах", self.measure_series, True))
+        controls.append(group("Параметры Gain Match", self.series_level, self.series_repeats, self.tol))
+        controls.append(self.series_loop_btn)
+        controls.append(self.series_reference_label)
+        controls.append(self.series_dut_btn)
+        controls.append(group("Что проверяем", self.series_dut, self.series_tubes, self.series_notes))
+        controls.append(Gtk.Label(
+            label="Шаг 1: соединить выходы карты напрямую со входами (L→L, R→R). "
+                  "Шаг 2: вместо петли подключить усилитель. Между шагами не менять "
+                  "громкость карты, уровень теста и аттенюаторы. Поправка компенсирует "
+                  "карту, но не несовпадение внешних L/R кабелей и делителей. После "
+                  "переподключения карты или изменения микшера повторить шаг 1.",
+            xalign=0, wrap=True))
         # Единственная кнопка генератора находится на главном измерительном экране.
         # Это тот же ToggleButton, состояние которого управляет аудиодвижком.
         self.gen_action = self.win.generator_btn
@@ -258,8 +276,10 @@ class LivePage(Gtk.Box):
                   "не успел обслужить буфер, возможны пропуски/разрывы.",
             xalign=0, wrap=True))
         controls.append(Gtk.Label(
-            label="Напряжения и усиление появятся после раздельной калибровки L/R. Для входа MM необходим "
-                  "внешний аттенюатор и корректное сопротивление источника.", xalign=0, wrap=True))
+            label="Баланс усиления L/R измеряется в двух шагах выше и не требует вольтметра. "
+                  "Абсолютные Uin, Uout и G каждого канала требуют калибровки напряжения. "
+                  "Для входа MM необходим внешний аттенюатор и корректное сопротивление источника.",
+            xalign=0, wrap=True))
         self.append(controls)
 
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -275,8 +295,8 @@ class LivePage(Gtk.Box):
         right.append(self.delta_view)
         series_scroller = Gtk.ScrolledWindow()
         series_scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        series_scroller.set_min_content_height(118)
-        series_scroller.set_max_content_height(170)
+        series_scroller.set_min_content_height(150)
+        series_scroller.set_max_content_height(220)
         series_scroller.set_child(self.series_result_label)
         right.append(series_scroller)
 
@@ -305,31 +325,95 @@ class LivePage(Gtk.Box):
         for w in (self.f, self.lv):
             w.connect("notify::value", lambda *_: self.apply())
         self.route.connect("notify::selected", lambda *_: self.apply())
+        self.series_level.connect("notify::value", lambda *_: self.refresh_gain_reference())
+        self.refresh_gain_reference()
 
-    def measure_series(self):
-        """Run and save the fixed 100 Hz / 1 kHz / 10 kHz gain comparison."""
-        metadata = {
+    def refresh_gain_reference(self):
+        """Invalidate the in-session reference when card, rate or drive level changes.
+
+        A saved file is kept for traceability, but never silently reused after app
+        restart: USB mixer defaults can change on reconnect.
+        """
+        hw = self.win.cards[self.win.dev.get_selected()][0]
+        key = gainmatch.device_key_from_hw(hw)
+        level = float(self.series_level.get_value())
+        ref = self.series_reference
+        matches = bool(ref and ref.get("device_key") == key
+                       and int(ref.get("fs", -1)) == int(self.win.rig_fs())
+                       and abs(float(ref.get("generator_level_dbfs", 999.0)) - level) < 1e-6)
+        if not matches:
+            self.series_reference = None
+            self.series_reference_label.set_text("Эталон петли: нужен новый замер для текущих настроек")
+            self.series_dut_btn.set_sensitive(False)
+        else:
+            self.series_reference_label.set_text(
+                f"Эталон петли готов · {ref.get('created', '')} · {ref['fs']} Гц")
+            self.series_dut_btn.set_sensitive(True)
+
+    def _series_metadata(self):
+        return {key: value for key, value in {
             "dut": self.series_dut.get_text().strip(),
             "tubes": self.series_tubes.get_text().strip(),
             "notes": self.series_notes.get_text().strip(),
-        }
-        metadata = {key: value for key, value in metadata.items() if value}
+        }.items() if value}
+
+    def measure_loopback(self):
+        """Step 1: characterize the soundcard's L/R loop imbalance per frequency."""
+        self.series_reference = None
+        self.series_dut_btn.set_sensitive(False)
+        self.series_reference_label.set_text("Эталон петли: измеряю…")
         level = float(self.series_level.get_value())
         repeats = int(self.series_repeats.get_value())
 
         def job(rig):
-            return gainmatch.measure_series(rig, level_dbfs=level, repeats=repeats, metadata=metadata)
+            return gainmatch.measure_series(rig, level_dbfs=level, repeats=repeats, purpose="loopback")
+
+        def done(result):
+            try:
+                reference = gainmatch.build_loopback_reference(result)
+                path = store.save_gain_reference(reference)
+            except (ValueError, OSError) as exc:
+                self.series_reference = None
+                self.series_dut_btn.set_sensitive(False)
+                self.series_result_label.set_text(f"Эталон не создан: {exc}")
+                self.refresh_gain_reference()
+                return
+            self.series_reference = reference
+            self.series_dut_btn.set_sensitive(True)
+            self.series_reference_label.set_text(
+                f"Эталон петли готов · {reference['created']} · {reference['fs']} Гц")
+            self.series_result_label.set_text(gainmatch.text_series(result))
+            self.win.toast(f"Эталон карты сохранён: {path}")
+
+        self.win.run_job(job, done, "Шаг 1/2: измеряю собственную разницу каналов карты…")
+
+    def measure_dut_series(self):
+        """Step 2: measure DUT and subtract the stored per-frequency loopback error."""
+        level = float(self.series_level.get_value())
+        repeats = int(self.series_repeats.get_value())
+        reference = self.series_reference
+        if reference is None:
+            self.refresh_gain_reference()
+            reference = self.series_reference
+        if reference is None:
+            self.win.toast("Сначала измерь прямую петлю звуковой карты — шаг 1")
+            return
+        metadata = self._series_metadata()
+
+        def job(rig):
+            return gainmatch.measure_series(rig, level_dbfs=level, repeats=repeats,
+                                            metadata=metadata, purpose="dut", reference=reference)
 
         def done(result):
             self.last_series = result
-            self.series_result_label.set_text(gainmatch.text_series(result))
+            self.series_result_label.set_text(gainmatch.text_series(result, self.tol.get_value()))
             try:
                 json_path, csv_path = store.save_gain_series(result)
                 self.win.toast(f"Gain Match сохранён: {json_path} · CSV: {csv_path}")
             except OSError as exc:
                 self.win.toast(f"Измерено, но не удалось сохранить результат: {exc}")
 
-        self.win.run_job(job, done, "Gain Match: измерение 100 / 1000 / 10000 Гц…")
+        self.win.run_job(job, done, "Шаг 2/2: измеряю усилитель и компенсирую карту…")
 
     def reset_holds(self):
         self.meter_l.reset_holds()
@@ -1339,6 +1423,8 @@ class Window(Adw.ApplicationWindow):
         self.cal["fs"] = self.rate_values[new_index]
         self.reset_rig()
         calib.save(self.cal)
+        if hasattr(self, "live"):
+            self.live.refresh_gain_reference()
 
     def on_rate_changed(self, *_):
         if getattr(self, "_updating_rate", False):
@@ -1346,6 +1432,8 @@ class Window(Adw.ApplicationWindow):
         self.reset_rig()
         self.cal["fs"] = self.rig_fs()
         calib.save(self.cal)
+        if hasattr(self, "live"):
+            self.live.refresh_gain_reference()
 
     def on_page_changed(self, *_):
         page = self.stack.get_visible_child()

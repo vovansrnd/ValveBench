@@ -75,22 +75,60 @@ def save_gain_series(res, directory=None):
     with open(csv_path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow([
-            "frequency_hz", "generator_level_dbfs", "L_level_dbfs", "R_level_dbfs",
-            "delta_output_L_minus_R_db", "L_gain_db", "R_gain_db", "delta_gain_L_minus_R_db",
-            "L_snr_db", "R_snr_db", "L_spread_db", "R_spread_db",
-            "delta_output_spread_db", "calibrated", "valid",
+            "frequency_hz", "delta_adc_L_minus_R_db", "loopback_correction_db",
+            "corrected_delta_gain_L_minus_R_db", "repeat_spread_db", "SNR_L_db",
+            "SNR_R_db", "valid", "repeat_stable",
         ])
         for row in res.get("rows", []):
             left, right = row["channels"]["L"], row["channels"]["R"]
             writer.writerow([
-                f"{row['frequency_hz']:.6f}", f"{res['generator_level_dbfs']:.3f}",
-                f"{left['level_dbfs']:.6f}", f"{right['level_dbfs']:.6f}",
-                f"{row['delta_output_db']:.6f}",
-                "" if left["gain_db"] is None else f"{left['gain_db']:.6f}",
-                "" if right["gain_db"] is None else f"{right['gain_db']:.6f}",
+                f"{row['frequency_hz']:.6f}", f"{row['delta_adc_db']:.6f}",
+                "" if row["loopback_correction_db"] is None else f"{row['loopback_correction_db']:.6f}",
                 "" if row["delta_gain_db"] is None else f"{row['delta_gain_db']:.6f}",
-                f"{left['snr_db']:.3f}", f"{right['snr_db']:.3f}",
-                f"{left['level_spread_db']:.6f}", f"{right['level_spread_db']:.6f}",
-                f"{row['delta_output_spread_db']:.6f}", int(row["calibrated"]), int(row["valid"]),
+                f"{row['delta_output_spread_db']:.6f}", f"{left['snr_db']:.2f}",
+                f"{right['snr_db']:.2f}", int(row["valid"]), int(row["repeat_stable"]),
             ])
     return json_path, csv_path
+
+
+def save_gain_reference(reference, directory=None):
+    """Persist the per-device loopback correction in the project directory."""
+    directory = directory or os.path.join(os.getcwd(), "measurements", "gain-match")
+    os.makedirs(directory, exist_ok=True)
+    import re
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(reference.get("device_key", "device"))).strip("_.") or "device"
+    level_tag = f"{float(reference['generator_level_dbfs']):.1f}".replace("-", "m").replace(".", "p")
+    path = os.path.join(directory,
+                        f"loopback-reference-{slug}-{int(reference['fs'])}Hz-{level_tag}dBFS.json")
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(to_jsonable(reference), fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+    os.replace(tmp, path)
+    return path
+
+
+def load_gain_reference(device_key, fs, level_dbfs, frequencies, directory=None):
+    """Load only a reference whose device, sample rate, level and tones all match."""
+    directory = directory or os.path.join(os.getcwd(), "measurements", "gain-match")
+    import glob
+    paths = sorted(glob.glob(os.path.join(directory, "loopback-reference-*.json")),
+                   key=os.path.getmtime, reverse=True)
+    wanted = {round(float(f), 6) for f in frequencies}
+    for path in paths:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                ref = json.load(fh)
+            if ref.get("kind") != "gain_match_loopback_reference":
+                continue
+            if ref.get("device_key") != device_key or int(ref.get("fs", -1)) != int(fs):
+                continue
+            if abs(float(ref.get("generator_level_dbfs", 999.0)) - float(level_dbfs)) > 1e-6:
+                continue
+            got = {round(float(f), 6) for f in ref.get("frequencies_hz", [])}
+            if got != wanted or not all(row.get("valid") for row in ref.get("rows", [])):
+                continue
+            return ref
+        except (OSError, ValueError, TypeError, KeyError):
+            continue
+    return None

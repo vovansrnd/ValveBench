@@ -60,8 +60,9 @@ class GainDeltaView(Gtk.DrawingArea):
         col = COLORS[kind]
 
         # шапка: подпись и режим
-        text("ΔG  L − R", pad, 26, 15, 0.8)
-        mode = "по калибровке L/R" if st.get("calibrated") else "сырая разность АЦП"
+        calibrated = bool(st.get("calibrated"))
+        text(("ΔG" if calibrated else "ΔADC") + "  L − R", pad, 26, 15, 0.8)
+        mode = "по калибровке L/R" if calibrated else "уровни АЦП без поправки петли"
         if abs(st.get("tare_db", 0.0)) > 1e-9:
             mode += f" · ноль сдвинут на {st['tare_db']:+.3f} дБ"
         text(mode, w - pad, 26, 12, 0.6, "r")
@@ -71,9 +72,11 @@ class GainDeltaView(Gtk.DrawingArea):
         base = 30 + big                      # базовая линия главного числа
         text(f"{filt:+.3f} dB", pad, base, big, 1.0)
         if kind == "ok":
-            verdict = "каналы совпадают"
+            verdict = "каналы совпадают" if calibrated else "уровни АЦП совпадают"
         else:
-            verdict = ("левый сильнее" if filt > 0 else "правый сильнее") + f" на {abs(filt):.3f} dB"
+            side = "левый" if filt > 0 else "правый"
+            what = "сильнее" if calibrated else "уровень АЦП выше"
+            verdict = f"{side} {what} на {abs(filt):.3f} dB"
         cr.set_source_rgba(*col, 1.0)
         cr.set_font_size(16)
         cr.move_to(pad, base + 26)

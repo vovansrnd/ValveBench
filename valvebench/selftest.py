@@ -281,49 +281,112 @@ def run_selftest():
           f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare={st2['delta']:+.4f}; "
           f"повторный tare={st3['delta']:+.4f}; после сброса={st4['delta']:+.4f}")
 
-    # Multi-frequency gain comparison: known flat 1.5x / 1.0x channels.
-    cal_gm = Calibration()
-    cal_gm["out_fs_vrms"] = [2.0, 2.0]
-    cal_gm["in_fs_vrms"] = [2.0, 2.0]
-    be_gm = SimBackend(SimChannel(gain=1.5, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
-                       SimChannel(gain=1.0, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130), seed=17)
-    rig_gm = Rig(be_gm, cal_gm, fs=48000, blocks=2, settle=0.15)
-    rig_gm.open()
-    series_gm = gainmatch.measure_series(rig_gm, level_dbfs=-24.0, repeats=2,
-                                         metadata={"dut": "synthetic flat 1.5x / 1.0x"})
+    # Two-step Gain Match: first characterize L/R measurement-chain imbalance,
+    # then subtract it from the DUT result. No voltage calibration is required
+    # for relative L/R gain matching.
+    loop_backend = SimBackend(
+        SimChannel(gain=0.97, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
+        SimChannel(gain=1.03, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130), seed=17)
+    rig_loop = Rig(loop_backend, Calibration(), fs=48000, blocks=2, settle=0.15)
+    rig_loop.open()
+    # Add a deterministic frequency-dependent L-path response to the analyzer:
+    # this emulates unequal DAC/ADC response that must be measured separately at
+    # each frequency, not removed with one global zero/tare value.
+    interface_freq_error = {100.0: -0.25, 1000.0: 0.10, 10000.0: 0.35}
+    def inject_interface_frequency_error(rig):
+        original = rig._tone_an
+        def wrapped(win, ch, k, nharm=9, coherent_line_floors=None):
+            result = original(win, ch, k, nharm=nharm, coherent_line_floors=coherent_line_floors)
+            if int(ch) == 0:
+                f_meas = round(float(rig.f_of(k)), 6)
+                result["level_dbfs"] += interface_freq_error.get(f_meas, 0.0)
+            return result
+        rig._tone_an = wrapped
+    inject_interface_frequency_error(rig_loop)
+    loop_series = gainmatch.measure_series(rig_loop, level_dbfs=-24.0, repeats=3, purpose="loopback")
+    loop_reference = gainmatch.build_loopback_reference(loop_series)
+    interface_delta = 20.0 * math.log10(0.97 / 1.03)
+    expected_offsets = [interface_delta + interface_freq_error[f] for f in gainmatch.SERIES_FREQUENCIES]
+    check("Gain Match step 1: loopback reference records frequency-dependent interface L/R offset",
+          len(loop_reference["rows"]) == 3
+          and all(row["valid"] for row in loop_reference["rows"])
+          and all(abs(row["delta_adc_db"] - expected) < 0.03
+                  for row, expected in zip(loop_reference["rows"], expected_offsets)),
+          f"reference={[round(row['delta_adc_db'], 4) for row in loop_reference['rows']]} dB; "
+          f"expected={ [round(x, 4) for x in expected_offsets] }")
+
+    # The DUT is 1.5x left and 1.0x right, on top of the same asymmetric
+    # measurement interface (0.97x / 1.03x). Subtraction must recover 20log10(1.5).
+    dut_backend = SimBackend(
+        SimChannel(gain=0.97 * 1.5, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
+        SimChannel(gain=1.03 * 1.0, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130), seed=19)
+    rig_dut = Rig(dut_backend, Calibration(), fs=48000, blocks=2, settle=0.15)
+    rig_dut.open()
+    inject_interface_frequency_error(rig_dut)
+    series_gm = gainmatch.measure_series(rig_dut, level_dbfs=-24.0, repeats=3,
+                                         metadata={"dut": "synthetic 1.5x / 1.0x"},
+                                         purpose="dut", reference=loop_reference)
     expected_gm = 20.0 * math.log10(1.5)
     deltas_gm = [row["delta_gain_db"] for row in series_gm["rows"]]
-    levels_valid_gm = all(row["valid"] for row in series_gm["rows"])
-    check("Gain Match series: 100/1k/10k calibrated ΔG and repeat validity",
-          len(series_gm["rows"]) == 3 and series_gm["calibrated"] and levels_valid_gm
-          and all(abs(value - expected_gm) < 0.03 for value in deltas_gm)
-          and all(row["channels"]["L"]["repeats"] and row["channels"]["R"]["repeats"]
-                  for row in series_gm["rows"]),
-          f"ΔG={['%.4f' % v for v in deltas_gm]} dB; истина={expected_gm:.4f} dB; "
-          f"валидны={levels_valid_gm}")
+    check("Gain Match step 2: loopback correction removes interface imbalance",
+          len(series_gm["rows"]) == 3 and series_gm["loopback_corrected"]
+          and all(row["valid"] and row["repeat_stable"] for row in series_gm["rows"])
+          and all(abs(value - expected_gm) < 0.04 for value in deltas_gm),
+          f"corrected ΔG={['%.4f' % v for v in deltas_gm]} dB; DUT truth={expected_gm:.4f} dB; "
+          f"uncorrected interface offset={interface_delta:.4f} dB")
 
-    # An uncalibrated ADC-level difference must never be labelled as true gain.
-    rig_gm_raw = Rig(SimBackend(SimChannel(gain=1.5, noise_dbfs=-125),
-                                SimChannel(gain=1.0, noise_dbfs=-125), seed=19),
-                     Calibration(), fs=48000, blocks=2, settle=0.1)
-    rig_gm_raw.open()
-    series_gm_raw = gainmatch.measure_series(rig_gm_raw, level_dbfs=-24.0, repeats=1)
-    raw_row = series_gm_raw["rows"][1]
-    check("Gain Match series: no voltage calibration → report ADC delta, not ΔG",
-          not series_gm_raw["calibrated"] and raw_row["delta_gain_db"] is None
-          and abs(raw_row["delta_output_db"] - expected_gm) < 0.03
-          and "без калибровки" in gainmatch.text_series(series_gm_raw),
-          f"ΔADC={raw_row['delta_output_db']:.4f} dB; ΔG={raw_row['delta_gain_db']}")
+    # The second step must not silently report raw ADC L/R as DUT gain.
+    missing_ref_rejected = False
+    try:
+        gainmatch.measure_series(rig_dut, level_dbfs=-24.0, repeats=1, purpose="dut", reference=None)
+    except ValueError as exc:
+        missing_ref_rejected = "эталона петли" in str(exc)
+    check("Gain Match: DUT measurement is blocked without loopback reference", missing_ref_rejected,
+          "нет эталона rejected" if missing_ref_rejected else "missing reference was accepted")
+
+    wrong_level_rejected = False
+    try:
+        gainmatch.measure_series(rig_dut, level_dbfs=-23.0, repeats=1,
+                                 purpose="dut", reference=loop_reference)
+    except ValueError as exc:
+        wrong_level_rejected = "уровень генератора" in str(exc)
+    check("Gain Match: mismatched generator level invalidates reference", wrong_level_rejected,
+          "wrong level rejected" if wrong_level_rejected else "wrong level was accepted")
+
+    mixer_reference = dict(loop_reference, mixer_fingerprint="baseline-mixer")
+    original_fingerprint = gainmatch.mixer_fingerprint_from_hw
+    gainmatch.mixer_fingerprint_from_hw = lambda _hw: "changed-mixer"
+    mixer_change_rejected = False
+    try:
+        gainmatch.measure_series(rig_dut, level_dbfs=-24.0, repeats=1,
+                                 purpose="dut", reference=mixer_reference)
+    except ValueError as exc:
+        mixer_change_rejected = "микшера" in str(exc)
+    finally:
+        gainmatch.mixer_fingerprint_from_hw = original_fingerprint
+    check("Gain Match: changed ALSA mixer invalidates loopback reference", mixer_change_rejected,
+          "mixer change rejected" if mixer_change_rejected else "mixer change was accepted")
 
     with tempfile.TemporaryDirectory(prefix="valvebench-gain-series-") as tmp_gain:
+        ref_path = store.save_gain_reference(loop_reference, tmp_gain)
+        loaded_ref = store.load_gain_reference("sim", 48000, -24.0,
+                                               gainmatch.SERIES_FREQUENCIES, tmp_gain)
         gain_json, gain_csv = store.save_gain_series(series_gm, tmp_gain)
         saved_gain = json.loads(Path(gain_json).read_text(encoding="utf-8"))
         csv_lines = Path(gain_csv).read_text(encoding="utf-8").splitlines()
-        check("Gain Match series: JSON+CSV saved with DUT/tube metadata",
-              len(saved_gain["rows"]) == 3 and len(csv_lines) == 4
-              and saved_gain["metadata"].get("dut") == "synthetic flat 1.5x / 1.0x"
-              and saved_gain["metadata"].get("tubes") is None,
-              f"JSON rows={len(saved_gain['rows'])}; CSV data rows={len(csv_lines)-1}; metadata preserved")
+        check("Gain Match: loopback reference and DUT result persist in JSON/CSV",
+              Path(ref_path).exists() and loaded_ref is not None
+              and len(saved_gain["rows"]) == 3 and len(csv_lines) == 4
+              and saved_gain["metadata"].get("dut") == "synthetic 1.5x / 1.0x"
+              and "corrected_delta_gain_L_minus_R_db" in csv_lines[0],
+              f"reference={'loaded' if loaded_ref else 'missing'}; JSON rows={len(saved_gain['rows'])}; "
+              f"CSV columns={len(csv_lines[0].split(','))}")
+
+    human = gainmatch.text_series(series_gm, tolerance_db=0.20)
+    check("Gain Match: user report contains corrected verdict, not raw dBFS table",
+          "ΔG L−R" in human and "КАНАЛЫ НЕ СОГЛАСОВАНЫ" in human
+          and "dBFS" not in human,
+          human.splitlines()[-2] if len(human.splitlines()) > 1 else human)
 
     # --- 0.1.6: наклоны гармоник, периодичность тона, валидность серии
     lv = np.array([-6.0, -12.0, -18.0, -24.0, -30.0])
