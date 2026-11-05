@@ -575,7 +575,7 @@ class SpectrumPage(Gtk.Box):
                 # One-sided power per bin -> amplitude spectral density, referenced to full-scale sine RMS.
                 df_bin = fs / n
                 y = 10.0 * np.log10(np.maximum(2.0 * self.avg_bin_power[ch] / df_bin, 1e-30))
-                ylabel = "Плотность шума, dBFS/√Гц"
+                ylabel = "Плотность шума, dBFS/sqrt(Гц)"
             traces.append({"x": block.freq[1:], "y": y[1:], "label": label, "color": label, "width": 1.7})
         self.plot.xlog = True
         xlo = 20.0 if self.band.get_selected() == 0 else 10.0
@@ -768,7 +768,7 @@ class ImdPage(Page):
 class NoisePage(Page):
     def __init__(self, win):
         self.sec = spin("Длительность, с", 2, 60, 1, 8, 0, "вход корректора закорочен или нагружен источником")
-        plot = Plot(True, "Гц", "dBFS/√Гц")
+        plot = Plot(True, "Гц", "dBFS/sqrt(Гц)")
         plot.set_view((10, 48000), (-160, -60))
         super().__init__(win, group("Шум", self.sec), button("Измерить шум", self.go, True),
                          group("Каналы", Adw.ActionRow(title="Проникновение L↔R: 100 Гц, 1 кГц, 10 кГц")),
@@ -1087,7 +1087,7 @@ class VinylPage(Page):
             self.plot.set_traces([{"x": result["time_s"], "y": result["frequency_hz"] - result["mean_hz"],
                                    "label": "Δf", "color": "L"}])
         elif result["kind"] == "arm_resonance":
-            self.plot.set_view((5, 15), (-160, 0), ylabel="dBFS/√Гц")
+            self.plot.set_view((5, 15), (-160, 0), ylabel="dBFS/sqrt(Гц)")
             self.plot.set_traces([{"x": result["freq"], "y": result["density_dbfs_hz"],
                                    "label": "5–15 Hz", "color": "L"}])
         elif result["kind"] == "skating_300":

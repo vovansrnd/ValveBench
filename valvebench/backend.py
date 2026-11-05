@@ -571,7 +571,11 @@ class SimChannel:
     """Виртуальный «усилитель»: нелинейность → RIAA → усиление → шум/фон."""
 
     def __init__(self, gain=1.0, a2=0.0, a3=0.0, riaa=False, iec=False,
-                 noise_dbfs=-110.0, hum50_dbfs=-120.0, hum100_dbfs=-125.0, clip=1.0):
+                 noise_dbfs=-110.0, hum50_dbfs=-120.0, hum100_dbfs=-125.0, clip=1.0,
+                 quant_bits=None):
+        # quant_bits — разрядность «преобразователя»: квантование точно периодического
+        # сигнала даёт линии на гармониках тона с уровнем, не зависящим от амплитуды.
+        self.quant_bits = quant_bits
         self.gain, self.a2, self.a3, self.riaa, self.iec = gain, a2, a3, riaa, iec
         self.noise, self.h50, self.h100, self.clip = noise_dbfs, hum50_dbfs, hum100_dbfs, clip
 
@@ -604,6 +608,9 @@ class SimBackend(Backend):
             Y = np.fft.rfft(y, nf) * dsp.riaa_playback(np.fft.rfftfreq(nf, 1 / self.fs), c.iec)
             y = np.fft.irfft(Y, nf)[: len(x)]
         y = y * c.gain
+        if c.quant_bits:
+            q = 2.0 ** (int(c.quant_bits) - 1)
+            y = np.round(y * q) / q
         # noise_dbfs — суммарный шум в полосе 20 Гц–20 кГц, уровень как у синуса
         sigma = dsp.dbfs_to_amp(c.noise) / np.sqrt(2) * np.sqrt(0.5 * self.fs / 20000.0)
         y = y + sigma * self.rng.standard_normal(len(y))

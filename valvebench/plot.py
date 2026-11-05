@@ -101,7 +101,7 @@ class Plot(Gtk.DrawingArea):
     def _draw(self, area, cr, W, H, *_):
         fg = self.get_color()
         fs = 13.0
-        ml, mr, mt, mb = 58.0, 14.0, 12.0, 38.0
+        ml, mr, mt, mb = 58.0, 14.0, 30.0, 38.0
         pw, ph = W - ml - mr, H - mt - mb
         if pw < 50 or ph < 50:
             return
@@ -153,7 +153,7 @@ class Plot(Gtk.DrawingArea):
         cr.rectangle(ml, mt, pw, ph); cr.stroke()
         rgba(0.8)
         cr.move_to(ml + pw - cr.text_extents(self.xlabel).x_advance, H - 6); cr.show_text(self.xlabel)
-        cr.move_to(6, mt + fs); cr.show_text(self.ylabel)
+        cr.move_to(6, 18); cr.show_text(self.ylabel)
 
         # кривые
         cr.save()
@@ -196,10 +196,11 @@ class Plot(Gtk.DrawingArea):
                   if self.xlog else self.xlim[0] + frac * (self.xlim[1] - self.xlim[0]))
             rgba(0.35)
             cr.move_to(mx, mt); cr.line_to(mx, mt + ph); cr.stroke()
-            parts = [f"{xv:.4g} {self.xlabel}"]
+            unit = self.xlabel.split(",")[-1].strip()
+            parts = [f"{xv:.4g} {unit}"]
             for t in self.traces:
                 if t["x"].size > 1 and t["x"][0] <= xv <= t["x"][-1] and t["label"]:
-                    parts.append(f"{t['label']}: {float(np.interp(xv, t['x'], t['y'])):.4g}")
+                    parts.append(f"{t['label']} {float(np.interp(xv, t['x'], t['y'])):.1f}")
             rgba(0.95)
             cr.move_to(ml + 8, mt + ph - 8); cr.show_text("   ".join(parts))
 

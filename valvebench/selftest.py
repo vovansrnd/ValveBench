@@ -5,7 +5,7 @@ import math
 import time
 import numpy as np
 
-from . import dsp, gainmatch
+from . import dsp, gainmatch, scans, looptest
 from .backend import SimBackend, SimChannel
 from .calib import Calibration
 from .measure import Rig, sweep, noise_response, noise_transfer_capture
@@ -261,6 +261,36 @@ def run_selftest():
           and gainmatch.classify(0.04, 0.05) == "ok" and gainmatch.pick_range(0.37, 0.05) == 0.5,
           f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare={st2['delta']:+.4f}; "
           f"повторный tare={st3['delta']:+.4f}; после сброса={st4['delta']:+.4f}")
+
+    # --- 0.1.6: наклоны гармоник, периодичность тона, валидность серии
+    lv = np.array([-6.0, -12.0, -18.0, -24.0, -30.0])
+    sl3 = scans.classify_slope(3, lv, -108.0 + 3.0 * (lv + 6.0), [True] * 5)
+    slf = scans.classify_slope(5, lv, np.full(5, -136.0), [True] * 5)
+    check("Наклон гармоники: кубическая H3 → distortion, фиксированная линия → fixed",
+          sl3 and slf and sl3["kind"] == "distortion" and slf["kind"] == "fixed"
+          and abs(sl3["slope"] - 3.0) < 0.05 and abs(slf["slope"]) < 0.05,
+          f"H3 наклон={sl3['slope']:+.2f}; фиксированная={slf['slope']:+.2f}")
+
+    be_q = SimBackend(SimChannel(gain=0.65, noise_dbfs=-120, quant_bits=19),
+                      SimChannel(gain=0.65, noise_dbfs=-120, quant_bits=19))
+    rq = Rig(be_q, Calibration(), fs=48000, blocks=6, settle=0.25)
+    rq.open()
+    sc = scans.run_freq_scan(rq, (1000.0, 997.0, 1234.0), level=-6.0)
+    vd = scans.freq_scan_verdict(sc)
+    per = {r["f"]: r["period"] for r in sc["rows"] if r["ch"] == "L"}
+    check("Тон 1000 Гц на 48 кГц периодичен (48 отсч.), 997 Гц — нет; квантование даёт линии только на периодичном",
+          per[1000.0] == 48 and per[997.0] == 48000 and len(vd) >= 1 and "артефакт периодичности" in vd[0],
+          f"периоды={per}; вывод: {vd[0] if vd else 'нет'}")
+
+    sil = [{"section": "SILENCE BEFORE", "channel": "L", "peak_dbfs": -95.0, "noise_unweighted_dbfs": -110.0},
+           {"section": "SILENCE AFTER", "channel": "L", "peak_dbfs": -94.0, "noise_unweighted_dbfs": -110.1},
+           {"section": "SILENCE BEFORE", "channel": "R", "peak_dbfs": -95.0, "noise_unweighted_dbfs": -115.0},
+           {"section": "SILENCE AFTER", "channel": "R", "peak_dbfs": 0.0, "noise_unweighted_dbfs": -27.8}]
+    bad = looptest.series_validity(sil, [], {"ok": True})
+    good = looptest.series_validity(sil[:2], [], {"ok": True})
+    check("Валидность серии: правый канал с шумом +87 дБ помечается INVALID, чистый — OK",
+          len(bad) >= 2 and all(x.startswith("R:") for x in bad) and good == [],
+          f"причины: {bad}")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}

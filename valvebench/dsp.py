@@ -301,7 +301,20 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
             z_mean = np.mean(z)
             p_observed = float(abs(z_mean) ** 2 / 2.0)
             p_floor_one_block = _local_floor(Psingle, kh, skip)
-            p_random_mean = max(p_floor_one_block / max(M, 1), 1e-300)
+            # Пол — по ТЕМ ЖЕ усреднённым комплексным коэффициентам соседних бинов (с той же
+            # нормировкой фазы), а не «пол одного блока / M». Случайный шум при этом падает в M раз,
+            # а детерминированная ошибка, одинаковая в каждом блоке (квантование периодичного
+            # сигнала при f0 простой относительно Fs: период = окну), не падает и честно попадает
+            # в пол. Иначе такие линии ложно признавались бы достоверными с вероятностью ~20 %.
+            lo_k, hi_k = max(1, kh - 40), min(X.shape[1], kh + 41)
+            nb = np.arange(lo_k, hi_k)
+            keep = (np.abs(nb - kh) > 2) & ~skip[lo_k:hi_k]
+            if np.any(keep):
+                zn = (2.0 / n) * X[:, nb[keep]] * np.exp(-1j * h * fund_phase)[:, None]
+                p_avg_nb = float(np.mean(np.abs(zn.mean(axis=0)) ** 2 / 2.0))
+            else:
+                p_avg_nb = p_floor_one_block / max(M, 1)
+            p_random_mean = max(p_avg_nb, 1e-300)
             p_stable_spur = max(float((coherent_line_floors or {}).get(h, 0.0)), 0.0)
             p_noise_mean = p_random_mean + p_stable_spur
             margin = db10(p_observed / p_noise_mean) if p_observed > 0 else -300.0

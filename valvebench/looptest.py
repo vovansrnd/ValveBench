@@ -11,6 +11,7 @@ import numpy as np
 
 from . import dsp
 from .measure import Rig, clock_check
+from . import scans
 
 
 def _fmt(values, digits=2):
@@ -29,7 +30,7 @@ def _capture_silence(rig: Rig, seconds: float, label: str) -> tuple[list[str], l
     rig.be.live_start()
     try:
         rig.be.live_set_loop(None)
-        time.sleep(seconds + 0.30)  # startup allowance plus the requested observation window
+        time.sleep(seconds + 1.50)  # 1.5 с на установку DC-сервопривода АЦП после открытия потока + окно наблюдения
         x = rig.be.live_recent(seconds)
         status = rig.be.live_status() if hasattr(rig.be, "live_status") else {}
     finally:
@@ -235,12 +236,32 @@ def _tone_once(rig: Rig, frequency: float, level_dbfs: float, repeat: int, noise
     return lines, rows
 
 
+def series_validity(silence_rows, tone_rows, clock, max_noise_drift_db=1.0, max_silence_peak_dbfs=-60.0):
+    """Причины, по которым серию нельзя считать достоверной (пустой список — всё в порядке)."""
+    reasons = []
+    if clock is not None and not clock.get("ok", True):
+        reasons.append("такт ЦАП/АЦП не совпадает")
+    for ch in ("L", "R"):
+        before = [r for r in silence_rows if r["section"] == "SILENCE BEFORE" and r["channel"] == ch]
+        after = [r for r in silence_rows if r["section"] == "SILENCE AFTER" and r["channel"] == ch]
+        for r in before + after:
+            if r["peak_dbfs"] > max_silence_peak_dbfs:
+                reasons.append(f"{ch}: в тишине пик {r['peak_dbfs']:.1f} dBFS ({r['section'].lower()}) — вход не тихий")
+        if before and after:
+            d = after[0]["noise_unweighted_dbfs"] - before[0]["noise_unweighted_dbfs"]
+            if abs(d) > max_noise_drift_db:
+                reasons.append(f"{ch}: шум тишины изменился на {d:+.1f} дБ за серию")
+    if any(q.get("adc_clip") for q in tone_rows):
+        reasons.append("были перегрузки входа АЦП")
+    return reasons
+
+
 def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0, -40.0),
                         repeats=3, silence_seconds=3.0, csv_path=None) -> str:
     if not (20.0 <= frequency <= min(20000.0, 0.4 * rig.fs)):
         raise ValueError("для loopback-теста выбери частоту от 20 Гц до 0.4·Fs")
-    if not levels or any(not (-80.0 <= float(v) <= -3.0) for v in levels):
-        raise ValueError("уровни генератора должны находиться в диапазоне −80…−3 dBFS")
+    if not levels or any(not (-80.0 <= float(v) <= -1.0) for v in levels):
+        raise ValueError("уровни генератора должны находиться в диапазоне −80…−1 dBFS")
     if not (1 <= repeats <= 10):
         raise ValueError("число повторов должно быть от 1 до 10")
     if not (0.0 <= silence_seconds <= 10.0):
@@ -258,8 +279,11 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
         f"Tone={frequency:g} Hz · levels={','.join(f'{v:g}' for v in levels)} dBFS · "
         f"repeats={repeats} · coherent blocks={rig.blocks} · settle={rig.settle:.2f}s",
         "WARNING: connect selected DAC line outputs directly to matching ADC LINE inputs; do not connect a phono input.",
-        "",
     ]
+    note = scans.period_note(frequency, rig.fs)
+    if note:
+        lines.append("! " + note)
+    lines.append("")
     rows = []
     silence_captures = []
     if silence_seconds > 0:
@@ -306,6 +330,9 @@ def run_loopback_report(rig: Rig, frequency=1000.0, levels=(-12.0, -20.0, -30.0,
                 lines.append(f"  [{ch}] noise 20–20k: {delta:+.2f} dB")
         lines.append("")
 
+    reasons = series_validity(rows, all_tone_rows, clock)
+    lines.append("SERIES VALIDITY: " + ("OK" if not reasons else "INVALID — " + "; ".join(reasons)))
+    lines.append("")
     lines.append("REPEATABILITY SUMMARY · median [min…max]")
     lines.append(" level   ch   ADC level dBFS   loop Δ dB   THD detected %   THD+N dBc   noise-only dBFS   H2 dBc   H3 dBc")
     for level in levels:

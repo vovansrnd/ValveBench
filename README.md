@@ -1,4 +1,6 @@
-# ValveBench 0.1.5
+См. CHANGES-0.1.6.md — что нового и какие команды запускать.
+
+# ValveBench 0.1.6
 
 **ValveBench** — измерительная лаборатория для разработки и настройки аналоговых аудиотрактов, прежде всего ламповых фонокорректоров. Linux / Ubuntu, Python, GTK4 + Libadwaita, NumPy/SciPy, ALSA.
 
