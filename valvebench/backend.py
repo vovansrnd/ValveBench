@@ -43,6 +43,39 @@ def list_cards():
     return out
 
 
+def _pcm_hw_devices(tool):
+    """Множество (card, device), реально перечисленных aplay/arecord -l."""
+    try:
+        p = subprocess.run([tool, "-l"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           text=True, timeout=3.0, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
+    found = set()
+    for line in p.stdout.splitlines():
+        m = re.match(r"^\s*card\s+(\d+):.*?,\s*device\s+(\d+):", line)
+        if m:
+            found.add((int(m.group(1)), int(m.group(2))))
+    return found
+
+
+def list_duplex_devices():
+    """Список ALSA hw:CARD,DEV, присутствующих и в playback, и в capture.
+
+    HDMI-only выходы исключаются: измерительные приборы требуют одновременно
+    ЦАП и АЦП. Устройства выбираются по пересечению aplay -l и arecord -l,
+    а не по одному лишь номеру звуковой карты.
+    """
+    playback = _pcm_hw_devices("aplay")
+    capture = _pcm_hw_devices("arecord")
+    names = dict(list_cards())
+    result = []
+    for card, device in sorted(playback & capture):
+        label = names.get(card, f"ALSA card {card}")
+        hw = f"hw:{card},{device}"
+        result.append((hw, f"{hw} — {label}, device {device}"))
+    return result
+
+
 @dataclass
 class AltSet:
     fmt: str
@@ -140,7 +173,7 @@ class AlsaCli(Backend):
 
     name = "alsa"
 
-    def __init__(self, hw="hw:1,0", in_map=(0, 1), out_map=(0, 1), buffer_ms=100):
+    def __init__(self, hw="hw:0,0", in_map=(0, 1), out_map=(0, 1), buffer_ms=100):
         self.hw = hw
         m = re.match(r"hw:(\d+)", hw)
         self.card = int(m.group(1)) if m else None

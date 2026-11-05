@@ -32,7 +32,7 @@ def make_rig(a):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="valvebench cli", description=__doc__)
     ap.add_argument("--sim", action="store_true", help="виртуальная карта (без железа)")
-    ap.add_argument("--dev", help="ALSA-устройство, например hw:1,0")
+    ap.add_argument("--dev", help="ALSA-устройство, например hw:2,0 (номер см. в cards)")
     ap.add_argument("--rate", type=int, help="частота дискретизации")
     ap.add_argument("--blocks", type=int, default=2, help="число когерентных блоков в измерениях тона")
     ap.add_argument("--save", action="store_true", help="сохранить результат в JSON")

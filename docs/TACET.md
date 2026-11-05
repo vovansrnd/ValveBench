@@ -20,7 +20,7 @@
 Записать внешнюю дорожку с аналоговых входов (выберите устройство/частоту):
 
 ```bash
-./run.sh cli --dev hw:1,0 --rate 96000 record --seconds 45 --wav ~/TACET-A6.wav
+./run.sh cli --dev hw:2,0 --rate 96000 record --seconds 45 --wav ~/TACET-A6.wav
 ```
 
 Анализ дорожки A2, если в WAV записан именно участок 3150 Hz:

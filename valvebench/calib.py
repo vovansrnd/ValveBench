@@ -8,7 +8,7 @@ import os
 PATH = os.path.expanduser("~/.config/valvebench/config.json")
 
 DEFAULTS = {
-    "device": "hw:1,0",
+    "device": "sim",
     "fs": 96000,
     "in_map": [0, 1],
     "out_map": [0, 1],

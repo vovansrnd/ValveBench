@@ -13,7 +13,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from . import calib, dsp, measure as m, signals, store, vinyl  # noqa: E402
-from .backend import AlsaCli, SimBackend, SimChannel, list_cards  # noqa: E402
+from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices  # noqa: E402
 from .plot import Plot  # noqa: E402
 
 RATES = [44100, 48000, 88200, 96000, 176400, 192000]
@@ -921,13 +921,20 @@ class Window(Adw.ApplicationWindow):
         self.busy = False
         self.live_on = False
         self.last = None
-        self.cards = [("sim", "Симулятор (демо без карты)")] + \
-                     [(f"hw:{n},0", f"hw:{n},0 — {name}") for n, name in list_cards()]
+        # Измерительный прибор требует одновременно ЦАП и АЦП. Не показываем
+        # HDMI playback-only устройства как полноценные дуплексные карты.
+        self.cards = [("sim", "Симулятор (демо без карты)")] + list_duplex_devices()
         self.toasts = Adw.ToastOverlay()
 
         header = Adw.HeaderBar()
         self.dev = Gtk.DropDown.new_from_strings([n for _, n in self.cards])
-        sel = next((i for i, (d, _) in enumerate(self.cards) if d == self.cal["device"]), 1 if len(self.cards) > 1 else 0)
+        saved_device = self.cal["device"]
+        sel = next((i for i, (d, _) in enumerate(self.cards) if d == saved_device), 0)
+        if self.cards[sel][0] != saved_device:
+            self.cal["device"] = "sim"
+            self.invalid_saved_device = saved_device
+        else:
+            self.invalid_saved_device = None
         self.dev.set_selected(sel)
         self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in RATES])
         self.rate.set_selected(RATES.index(self.cal["fs"]) if self.cal["fs"] in RATES else 3)
@@ -941,8 +948,8 @@ class Window(Adw.ApplicationWindow):
         header.pack_start(button("Такт", self.check_clock))
         header.pack_end(self.spinner)
         header.pack_end(self.status)
-        for dd in (self.dev, self.rate):
-            dd.connect("notify::selected", lambda *_: self.reset_rig())
+        self.dev.connect("notify::selected", self.on_device_changed)
+        self.rate.connect("notify::selected", lambda *_: self.reset_rig())
 
         self.stack = Gtk.Stack()
         self.live = LivePage(self)
@@ -968,6 +975,13 @@ class Window(Adw.ApplicationWindow):
         tv.set_content(self.toasts)
         self.set_content(tv)
         self.connect("close-request", self.on_close)
+        if self.invalid_saved_device:
+            self.toast(f"Сохранённое устройство {self.invalid_saved_device} не является доступным дуплексным ALSA-устройством. Выбран симулятор; выбери E-MU в списке.")
+
+    def on_device_changed(self, *_):
+        dev, _label = self.cards[self.dev.get_selected()]
+        self.cal["device"] = dev
+        self.reset_rig()
 
     def on_page_changed(self, *_):
         # Не оставляем тестовый шум подаваемым, если пользователь ушёл с прибора.

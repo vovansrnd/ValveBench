@@ -12,7 +12,7 @@ from pathlib import Path
 
 from . import __version__, calib
 from .selftest import run_selftest, format_selftest
-from .backend import list_cards, parse_stream
+from .backend import list_cards, list_duplex_devices, parse_stream
 
 
 def _run(cmd, timeout=3.0):
@@ -95,8 +95,13 @@ def make_report(include_selftest=True):
     lines += ["", "ALSA DEVICE LIST", _run(["aplay", "-l"]), "", "ALSA CAPTURE LIST", _run(["arecord", "-l"])]
 
     c = calib.load()
+    duplex = list_duplex_devices()
+    lines += ["", "ALSA FULL-DUPLEX DEVICES (playback ∩ capture)"]
+    lines += [f"  {dev}: {label}" for dev, label in duplex] or ["  (none detected)"]
+    configured_ok = c["device"] == "sim" or c["device"] in {dev for dev, _ in duplex}
     lines += ["", "VALVEBENCH CONFIG (calibration values intentionally summarized)",
               f"device={c['device']} fs={c['fs']} in_map={c['in_map']} out_map={c['out_map']}",
+              f"configured_device_available={'yes' if configured_ok else 'NO — select a full-duplex device in the GUI'}",
               f"output_calibrated={[bool(v) for v in c['out_fs_vrms']]}; input_calibrated={[bool(v) for v in c['in_fs_vrms']]}",
               f"external_attenuator={c['att_db']} dB; mains={c['mains']} Hz; band_hi={c['band_hi']} Hz"]
     if include_selftest:

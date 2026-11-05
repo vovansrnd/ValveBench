@@ -27,13 +27,14 @@ def run_selftest():
     check("THD/H2 известного тона", abs(h2 + 60.0) < 0.15,
           f"H2={h2:.2f} dBc; ожидалось -60.00 dBc")
 
-    # Добавляем шум, отдельная проверка THD+N должна не рушиться от вычитания несущей.
+    # Добавляем известный белый шум. Уровень задаётся относительно full-scale,
+    # а THD+N выводится относительно несущей и только в полосе 20 Гц–20 кГц.
     rng = np.random.default_rng(20261031)
     noise_rms = 10 ** (-80 / 20) / math.sqrt(2)
     xn = 0.5 * np.sin(2 * np.pi * f0 * t) + rng.normal(0, noise_rms, n)
     rn = dsp.analyze_tone(xn, fs, f0, n, nharm=2, mains=0)
-    check("THD+N при -80 dBFS noise", -90.0 < rn["thdn_db"] < -73.0,
-          f"THD+N={rn['thdn_db']:.2f} dB; ожидаемый диапазон -90…-73 dB")
+    check("THD+N: известный белый шум и исключение несущей", -76.0 < rn["thdn_db"] < -73.5,
+          f"THD+N={rn['thdn_db']:.2f} dB; расчётное значение около -74.8 dB относительно несущей")
 
     # Двухтоновый CCIF: вводим продукт 1 кГц на -60 dBc.
     x2 = 0.3*np.sin(2*np.pi*19000*t) + 0.3*np.sin(2*np.pi*20000*t) + 0.0003*np.sin(2*np.pi*1000*t)
