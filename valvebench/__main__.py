@@ -40,6 +40,8 @@ def main():
   ./valvebench debug           текстовый отчёт о системе + self-test
   ./valvebench debug --save    то же, с сохранением отчёта в файл
   ./valvebench cli --help      консольные измерительные приборы
+  ./valvebench cli --dev hw:2,0 --rate 96000 loopback --report ~/vb-loopback.txt
+                              многократная проверка физической петли ЦАП→АЦП
 
 Начните с ./valvebench selftest, затем ./valvebench debug.
 """)

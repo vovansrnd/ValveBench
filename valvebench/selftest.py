@@ -36,6 +36,21 @@ def run_selftest():
     check("THD+N: известный белый шум и исключение несущей", -76.0 < rn["thdn_db"] < -73.5,
           f"THD+N={rn['thdn_db']:.2f} dB; расчётное значение около -74.8 dB относительно несущей")
 
+    # FFT display scales: a full-scale sine is 0 dBFS/bin, and integrating
+    # the one-sided ASD recovers the original time-domain noise level.
+    line_block = dsp.Block(np.sin(2 * np.pi * f0 * t), fs)
+    line_level = float(np.max(dsp.spectrum_line_dbfs(line_block)))
+    rng_spec = np.random.default_rng(2301)
+    noise_signal = rng_spec.normal(0.0, 10.0 ** (-90.0 / 20.0) / np.sqrt(2.0), n)
+    noise_block = dsp.Block(noise_signal, fs)
+    asd = np.asarray(dsp.spectrum_asd_dbfs(noise_block), dtype=float)
+    asd_integrated_dbfs = 10.0 * np.log10(np.sum(10.0 ** (asd[1:-1] / 10.0)) * noise_block.df)
+    expected_noise_dbfs = float(dsp.rms_dbfs(np.sqrt(np.mean(noise_signal ** 2))))
+    ok_spectrum = abs(line_level) < 0.05 and abs(asd_integrated_dbfs - expected_noise_dbfs) < 0.15
+    check("FFT line / noise-PSD normalization", ok_spectrum,
+          f"full-scale sine={line_level:+.3f} dBFS; integrated ASD={asd_integrated_dbfs:.2f} dBFS; "
+          f"time-domain noise={expected_noise_dbfs:.2f} dBFS")
+
     # Двухтоновый CCIF: вводим продукт 1 кГц на -60 dBc.
     x2 = 0.3*np.sin(2*np.pi*19000*t) + 0.3*np.sin(2*np.pi*20000*t) + 0.0003*np.sin(2*np.pi*1000*t)
     ri = dsp.analyze_imd(x2, fs, 19000, 20000, n, mode="ccif", band_hi=21000)
@@ -79,6 +94,9 @@ def run_selftest():
     live_be.live_stop()
     check("Live noise H1 / cyclic buffer", live_dev < 1.0,
           f"max |RIAA deviation|={live_dev:.3f} dB; periodic source aligned and analysed")
+    live_status = live_be.live_status()
+    check("Live backend status / XRUN field", live_status.get("xruns") == 0 and live_status.get("backend") == "sim",
+          f"backend={live_status.get('backend')}; xruns={live_status.get('xruns')}; simulator marks hardware XRUN not applicable")
 
     # TACET A3 — именно pink-noise: моно и переворот полярности должны различаться.
     from .signals import make_test_noise

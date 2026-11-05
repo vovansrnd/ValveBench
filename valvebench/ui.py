@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import threading
+import time
 
 import numpy as np
 import gi
@@ -121,11 +122,12 @@ class VerticalMeter(Gtk.DrawingArea):
             self.hold_db = self.peak_db
         else:
             self.hold_db = max(self.hold_db, self.peak_db)
-        self.clipped = bool(clipped)
+        self.clipped = self.clipped or bool(clipped)
         self.queue_draw()
 
-    def reset_hold(self):
+    def reset_holds(self):
         self.hold_db = self.peak_db
+        self.clipped = False
         self.queue_draw()
 
     def _draw(self, area, cr, width, height, *_):
@@ -174,16 +176,15 @@ class VerticalMeter(Gtk.DrawingArea):
 
 
 class LivePage(Gtk.Box):
-    """Главный стенд: генератор слева, два крупных вертикальных метра справа."""
+    """Главный стенд: генераторные настройки и два крупных вертикальных метра L/R."""
 
     def __init__(self, win):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=16,
                          margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
         self.win = win
         self.f = spin("Частота, Гц", 5, 40000, 1, 1000, 0)
-        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -24, 1)
+        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -20, 1)
         self.route = combo("Канал генератора", ["L + R", "Только L", "Только R"], 0)
-        self.on = Adw.SwitchRow(title="Генератор включён")
         self.vlabel = Gtk.Label(xalign=0, wrap=True)
         self.vlabel.add_css_class("dim-label")
         self.meter_l = VerticalMeter("LEFT", (0.18, 0.52, 0.84))
@@ -192,45 +193,68 @@ class LivePage(Gtk.Box):
         self.read_r = Gtk.Label(label="— dBFS", xalign=0)
         self.read_l.add_css_class("title-2")
         self.read_r.add_css_class("title-2")
-        self.detail_l = Gtk.Label(label="RMS — · Peak — · —", xalign=0)
-        self.detail_r = Gtk.Label(label="RMS — · Peak — · —", xalign=0)
+        self.detail_l = Gtk.Label(label="RMS — · Peak —", xalign=0)
+        self.detail_r = Gtk.Label(label="RMS — · Peak —", xalign=0)
         self.detail_l.add_css_class("dim-label")
         self.detail_r.add_css_class("dim-label")
-        self.status_label = Gtk.Label(label="Остановлен", xalign=0)
+        self.status_label = Gtk.Label(label="Аудиотракт остановлен", xalign=0, wrap=True)
         self.status_label.add_css_class("dim-label")
-        self.plot = Plot(True, "Частота, Гц", "dBFS / бин")
-        self.plot.set_view((10, min(40000, 0.45 * win.rig_fs())), (-140, 0))
-        self.avg = None
+        self.clip_label = Gtk.Label(label="ADC CLIP: —", xalign=0)
+        self.xrun_label = Gtk.Label(label="XRUN: —", xalign=0)
+        self.clock_label = Gtk.Label(label="RMS · Peak · Hold", xalign=1)
         self.timer = None
+        self.last_generator_settings = None
 
         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        controls.set_size_request(300, -1)
-        controls.append(group("Генератор", self.f, self.lv, self.route, self.on))
+        controls.set_size_request(310, -1)
+        controls.append(group("Генератор — параметры", self.f, self.lv, self.route))
+        # Единственная кнопка генератора находится на главном измерительном экране.
+        # Это тот же ToggleButton, состояние которого управляет аудиодвижком.
+        self.gen_action = self.win.generator_btn
+        self.gen_action.set_size_request(-1, 60)
+        self.gen_action.set_hexpand(True)
+        self.gen_action.add_css_class("suggested-action")
+        controls.append(self.gen_action)
+        hint = Gtk.Label(
+            label="Порядок работы: 1) включи «АУДИО ВКЛ» в верхней панели; "
+                  "2) нажми эту кнопку. Повторное нажатие выключает сигнал, но оставляет АЦП включённым.",
+            xalign=0, wrap=True)
+        hint.add_css_class("dim-label")
+        controls.append(hint)
         controls.append(self.vlabel)
-        controls.append(button("Сбросить Peak Hold", self.reset_holds))
+        controls.append(button("Сбросить Peak Hold и CLIP", self.reset_holds))
         controls.append(self.status_label)
-        controls.append(Gtk.Label(label="Напряжения показываются только после калибровки АЦП. Для входа фонокорректора необходим внешний аттенюатор и корректное сопротивление источника.",
-                                  xalign=0, wrap=True))
+        controls.append(self.clip_label)
+        controls.append(self.xrun_label)
+        controls.append(Gtk.Label(
+            label="ADC CLIP — отсчёты АЦП приблизились к цифровому пределу. Это не гарантирует отсутствия "
+                  "перегрузки аналогового входного каскада. XRUN — underrun ЦАП или overrun АЦП: аудиопоток "
+                  "не успел обслужить буфер, возможны пропуски/разрывы.",
+            xalign=0, wrap=True))
+        controls.append(Gtk.Label(
+            label="Напряжения и усиление появятся после раздельной калибровки L/R. Для входа MM необходим "
+                  "внешний аттенюатор и корректное сопротивление источника.", xalign=0, wrap=True))
         self.append(controls)
 
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         right.set_hexpand(True)
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        header.append(Gtk.Label(label="КАНАЛЫ L / R", xalign=0))
+        title = Gtk.Label(label="ДВА КАНАЛА · ОДИН МАСШТАБ", xalign=0)
+        title.add_css_class("heading")
+        header.append(title)
         header.append(Gtk.Box(hexpand=True))
-        self.clock_label = Gtk.Label(label="RMS · Peak · Peak Hold", xalign=1)
         self.clock_label.add_css_class("dim-label")
         header.append(self.clock_label)
         right.append(header)
 
-        meters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=22)
+        meters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=26)
         meters.set_vexpand(True)
         for name, meter, read, detail in (("LEFT", self.meter_l, self.read_l, self.detail_l),
                                           ("RIGHT", self.meter_r, self.read_r, self.detail_r)):
-            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
             col.set_hexpand(True)
             title = Gtk.Label(label=name)
-            title.add_css_class("heading")
+            title.add_css_class("title-1")
             col.append(title)
             col.append(read)
             meter.set_vexpand(True)
@@ -238,49 +262,71 @@ class LivePage(Gtk.Box):
             col.append(detail)
             meters.append(col)
         right.append(meters)
-        right.append(Gtk.Label(label="Спектр входного сигнала", xalign=0))
-        self.plot.set_content_height(210)
-        right.append(self.plot)
+        note = Gtk.Label(label="Для спектра открой отдельный прибор слева. Там крупный график, "
+                               "шумовая плотность dBFS/√Гц, линейчатый спектр dBFS/bin и выбор FFT.",
+                         xalign=0, wrap=True)
+        note.add_css_class("dim-label")
+        right.append(note)
         self.append(right)
 
         for w in (self.f, self.lv):
             w.connect("notify::value", lambda *_: self.apply())
         self.route.connect("notify::selected", lambda *_: self.apply())
-        self.on.connect("notify::active", lambda *_: self.apply())
 
     def reset_holds(self):
-        self.meter_l.reset_hold()
-        self.meter_r.reset_hold()
+        self.meter_l.reset_holds()
+        self.meter_r.reset_holds()
+
+    def sync_generator_button(self, active, enabled):
+        self.gen_action.set_sensitive(bool(enabled))
+        if active:
+            self.gen_action.set_label("■  ОСТАНОВИТЬ ТЕСТОВЫЙ СИГНАЛ")
+            self.gen_action.remove_css_class("suggested-action")
+            self.gen_action.add_css_class("destructive-action")
+        else:
+            self.gen_action.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+            self.gen_action.remove_css_class("destructive-action")
+            self.gen_action.add_css_class("suggested-action")
+
+    def generator_active(self):
+        return bool(self.win.generator_btn.get_active())
 
     def apply(self):
         be = self.win.be
         if be is None or not be.live_running:
             return
-        if not self.on.get_active():
+        if not self.generator_active():
             be.live_set_loop(None)
-            self.vlabel.set_text("Генератор выключен; вход остаётся активным")
+            self.vlabel.set_text("Генератор выключен · ЦАП подаёт тишину · АЦП продолжает измерение")
+            self.last_generator_settings = None
+            if hasattr(self.win, "spectrum"):
+                self.win.spectrum.reset_average()
             return
         fs = self.win.rig_fs()
         freq = float(self.f.get_value())
         amp = float(dsp.dbfs_to_amp(self.lv.get_value()))
-        # Фаза замыкается точно на периоде; длина петли 1 секунду.
-        n = int(fs)  # односекундный буфер; целочисленная частота замыкается без щелчка
+        # Используем целое число периодов в секунде — буфер зацикливается без фазового скачка.
         actual_freq = float(round(freq))
+        n = int(fs)
         idx = np.arange(n, dtype=np.float64)
         sig = amp * np.sin(2 * np.pi * actual_freq * idx / fs)
         route = self.route.get_selected()
         buf = np.column_stack((sig if route in (0, 1) else np.zeros(n),
                                sig if route in (0, 2) else np.zeros(n)))
         be.live_set_loop(buf)
+        self.last_generator_settings = (actual_freq, float(self.lv.get_value()), int(route))
         vin_l = self.win.cal.dut_in_v(self.lv.get_value(), 0)
         vin_r = self.win.cal.dut_in_v(self.lv.get_value(), 1)
-        self.vlabel.set_text(f"Тестовый сигнал: {actual_freq:.3f} Гц (задано {freq:.1f}), {self.lv.get_value():.1f} dBFS"
-                             + (f" · Uin L {calib.fmt_v(vin_l)} / R {calib.fmt_v(vin_r)} RMS"
-                                if vin_l is not None or vin_r is not None else ""))
+        self.vlabel.set_text(
+            f"ПОДАНО: {actual_freq:.0f} Гц · {self.lv.get_value():.1f} dBFS · "
+            f"{'L + R' if route == 0 else 'только L' if route == 1 else 'только R'}"
+            + (f" · расчёт Uin L {calib.fmt_v(vin_l)} / R {calib.fmt_v(vin_r)} RMS"
+               if vin_l is not None or vin_r is not None else ""))
+        if hasattr(self.win, "spectrum"):
+            self.win.spectrum.reset_average()
 
     def start(self):
-        self.avg = None
-        self.timer = GLib.timeout_add(150, self.tick)
+        self.timer = GLib.timeout_add(75, self.tick)
         self.apply()
 
     def stop(self):
@@ -296,58 +342,223 @@ class LivePage(Gtk.Box):
                 reason = getattr(be, "live_error", "") if be is not None else ""
                 if reason:
                     self.win.toast(f"Аудиопоток остановился: {reason}")
-                self.win.live_btn.set_active(False)  # вызывает гарантированную очистку backend
+                self.win.live_btn.set_active(False)
             return False
-        x = be.live_recent(0.7)
-        if len(x) < 4096:
+        # Метр использует короткое окно 100 мс: атака уровня не ждёт полсекундный FFT.
+        x = be.live_recent(0.12)
+        if len(x) < max(1024, int(0.04 * self.win.rig_fs())):
             return True
-        n = 1 << int(np.floor(np.log2(min(len(x), 65536))))
-        traces = []
-        readings = []
-        for c, (meter, read, detail, name) in enumerate(((self.meter_l, self.read_l, self.detail_l, "L"),
-                                                          (self.meter_r, self.read_r, self.detail_r, "R"))):
-            seg = x[-n:, c]
+        clips = []
+        for c, (meter, read, detail) in enumerate(((self.meter_l, self.read_l, self.detail_l),
+                                                    (self.meter_r, self.read_r, self.detail_r))):
+            seg = x[:, c]
             rms = float(np.sqrt(np.mean(seg ** 2)))
             peak = float(np.max(np.abs(seg)))
             d_rms = float(dsp.rms_dbfs(rms))
             d_peak = float(dsp.db20(peak))
             clip = peak >= 0.98
             meter.set_reading(d_rms, d_peak, clip)
+            clips.append(meter.clipped)
             volts = self.win.cal.in_v(d_rms, c)
             gen_db = float(self.lv.get_value())
-            selected_route = self.route.get_selected()
-            driven = (selected_route == 0 or (selected_route == 1 and c == 0) or
-                      (selected_route == 2 and c == 1))
-            vin = self.win.cal.dut_in_v(gen_db, c) if self.on.get_active() and driven else None
-            gain = self.win.cal.gain_db(gen_db, d_rms, c) if self.on.get_active() and driven else None
-            read.set_text(f"{d_rms:7.2f} dBFS")
-            detail.set_text(f"Peak {d_peak:.1f} · Hold {meter.hold_db:.1f} dBFS"
-                            + (f" · Uout {calib.fmt_v(volts)}" if volts else "")
-                            + (f" · G {gain:+.2f} dB" if gain is not None else "")
-                            + (f" · Uin {calib.fmt_v(vin)}" if vin else "")
-                            + (" · CLIP" if clip else ""))
-            blk = dsp.Block(seg, self.win.rig_fs())
-            self.avg = self.avg if self.avg is not None and self.avg.shape == (2, blk.amp.size) else np.zeros((2, blk.amp.size)) + 1e-18
-            self.avg[c] = 0.72 * self.avg[c] + 0.28 * (blk.amp ** 2)
-            traces.append({"x": blk.freq[1:], "y": 10 * np.log10(self.avg[c][1:] + 1e-18),
-                           "label": name, "color": name, "width": 1.2})
-            readings.append(clip)
-        self.plot.set_traces(traces)
+            route = self.route.get_selected()
+            driven = route == 0 or (route == 1 and c == 0) or (route == 2 and c == 1)
+            gain = self.win.cal.gain_db(gen_db, d_rms, c) if self.generator_active() and driven else None
+            detail.set_text(
+                f"Peak {d_peak:.1f} dBFS · Hold {meter.hold_db:.1f} dBFS · запас {max(0.0, -d_peak):.1f} dB"
+                + (f" · Uout {calib.fmt_v(volts)}" if volts is not None else "")
+                + (f" · G {gain:+.2f} dB" if gain is not None else ""))
+            read.set_text(f"{d_rms:7.2f} dBFS RMS")
+        status = be.live_status() if hasattr(be, "live_status") else {}
+        xrun = status.get("xruns")
+        if xrun is None:
+            self.xrun_label.set_text("XRUN: backend не сообщает счётчик")
+        else:
+            self.xrun_label.set_text(
+                f"XRUN: {xrun} · ADC overrun {status.get('capture_xruns', 0)} / "
+                f"DAC underrun {status.get('playback_xruns', 0)} (сообщения ALSA)" +
+                (" · пропуски не зарегистрированы" if xrun == 0 else " · проверь разрывы в сигнале"))
+        if any(clips):
+            self.clip_label.set_text("ADC CLIP: ДА · измерение могло быть искажено")
+            self.clip_label.add_css_class("error")
+        else:
+            self.clip_label.set_text("ADC CLIP: нет · цифрового клиппинга в текущем окне не обнаружено")
+            self.clip_label.remove_css_class("error")
+        cap_state = "OK" if status.get("capture_alive", False) else "ОСТАНОВЛЕН"
+        play_state = "OK" if status.get("playback_alive", False) else "ОСТАНОВЛЕН"
+        self.status_label.set_text(
+            f"Аудио активно · Fs={self.win.rig_fs()} Гц · ADC {cap_state} "
+            f"({status.get('capture_frames', 0) / self.win.rig_fs():.1f} с принято) · "
+            f"DAC {play_state} ({status.get('playback_frames', 0) / self.win.rig_fs():.1f} с отправлено)")
         gains = []
-        if self.on.get_active() and self.route.get_selected() == 0:
+        if self.generator_active() and self.route.get_selected() == 0:
             for c in (0, 1):
-                seg = x[-n:, c]
-                rr = float(np.sqrt(np.mean(seg ** 2)))
-                gd = self.win.cal.gain_db(float(self.lv.get_value()), float(dsp.rms_dbfs(rr)), c)
+                gd = self.win.cal.gain_db(float(self.lv.get_value()),
+                                          float(dsp.rms_dbfs(np.sqrt(np.mean(x[:, c] ** 2)))), c)
                 if gd is not None:
                     gains.append(gd)
         if len(gains) == 2:
-            self.clock_label.set_text(f"ΔG L−R = {gains[0]-gains[1]:+.3f} dB · RMS / Peak / Hold")
-        elif self.on.get_active() and self.route.get_selected() != 0:
-            self.clock_label.set_text("Для ΔG выбери генератор L + R · одноканальный тест")
+            self.clock_label.set_text(f"ΔG L−R = {gains[0] - gains[1]:+.3f} dB · калибровка L/R")
+        elif self.generator_active() and self.route.get_selected() != 0:
+            self.clock_label.set_text("ΔG недоступна: тест подан только в один канал")
         else:
-            self.clock_label.set_text("RMS / Peak / Peak Hold · калибровка задаётся в Setup")
-        self.status_label.set_text("ВНИМАНИЕ: перегрузка ADC" if any(readings) else "Измерение входа активно")
+            self.clock_label.set_text("RMS / Peak / Peak Hold · входные уровни dBFS")
+        return True
+
+
+class SpectrumPage(Gtk.Box):
+    """Большой живой FFT-экран с управляемым диапазоном и быстрой атакой."""
+
+    FFT_SIZES = [8192, 16384, 32768, 65536, 131072, 262144]
+
+    def __init__(self, win):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=8,
+                         margin_top=10, margin_bottom=10, margin_start=12, margin_end=12)
+        self.win = win
+        self.fft = Gtk.DropDown.new_from_strings([
+            "8k · самый быстрый отклик",
+            "16k · быстро",
+            "32k · среднее разрешение",
+            "64k · повышенное разрешение",
+            "128k · высокое разрешение",
+            "256k · максимальное разрешение"])
+        self.fft.set_selected(0)
+        self.mode = Gtk.DropDown.new_from_strings([
+            "Амплитуда линий · dBFS/bin", "Плотность шума · dBFS/√Гц"])
+        # PSD view is the most useful default for seeing the continuous noise floor.
+        self.mode.set_selected(1)
+        self.floor = Gtk.DropDown.new_from_strings(["−120", "−140", "−160", "−180", "−200"])
+        self.floor.set_selected(2)
+        self.top = Gtk.DropDown.new_from_strings(["0", "−20", "−40", "−60", "−80"])
+        self.top.set_selected(0)
+        self.band = Gtk.DropDown.new_from_strings(["20 Гц – 20 кГц", "10 Гц – 40 кГц"])
+        self.band.set_selected(0)
+        self.avg_mode = Gtk.DropDown.new_from_strings(["Без усреднения", "Быстрое", "Сглаженное"])
+        self.avg_mode.set_selected(1)
+        self.state = Gtk.Label(label="Аудиопоток выключен", xalign=0)
+        self.state.add_css_class("dim-label")
+        self.plot = Plot(True, "Частота, Гц", "Уровень, dBFS/bin")
+        self.plot.set_content_height(540)
+        self.plot.set_vexpand(True)
+        self.plot.set_hexpand(True)
+        self.avg_line_power = None
+        self.avg_bin_power = None
+        self.timer = None
+        self._last_signature = None
+        self._last_compute_time = 0.0
+
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        for label, widget in (("FFT", self.fft), ("Режим отображения", self.mode),
+                              ("Низ шкалы, дБ", self.floor), ("Верх шкалы, дБ", self.top),
+                              ("Полоса", self.band), ("Усреднение", self.avg_mode)):
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+            lab = Gtk.Label(label=label, xalign=0)
+            lab.add_css_class("dim-label")
+            col.append(lab)
+            widget.set_hexpand(True)
+            col.append(widget)
+            toolbar.append(col)
+        self.append(toolbar)
+        self.append(self.plot)
+        self.append(self.state)
+        help_label = Gtk.Label(
+            label="Амплитуда линий: dBFS/bin, уровень синусоидальной составляющей в каждом бине. "
+                  "Плотность шума: dBFS/√Гц, позволяет сравнивать шумовую полку при разном FFT. "
+                  "Δf=Fs/N; ENBW окна Блэкмана–Харриса около 2·Δf. Уровень тона и плотность шума — разные величины.",
+            xalign=0, wrap=True)
+        help_label.add_css_class("dim-label")
+        self.append(help_label)
+        for w in (self.fft, self.mode, self.floor, self.top, self.band, self.avg_mode):
+            w.connect("notify::selected", lambda *_: self.reset_average())
+
+    def fft_n(self):
+        return self.FFT_SIZES[self.fft.get_selected()]
+
+    def reset_average(self):
+        self.avg_line_power = None
+        self.avg_bin_power = None
+        self._last_signature = None
+        self._last_compute_time = 0.0
+
+    def set_visible(self, visible):
+        if visible and self.win.live_on and self.timer is None:
+            self.timer = GLib.timeout_add(100, self.tick)
+        elif not visible and self.timer is not None:
+            GLib.source_remove(self.timer)
+            self.timer = None
+
+    def tick(self):
+        be = self.win.be
+        if be is None or not be.live_running:
+            self.timer = None
+            self.state.set_text("Аудиопоток выключен · включи «Аудио ВКЛ» в верхней панели")
+            return False
+        fs = self.win.rig_fs()
+        n = self.fft_n()
+        refresh_ms = {8192: 80, 16384: 100, 32768: 120, 65536: 180, 131072: 300, 262144: 500}[n]
+        now = time.monotonic()
+        if self._last_compute_time and (now - self._last_compute_time) * 1000 < refresh_ms:
+            return True
+        x = be.live_recent(n / fs + 0.02)
+        if len(x) < n:
+            self.state.set_text(f"Накопление FFT: {len(x)}/{n} отсчётов · {len(x)/fs:.3f} с")
+            return True
+        x = x[-n:]
+        self._last_compute_time = now
+        traces = []
+        attack = (1.0, 0.78, 0.48)[self.avg_mode.get_selected()]
+        release = (1.0, 0.22, 0.12)[self.avg_mode.get_selected()]
+        first_frame = self.avg_line_power is None or self.avg_bin_power is None
+        blocks = [dsp.Block(x[:, ch], fs) for ch in (0, 1)]
+        expected_shape = (2, len(blocks[0].amp))
+        if (first_frame or self.avg_line_power.shape != expected_shape or
+                self.avg_bin_power.shape != expected_shape):
+            self.avg_line_power = np.stack([np.maximum(b.amp ** 2, 1e-30) for b in blocks])
+            self.avg_bin_power = np.stack([np.maximum(b.P, 1e-30) for b in blocks])
+        for ch, label in ((0, "L"), (1, "R")):
+            block = blocks[ch]
+            line_power = np.maximum(block.amp ** 2, 1e-30)
+            bin_power = np.maximum(block.P, 1e-30)
+            if not first_frame:
+                prev_line = self.avg_line_power[ch]
+                prev_bin = self.avg_bin_power[ch]
+                coeff_line = np.where(line_power >= prev_line, attack, release)
+                coeff_bin = np.where(bin_power >= prev_bin, attack, release)
+                self.avg_line_power[ch] = coeff_line * line_power + (1.0 - coeff_line) * prev_line
+                self.avg_bin_power[ch] = coeff_bin * bin_power + (1.0 - coeff_bin) * prev_bin
+            if self.mode.get_selected() == 0:
+                # Block.amp is the peak amplitude of a sine-equivalent spectral line.
+                y = 10.0 * np.log10(np.maximum(self.avg_line_power[ch], 1e-30))
+                ylabel = "Уровень синусоидальной линии, dBFS/bin"
+            else:
+                # One-sided power per bin -> amplitude spectral density, referenced to full-scale sine RMS.
+                df_bin = fs / n
+                y = 10.0 * np.log10(np.maximum(2.0 * self.avg_bin_power[ch] / df_bin, 1e-30))
+                ylabel = "Плотность шума, dBFS/√Гц"
+            traces.append({"x": block.freq[1:], "y": y[1:], "label": label, "color": label, "width": 1.7})
+        self.plot.xlog = True
+        xlo = 20.0 if self.band.get_selected() == 0 else 10.0
+        ylo = float([-120, -140, -160, -180, -200][self.floor.get_selected()])
+        yhi = float([0, -20, -40, -60, -80][self.top.get_selected()])
+        if ylo >= yhi:
+            ylo, yhi = (-160.0, 0.0) if self.mode.get_selected() == 0 else (-200.0, -60.0)
+        self.plot.set_view((xlo, min(20000.0 if self.band.get_selected() == 0 else 40000.0, 0.45 * fs)),
+                           (ylo, yhi), xlabel="Частота, Гц", ylabel=ylabel)
+        if self.plot.ylim[0] >= self.plot.ylim[1]:
+            self.plot.set_view(ylim=(-160, 0))
+        self.plot.set_traces(traces)
+        w = dsp.bh(n)
+        df = fs / n
+        enbw = fs * float(np.sum(w * w)) / float(np.sum(w) ** 2)
+        status = be.live_status() if hasattr(be, "live_status") else {}
+        gen = self.win.live.last_generator_settings
+        source = "генератор OFF" if gen is None else f"генератор {gen[0]:.0f} Гц / {gen[1]:.1f} dBFS"
+        xruns = status.get("xruns")
+        xrun_text = "XRUN: счётчик недоступен" if xruns is None else f"XRUN: {xruns}"
+        mode_name = "линейчатый спектр" if self.mode.get_selected() == 0 else "спектральная плотность шума"
+        self.state.set_text(f"{source} · {mode_name} · N={n:,} · Δf={df:.3f} Гц · ENBW={enbw:.2f} Гц · "
+                            f"окно {n/fs:.3f} с · обновление ≥{refresh_ms} мс · {xrun_text} · "
+                            f"ADC frames={status.get('capture_frames', 0):,}")
         return True
 
 
@@ -914,15 +1125,13 @@ class SetupPage(Page):
 
 class Window(Adw.ApplicationWindow):
     def __init__(self, app):
-        super().__init__(application=app, title="ValveBench", default_width=1500, default_height=940)
+        super().__init__(application=app, title="ValveBench", default_width=1320, default_height=760)
         self.cal = calib.load()
         self.be = None
         self.rig = None
         self.busy = False
         self.live_on = False
         self.last = None
-        # Измерительный прибор требует одновременно ЦАП и АЦП. Не показываем
-        # HDMI playback-only устройства как полноценные дуплексные карты.
         self.cards = [("sim", "Симулятор (демо без карты)")] + list_duplex_devices()
         self.toasts = Adw.ToastOverlay()
 
@@ -938,8 +1147,15 @@ class Window(Adw.ApplicationWindow):
         self.dev.set_selected(sel)
         self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in RATES])
         self.rate.set_selected(RATES.index(self.cal["fs"]) if self.cal["fs"] in RATES else 3)
-        self.live_btn = Gtk.ToggleButton(label="Живой режим")
+        self.live_btn = Gtk.ToggleButton(label="АУДИО ВЫКЛ")
+        self.live_btn.add_css_class("pill")
         self.live_btn.connect("toggled", self.on_live)
+        self.generator_btn = Gtk.ToggleButton(label="▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+        self.generator_btn.add_css_class("pill")
+        self.generator_btn.set_sensitive(False)
+        self.generator_btn.set_tooltip_text(
+            "Включить тестовый сигнал на выходах ЦАП. Сначала включи аудиопоток и проверь соединение/уровень.")
+        self.generator_btn.connect("toggled", self.on_generator_toggle)
         self.status = Gtk.Label(label="", xalign=1)
         self.spinner = Gtk.Spinner()
         header.pack_start(self.dev)
@@ -953,16 +1169,23 @@ class Window(Adw.ApplicationWindow):
 
         self.stack = Gtk.Stack()
         self.live = LivePage(self)
+        self.spectrum = SpectrumPage(self)
         self.noise_response_page = NoiseResponsePage(self)
-        for name, title, page in (("live", "Gain Match / Уровень", self.live), ("thd", "THD / THD+N", ThdPage(self)),
-                                  ("resp", "АЧХ / RIAA / Sweep", ResponsePage(self)),
-                                  ("noise_response", "АЧХ шумом / H1", self.noise_response_page),
-                                  ("imd", "IMD", ImdPage(self)), ("noise", "Шум / Crosstalk", NoisePage(self)),
-                                  ("vinyl", "TACET / Vinyl Test", VinylPage(self)),
-                                  ("setup", "Калибровка / Setup", SetupPage(self))):
+        pages = (
+            ("live", "Gain Match / Уровень", self.live),
+            ("spectrum", "Спектр (большой экран)", self.spectrum),
+            ("thd", "THD / THD+N", ThdPage(self)),
+            ("resp", "АЧХ / RIAA / Sweep", ResponsePage(self)),
+            ("noise_response", "АЧХ шумом / H1", self.noise_response_page),
+            ("imd", "IMD", ImdPage(self)),
+            ("noise", "Шум / Crosstalk", NoisePage(self)),
+            ("vinyl", "TACET / Vinyl Test", VinylPage(self)),
+            ("setup", "Калибровка / Setup", SetupPage(self)),
+        )
+        for name, title, page in pages:
             self.stack.add_titled(page, name, title)
         side = Gtk.StackSidebar(stack=self.stack)
-        side.set_size_request(190, -1)
+        side.set_size_request(200, -1)
         body = Gtk.Box()
         body.append(side)
         body.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
@@ -976,7 +1199,7 @@ class Window(Adw.ApplicationWindow):
         self.set_content(tv)
         self.connect("close-request", self.on_close)
         if self.invalid_saved_device:
-            self.toast(f"Сохранённое устройство {self.invalid_saved_device} не является доступным дуплексным ALSA-устройством. Выбран симулятор; выбери E-MU в списке.")
+            self.toast(f"Сохранённое устройство {self.invalid_saved_device} не найдено. Выбран симулятор; выбери нужную карту вверху.")
 
     def on_device_changed(self, *_):
         dev, _label = self.cards[self.dev.get_selected()]
@@ -992,10 +1215,10 @@ class Window(Adw.ApplicationWindow):
         calib.save(self.cal)
 
     def on_page_changed(self, *_):
-        # Не оставляем тестовый шум подаваемым, если пользователь ушёл с прибора.
         page = self.stack.get_visible_child()
         if page is not self.noise_response_page and self.noise_response_page.live_toggle.get_active():
             self.noise_response_page.live_toggle.set_active(False)
+        self.spectrum.set_visible(page is self.spectrum)
 
     # ---- стенд
     def rig_fs(self):
@@ -1032,6 +1255,21 @@ class Window(Adw.ApplicationWindow):
         else:
             self.stop_live()
 
+    def on_generator_toggle(self, btn):
+        active = btn.get_active()
+        if active and not self.live_on:
+            btn.set_active(False)
+            self.toast("Сначала включи «АУДИО ВКЛ»: это открывает физические ЦАП и АЦП.")
+            return
+        btn.set_label("ГЕНЕРАТОР: ВКЛ" if active else "ГЕНЕРАТОР: ВЫКЛ")
+        if active:
+            btn.add_css_class("suggested-action")
+        else:
+            btn.remove_css_class("suggested-action")
+        self.live.sync_generator_button(active, self.live_on)
+        self.live.apply()
+        self.spectrum.reset_average()
+
     def start_live(self):
         if self.busy:
             self.live_btn.set_active(False)
@@ -1044,15 +1282,33 @@ class Window(Adw.ApplicationWindow):
             self.live_btn.set_active(False)
             return
         self.live_on = True
+        self.live_btn.set_label("АУДИО ВКЛ")
+        self.live_btn.add_css_class("suggested-action")
+        self.generator_btn.set_sensitive(True)
+        self.generator_btn.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+        self.generator_btn.set_active(False)
+        self.live.sync_generator_button(False, True)
         self.live.start()
+        if self.stack.get_visible_child() is self.spectrum:
+            self.spectrum.set_visible(True)
 
     def stop_live(self):
-        # live_stop у бэкенда идемпотентен и должен очищать процессы даже
-        # после того, как один из них завершился неожиданно.
+        # Сначала снимаем генерацию, затем закрываем оба физических потока.
+        if self.generator_btn.get_active():
+            self.generator_btn.set_active(False)
+        self.generator_btn.set_sensitive(False)
+        self.generator_btn.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+        self.live.sync_generator_button(False, False)
         self.live.stop()
         if self.be is not None:
             self.be.live_stop()
         self.live_on = False
+        self.live_btn.set_label("АУДИО ВЫКЛ")
+        self.live_btn.remove_css_class("suggested-action")
+        self.spectrum.reset_average()
+        if self.spectrum.timer is not None:
+            GLib.source_remove(self.spectrum.timer)
+            self.spectrum.timer = None
         if self.live_btn.get_active():
             self.live_btn.set_active(False)
 

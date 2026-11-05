@@ -158,6 +158,11 @@ class Backend:
     def live_recent(self, seconds):
         raise NotImplementedError
 
+    def live_status(self):
+        return {"backend": self.name, "running": bool(self.live_running), "xruns": None,
+                "capture_frames": 0, "playback_frames": 0, "capture_alive": bool(self.live_running),
+                "playback_alive": bool(self.live_running), "details": "backend does not expose ALSA xrun diagnostics"}
+
     live_running = False
     notes: list
 
@@ -196,6 +201,13 @@ class AlsaCli(Backend):
         self._live_err_files = []
         self.live_error = ""
         self.live_running = False
+        self._live_capture_frames = 0
+        self._live_playback_frames = 0
+        self._live_xruns_capture = 0
+        self._live_xruns_playback = 0
+        self._live_log_offsets = [0, 0]
+        self._live_started_at = None
+        self._live_last_status = None
 
     # -- настройка
 
@@ -214,9 +226,12 @@ class AlsaCli(Backend):
             raise BackendError(f"карта открывается как {self.ch_in} вх / {self.ch_out} вых, "
                                f"а выбраны каналы {self.in_map}/{self.out_map}")
 
-    def _cmd(self, tool, direction):
+    def _cmd(self, tool, direction, quiet=True):
         fmt, ch = (self.fmt_in, self.ch_in) if direction == "c" else (self.fmt_out, self.ch_out)
-        c = [tool, "-q", "-D", self.hw, "-t", "raw", "-f", fmt, "-r", str(self.fs), "-c", str(ch)]
+        c = [tool]
+        if quiet:
+            c.append("-q")
+        c += ["-D", self.hw, "-t", "raw", "-f", fmt, "-r", str(self.fs), "-c", str(ch)]
         if direction == "p":
             c += [f"--buffer-time={self.buffer_ms * 1000}"]
         return c
@@ -270,9 +285,9 @@ class AlsaCli(Backend):
                                           stderr=subprocess.PIPE, timeout=timeout, check=False)
                 except subprocess.TimeoutExpired as exc:
                     raise BackendError(f"aplay завис дольше {timeout:.1f} с; процесс остановлен") from exc
+                play_err = play.stderr.decode("utf-8", "replace")
                 if play.returncode != 0:
-                    err = play.stderr.decode("utf-8", "replace")
-                    raise BackendError(f"aplay завершился с кодом {play.returncode}: {err.strip()}")
+                    raise BackendError(f"aplay завершился с кодом {play.returncode}: {play_err.strip()}")
                 try:
                     cap.wait(timeout=timeout)
                 except subprocess.TimeoutExpired as exc:
@@ -282,6 +297,8 @@ class AlsaCli(Backend):
                     raise BackendError(f"arecord завершился с кодом {cap.returncode}: {cap_err.strip()}")
                 if re.search(r"underrun|overrun|xrun", cap_err, re.I):
                     notes.append(f"arecord: {cap_err.strip()}")
+                if re.search(r"underrun|overrun|xrun", play_err, re.I):
+                    notes.append(f"aplay: {play_err.strip()}")
                 capture.seek(0)
                 raw = capture.read()
             finally:
@@ -346,14 +363,21 @@ class AlsaCli(Backend):
             self._ring_pos = 0
             self._ring_count = 0
         self.live_error = ""
+        self._live_capture_frames = 0
+        self._live_playback_frames = 0
+        self._live_xruns_capture = 0
+        self._live_xruns_playback = 0
+        self._live_log_offsets = [0, 0]
+        self._live_started_at = time.monotonic()
+        self._live_last_status = None
         try:
             # Не оставляем stderr=PIPE без читателя: поток xrun-предупреждений
             # способен заполнить pipe и намертво заблокировать процесс ALSA.
             self._live_err_files = [tempfile.TemporaryFile(mode="w+b"),
                                     tempfile.TemporaryFile(mode="w+b")]
-            self._live_cap = subprocess.Popen(self._cmd("arecord", "c"), stdout=subprocess.PIPE,
+            self._live_cap = subprocess.Popen(self._cmd("arecord", "c", quiet=False), stdout=subprocess.PIPE,
                                               stderr=self._live_err_files[0])
-            self._live_play = subprocess.Popen(self._cmd("aplay", "p"), stdin=subprocess.PIPE,
+            self._live_play = subprocess.Popen(self._cmd("aplay", "p", quiet=False), stdin=subprocess.PIPE,
                                                stderr=self._live_err_files[1])
             time.sleep(0.20)
             failed = []
@@ -392,6 +416,7 @@ class AlsaCli(Backend):
             n = len(blk)
             if n == 0:
                 continue
+            self._live_capture_frames += n
             with self._ring_lock:
                 cap = self._ring_capacity
                 if n >= cap:
@@ -424,6 +449,7 @@ class AlsaCli(Backend):
             try:
                 self._live_play.stdin.write(to_pcm(self._to_hw_out(buf), self.fmt_out))
                 self._live_play.stdin.flush()
+                self._live_playback_frames += len(buf)
             except (BrokenPipeError, ValueError, OSError) as exc:
                 if not self._live_stop.is_set():
                     self._live_failure(f"aplay прекратил воспроизведение: {type(exc).__name__}: {exc}")
@@ -457,6 +483,42 @@ class AlsaCli(Backend):
             if end <= self._ring_capacity:
                 return self._ring[start:end].copy()
             return np.vstack((self._ring[start:], self._ring[:end - self._ring_capacity])).copy()
+
+    def live_status(self):
+        """Snapshot counters and ALSA xrun messages without moving shared file offsets."""
+        import os
+        import re
+
+        for idx, err_file in enumerate(self._live_err_files):
+            try:
+                size = os.fstat(err_file.fileno()).st_size
+                offset = self._live_log_offsets[idx]
+                if size > offset:
+                    chunk = os.pread(err_file.fileno(), size - offset, offset).decode("utf-8", "replace")
+                    self._live_log_offsets[idx] = size
+                    hits = len(re.findall(r"underrun|overrun|xrun", chunk, re.I))
+                    if idx == 0:
+                        self._live_xruns_capture += hits
+                    else:
+                        self._live_xruns_playback += hits
+            except (OSError, ValueError):
+                pass
+        cap_alive = self._live_cap is not None and self._live_cap.poll() is None
+        play_alive = self._live_play is not None and self._live_play.poll() is None
+        status = {
+            "backend": "alsa", "running": bool(self.live_running),
+            "capture_alive": cap_alive, "playback_alive": play_alive,
+            "capture_frames": int(self._live_capture_frames),
+            "playback_frames": int(self._live_playback_frames),
+            "capture_seconds": self._live_capture_frames / max(1, self.fs),
+            "playback_seconds": self._live_playback_frames / max(1, self.fs),
+            "capture_xruns": int(self._live_xruns_capture),
+            "playback_xruns": int(self._live_xruns_playback),
+            "xruns": int(self._live_xruns_capture + self._live_xruns_playback),
+            "details": self.live_error or "ALSA stderr checked for underrun/overrun messages",
+        }
+        self._live_last_status = status
+        return status
 
     def live_stop(self):
         # Идемпотентно: вызывается и после аварийного выхода одного из потоков.
@@ -574,6 +636,12 @@ class SimBackend(Backend):
 
     def live_stop(self):
         self.live_running = False
+
+    def live_status(self):
+        return {"backend": "sim", "running": bool(self.live_running), "capture_alive": bool(self.live_running),
+                "playback_alive": bool(self.live_running), "capture_frames": 0, "playback_frames": 0,
+                "xruns": 0, "capture_xruns": 0, "playback_xruns": 0,
+                "details": "simulator: hardware xruns do not apply"}
 
     def live_set_loop(self, period):
         if period is None:

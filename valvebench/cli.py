@@ -9,6 +9,8 @@ from pathlib import Path
 from . import calib, measure as m, store, vinyl
 from .backend import AlsaCli, SimBackend, SimChannel, list_cards, parse_stream
 from .selftest import run_selftest, format_selftest
+from .looptest import run_loopback_report
+from .measure import Rig
 
 
 def make_rig(a):
@@ -39,6 +41,13 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("cards", help="карты и объявленные режимы (формат/каналы/частоты)")
     sub.add_parser("clock", help="проверка частоты ЦАП/АЦП физическим loopback")
+    p = sub.add_parser("loopback", help="серия аппаратных тестов ЦАП→АЦП с повторениями и шумом тишины")
+    p.add_argument("--f", type=float, default=1000.0, help="частота контрольного тона")
+    p.add_argument("--levels", default="-12,-20,-30,-40", help="уровни ЦАП в dBFS через запятую")
+    p.add_argument("--repeats", type=int, default=3, help="повторов на каждом уровне")
+    p.add_argument("--silence-seconds", type=float, default=3.0, help="запись тишины до и после серии; 0 отключает")
+    p.add_argument("--csv", help="сохранить численные результаты тоновых прогонов в CSV")
+    p.add_argument("--report", help="сохранить полный текстовый отчёт в указанный файл")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=1000); p.add_argument("--level", type=float, default=-12)
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=1000)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
@@ -72,6 +81,36 @@ def main(argv=None):
                 for alt in alts:
                     print(f"  {direction:8s} format={alt.fmt} channels={alt.channels} rates={','.join(map(str, alt.rates))}")
         return 0
+    if a.cmd == "loopback":
+        try:
+            levels = [float(v.strip()) for v in a.levels.split(",") if v.strip()]
+            dev = a.dev or calib.load()["device"]
+            if a.sim:
+                be = SimBackend(
+                    SimChannel(gain=0.65, a2=5e-4, a3=3e-3, riaa=False, noise_dbfs=-105,
+                               hum50_dbfs=-105, hum100_dbfs=-112),
+                    SimChannel(gain=0.65, a2=2e-3, a3=1e-3, riaa=False, noise_dbfs=-103,
+                               hum50_dbfs=-92, hum100_dbfs=-108),
+                )
+            else:
+                if dev == "sim":
+                    ap.error("для аппаратной loopback укажи --dev hw:N,0; либо добавь --sim для виртуального теста")
+                be = AlsaCli(dev, in_map=calib.load()["in_map"], out_map=calib.load()["out_map"])
+            rig = Rig(be, calib.load(), fs=a.rate or calib.load()["fs"], blocks=a.blocks, settle=0.25)
+            rig.open()
+            report = run_loopback_report(rig, frequency=a.f, levels=levels, repeats=a.repeats,
+                                         silence_seconds=a.silence_seconds, csv_path=a.csv)
+            print(report)
+            if a.report:
+                from pathlib import Path
+                out = Path(a.report).expanduser()
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(report, encoding="utf-8")
+                print(f"\nREPORT_SAVED: {out}")
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            print(f"LOOPBACK TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
     if a.cmd == "vinyl":
         fs, x = vinyl.read_wav(a.file)
         start = max(0, int(a.start * fs))

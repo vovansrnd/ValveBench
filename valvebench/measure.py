@@ -120,10 +120,12 @@ def clock_check(rig):
         r = rig._tone_an(wins[0], c, k, nharm=2)
         err = (r["f0"] / rig.f_of(k) - 1.0) * 1e6
         out["ch"][CH[c]] = {"f0": r["f0"], "ppm": err, "level_dbfs": r["level_dbfs"]}
+        for detail in r.get("warnings", []):
+            warns.append(f"{CH[c]}: {detail}")
         if abs(err) > 100:
             warns.append(f"{CH[c]}: частота захвата отличается от воспроизведения на {err:+.0f} ppm "
                          f"(×{r['f0'] / rig.f_of(k):.4f}) — такт ЦАП и АЦП разный, измерения ложны")
-    out["ok"] = not any("такт" in w for w in warns)
+    out["ok"] = not any(("такт" in w or "не когерентен" in w) for w in warns)
     return out
 
 
@@ -131,7 +133,7 @@ def text_clock(r):
     lines = ["Проверка такта (1 кГц, −12 dBFS):"]
     for c, v in r["ch"].items():
         lines.append(f"  {c}: {v['f0']:.3f} Гц  ({v['ppm']:+.1f} ppm)  уровень {v['level_dbfs']:.1f} dBFS")
-    lines.append("  такт ЦАП = такту АЦП" if r["ok"] else "  ТАКТ НЕ СОВПАДАЕТ")
+    lines.append("  такт ЦАП = такту АЦП; тон когерентен окну" if r["ok"] else "  ТАКТ/КОГЕРЕНТНОСТЬ НЕ ПРОШЛИ ПРОВЕРКУ")
     return "\n".join(lines + [f"! {w}" for w in r["warnings"]])
 
 
@@ -162,9 +164,13 @@ def text_thd(res):
                  + (f" = {fmt_v(inf['out_v'])}" if inf["out_v"] else "")
                  + (f" | вход DUT {fmt_v(inf['dut_in_v'])}" if inf["dut_in_v"] else "")
                  + (f" | усиление {inf['gain_db']:+.2f} дБ" if inf["gain_db"] is not None else ""))
+        residual_dbfs = r["level_dbfs"] + r["thdn_db"]
         L.append(f"  THD    {r['thd_pct']:.5f} %   ({r['thd_db']:.1f} дБ)")
-        L.append(f"  THD+N  {r['thdn_pct']:.5f} %   ({r['thdn_db']:.1f} дБ)   шум+фон без гармоник {r['noise_dbc']:.1f} дБc")
-        L.append("  гармоники, дБc: " + "  ".join(f"H{h['h']} {h['dbc']:.1f}" for h in r["harmonics"]))
+        L.append(f"  THD+N  {r['thdn_pct']:.5f} %   ({r['thdn_db']:.1f} dBc; остаток {residual_dbfs:.1f} dBFS)")
+        L.append(f"  Шум без гармоник в полосе 20 Гц–{min(20000, r.get('band_hi', 20000))} Гц: "
+                 f"{r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)")
+        L.append("  гармоники: " + "  ".join(
+            f"H{h['h']} {h['dbc']:.1f} dBc ({r['level_dbfs'] + h['dbc']:.1f} dBFS)" for h in r["harmonics"]))
         if r["hum"]:
             L.append("  фон, дБc: " + "  ".join(f"{h['f']:.0f} Гц {h['dbc']:.1f}" for h in r["hum"]))
     return "\n".join(L + [f"! {w}" for w in res["warnings"]])

@@ -66,6 +66,16 @@ def bh(n):
 # ------------------------------------------------------------- спектр блока
 
 
+def spectrum_line_dbfs(block):
+    """Sine-equivalent peak level of each FFT line; 0 dBFS is a full-scale sine."""
+    return db20(block.amp)
+
+
+def spectrum_asd_dbfs(block):
+    """One-sided amplitude spectral density, dBFS/√Hz, relative to a full-scale sine."""
+    return db10(2.0 * block.P / max(block.df, _TINY))
+
+
 class Block:
     """Окно анализа: P[k] — мощность (rms²) бина, так что сумма по лепестку
     тона равна его rms²; amp[k] — пиковая амплитуда линии в бине (для графиков)."""

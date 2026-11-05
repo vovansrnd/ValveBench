@@ -16,12 +16,14 @@ from gi.repository import Gtk  # noqa: E402
 COLORS = {"L": (0.20, 0.52, 0.89), "R": (0.93, 0.45, 0.05), "ref": (0.55, 0.55, 0.55)}
 
 
-def _nice_step(span, target=6):
-    raw = span / target
+def _nice_step(span, target=10):
+    """Readable grid interval; include 2.5 so a tall spectrum gets enough labels."""
+    raw = max(float(span) / max(1, int(target)), 1e-12)
     mag = 10 ** math.floor(math.log10(raw))
-    for m in (1, 2, 5, 10):
-        if raw <= m * mag:
-            return m * mag
+    for m in (1, 2, 2.5, 5, 10):
+        step = m * mag
+        if raw <= step:
+            return step
     return 10 * mag
 
 
@@ -98,7 +100,7 @@ class Plot(Gtk.DrawingArea):
 
     def _draw(self, area, cr, W, H, *_):
         fg = self.get_color()
-        fs = 12.0
+        fs = 13.0
         ml, mr, mt, mb = 58.0, 14.0, 12.0, 38.0
         pw, ph = W - ml - mr, H - mt - mb
         if pw < 50 or ph < 50:
@@ -113,7 +115,9 @@ class Plot(Gtk.DrawingArea):
 
         # сетка и подписи
         cr.set_line_width(1.0)
-        step = _nice_step(yhi - ylo)
+        # At ordinary desktop sizes use 10 dB subdivisions for a spectrum;
+        # the former coarse grid made a 160 dB range show only a few labels.
+        step = _nice_step(yhi - ylo, target=max(8, min(24, int(ph / 24))))
         v = math.ceil(ylo / step) * step
         while v <= yhi + 1e-9:
             y = ty(v)
