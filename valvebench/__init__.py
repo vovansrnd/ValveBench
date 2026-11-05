@@ -1,2 +1,2 @@
 """ValveBench — измерительная лаборатория для аналоговой аудиотехники."""
-__version__ = "0.1.16-measurement-ux"
+__version__ = "0.1.17-page-scroll"

@@ -119,22 +119,40 @@ def textview():
     return tv.get_buffer(), sw
 
 
+def vertical_page_scroller(child):
+    """Make the complete contents of a page vertically reachable on short screens.
+
+    Keep the vertical scrollbar non-overlayed so it remains visible when the
+    page is taller than the window. Horizontal scrolling is intentionally off:
+    controls should wrap/reflow rather than create a second navigation axis.
+    """
+    scroller = Gtk.ScrolledWindow()
+    scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    scroller.set_overlay_scrolling(False)
+    scroller.set_kinetic_scrolling(True)
+    scroller.set_hexpand(True)
+    scroller.set_vexpand(True)
+    scroller.set_child(child)
+    return scroller
+
+
 class Page(Gtk.Box):
     """Общая измерительная страница с постоянным статусом и управлением масштабом."""
 
     def __init__(self, win, *param_widgets, plot=None):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=14,
-                         margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
+        # The page itself stays the Stack child (so status/job routing and
+        # page identity remain unchanged); its entire two-column body scrolls.
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.win = win
         self._job_button_states = None
+        content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14,
+                          margin_top=12, margin_bottom=12,
+                          margin_start=12, margin_end=12)
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         left.set_size_request(330, -1)
         for w in param_widgets:
             left.append(w)
-        sc = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER)
-        sc.set_child(left)
-        sc.set_size_request(350, -1)
-        self.append(sc)
+        content.append(left)
 
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         right.set_hexpand(True)
@@ -185,7 +203,9 @@ class Page(Gtk.Box):
 
         self.buf, sw = textview()
         right.append(sw)
-        self.append(right)
+        content.append(right)
+        self.page_scroller = vertical_page_scroller(content)
+        self.append(self.page_scroller)
 
     def _sync_plot_scale(self, ylim):
         if self.y_min is None:
@@ -337,9 +357,11 @@ class LivePage(Gtk.Box):
     """Главный стенд: генераторные настройки и два крупных вертикальных метра L/R."""
 
     def __init__(self, win):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=16,
-                         margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.win = win
+        content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16,
+                          margin_top=12, margin_bottom=12,
+                          margin_start=12, margin_end=12)
         self.f = spin("Частота, Гц", 5, 40000, 1, 1000, 0)
         self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -6, 1)
         self.route = combo("Канал генератора", ["L + R", "Только L", "Только R"], 0)
@@ -443,7 +465,7 @@ class LivePage(Gtk.Box):
                   "Абсолютные Uin, Uout и G каждого канала требуют калибровки напряжения. "
                   "Для входа MM необходим внешний аттенюатор и корректное сопротивление источника.",
             xalign=0, wrap=True))
-        self.append(controls)
+        content.append(controls)
 
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         right.set_hexpand(True)
@@ -488,7 +510,9 @@ class LivePage(Gtk.Box):
                          xalign=0, wrap=True)
         note.add_css_class("dim-label")
         right.append(note)
-        self.append(right)
+        content.append(right)
+        self.page_scroller = vertical_page_scroller(content)
+        self.append(self.page_scroller)
 
         for w in (self.f, self.lv):
             w.connect("notify::value", lambda *_: self.apply())
@@ -785,8 +809,10 @@ class SpectrumPage(Gtk.Box):
     FFT_SIZES = [8192, 16384, 32768, 65536, 131072, 262144]
 
     def __init__(self, win):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=8,
-                         margin_top=10, margin_bottom=10, margin_start=12, margin_end=12)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8,
+                          margin_top=10, margin_bottom=10,
+                          margin_start=12, margin_end=12)
         self.win = win
         self.fft = Gtk.DropDown.new_from_strings([
             "8k · самый быстрый отклик",
@@ -842,9 +868,9 @@ class SpectrumPage(Gtk.Box):
             widget.set_hexpand(True)
             col.append(widget)
             toolbar.append(col)
-        self.append(toolbar)
-        self.append(self.plot)
-        self.append(self.state)
+        content.append(toolbar)
+        content.append(self.plot)
+        content.append(self.state)
         help_label = Gtk.Label(
             label="Амплитуда линий: dBFS/bin, уровень синусоидальной составляющей в каждом бине. "
                   "Плотность шума: dBFS/√Гц, позволяет сравнивать шумовую полку при разном FFT. "
@@ -853,7 +879,9 @@ class SpectrumPage(Gtk.Box):
                   "Выше слышимой полосы АЧХ аналогового тракта может быть не нормирована.",
             xalign=0, wrap=True)
         help_label.add_css_class("dim-label")
-        self.append(help_label)
+        content.append(help_label)
+        self.page_scroller = vertical_page_scroller(content)
+        self.append(self.page_scroller)
         for w in (self.fft, self.mode, self.floor, self.top, self.band, self.avg_mode):
             w.connect("notify::selected", lambda *_: self.reset_average())
 
@@ -1932,9 +1960,12 @@ class Window(Adw.ApplicationWindow):
         side = Gtk.StackSidebar(stack=self.stack)
         side.set_size_request(200, -1)
         body = Gtk.Box()
+        body.set_hexpand(True)
+        body.set_vexpand(True)
         body.append(side)
         body.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
         self.stack.set_hexpand(True)
+        self.stack.set_vexpand(True)
         self.stack.connect("notify::visible-child", self.on_page_changed)
         body.append(self.stack)
         self.toasts.set_child(body)
