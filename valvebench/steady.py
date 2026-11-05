@@ -265,6 +265,148 @@ def _tone_level_at(y: np.ndarray, fs: int, frequency_hz: float) -> float:
     return 20.0 * math.log10(max(math.hypot(a, b), 1e-30))
 
 
+def _guard_steady_ranges(state_ranges: dict[str, tuple[float, float]], guard_s: float) -> dict[str, tuple[float, float]]:
+    """Move active analysis bounds away from the playback fade-in/fade-out edges.
+
+    This does not shorten the generated test signal. It only excludes windows
+    whose analysis aperture could overlap an envelope transition or timing
+    uncertainty at the boundary.
+    """
+    guard_s = max(0.0, float(guard_s))
+    guarded = dict(state_ranges)
+    for state in ("L_steady", "R_steady"):
+        if state not in guarded:
+            continue
+        start, end = guarded[state]
+        if end - start <= 2.0 * guard_s:
+            raise ValueError(f"Недостаточно длительный {state} после защитных интервалов")
+        guarded[state] = (start + guard_s, end - guard_s)
+    return guarded
+
+
+def _build_steady_state_ranges(lead_s: float, idle_s: float, duration_s: float,
+                               gap_s: float, fade_s: float, window_s: float) -> tuple[dict[str, tuple[float, float]], float]:
+    """Build capture-time state ranges and guard active states from fade edges."""
+    l_start = idle_s + fade_s
+    l_end = l_start + duration_s
+    gap_start = l_end + fade_s  # end of L fade-out
+    r_fade_start = gap_start + gap_s
+    r_start = r_fade_start + fade_s  # end of R fade-in
+    r_end = r_start + duration_s
+    post_start = r_end + fade_s
+    ranges = {
+        "idle_pre": (lead_s + 0.5, lead_s + idle_s - 0.5),
+        "L_steady": (lead_s + l_start, lead_s + l_end),
+        # Do not include the final fade-in of R in idle_gap.
+        "idle_gap": (lead_s + gap_start + 0.5, lead_s + r_fade_start - 0.5),
+        "R_steady": (lead_s + r_start, lead_s + r_end),
+        "idle_post": (lead_s + post_start + 0.5, lead_s + post_start + idle_s - 0.5),
+    }
+    guard_s = max(0.25, min(1.0, window_s * 2.0))
+    return _guard_steady_ranges(ranges, guard_s), guard_s
+
+
+def _tone_continuity_track(y: np.ndarray, fs: int, state: str, channel: str,
+                           start_s: float, end_s: float, frequency_hz: float,
+                           reference_dbfs: float, subwindow_ms: float = 10.0,
+                           threshold_below_db: float = 20.0,
+                           min_episode_ms: float = 20.0) -> tuple[dict, list[dict]]:
+    """Track presence of the expected carrier in short, contiguous subwindows.
+
+    The residual/noise analysis removes H1..Hn and therefore cannot distinguish
+    an additive disturbance from a missing carrier. This independent estimator
+    fits only the fundamental in short windows and flags a dropout when it stays
+    at least `threshold_below_db` below the measured steady carrier reference.
+    """
+    y = np.asarray(y, dtype=np.float64)
+    if subwindow_ms <= 0 or threshold_below_db <= 0 or min_episode_ms <= 0:
+        raise ValueError("Параметры контроля несущей должны быть положительными")
+    # Keep at least five cycles in each fit. At the default 997 Hz this is 10 ms;
+    # at low tone frequencies the window expands, up to 100 ms.
+    sub_s = max(float(subwindow_ms) / 1000.0, 5.0 / float(frequency_hz))
+    if sub_s > 0.100:
+        return ({"available": False, "reason": "частота тона слишком низкая для короткого контроля несущей",
+                 "subwindow_ms": sub_s * 1000.0, "reference_dbfs": float(reference_dbfs),
+                 "dropout_episodes": 0, "total_dropout_ms": 0.0, "longest_dropout_ms": 0.0}, [])
+    n = max(16, int(round(sub_s * fs)))
+    actual_sub_ms = n / fs * 1000.0
+    start = max(0, int(round(float(start_s) * fs)))
+    end = min(y.size, int(round(float(end_s) * fs)))
+    threshold_dbfs = float(reference_dbfs) - float(threshold_below_db)
+    samples: list[dict] = []
+    for off in range(start, max(start, end - n + 1), n):
+        chunk = y[off:off + n]
+        if chunk.size != n:
+            continue
+        level = _tone_level_at(chunk, fs, frequency_hz)
+        start_time = off / fs
+        samples.append({
+            "start_s": start_time,
+            "time_s": start_time + (n / fs) / 2.0,
+            "state": state,
+            "channel": channel,
+            "tone_level_dbfs": float(level),
+            "relative_to_reference_db": float(level - reference_dbfs),
+            "below_threshold": bool(level <= threshold_dbfs),
+            "dropout_episode_id": None,
+        })
+
+    # Group contiguous low-carrier subwindows; isolated one-window dips are
+    # retained in the raw track but are not promoted to physical dropout events.
+    low = [r for r in samples if r["below_threshold"]]
+    groups: list[list[dict]] = []
+    if low:
+        current = [low[0]]
+        step_s = n / fs
+        for row in low[1:]:
+            if row["start_s"] - current[-1]["start_s"] <= step_s * 1.51:
+                current.append(row)
+            else:
+                groups.append(current)
+                current = [row]
+        groups.append(current)
+
+    episodes = []
+    for group in groups:
+        duration_ms = len(group) * actual_sub_ms
+        if duration_ms + 1e-6 < min_episode_ms:
+            continue
+        episode_id = len(episodes) + 1
+        for row in group:
+            row["dropout_episode_id"] = episode_id
+        episodes.append({
+            "id": episode_id,
+            "start_s": float(group[0]["start_s"]),
+            "end_s": float(group[-1]["start_s"] + n / fs),
+            "duration_ms": float(duration_ms),
+            "min_tone_dbfs": float(min(r["tone_level_dbfs"] for r in group)),
+            "mean_tone_dbfs": float(np.mean([r["tone_level_dbfs"] for r in group])),
+        })
+
+    levels = np.asarray([r["tone_level_dbfs"] for r in samples], dtype=np.float64)
+    confirmed_sample_count = sum(len(g) for g in groups if len(g) * actual_sub_ms + 1e-6 >= min_episode_ms)
+    result = {
+        "available": True,
+        "channel": channel,
+        "reference_dbfs": float(reference_dbfs),
+        "threshold_dbfs": float(threshold_dbfs),
+        "threshold_below_reference_db": float(threshold_below_db),
+        "subwindow_ms": float(actual_sub_ms),
+        "min_episode_ms": float(min_episode_ms),
+        "subwindows": int(len(samples)),
+        "median_tone_dbfs": float(np.median(levels)) if levels.size else None,
+        "p01_tone_dbfs": float(np.percentile(levels, 1)) if levels.size else None,
+        "min_tone_dbfs": float(np.min(levels)) if levels.size else None,
+        "below_threshold_subwindows": int(sum(r["below_threshold"] for r in samples)),
+        "confirmed_dropout_subwindows": int(confirmed_sample_count),
+        "dropout_episodes": int(len(episodes)),
+        "total_dropout_ms": float(sum(e["duration_ms"] for e in episodes)),
+        "longest_dropout_ms": float(max((e["duration_ms"] for e in episodes), default=0.0)),
+        "episodes": episodes,
+    }
+    return result, samples
+
+
 def _calibration_trial(outdir: Path, trial: int, play: DeviceFormat, capture: DeviceFormat,
                        fs: int, tone_hz: float, tone_level: float) -> tuple[float, float]:
     play_file = outdir / f"calibration-{trial}.raw"
@@ -565,6 +707,9 @@ def compare_steady_runs(paths: list[str | Path]) -> tuple[str, list[dict]]:
         r_res = r_on_r.get("residual_20_20k", {})
         l_ultra = l_on_l.get("raw_40_nyquist", {}) or {}
         r_ultra = r_on_r.get("raw_40_nyquist", {}) or {}
+        continuity = data.get("tone_continuity", {})
+        l_carrier = continuity.get("L_steady", {}) or {}
+        r_carrier = continuity.get("R_steady", {}) or {}
         row = {
             "report": str(path),
             "playback": data.get("playback_device", "?"),
@@ -586,6 +731,10 @@ def compare_steady_runs(paths: list[str | Path]) -> tuple[str, list[dict]]:
             "R_residual_p95_dbfs": r_res.get("p95"),
             "R_burst_windows": r_res.get("bursts"),
             "R_burst_episodes": r_res.get("episodes"),
+            "L_carrier_dropout_episodes": l_carrier.get("dropout_episodes"),
+            "L_carrier_longest_dropout_ms": l_carrier.get("longest_dropout_ms"),
+            "R_carrier_dropout_episodes": r_carrier.get("dropout_episodes"),
+            "R_carrier_longest_dropout_ms": r_carrier.get("longest_dropout_ms"),
             "L_ultrasonic_40_nyquist_dbfs": l_ultra.get("median"),
             "R_ultrasonic_40_nyquist_dbfs": r_ultra.get("median"),
             "series_level_valid": data.get("series_level_valid"),
@@ -594,7 +743,8 @@ def compare_steady_runs(paths: list[str | Path]) -> tuple[str, list[dict]]:
         }
         rows.append(row)
     headers = ("№", "ЦАП → АЦП", "Fs", "Шум тишины L/R", "Xtalk L→R / R→L",
-               "Остаток L med/P95", "Остаток R med/P95", "Эпизоды L/R", "40k–Nyq L/R")
+               "Остаток L med/P95", "Остаток R med/P95", "Остаточные эпизоды L/R",
+               "Carrier dropouts L/R", "40k–Nyq L/R")
     lines = ["СРАВНЕНИЕ ИЗМЕРЕНИЙ VALVEBENCH STEADY", "Разные пары устройств приведены как отдельные измерительные конфигурации.",
              " | ".join(headers), " | ".join(("---",) * len(headers))]
     for i, r in enumerate(rows, 1):
@@ -611,6 +761,8 @@ def compare_steady_runs(paths: list[str | Path]) -> tuple[str, list[dict]]:
             f"{fmt(r['R_residual_median_dbfs'])}/{fmt(r['R_residual_p95_dbfs'])}",
             f"{r['L_burst_episodes'] if r['L_burst_episodes'] is not None else 'n/a'}/"
             f"{r['R_burst_episodes'] if r['R_burst_episodes'] is not None else 'n/a'}",
+            f"{(str(r['L_carrier_dropout_episodes']) + '/' + fmt(r['L_carrier_longest_dropout_ms'], 'ms')) if r['L_carrier_dropout_episodes'] is not None else 'n/a'}/"
+            f"{(str(r['R_carrier_dropout_episodes']) + '/' + fmt(r['R_carrier_longest_dropout_ms'], 'ms')) if r['R_carrier_dropout_episodes'] is not None else 'n/a'}",
             f"{fmt(r['L_ultrasonic_40_nyquist_dbfs'])}/{fmt(r['R_ultrasonic_40_nyquist_dbfs'])}",
         )))
     return "\n".join(lines), rows
@@ -708,20 +860,10 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
 
     # Capture starts lead_seconds before playback. Exclude half-second margins
     # from idle states so USB/driver start/stop settling does not define baseline.
-    l_start_play = idle_s + fade_s
-    l_end_play = l_start_play + duration_s
-    gap_start_play = l_end_play + fade_s
-    r_start_play = gap_start_play + gap_s + fade_s
-    r_end_play = r_start_play + duration_s
-    post_start_play = r_end_play + fade_s
-    ranges = {
-        "idle_pre": (lead_seconds + 0.5, lead_seconds + idle_s - 0.5),
-        "L_steady": (lead_seconds + l_start_play, lead_seconds + l_end_play),
-        "idle_gap": (lead_seconds + gap_start_play + 0.5, lead_seconds + r_start_play - 0.5),
-        "R_steady": (lead_seconds + r_start_play, lead_seconds + r_end_play),
-        "idle_post": (lead_seconds + post_start_play + 0.5,
-                      lead_seconds + post_start_play + idle_s - 0.5),
-    }
+    # Capture-time ranges exclude fades from all idle/steady regions; active
+    # ranges additionally receive a guard to absorb start-time uncertainty.
+    ranges, transition_guard_s = _build_steady_state_ranges(
+        lead_seconds, idle_s, duration_s, gap_s, fade_s, window_s)
     summaries = {}
     all_rows = []
     tone_levels = {}
@@ -732,11 +874,12 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     # the report contains a real L/R channel map, not only the driven channel.
     for state, driven_idx, state_start in (("L_steady", 0, ranges["L_steady"][0]),
                                            ("R_steady", 1, ranges["R_steady"][0])):
-        est_start = state_start + 1.0
-        f_est, _lev = _estimate_long_tone(raw[:, driven_idx], fs, tone_hz, est_start, min(4.0, duration_s - 1.0))
+        est_start = state_start + 0.5
+        est_duration = min(3.0, duration_s - 1.0)
+        f_est, _lev = _estimate_long_tone(raw[:, driven_idx], fs, tone_hz, est_start, est_duration)
         f_by_state[state] = f_est
         a = int(round(est_start * fs))
-        b = min(len(raw), a + int(round(min(4.0, duration_s - 1.0) * fs)))
+        b = min(len(raw), a + int(round(est_duration * fs)))
         map_levels = {
             "ADC_L": _tone_level_at(raw[a:b, 0], fs, f_est),
             "ADC_R": _tone_level_at(raw[a:b, 1], fs, f_est),
@@ -761,6 +904,20 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
         all_rows.extend(rows)
         summaries[ch] = stats
     shared_stats = _shared_excursion_stats(all_rows, summaries, hop_s)
+    tone_continuity = {}
+    tone_continuity_rows = []
+    for state, channel_idx, channel_name, map_key in (
+        ("L_steady", 0, "L", "PLAY_L_only"),
+        ("R_steady", 1, "R", "PLAY_R_only"),
+    ):
+        reference = tone_map[map_key]["adc_levels_dbfs"][f"ADC_{channel_name}"]
+        continuity, continuity_rows = _tone_continuity_track(
+            raw[:, channel_idx], fs, state, channel_name,
+            ranges[state][0], ranges[state][1], f_by_state[state], reference,
+            subwindow_ms=10.0, threshold_below_db=20.0, min_episode_ms=20.0,
+        )
+        tone_continuity[state] = continuity
+        tone_continuity_rows.extend(continuity_rows)
     band_labels = [label for label, _lo, _hi in _ultrasonic_band_edges(fs)]
     csv_fields = ["time_s", "state", "channel", "residual_20_20k_dbfs", "raw_40_nyquist_dbfs",
                   "residual_removed_harmonics", "projection_frequency_hz"]
@@ -780,6 +937,14 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
                 flat[f"raw_{label}_asd_p95_dbfs_sqrt_hz"] = m.get("asd_p95_dbfs_sqrt_hz") if m else None
             writer.writerow(flat)
 
+    tone_csv_file = outdir / "tone-continuity.csv"
+    tone_fields = ["start_s", "time_s", "state", "channel", "tone_level_dbfs",
+                   "relative_to_reference_db", "below_threshold", "dropout_episode_id"]
+    with tone_csv_file.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=tone_fields)
+        writer.writeheader()
+        writer.writerows(tone_continuity_rows)
+
     # Remove the temporary raw data and playback file; WAV/CSV retain the evidence.
     for tmp in (play_file, capture_file):
         try:
@@ -791,6 +956,7 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     report.append(f"Playback: {play_dev} ({play.fmt}); capture: {rec_dev} ({capture.fmt})")
     report.append(f"Fs={fs} Hz · tone={tone_hz:g} Hz at {tone_level_dbfs:g} dBFS · target ADC={target_dbfs:g}±{tolerance_db:g} dBFS")
     report.append(f"Window={window_s*1000:g} ms · hop={hop_s*1000:g} ms · LS removal DC + H1..H{max_harmonics}; tone leakage is not measured as noise")
+    report.append(f"Steady analysis edge guard={transition_guard_s*1000:.0f} ms at each active-state boundary; playback duration is unchanged")
     report.append("MEASURED CHANNEL MAP / TONE:")
     for key, val in tone_map.items():
         levels = val["adc_levels_dbfs"]
@@ -817,7 +983,25 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
             ptxt = f"{pre['dbfs_median']:.2f}/{pre['asd_median_dbfs_sqrt_hz']:.2f}" if pre else "n/a"
             qtxt = f"{post['dbfs_median']:.2f}/{post['asd_median_dbfs_sqrt_hz']:.2f}" if post else "n/a"
             report.append(f"  ADC {ch} {label}: {ptxt} → {qtxt}")
-    report.append("STEADY RESIDUALS: median / p95 / max dBFS; burst windows are grouped into episodes; threshold=idle +6 dB")
+    report.append("ACTIVE CARRIER CONTINUITY (short-window tone fits; dropout = ≥20 ms at least 20 dB below measured reference):")
+    for state in ("L_steady", "R_steady"):
+        tc = tone_continuity[state]
+        if not tc.get("available"):
+            report.append(f"  {state}: unavailable — {tc.get('reason', 'unknown reason')}")
+            continue
+        episode_text = ", ".join(
+            f"#{e['id']} {e['start_s']:.3f}–{e['end_s']:.3f}s ({e['duration_ms']:.0f}ms; min {e['min_tone_dbfs']:.1f} dBFS)"
+            for e in tc["episodes"]
+        ) or "нет"
+        report.append(f"  {state} ADC {tc['channel']}: subwindow={tc['subwindow_ms']:.1f} ms; "
+                      f"ref={tc['reference_dbfs']:.2f} dBFS; median={tc['median_tone_dbfs']:.2f}; "
+                      f"p01={tc['p01_tone_dbfs']:.2f}; "
+                      f"min={tc['min_tone_dbfs']:.2f}; below-threshold={tc['below_threshold_subwindows']}/"
+                      f"{tc['subwindows']}; dropouts={tc['dropout_episodes']}; "
+                      f"total={tc['total_dropout_ms']:.0f} ms; longest={tc['longest_dropout_ms']:.0f} ms")
+        if tc["episodes"]:
+            report.append("    events: " + episode_text)
+    report.append("STEADY RESIDUAL EXCURSIONS: median / p95 / max dBFS; adjacent windows grouped into episodes; threshold=idle +6 dB")
     report.append("STATE       ADC    20–20k median / p95 / max              windows  episodes  longest-event  40k–Nyquist median / p95 / max")
     for ch in ("L", "R"):
         st = summaries[ch]
@@ -854,9 +1038,12 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     report.append("- Fundamental level is measured in the actual ADC recording; it is not inferred from the ALSA mixer percentage.")
     report.append("- Harmonics H1..Hn are removed by least-squares projection separately for each analysis window.")
     report.append("- 40k–Nyquist is a raw band level; no harmonic subtraction is applied there (H1..H20 are below 20 kHz at 997 Hz).")
-    report.append("- Burst windows are not independent physical events; adjacent windows are grouped into episodes.")
+    report.append("- Residual excursions and carrier dropouts are separate measurements: a missing carrier is not classified as additive noise.")
+    report.append("- Carrier continuity is estimated on short contiguous windows; threshold events require the minimum consecutive duration. Times use the capture-recording time axis.")
+    report.append("- Residual excursion windows are not independent physical events; adjacent windows are grouped into episodes.")
     report.append("- Idle baseline uses both long pre-test and post-test silence; their difference is reported separately.")
     report.append("- Ultrasonic bands report integrated dBFS and median/p95 spectral density in dBFS/√Hz.")
+    report.append("- tone-continuity.csv contains the short-window active-carrier track; it is separate from the broadband residual timeline.")
     report.append("- This test localizes DAC/ADC paths; it does not identify a PCB component.")
     report.append("- Cross-channel tone levels are coherent projections at the measured source frequency, not broadband residual levels.")
     summary = "\n".join(report) + "\n"
@@ -870,11 +1057,13 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
         "calibration_trials": calibration_history, "series_level_valid": series_valid,
         "duration_per_channel_s": duration_s, "window_s": window_s, "hop_s": hop_s,
         "idle_seconds_each_end": idle_s, "gap_seconds": gap_s,
-        "max_harmonics_removed": max_harmonics, "measured_tones": tone_levels,
-        "channel_map": tone_map, "analysis": summaries, "simultaneous_excursions": shared_stats,
+        "max_harmonics_removed": max_harmonics, "transition_guard_s": transition_guard_s,
+        "measured_tones": tone_levels, "channel_map": tone_map,
+        "tone_continuity": tone_continuity, "tone_continuity_csv": str(tone_csv_file),
+        "analysis": summaries, "simultaneous_excursions": shared_stats,
     }
     (outdir / "steady.json").write_text(json.dumps(machine_report, ensure_ascii=False, indent=2), encoding="utf-8")
     print_fn(summary)
     print_fn(f"Результаты сохранены: {outdir}")
-    print_fn("Нужны: summary.txt, steady.json, timeline.csv и при всплесках capture-float32.wav")
+    print_fn("Нужны: summary.txt, steady.json, timeline.csv, tone-continuity.csv и при событиях capture-float32.wav")
     return outdir

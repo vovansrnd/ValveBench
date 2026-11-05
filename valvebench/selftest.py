@@ -505,6 +505,8 @@ def run_selftest():
                   "playback_format": "S24_3LE", "capture_format": "S24_3LE", "series_level_valid": True,
                   "channel_map": {"PLAY_L_only": {"cross_channel_leakage_db": -82.0},
                                   "PLAY_R_only": {"cross_channel_leakage_db": -83.0}},
+                  "tone_continuity": {"L_steady": {"dropout_episodes": 1, "longest_dropout_ms": 80.0},
+                                      "R_steady": {"dropout_episodes": 0, "longest_dropout_ms": 0.0}},
                   "analysis": {}}
         for ch in ("L", "R"):
             sample["analysis"][ch] = {"baseline_dbfs": -100.0, "states": {}}
@@ -517,7 +519,9 @@ def run_selftest():
         compare_text, compare_rows = steady.compare_steady_runs([p_json])
         check("steady-compare: report keeps explicit DAC→ADC pairing and metrics",
               len(compare_rows) == 1 and compare_rows[0]["playback"] == "hw:3,0"
-              and compare_rows[0]["capture"] == "hw:2,0" and "hw:3,0 → hw:2,0" in compare_text,
+              and compare_rows[0]["capture"] == "hw:2,0" and "hw:3,0 → hw:2,0" in compare_text
+              and compare_rows[0]["L_carrier_dropout_episodes"] == 1
+              and compare_rows[0]["R_carrier_dropout_episodes"] == 0,
               f"rows={len(compare_rows)}; row={compare_rows[0] if compare_rows else None}")
 
     # ALSA format probing preference/fallback is tested without real hardware.
@@ -570,6 +574,61 @@ def run_selftest():
     check("passport A/B: a changed PCM capture format is not silently compared",
           bool(format_mismatch) and "PCM-конфигурация" in text_mismatch,
           f"mismatches={format_mismatch}")
+
+    # 0.1.11: carrier continuity is independent from the harmonic-residual detector.
+    # A constant tone must not be declared interrupted.
+    fs_car, dur_car, f_car = 48000, 1.0, 997.0
+    t_car = np.arange(int(fs_car * dur_car), dtype=np.float64) / fs_car
+    amp_car = 10 ** (-23.4 / 20)
+    clean_carrier = amp_car * np.sin(2 * np.pi * f_car * t_car + 0.31)
+    ref_car = steady._tone_level_at(clean_carrier, fs_car, f_car)
+    clean_cont, _clean_track = steady._tone_continuity_track(
+        clean_carrier, fs_car, "L_steady", "L", 0.0, dur_car, f_car, ref_car)
+    check("steady: stable carrier has no dropout episodes",
+          clean_cont["available"] and clean_cont["dropout_episodes"] == 0
+          and clean_cont["longest_dropout_ms"] == 0.0
+          and abs(clean_cont["median_tone_dbfs"] - ref_car) < 0.05,
+          f"episodes={clean_cont['dropout_episodes']}; ref/median={ref_car:.2f}/{clean_cont['median_tone_dbfs']:.2f} dBFS")
+
+    # A true 80-ms loss of carrier must be reported as one carrier dropout,
+    # rather than just an additive residual burst.
+    dropped_carrier = clean_carrier.copy()
+    dropped_carrier[int(0.40 * fs_car):int(0.48 * fs_car)] = 0.0
+    drop_cont, drop_track = steady._tone_continuity_track(
+        dropped_carrier, fs_car, "L_steady", "L", 0.0, dur_car, f_car, ref_car)
+    check("steady: 80-ms carrier dropout is detected independently of residual noise",
+          drop_cont["dropout_episodes"] == 1 and 70.0 <= drop_cont["longest_dropout_ms"] <= 90.0
+          and drop_cont["below_threshold_subwindows"] >= 7,
+          f"episodes={drop_cont['dropout_episodes']}; longest={drop_cont['longest_dropout_ms']:.1f} ms; "
+          f"low windows={drop_cont['below_threshold_subwindows']}")
+
+    # An additive broadband disturbance can raise the residual while the
+    # carrier remains present; it must not be confused with a dropout.
+    rng_car = np.random.default_rng(11011)
+    additive_carrier = clean_carrier.copy()
+    additive_carrier[int(0.40 * fs_car):int(0.50 * fs_car)] += rng_car.normal(0.0, 0.015, int(0.10 * fs_car))
+    additive_cont, _add_track = steady._tone_continuity_track(
+        additive_carrier, fs_car, "L_steady", "L", 0.0, dur_car, f_car, ref_car)
+    check("steady: additive noise burst is not classified as carrier dropout",
+          additive_cont["dropout_episodes"] == 0,
+          f"dropout episodes={additive_cont['dropout_episodes']}; minimum carrier={additive_cont['min_tone_dbfs']:.2f} dBFS")
+
+    # Excluding a guard around active boundaries prevents fade-in/out windows
+    # from leaking into the steady-state statistics.
+    guarded = steady._guard_steady_ranges(
+        {"idle_pre": (0.0, 2.0), "L_steady": (10.0, 50.0), "R_steady": (60.0, 100.0)}, 0.25)
+    check("steady: analysis guard excludes active-state fade boundaries only",
+          guarded["L_steady"] == (10.25, 49.75) and guarded["R_steady"] == (60.25, 99.75)
+          and guarded["idle_pre"] == (0.0, 2.0),
+          f"L={guarded['L_steady']}; R={guarded['R_steady']}; idle={guarded['idle_pre']}")
+
+    state_ranges, guard_s = steady._build_steady_state_ranges(1.0, 15.0, 40.0, 8.0, 1.0, 0.1)
+    check("steady: idle gap excludes the R fade-in and active ranges exclude both fades",
+          abs(guard_s - 0.25) < 1e-12
+          and state_ranges["L_steady"] == (17.25, 56.75)
+          and state_ranges["idle_gap"] == (58.5, 65.5)
+          and state_ranges["R_steady"] == (67.25, 106.75),
+          f"guard={guard_s:.2f}s; L={state_ranges['L_steady']}; gap={state_ranges['idle_gap']}; R={state_ranges['R_steady']}")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
