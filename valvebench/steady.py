@@ -17,7 +17,9 @@ import csv
 import json
 import math
 import re
+import shutil
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -30,6 +32,7 @@ from scipy.signal.windows import blackmanharris, hann
 
 from .pcm import (FORMATS, to_pcm, from_pcm, stream_to_float32_wav,
                   FLOAT32_WAV_HEADER)
+from . import io_health as io_health_mod
 
 
 @dataclass
@@ -94,32 +97,44 @@ def _write_raw(path: Path, samples: np.ndarray, fmt: str) -> None:
 
 def _capture_and_play(play_file: Path, capture_file: Path, play: DeviceFormat,
                       capture: DeviceFormat, fs: int, capture_seconds: float,
-                      lead_seconds: float = 0.5) -> None:
+                      lead_seconds: float = 0.5) -> dict:
+    """Запуск arecord + aplay; 0.1.12-p1: stderr обоих процессов пишется во
+    временные файлы (pipe исключён — любой объём сообщений не блокирует
+    процессы). Возвращает пути stderr-файлов для XRUN-контроля; удаляет каталог
+    вызывающий код после чтения.
+    """
+    err_dir = Path(tempfile.mkdtemp(prefix="valvebench-io-"))
+    rec_err_path = err_dir / "arecord.stderr"
+    play_err_path = err_dir / "aplay.stderr"
     rec_cmd = ["arecord", "-q", "-D", capture.device, "-t", "raw", "-f", capture.fmt,
                "-r", str(fs), "-c", str(capture.channels), "-d",
                str(max(1, int(math.ceil(capture_seconds))),), str(capture_file)]
-    rec = subprocess.Popen(rec_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-    try:
-        time.sleep(lead_seconds)
-        play_cmd = ["aplay", "-q", "-D", play.device, "-t", "raw", "-f", play.fmt,
-                    "-r", str(fs), "-c", str(play.channels), str(play_file)]
-        p = subprocess.run(play_cmd, capture_output=True, text=True,
-                           timeout=capture_seconds + 10.0)
-        if p.returncode:
-            raise RuntimeError(f"Ошибка воспроизведения {play.device} ({play.fmt}): "
-                               + (p.stderr or p.stdout).strip())
-        _, err = rec.communicate(timeout=capture_seconds + 10.0)
-        if rec.returncode:
-            raise RuntimeError(f"Ошибка записи {capture.device} ({capture.fmt}): {(err or '').strip()}")
-    except Exception:
-        if rec.poll() is None:
-            rec.terminate()
-            try:
-                rec.wait(timeout=2.0)
-            except subprocess.TimeoutExpired:
-                rec.kill()
-                rec.wait(timeout=2.0)
-        raise
+    with rec_err_path.open("w") as rec_err, play_err_path.open("w") as play_err:
+        rec = subprocess.Popen(rec_cmd, stdout=subprocess.DEVNULL, stderr=rec_err, text=True)
+        try:
+            time.sleep(lead_seconds)
+            play_cmd = ["aplay", "-q", "-D", play.device, "-t", "raw", "-f", play.fmt,
+                        "-r", str(fs), "-c", str(play.channels), str(play_file)]
+            p = subprocess.run(play_cmd, stdout=subprocess.DEVNULL, stderr=play_err,
+                               timeout=capture_seconds + 10.0)
+            if p.returncode:
+                raise RuntimeError(f"Ошибка воспроизведения {play.device} ({play.fmt}): "
+                                   + play_err_path.read_text(errors="replace")[-400:].strip())
+            rec.communicate(timeout=capture_seconds + 10.0)
+            if rec.returncode:
+                raise RuntimeError(f"Ошибка записи {capture.device} ({capture.fmt}): "
+                                   + rec_err_path.read_text(errors="replace")[-400:].strip())
+        except Exception:
+            if rec.poll() is None:
+                rec.terminate()
+                try:
+                    rec.wait(timeout=2.0)
+                except subprocess.TimeoutExpired:
+                    rec.kill()
+                    rec.wait(timeout=2.0)
+            raise
+    return {"capture_stderr": str(rec_err_path), "playback_stderr": str(play_err_path),
+            "err_dir": str(err_dir)}
 
 
 def _tone_chunk(start: int, count: int, fs: int, f: float, amplitude: float,
@@ -853,7 +868,13 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     print_fn(f"Основной тест: тишина {idle_s:.0f} с → L-only {duration_s:.0f} с → пауза {gap_s:.0f} с "
              f"→ R-only {duration_s:.0f} с → тишина {idle_s:.0f} с; запись около {capture_seconds:.0f} с.")
     lead_seconds = 1.0
-    _capture_and_play(play_file, capture_file, play, capture, fs, capture_seconds, lead_seconds=lead_seconds)
+    io_stderr = _capture_and_play(play_file, capture_file, play, capture, fs,
+                                  capture_seconds, lead_seconds=lead_seconds)
+    # 0.1.12-p1: XRUN-контроль по stderr обоих процессов
+    io_health = {"xrun": io_health_mod.xrun_summary(
+        Path(io_stderr["playback_stderr"]).read_text(errors="replace"),
+        Path(io_stderr["capture_stderr"]).read_text(errors="replace"))}
+    shutil.rmtree(io_stderr["err_dir"], ignore_errors=True)
     # 0.1.12-P0: capture декодируется потоково в float32 WAV, анализ читает окна
     # через memmap — пик памяти не зависит от длительности записи. Числа те же:
     # float32 точно хранит S24_3LE/S16_LE (мантисса 24 бита).
@@ -861,6 +882,9 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
                                    wav_file, fs)
     raw = np.memmap(wav_file, dtype="<f4", mode="r", offset=FLOAT32_WAV_HEADER,
                     shape=(frames, capture.channels))
+    # 0.1.12-p1: контроль фактической длины записи (жёсткий порог ниже остаётся)
+    io_health["length"] = io_health_mod.length_status(
+        frames, int(round(capture_seconds * fs)), fs)
     if raw.shape[0] < int(fs * (play_seconds + 1.0)):
         raise RuntimeError(f"Запись короче ожидаемой: {raw.shape[0] / fs:.2f} с")
 
@@ -870,6 +894,19 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
     # ranges additionally receive a guard to absorb start-time uncertainty.
     ranges, transition_guard_s = _build_steady_state_ranges(
         lead_seconds, idle_s, duration_s, gap_s, fade_s, window_s)
+    # 0.1.12-p1: фактическое начало воспроизведения по известной огибающей
+    # (fade-in из _write_test_program), не порогом по амплитуде. Диапазоны
+    # сдвигаются только при надёжном обнаружении и |сдвиг| > мёртвой зоны.
+    t_onset_l = lead_seconds + idle_s
+    t_onset_r = lead_seconds + idle_s + fade_s + duration_s + fade_s + gap_s
+    onset = io_health_mod.detect_playback_onset(raw, fs, tone_hz, t_onset_l,
+                                                t_onset_r, fade_s)
+    io_health["onset"] = onset
+    if onset["reliable"] and onset["applied"]:
+        print_fn(f"  onset: измерено смещение запуска {onset['deviation_s']:+.3f} с; "
+                 f"диапазоны состояний сдвинуты")
+        ranges = {st: (a + onset["offset_s"], b + onset["offset_s"])
+                  for st, (a, b) in ranges.items()}
     summaries = {}
     all_rows = []
     tone_levels = {}
@@ -970,8 +1007,48 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
         report.append(f"  {key}: f={val['frequency_hz']:.6f} Hz; ADC L={levels['ADC_L']:.2f} dBFS; "
                       f"ADC R={levels['ADC_R']:.2f} dBFS; cross-channel={val['cross_channel_leakage_db']:.1f} dB; "
                       f"main Δtarget={val['main_level_delta_db']:+.2f} dB [{status}]")
-    series_valid = all(v["main_level_within_target"] for v in tone_map.values())
-    report.append("SERIES LEVEL VALIDITY: " + ("OK" if series_valid else "INVALID — measured main tone differs from target"))
+    # 0.1.12-p1: валидность серии = уровни ∧ нет XRUN ∧ длина в допуске ∧
+    # надёжное выравнивание; причины невалидности перечисляются отдельно.
+    validity_reasons = []
+    for key, val in tone_map.items():
+        if not val["main_level_within_target"]:
+            validity_reasons.append(f"{key}: уровень {val['main_level_delta_db']:+.2f} dB от цели")
+    xr = io_health["xrun"]
+    if xr["total_xruns"]:
+        validity_reasons.append(
+            f"XRUN: playback underruns {xr['playback']['count']}, "
+            f"capture overruns {xr['capture']['count']}")
+    ln = io_health["length"]
+    if ln["status"] != "ok":
+        validity_reasons.append(f"длина записи {ln['status']}: "
+                                f"{ln['deviation_ms']:+.1f} ms ({ln['deviation_frames']:+d} кадров)")
+    if not io_health["onset"]["reliable"]:
+        validity_reasons.append(f"выравнивание ненадёжно: {io_health['onset'].get('reason')}")
+    series_valid = not validity_reasons
+    report.append("SERIES LEVEL VALIDITY: " + ("OK" if series_valid else
+                  "INVALID — " + "; ".join(validity_reasons)))
+    report.append("INPUT/OUTPUT HEALTH (io_health):")
+    report.append(f"  XRUN: playback underruns={xr['playback']['count']}, "
+                  f"capture overruns={xr['capture']['count']} "
+                  f"(stderr aplay {xr['playback']['stderr_bytes']} B, "
+                  f"arecord {xr['capture']['stderr_bytes']} B); {xr['note']}")
+    report.append(f"  length: {ln['status']} (отклонение {ln['deviation_ms']:+.1f} ms / "
+                  f"{ln['deviation_frames']:+d} кадров от {ln['expected_frames']}; "
+                  f"допуск ±{ln['tolerance_ms']:.0f} ms)")
+    on = io_health["onset"]
+    def fnum(v, spec):
+        return "n/a" if v is None else format(v, spec)
+
+    report.append(f"  onset: измерено {fnum(on['measured_onset_s'], '.3f')} s (ожидалось "
+                  f"{on['expected_onset_s']:.3f} s, отклонение {fnum(on['deviation_s'], '+.3f')} s); "
+                  f"SNR L {fnum(on['confidence']['snr_db_L'], '.0f')} / "
+                  f"R {fnum(on['confidence']['snr_db_R'], '.0f')} dB; "
+                  f"residual L {fnum(on['confidence']['residual_fraction_L'], '.3f')}; "
+                  f"reliable={on['reliable']}; сдвиг применён={on['applied']}")
+    if on["applied"]:
+        report.append(f"  onset: диапазоны состояний сдвинуты на {on['offset_s']:+.3f} с")
+    if validity_reasons:
+        report.append("  ПРИЧИНЫ НЕВАЛИДНОСТИ: " + "; ".join(validity_reasons))
     report.append("IDLE BASELINE STABILITY (pre/post, dBFS; drift >3 dB is warning):")
     for ch in ("L", "R"):
         s = summaries[ch]
@@ -1065,6 +1142,7 @@ def run_steady_test(play_dev: str, rec_dev: str, fs: int = 192000, tone_hz: floa
         "idle_seconds_each_end": idle_s, "gap_seconds": gap_s,
         "max_harmonics_removed": max_harmonics, "transition_guard_s": transition_guard_s,
         "measured_tones": tone_levels, "channel_map": tone_map,
+        "io_health": io_health, "validity_reasons": validity_reasons,
         "tone_continuity": tone_continuity, "tone_continuity_csv": str(tone_csv_file),
         "analysis": summaries, "simultaneous_excursions": shared_stats,
     }

@@ -10,6 +10,7 @@ import numpy as np
 
 from . import dsp, gainmatch, scans, looptest, passport, steady
 from . import pcm as pcm_mod
+from . import io_health as io_health_mod
 from .pcm import to_pcm
 from .backend import SimBackend, SimChannel, AltSet
 from . import backend as backend_module
@@ -658,6 +659,97 @@ def run_selftest():
               and np.array_equal(data_w, full_p0.astype(np.float32)),
               f"frames={frames_p0}; dtype={data_w.dtype}; макс. расхождение с float32(decoded)="
               f"{float(np.max(np.abs(data_w - full_p0.astype(np.float32)))):.2e}")
+
+
+    # 0.1.12-p1: XRUN-скан, классификация длины, onset по огибающей, мёртвая зона.
+    big = "ok\n" + ("aplay: underrun!!! (at least 3.2 ms long)\n" * 4000)  # ~150 КБ
+    sc = io_health_mod.scan_xrun_stderr(big)
+    check("P1: XRUN-скан распознаёт underrun/overrun и не давится >64 КБ stderr",
+          sc["underrun_count"] == 4000 and sc["count"] == 4000
+          and len(sc["messages"]) == 20 and sc["messages_truncated"]
+          and sc["stderr_bytes"] > 65536,
+          f"underruns={sc['underrun_count']}; сохранено строк={len(sc['messages'])} "
+          f"(лимит {sc['stderr_bytes']} B stderr)")
+    sc2 = io_health_mod.scan_xrun_stderr("ok\narecord: overrun!!! (at least 1.1 ms long)\n")
+    check("P1: overrun записи распознаётся отдельно",
+          sc2["overrun_count"] == 1 and sc2["count"] == 1,
+          f"overruns={sc2['overrun_count']}")
+    ls = (io_health_mod.length_status(100, 100, 48000)["status"],
+          io_health_mod.length_status(100 - 4800, 100, 48000)["status"],
+          io_health_mod.length_status(100 + 4800, 100, 48000)["status"])
+    check("P1: длина записи классифицируется ok/short/long",
+          ls == ("ok", "short", "long"), f"статусы={ls}")
+    # onset: синтетический сигнал с известным смещением +0.25 с (fade 1 с)
+    fs_on = 48000
+    dur_on = 10.0
+    t_on = np.arange(int(fs_on * dur_on)) / fs_on
+    tau_true = 0.25
+    t0_exp = 4.0
+    env_on = np.clip((t_on - (t0_exp + tau_true)) / 1.0, 0.0, 1.0)
+    rng_on = np.random.default_rng(1408)
+    sig_on = rng_on.normal(0, 1e-5, t_on.size) + 10 ** (-12 / 20) * np.sin(2 * np.pi * 997.0 * t_on) * env_on
+    sig_st = np.column_stack((sig_on, sig_on))   # R = L: одинаковый onset
+    on = io_health_mod.detect_playback_onset(sig_st, fs_on, 997.0,
+                                             t0_exp, t0_exp, 1.0)
+    check("P1: onset оценивается по форме огибающей (сдвиг +0.25 с восстанавливается)",
+          on["reliable"] and on["applied"] and abs(on["deviation_s"] - tau_true) < 0.02,
+          f"dev={on['deviation_s']:+.4f} с (истина +0.25); SNR L {on['confidence']['snr_db_L']:.0f} dB; "
+          f"residual {on['confidence']['residual_fraction_L']:.3f}; applied={on['applied']}")
+    # мёртвая зона: сдвиг 0.02 с не должен двигать диапазоны
+    env_db = np.clip((t_on - (t0_exp + 0.02)) / 1.0, 0.0, 1.0)
+    sig_db = rng_on.normal(0, 1e-5, t_on.size) + 10 ** (-12 / 20) * np.sin(2 * np.pi * 997.0 * t_on) * env_db
+    on2 = io_health_mod.detect_playback_onset(np.column_stack((sig_db, sig_db)), fs_on, 997.0,
+                                              t0_exp, t0_exp, 1.0)
+    check("P1: мёртвая зона — смещение 0.02 с не применяется (метрики остаются прежними)",
+          on2["reliable"] and not on2["applied"] and abs(on2["deviation_s"] - 0.02) < 0.02,
+          f"dev={on2['deviation_s']:+.4f}; applied={on2['applied']} (ожидалось False)")
+    # асимметрия раннего/позднего старта, граница поиска, None при неудаче
+    def mk_onset(tau, with_tone=True):
+        tt = np.arange(int(fs_on * 14.0)) / fs_on
+        env = np.clip((tt - (t0_exp + tau)) / 1.0, 0.0, 1.0) if with_tone else np.zeros_like(tt)
+        xx = rng_on.normal(0, 1e-5, tt.size) + 10 ** (-12 / 20) * np.sin(2 * np.pi * 997.0 * tt) * env
+        return np.column_stack((xx, xx))
+    ok_all = True
+    det = []
+    for tau, tone in ((-0.3, True), (0.3, True), (-0.8, True), (0.8, True), (1.2, True), (0.0, False)):
+        on = io_health_mod.detect_playback_onset(mk_onset(tau, tone), fs_on, 997.0,
+                                                 t0_exp, t0_exp, 1.0)
+        if not tone:
+            good = ((not on["reliable"]) and on["measured_onset_s"] is None
+                    and on["confidence"]["snr_db_L"] is not None
+                    and on["confidence"]["snr_db_L"] < 26.0)
+        elif abs(tau) <= 1.0:
+            good = (on["reliable"] and on["deviation_s"] is not None
+                    and abs(on["deviation_s"] - tau) < 0.02
+                    and on["measured_onset_s"] is not None
+                    and not on["confidence"]["search_boundary_hit_L"])
+        else:
+            good = ((not on["reliable"]) and on["measured_onset_s"] is None
+                    and on["confidence"]["search_boundary_hit_L"])
+        ok_all &= good
+        det.append(f"tau={tau:+.1f}{'' if tone else ' (без тона)'}: rel={on['reliable']} "
+                   f"dev={on['deviation_s']} hit={on['confidence']['search_boundary_hit_L']}")
+    xm = mk_onset(0.3)
+    on_m = io_health_mod.detect_playback_onset(
+        np.column_stack((mk_onset(0.3)[:, 0], mk_onset(0.5)[:, 0])), fs_on, 997.0,
+        t0_exp, t0_exp, 1.0)
+    ok_all &= (not on_m["reliable"]) and on_m["measured_onset_s"] is None
+    det.append(f"L/R 0.3/0.5: rel={on_m['reliable']} (рассогласование)")
+    # R-канал не подтверждён (L надёжен, R не обнаружен): диагностический статус,
+    # основной алгоритм не меняется
+    sig_lr = np.column_stack((mk_onset(0.3)[:, 0],
+                              rng_on.normal(0, 0.5, int(fs_on * 14.0))))
+    on_u = io_health_mod.detect_playback_onset(sig_lr, fs_on, 997.0, t0_exp, t0_exp, 1.0)
+    on_s = io_health_mod.detect_playback_onset(mk_onset(0.3), fs_on, 997.0,
+                                               t0_exp, t0_exp, 1.0)
+    check("P1: right_channel_unverified — привязка только по L видна в JSON, алгоритм прежний",
+          on_u["reliable"] and on_u["right_channel_unverified"] and on_u["applied"]
+          and not on_s["right_channel_unverified"],
+          f"L+шумный R: reliable={on_u['reliable']}, right_unverified="
+          f"{on_u['right_channel_unverified']}, dev={on_u['deviation_s']:+.3f}; "
+          f"симметричный случай: right_unverified={on_s['right_channel_unverified']}")
+    check("P1: onset симметричен для раннего/позднего старта; граница поиска и отсутствие тона дают None",
+          ok_all, " | ".join(det))
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
