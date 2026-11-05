@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import threading
 import time
+import hashlib
 
 import numpy as np
 import gi
@@ -13,11 +14,12 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
-from . import calib, dsp, measure as m, signals, store, vinyl  # noqa: E402
+from . import calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
 from . import gainmatch  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
-from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates  # noqa: E402
+from .backend import (AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates,
+                      stable_device_identity)  # noqa: E402
 from .plot import Plot  # noqa: E402
 
 RATES = [44100, 48000, 88200, 96000, 176400, 192000]
@@ -26,8 +28,13 @@ RATES = [44100, 48000, 88200, 96000, 176400, 192000]
 # ----------------------------------------------------------------------- виджеты
 
 
+def _pref_widget_name(title):
+    return "pref_" + hashlib.sha1(str(title).encode("utf-8")).hexdigest()[:12]
+
+
 def spin(title, lo, hi, step, val, digits=1, subtitle=None):
     r = Adw.SpinRow.new_with_range(lo, hi, step)
+    r.set_name(_pref_widget_name(title))
     r.set_title(title)
     r.set_digits(digits)
     r.set_value(val)
@@ -38,6 +45,7 @@ def spin(title, lo, hi, step, val, digits=1, subtitle=None):
 
 def combo(title, items, sel=0, subtitle=None):
     r = Adw.ComboRow(title=title)
+    r.set_name(_pref_widget_name(title))
     r.set_model(Gtk.StringList.new(list(items)))
     r.set_selected(sel)
     if subtitle:
@@ -59,6 +67,47 @@ def button(label, cb, primary=False):
         b.add_css_class("pill")
     b.connect("clicked", lambda *_: cb())
     return b
+
+
+def _spectrum_ylim(traces, top=0.0):
+    """Choose a readable spectrum floor from the actual curve and card noise floor."""
+    arrays = []
+    for trace in traces:
+        values = np.asarray(trace.get("y", []), dtype=float)
+        values = values[np.isfinite(values)]
+        if values.size:
+            arrays.append(values)
+    if not arrays:
+        return -160.0, float(top)
+    values = np.concatenate(arrays)
+    low = float(np.nanpercentile(values, 5.0)) - 10.0
+    # Avoid both a useless fixed −140 dB limit and an absurdly tall plot
+    # when a single isolated bin sits near numerical zero.
+    low = min(-80.0, max(-240.0, low))
+    return low, float(top)
+
+
+def _noise_floor_trace(profile, channel, fs, nfft, average=1.0, line_bins=True):
+    """Convert a saved per-card ADC noise-density profile to the graph's units.
+
+    The same measured density is shared by Spectrum/THD/IMD. Line-bin views add
+    the analysis-window ENBW; an averaged time waveform (IMD) reduces random
+    noise power by the number of independent blocks.
+    """
+    if not isinstance(profile, dict):
+        return None
+    pf = np.asarray(profile.get("frequency_hz", []), dtype=float)
+    pd = np.asarray(profile.get("channels", {}).get(channel, {}).get("density_dbfs_sqrt_hz", []), dtype=float)
+    if pf.size < 2 or pd.size != pf.size:
+        return None
+    y = pd.copy()
+    if line_bins:
+        w = dsp.bh(int(nfft))
+        enbw = float(fs) * float(np.sum(w * w)) / max(float(np.sum(w) ** 2), 1e-30)
+        enbw = enbw / max(1.0, float(average))
+        y += 10.0 * np.log10(max(enbw, 1e-30))
+    return {"x": pf, "y": y, "label": f"Шум АЦП {channel}",
+            "color": "ref", "dash": True, "width": 1.2}
 
 
 def textview():
@@ -111,12 +160,14 @@ class Page(Gtk.Box):
             scale_bar.append(Gtk.Label(label="Масштаб Y:", xalign=0))
             scale_bar.append(Gtk.Label(label="от", xalign=0))
             self.y_min = Gtk.SpinButton.new_with_range(-300.0, 100.0, 0.1)
+            self.y_min.set_name("plot_y_min")
             self.y_min.set_digits(2)
             self.y_min.set_size_request(86, -1)
             self.y_min.set_value(float(plot.ylim[0]))
             scale_bar.append(self.y_min)
             scale_bar.append(Gtk.Label(label="до", xalign=0))
             self.y_max = Gtk.SpinButton.new_with_range(-300.0, 100.0, 0.1)
+            self.y_max.set_name("plot_y_max")
             self.y_max.set_digits(2)
             self.y_max.set_size_request(86, -1)
             self.y_max.set_value(float(plot.ylim[1]))
@@ -153,6 +204,7 @@ class Page(Gtk.Box):
         try:
             self.plot.set_manual_ylim(lo, hi)
             self.plot_scale_hint.set_text(f"Ручной диапазон {lo:g}…{hi:g}")
+            self.win.persist_plot_scale(self)
         except ValueError as exc:
             self.plot_scale_hint.set_text(str(exc))
 
@@ -161,6 +213,7 @@ class Page(Gtk.Box):
             return
         self.plot.clear_manual_ylim()
         self.plot_scale_hint.set_text("Автомасштаб")
+        self.win.clear_plot_scale_preference(self)
 
     @staticmethod
     def _walk_widgets(root):
@@ -288,7 +341,7 @@ class LivePage(Gtk.Box):
                          margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
         self.win = win
         self.f = spin("Частота, Гц", 5, 40000, 1, 1000, 0)
-        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -20, 1)
+        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -6, 1)
         self.route = combo("Канал генератора", ["L + R", "Только L", "Только R"], 0)
         self.vlabel = Gtk.Label(xalign=0, wrap=True)
         self.vlabel.add_css_class("dim-label")
@@ -316,13 +369,16 @@ class LivePage(Gtk.Box):
 
         # Двухшаговый Gain Match: сначала измеряется собственная L/R-ошибка
         # петли звуковой карты, затем она вычитается из измерения DUT.
-        self.series_level = spin("Уровень теста, dBFS", -80.0, -0.5, 0.5, -30.0, 1,
+        self.series_level = spin("Уровень теста, dBFS", -80.0, -0.5, 0.5, -12.0, 1,
                                  "Один и тот же уровень для петли и усилителя")
         self.series_repeats = spin("Повторов на частоту", 1, 5, 1, 3, 0,
                                    "Три частоты измеряются вперемешку")
         self.series_dut = Adw.EntryRow(title="Устройство / модель")
+        self.series_dut.set_name(_pref_widget_name("Устройство / модель"))
         self.series_tubes = Adw.EntryRow(title="Лампы / позиции")
+        self.series_tubes.set_name(_pref_widget_name("Лампы / позиции"))
         self.series_notes = Adw.EntryRow(title="Примечание")
+        self.series_notes.set_name(_pref_widget_name("Примечание"))
         self.series_reference = None
         self.last_series = None
         self._job_button_states = None
@@ -365,7 +421,7 @@ class LivePage(Gtk.Box):
         self.gen_action.add_css_class("suggested-action")
         controls.append(self.gen_action)
         hint = Gtk.Label(
-            label="Порядок работы: 1) включи «АУДИО ВКЛ» в верхней панели; "
+            label="Порядок работы: 1) открой ЦАП/АЦП в верхней панели; "
                   "2) нажми эту кнопку. Повторное нажатие выключает сигнал, но оставляет АЦП включённым.",
             xalign=0, wrap=True)
         hint.add_css_class("dim-label")
@@ -736,17 +792,21 @@ class SpectrumPage(Gtk.Box):
             "8k · самый быстрый отклик",
             "16k · быстро",
             "32k · среднее разрешение",
-            "64k · повышенное разрешение",
+            "64k · среднее разрешение",
             "128k · высокое разрешение",
-            "256k · максимальное разрешение"])
-        self.fft.set_selected(0)
+            "256k · максимальное разрешение (рекомендуется)"])
+        self.fft.set_name("pref_spectrum_fft")
+        self.fft.set_selected(5)
         self.mode = Gtk.DropDown.new_from_strings([
             "Амплитуда линий · dBFS/bin", "Плотность шума · dBFS/√Гц"])
         # PSD view is the most useful default for seeing the continuous noise floor.
+        self.mode.set_name("pref_spectrum_mode")
         self.mode.set_selected(1)
         self.floor = Gtk.DropDown.new_from_strings(["−120", "−140", "−160", "−180", "−200"])
-        self.floor.set_selected(2)
+        self.floor.set_name("pref_spectrum_floor")
+        self.floor.set_selected(3)
         self.top = Gtk.DropDown.new_from_strings(["0", "−20", "−40", "−60", "−80"])
+        self.top.set_name("pref_spectrum_top")
         self.top.set_selected(0)
         self.band = Gtk.DropDown.new_from_strings([
             "20 Гц – 20 кГц",
@@ -754,8 +814,10 @@ class SpectrumPage(Gtk.Box):
             "10 Гц – Fs/2 (весь спектр до Найквиста)",
         ])
         # В основном режиме показываем весь доступный положительный спектр.
+        self.band.set_name("pref_spectrum_band")
         self.band.set_selected(2)
         self.avg_mode = Gtk.DropDown.new_from_strings(["Без усреднения", "Быстрое", "Сглаженное"])
+        self.avg_mode.set_name("pref_spectrum_avg")
         self.avg_mode.set_selected(1)
         self.state = Gtk.Label(label="Аудиопоток выключен", xalign=0)
         self.state.add_css_class("dim-label")
@@ -880,6 +942,14 @@ class SpectrumPage(Gtk.Box):
                            xlabel="Частота, Гц", ylabel=ylabel)
         if self.plot.ylim[0] >= self.plot.ylim[1]:
             self.plot.set_view(ylim=(-160, 0))
+        floor_profile = self.win.get_noise_floor_profile(fs)
+        if floor_profile is not None:
+            for ch in ("L", "R"):
+                floor_trace = _noise_floor_trace(floor_profile, ch, fs, n, average=1.0,
+                                                 line_bins=self.mode.get_selected() == 0)
+                if floor_trace is not None:
+                    # Keep the saved profile's native frequency grid; Plot handles interpolation at cursor.
+                    traces.append(floor_trace)
         self.plot.set_traces(traces)
         w = dsp.bh(n)
         df = fs / n
@@ -890,7 +960,8 @@ class SpectrumPage(Gtk.Box):
         xruns = status.get("xruns")
         xrun_text = "XRUN: счётчик недоступен" if xruns is None else f"XRUN: {xruns}"
         mode_name = "линейчатый спектр" if self.mode.get_selected() == 0 else "спектральная плотность шума"
-        self.state.set_text(f"{source} · {mode_name} · полоса {band_name} · N={n:,} · "
+        floor_state = "пол АЦП: есть" if floor_profile is not None else "пол АЦП: не калиброван"
+        self.state.set_text(f"{source} · {mode_name} · {floor_state} · полоса {band_name} · N={n:,} · "
                             f"Δf={df:.3f} Гц · ENBW={enbw:.2f} Гц · "
                             f"окно {n/fs:.3f} с · обновление ≥{refresh_ms} мс · {xrun_text} · "
                             f"ADC frames={status.get('capture_frames', 0):,}")
@@ -900,16 +971,20 @@ class SpectrumPage(Gtk.Box):
 class ThdPage(Page):
     def __init__(self, win):
         self.f = spin("Частота, Гц", 10, 40000, 1, 997, 0)
-        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -20, 1)
+        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -6, 1)
         self.route = combo("Канал", ["L+R", "L", "R"], 0)
         self.lvls = Adw.EntryRow(title="Уровни для THD(уровень), dBFS")
+        self.lvls.set_name(_pref_widget_name("Уровни для THD(уровень), dBFS"))
         self.lvls.set_text("-6, -12, -18, -24, -36, -48")
         plot = Plot(True, "Гц", "dBFS")
-        plot.set_view((10, 40000), (-140, 0))
-        super().__init__(win, group("Тон", self.f, self.lv, self.route),
-                         button("Измерить THD", self.go, True),
-                         group("THD от уровня", self.lvls),
-                         button("Снять THD(уровень)", self.go_level),
+        plot.set_view((10, 40000), (-180, 0))
+        self.result_headline = Gtk.Label(label="Задай частоту и уровень. Будет подан синус на выбранный канал(ы); измеряются THD, THD+N, гармоники и фон.", xalign=0, wrap=True)
+        self.result_headline.add_css_class("title-4")
+        super().__init__(win, group("Тестовый синус", self.f, self.lv, self.route),
+                         button("ИЗМЕРИТЬ THD / THD+N", self.go, True),
+                         self.result_headline,
+                         group("Серия THD при разных уровнях", self.lvls),
+                         button("ИЗМЕРИТЬ THD ПО СПИСКУ УРОВНЕЙ", self.go_level),
                          plot=plot)
 
     def go(self):
@@ -918,11 +993,30 @@ class ThdPage(Page):
 
     def done(self, res):
         self.win.last = res
-        self.say(m.text_thd(res))
         self.plot.xlog = True
-        self.plot.set_view((10, 40000), (-140, 0), ylabel="dBFS (линия, бин 1 Гц)")
-        self.plot.set_traces([{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
-                              for c, r in res["ch"].items()])
+        traces = [{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
+                  for c, r in res["ch"].items()]
+        floor_profile = self.win.get_noise_floor_profile(self.win.rig_fs(), fresh=True)
+        rows = []
+        for channel, r in res["ch"].items():
+            thd_text = "ниже порога" if r.get("thd_bound") else f"{r['thd_pct']:.4f}%"
+            rows.append(f"{channel}: THD {thd_text} · THD+N {r['thdn_pct']:.4f}%")
+        self.result_headline.set_text("ИЗМЕРЕНО · " + "   |   ".join(rows))
+        if floor_profile is None:
+            self.say(m.text_thd(res) + "\n\nПол АЦП не откалиброван для этой карты/Fs или настройки микшера изменились. "
+                     "Пунктирная линия появится после измерения шума в Setup.")
+        else:
+            self.say(m.text_thd(res))
+        if floor_profile is not None:
+            n = int(res["ch"][next(iter(res["ch"]))].get("n", self.win.rig_fs()))
+            for ch in ("L", "R"):
+                floor_trace = _noise_floor_trace(floor_profile, ch, self.win.rig_fs(), n, average=1.0, line_bins=True)
+                if floor_trace is not None:
+                    traces.append(floor_trace)
+        ylo, yhi = _spectrum_ylim(traces, top=0.0)
+        self.plot.xlog = True
+        self.plot.set_view((10, 40000), (ylo, yhi), ylabel="dBFS/bin · текущая полоса разрешения")
+        self.plot.set_traces(traces)
 
     def go_level(self):
         try:
@@ -953,12 +1047,13 @@ class ResponsePage(Page):
         self.lo = spin("От, Гц", 5, 1000, 1, 20, 0)
         self.hi = spin("До, Гц", 1000, 40000, 100, 20000, 0)
         self.dur = spin("Длительность свипа, с", 3, 30, 1, 8, 0)
-        self.lv = spin("Уровень @1 кГц, dBFS", -90, -1, 1, -20, 1)
-        self.mode = combo("Генератор", ["inverse-RIAA", "плоский"], 0,
-                          "inverse-RIAA: на выходе корректора ровная линия")
-        self.iec = combo("Целевая коррекция", ["RIAA · стандарт", "RIAA + IEC · срез НЧ"], 0,
-                         "RIAA — стандарт фонокорректора; IEC выбирай только при наличии такого rumble-фильтра")
-        self.view = combo("Показывать", self.VIEWS, 0)
+        self.lv = spin("Уровень генератора @1 кГц, dBFS", -60, -0.5, 0.5, -6, 1,
+                       "Обычная АЧХ начинается с −6 dBFS. В режиме inverse-RIAA высокие частоты предыскажаются и могут автоматически ослабляться по пику.")
+        self.mode = combo("Тестовый сигнал", ["Плоский свип · обычная АЧХ", "Inverse-RIAA · фонокорректор"], 0,
+                          "Плоский свип — общий режим по умолчанию. Inverse-RIAA выбирай вручную для проверки фонокорректора по стандартной RIAA-кривой.")
+        self.iec = combo("Эталон (необязательно)", ["Не сравнивать с RIAA", "RIAA · стандарт", "RIAA + IEC · срез НЧ"], 0,
+                         "По умолчанию RIAA не применяется. Выбери её только если проверяешь фонокорректор и хочешь оценить отклонение от этой коррекции.")
+        self.view = combo("Показывать", self.VIEWS, 1)
         self.res = None
         self.ref = None
         plot = Plot(True, "Гц", "Отклонение от RIAA, дБ")
@@ -967,6 +1062,7 @@ class ResponsePage(Page):
                          button("Измерить", self.go, True), group("Вид", self.view),
                          self._buttons(), plot=plot)
         self.view.connect("notify::selected", self.on_view_changed)
+        self.iec.connect("notify::selected", self.on_view_changed)
 
     def on_view_changed(self, *_):
         # Y ranges have different units in deviation / THD / phase views.
@@ -982,10 +1078,23 @@ class ResponsePage(Page):
         return box
 
     def go(self):
+        mode = ("flat", "riaa")[self.mode.get_selected()]
+        target = self.iec.get_selected()
+        if mode == "riaa" and target == 0:
+            self.say("Inverse-RIAA требует явно выбранного эталона: RIAA или RIAA + IEC.")
+            return
         a = dict(f_lo=self.lo.get_value(), f_hi=self.hi.get_value(), dur=self.dur.get_value(),
-                 level_1k_dbfs=self.lv.get_value(), mode=("riaa", "flat")[self.mode.get_selected()],
-                 iec=self.iec.get_selected() == 1)
-        self.win.run_job(lambda rig: m.sweep(rig, **a), self.done)
+                 level_1k_dbfs=self.lv.get_value(), mode=mode,
+                 iec=(target == 2))
+        profile, profile_note = self.win.get_response_calibration(self.win.rig_fs())
+        self.win.run_job(lambda rig: m.sweep(rig, response_calibration=profile, **a),
+                         lambda result: self.done_with_calibration(result, profile_note),
+                         "АЧХ: измеряю свип и проверяю профиль карты…")
+
+    def done_with_calibration(self, res, profile_note):
+        if profile_note:
+            res["calibration_note"] = profile_note
+        self.done(res)
 
     def done(self, res):
         self.res = self.win.last = res
@@ -1009,6 +1118,10 @@ class ResponsePage(Page):
 
     def draw(self):
         v = self.view.get_selected()
+        if v == 0 and self.iec.get_selected() == 0:
+            self.plot.set_traces([])
+            self.say("Для отклонения выбери эталон RIAA или RIAA + IEC. Обычная АЧХ доступна без эталона.")
+            return
         key, ylabel, xk = [("riaa_dev_db", "дБ", "freq"), ("fr_norm_db", "дБ", "freq"),
                            ("thd_db", "дБ", "thd_freq"), ("thd_pct", "%", "thd_freq"),
                            ("phase_deg", "°", "freq")][v]
@@ -1033,7 +1146,7 @@ class ResponsePage(Page):
             # deviation around the RIAA target, not a broad ±3 dB overview.
             self.plot.set_view(ylim=(-0.5, 0.5))
         elif v == 1:
-            self.plot.set_view(ylim=(-2.0, 2.0))
+            self.plot.set_view(ylim=(-0.5, 0.5))
         elif v == 2:
             self.plot.autoscale_y(min_span=10.0)
         elif v == 3:
@@ -1048,9 +1161,9 @@ class ImdPage(Page):
         self.f1 = spin("f1, Гц", 5, 40000, 10, 19000, 0)
         self.f2 = spin("f2, Гц", 5, 40000, 10, 20000, 0)
         self.mode = combo("Соотношение", ["1:1 (CCIF)", "4:1 (SMPTE/DIN)"], 0)
-        self.lv = spin("Пик суммы, dBFS", -100, -0.5, 0.5, -12, 1)
+        self.lv = spin("Пиковый уровень суммы двух тонов, dBFS", -100, -0.5, 0.5, -6, 1)
         plot = Plot(True, "Гц", "dBFS (линия)")
-        plot.set_view((10, 48000), (-140, 0))
+        plot.set_view((10, 48000), (-180, 0))
         super().__init__(win, group("Два тона", self.preset, self.f1, self.f2, self.mode, self.lv),
                          button("Измерить IMD", self.go, True), plot=plot)
         self.preset.connect("notify::selected", lambda *_: self.pick())
@@ -1068,19 +1181,43 @@ class ImdPage(Page):
 
     def done(self, res):
         self.win.last = res
-        self.say(m.text_imd(res))
-        self.plot.set_traces([{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
-                              for c, r in res["ch"].items()])
+        traces = [{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
+                  for c, r in res["ch"].items()]
+        floor_profile = self.win.get_noise_floor_profile(self.win.rig_fs(), fresh=True)
+        if floor_profile is None:
+            self.say(m.text_imd(res) + "\n\nПол АЦП не измерен/не совпадает с настройками карты. "
+                     "Для пунктирной кривой измерь его на странице «Калибровка / Setup».")
+        else:
+            self.say(m.text_imd(res) + "\n\nПунктир — собственный шум АЦП этой карты, пересчитанный в полосу разрешения усреднённого спектра IMD.")
+        if floor_profile is not None:
+            n = int(getattr(self.win.rig, "n", self.win.rig_fs()))
+            blocks = max(1, int(getattr(self.win.rig, "blocks", 1)))
+            for ch in ("L", "R"):
+                floor_trace = _noise_floor_trace(floor_profile, ch, self.win.rig_fs(), n,
+                                                 average=blocks, line_bins=True)
+                if floor_trace is not None:
+                    floor_trace["label"] += f" · ENBW/{blocks}"
+                    traces.append(floor_trace)
+        ylo, yhi = _spectrum_ylim(traces, top=0.0)
+        self.plot.xlog = True
+        self.plot.set_view((10, min(0.45 * self.win.rig_fs(), 48000)), (ylo, yhi),
+                           ylabel="dBFS/bin · текущая полоса разрешения")
+        self.plot.set_traces(traces)
 
 
 class NoisePage(Page):
     def __init__(self, win):
         self.sec = spin("Длительность, с", 2, 60, 1, 8, 0, "вход корректора закорочен или нагружен источником")
-        plot = Plot(True, "Гц", "dBFS/sqrt(Гц)")
-        plot.set_view((10, 48000), (-160, -60))
-        super().__init__(win, group("Шум", self.sec), button("Измерить шум", self.go, True),
-                         group("Каналы", Adw.ActionRow(title="Проникновение L↔R: 100 Гц, 1 кГц, 10 кГц")),
-                         button("Измерить проникновение", self.go_x), plot=plot)
+        plot = Plot(True, "Гц", "dBFS/√Гц")
+        plot.set_view((50, 20000), (-150, 0))
+        self.xtalk_summary = Gtk.Label(label="Проникновение каналов ещё не измерено. Измеряются L→R и R→L на 100 Гц, 1 кГц и 10 кГц.",
+                                       xalign=0, wrap=True)
+        self.xtalk_summary.add_css_class("title-4")
+        super().__init__(win, group("Собственный шум входов", self.sec),
+                         button("ИЗМЕРИТЬ ШУМ АЦП", self.go, True),
+                         group("Проникновение между каналами", Adw.ActionRow(title="Тест: 100 Гц · 1 кГц · 10 кГц")),
+                         button("ИЗМЕРИТЬ ПРОНИКНОВЕНИЕ L↔R", self.go_x),
+                         self.xtalk_summary, plot=plot)
 
     def go(self):
         s = self.sec.get_value()
@@ -1088,12 +1225,40 @@ class NoisePage(Page):
 
     def done(self, res):
         self.win.last = res
+        self.plot.clear_manual_ylim()
+        self.plot.xlog = True
+        self.plot.set_view((20, min(20000, 0.45 * self.win.rig_fs())), (-180, -60),
+                           xlabel="Частота, Гц", ylabel="Плотность шума, dBFS/√Гц")
         self.say(m.text_noise(res))
-        self.plot.set_traces([{"x": r["freq"][1:], "y": r["dens_dbfs"][1:], "label": c, "color": c, "width": 1.2}
-                              for c, r in res["ch"].items()])
+        traces = [{"x": r["freq"][1:], "y": r["dens_dbfs"][1:], "label": c, "color": c, "width": 1.2}
+                  for c, r in res["ch"].items()]
+        ylo, yhi = _spectrum_ylim(traces, top=-60.0)
+        self.plot.set_view(ylim=(ylo, yhi))
+        self.plot.set_traces(traces)
 
     def go_x(self):
-        self.win.run_job(lambda rig: m.crosstalk(rig), lambda r: self.say(m.text_crosstalk(r)))
+        def done(result):
+            self.win.last = result
+            self.say(m.text_crosstalk(result))
+            self.xtalk_summary.set_text("РЕЗУЛЬТАТ ПРОНИКНОВЕНИЯ · " + "   |   ".join(
+                f"{row['f']:.0f} Гц: L→R {row['L→R']:.1f} дБ / R→L {row['R→L']:.1f} дБ"
+                for row in result["rows"]))
+            freqs = [row["f"] for row in result["rows"]]
+            self.plot.xlog = True
+            self.plot.clear_manual_ylim()
+            values = [float(row[key]) for row in result["rows"] for key in ("L→R", "R→L")]
+            y_min, y_max = min(values), max(values)
+            span = max(6.0, y_max - y_min)
+            self.plot.set_view((min(freqs) * 0.8, max(freqs) * 1.25),
+                               (y_min - 0.18 * span, y_max + 0.18 * span),
+                               xlabel="Частота, Гц", ylabel="Проникновение относительно основного канала, дБ")
+            self.plot.set_traces([
+                {"x": freqs, "y": [row["L→R"] for row in result["rows"]],
+                 "label": "L → R", "color": "L", "width": 2.6, "marker": True},
+                {"x": freqs, "y": [row["R→L"] for row in result["rows"]],
+                 "label": "R → L", "color": "R", "width": 2.6, "marker": True},
+            ])
+        self.win.run_job(lambda rig: m.crosstalk(rig), done, "измеряю проникновение между каналами")
 
 
 class NoiseResponsePage(Page):
@@ -1105,17 +1270,18 @@ class NoiseResponsePage(Page):
         self.sec = spin("Длительность измерения, с", 4, 60, 1, 8, 0,
                         "Одноразовый прогон; Live использует окно 4–8 с")
         self.kind = combo("Тестовый сигнал", ["Розовый шум", "Белый шум", "Шум inverse-RIAA"], 0)
-        self.level = spin("Цифровой RMS-уровень, dBFS", -80, -12, 1, -42, 0,
-                          "Пиковый запас автоматически ограничивается до -3 dBFS")
+        self.level = spin("Желаемый RMS-уровень шума, dBFS", -60, -3, 1, -12, 0,
+                          "Это RMS, а не пик синуса. Если случайный шум превышает −3 dBFS peak, программа уменьшит его и отдельно покажет фактический RMS.")
         self.lo = spin("Нижняя частота, Гц", 10, 1000, 1, 20, 0)
         self.hi = spin("Верхняя частота, Гц", 1000, 40000, 100, 20000, 0)
-        self.iec = combo("Эталон коррекции", ["RIAA", "RIAA + IEC"], 0)
-        self.view = combo("График", self.VIEWS, 0)
+        self.iec = combo("Сравнение с коррекцией", ["Без эталона", "RIAA", "RIAA + IEC"], 0,
+                         "По умолчанию показывается обычная АЧХ L/R. RIAA/IEC — дополнительные режимы, выбираются вручную.")
+        self.view = combo("График", self.VIEWS, 1)
         self.plot = Plot(True, "Частота, Гц", "Отклонение от RIAA, дБ")
         self.plot.set_view((20, 20000), (-0.5, 0.5))
         self.live_toggle = Gtk.ToggleButton.new_with_label("Живая АЧХ")
         self.live_toggle.add_css_class("suggested-action")
-        self.live_hint = Gtk.Label(label="Live подаёт непрерывный периодический шум через ЦАП и обновляет H1 по входу АЦП.",
+        self.live_hint = Gtk.Label(label="Live подаёт непрерывный шум через ЦАП и обновляет H1 по входу АЦП.",
                                    xalign=0, wrap=True)
         self.live_hint.add_css_class("dim-label")
         live_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -1152,7 +1318,10 @@ class NoiseResponsePage(Page):
         if self.hi.get_value() >= 0.45 * fs:
             raise ValueError(f"Верхняя частота должна быть ниже 0.45·Fs ({0.45 * fs:.0f} Гц)")
         kind = ("pink", "white", "riaa")[self.kind.get_selected()]
-        iec = self.iec.get_selected() == 1
+        reference = self.iec.get_selected()
+        iec = reference == 2
+        if kind == "riaa" and reference == 0:
+            raise ValueError("Для шума inverse-RIAA выбери эталон RIAA или RIAA + IEC. Для обычной АЧХ оставь розовый/белый шум.")
         preemph = (lambda f: 10.0 ** (-dsp.riaa_playback_db(np.maximum(f, 1.0), iec) / 20.0)) if kind == "riaa" else None
         return fs, kind, iec, preemph
 
@@ -1167,10 +1336,19 @@ class NoiseResponsePage(Page):
             return
         args = (self.sec.get_value(), kind, self.level.get_value(), self.lo.get_value(),
                 self.hi.get_value(), iec)
-        self.win.run_job(lambda rig: m.noise_response(rig, *args), self.done, "Шумовая АЧХ…")
+        profile, profile_note = self.win.get_response_calibration(self.win.rig_fs())
+        self.win.run_job(lambda rig: m.noise_response(rig, *args, response_calibration=profile),
+                         lambda result: self.done_with_calibration(result, profile_note), "Шумовая АЧХ…")
+
+    def done_with_calibration(self, res, profile_note):
+        if profile_note:
+            res["calibration_note"] = profile_note
+        res["has_riaa_reference"] = self.iec.get_selected() in (1, 2)
+        self.done(res)
 
     def done(self, res):
         self.res = res
+        res["display_view"] = self.view.get_selected()
         self.win.last = res
         self.say(m.text_noise_response(res))
         self.draw()
@@ -1180,8 +1358,12 @@ class NoiseResponsePage(Page):
             return
         traces = []
         key = ("riaa_dev_db", "fr_norm_db", "coherence")[self.view.get_selected()]
+        if key == "riaa_dev_db" and not self.res.get("has_riaa_reference", False):
+            self.plot.set_traces([])
+            self.say("Отклонение от RIAA не выбрано: оставь обычную нормированную АЧХ или выбери RIAA/IEC в поле «Сравнение с коррекцией» и повтори измерение.")
+            return
         default_ylim = ((0, 1.05) if key == "coherence" else
-                        (-2.0, 2.0) if key == "fr_norm_db" else (-0.5, 0.5))
+                        (-0.5, 0.5) if key == "fr_norm_db" else (-0.5, 0.5))
         self.plot.set_view((self.lo.get_value(), self.hi.get_value()), default_ylim,
                            ylabel="Когерентность" if key == "coherence" else "дБ")
         for ch in ("L", "R"):
@@ -1256,12 +1438,17 @@ class NoiseResponsePage(Page):
         source = self.live_period.copy()
         fs = self.win.rig_fs()
         lo, hi = float(self.lo.get_value()), float(self.hi.get_value())
-        iec = self.iec.get_selected() == 1
+        iec = self.iec.get_selected() == 2
         sequence = self.live_sequence
+        response_profile, response_note = self.win.get_response_calibration(fs)
 
         def work():
             try:
                 result = m.noise_transfer_capture(source, rec, fs, lo, hi, iec)
+                if response_profile is not None:
+                    m.apply_response_calibration(result, response_profile)
+                elif response_note:
+                    result.setdefault("warnings", []).append(response_note)
                 err = None
             except Exception as exc:  # noqa: BLE001
                 result, err = None, exc
@@ -1427,7 +1614,10 @@ class VinylPage(Page):
 
 
 class SetupPage(Page):
+    """Per-device voltage, frequency-response and ADC noise calibration."""
+
     def __init__(self, win):
+        self.win = win
         c = win.cal
         self.mains = combo("Частота сети", ["50 Гц", "60 Гц"], 0 if c["mains"] == 50 else 1)
         self.band = spin("Верхняя граница THD/шума, Гц", 5000, 40000, 1000, c["band_hi"], 0)
@@ -1440,13 +1630,101 @@ class SetupPage(Page):
         self.meter_l = spin("Мультиметр: выход DAC L, мВ RMS", 0, 20000, 0.1, 0, 1,
                             "Подать 1 кГц −6 dBFS, измерять непосредственно на выходе DAC")
         self.meter_r = spin("Мультиметр: выход DAC R, мВ RMS", 0, 20000, 0.1, 0, 1)
-        super().__init__(win, group("Измерительные параметры", self.mains, self.band, self.att),
-                         group("Калибровка ЦАП (независимо L/R)", self.out_l, self.out_r),
-                         group("Калибровка АЦП (независимо L/R)", self.in_l, self.in_r),
+        self.auto_response = Adw.SwitchRow(title="Автоматически применять калибровку АЧХ/фазы этой карты",
+                                          subtitle="Отдельный профиль для каждой физической карты и Fs. Выключи, чтобы видеть тракт без поправки.")
+        self.auto_response.set_active(bool(c.get("auto_apply_response", True)))
+        self.auto_noise = Adw.SwitchRow(title="Автоматически показывать шумовой пол этой карты",
+                                       subtitle="Профиль привязан к физической карте, Fs и состоянию микшера.")
+        self.auto_noise.set_active(bool(c.get("auto_show_noise_floor", True)))
+        self.card_status = Gtk.Label(label="", xalign=0, wrap=True)
+        self.card_status.add_css_class("title-4")
+        self.fr_status = Adw.ActionRow(title="Калибровка АЧХ карты")
+        self.noise_status = Adw.ActionRow(title="Шумовой пол АЦП")
+        self.fr_status.set_subtitle("Для текущей карты и частоты калибровка ещё не выполнена")
+        self.noise_status.set_subtitle("Для текущей карты и частоты измерение ещё не выполнено")
+        info = Gtk.Label(
+            label=("АЧХ/ФАЗА ИЗМЕРИТЕЛЬНОЙ КАРТЫ. Соедини ЦАП L→АЦП L и ЦАП R→АЦП R напрямую. "
+                   "Нажми кнопку калибровки один раз для каждой физической карты и каждой нужной частоты дискретизации. "
+                   "Профили сохраняются в ~/.config/valvebench/config.json отдельно по устойчивому ID карты и Fs; "
+                   "при выборе этой карты калибровка подхватывается автоматически, даже если номер hw изменился. "
+                   "Коррекция выравнивает частотный отклик и фазу ЦАП+АЦП по каждому каналу, но не калибрует абсолютные вольты. "
+                   "Если изменятся уровни/маршрутизация микшера, профиль будет отклонён до повторной калибровки.\n\n"
+                   "ШУМОВОЙ ПОЛ АЦП. Перед измерением отключи DUT и замкни входы АЦП либо подключи эквивалентное сопротивление источника. "
+                   "Профиль также сохраняется отдельно для карты и Fs. Он показывается пунктиром в Спектре, THD и IMD; "
+                   "это один и тот же измеренный спектральный шум, пересчитанный под разрешение конкретного графика. "
+                   "Он не вычитается из результата и не заменяет шум проверяемого устройства."),
+            xalign=0, wrap=True)
+        info.add_css_class("dim-label")
+        super().__init__(win,
+                         group("Измерительные параметры", self.mains, self.band, self.att),
+                         group("Калибровка ЦАП (для абсолютного напряжения)", self.out_l, self.out_r),
+                         group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r),
                          group("Показания мультиметра при −6 dBFS", self.meter_l, self.meter_r),
                          button("Применить показания мультиметра к DAC L/R", self.cal_out),
                          button("Калибровать ADC L/R по петле DAC→ADC", self.cal_in),
+                         group("Автоматическая коррекция и отображение", self.auto_response, self.auto_noise),
+                         self.card_status, info, self.fr_status,
+                         button("1. КАЛИБРОВАТЬ АЧХ ЗВУКОВОЙ КАРТЫ · ПРЯМАЯ ПЕТЛЯ", self.calibrate_response, True),
+                         self.noise_status,
+                         button("2. ИЗМЕРИТЬ ШУМОВОЙ ПОЛ АЦП", self.calibrate_noise),
+                         Gtk.Label(label=("Проверка тактов сравнивает фактическую частоту тестового тона в записи АЦП "
+                                          "с частотой, которую выдаёт ЦАП. Это проверка расхождения частот дискретизации, "
+                                          "а не синхронизации часов компьютера."), xalign=0, wrap=True),
+                         button("ПРОВЕРИТЬ СОВПАДЕНИЕ ЧАСТОТ ЦАП И АЦП", self.check_clock),
                          button("Сохранить настройки", self.apply))
+        self.auto_response.connect("notify::active", self.on_auto_changed)
+        self.auto_noise.connect("notify::active", self.on_auto_changed)
+        self.refresh_from_calibration()
+
+    def on_auto_changed(self, *_):
+        self.win.cal["auto_apply_response"] = self.auto_response.get_active()
+        self.win.cal["auto_show_noise_floor"] = self.auto_noise.get_active()
+        calib.save(self.win.cal)
+
+    def refresh_from_calibration(self):
+        c = self.win.cal
+        self.mains.set_selected(0 if c["mains"] == 50 else 1)
+        self.band.set_value(float(c["band_hi"]))
+        self.att.set_value(float(c["att_db"]))
+        self.out_l.set_value(float(c["out_fs_vrms"][0] or 0))
+        self.out_r.set_value(float(c["out_fs_vrms"][1] or 0))
+        self.in_l.set_value(float(c["in_fs_vrms"][0] or 0))
+        self.in_r.set_value(float(c["in_fs_vrms"][1] or 0))
+        self.auto_response.set_active(bool(c.get("auto_apply_response", True)))
+        self.auto_noise.set_active(bool(c.get("auto_show_noise_floor", True)))
+        fs = self.win.rig_fs()
+        hw, label = self.win.cards[self.win.dev.get_selected()]
+        self.card_status.set_text(f"ТЕКУЩАЯ КАРТА: {label}\nПрофиль: {stable_device_identity(hw)} · Fs {fs/1000:g} кГц")
+        fr = c.get("frequency_response_profiles", {}).get(str(fs))
+        nf = c.get("noise_floor_profiles", {}).get(str(fs))
+        current_fp = None
+        if hw != "sim" and (fr or nf):
+            current_fp = gainmatch.mixer_fingerprint_from_hw(hw)
+
+        def profile_state(profile, auto_enabled):
+            if not profile:
+                return "калибровка не выполнена"
+            if profile.get("device_key") != stable_device_identity(hw) or int(profile.get("fs", -1)) != int(fs):
+                return "профиль принадлежит другой карте или частоте"
+            expected = profile.get("mixer_fingerprint")
+            if hw != "sim" and (not expected or current_fp is None or current_fp != expected):
+                return "настройки микшера изменились — нужна повторная калибровка"
+            if not auto_enabled:
+                return "профиль сохранён, автоматическое применение выключено"
+            return "профиль активен · будет применён автоматически"
+
+        if fr:
+            self.fr_status.set_subtitle(
+                f"{fr.get('f_lo', 0):.0f}–{fr.get('f_hi', 0):.0f} Гц · {fr.get('created', 'дата не указана')} · "
+                + profile_state(fr, self.auto_response.get_active()))
+        else:
+            self.fr_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет профиля")
+        if nf:
+            self.noise_status.set_subtitle(
+                f"{nf.get('created', 'дата не указана')} · "
+                + profile_state(nf, self.auto_noise.get_active()))
+        else:
+            self.noise_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет измерения")
 
     def apply(self):
         c = self.win.cal
@@ -1455,8 +1733,87 @@ class SetupPage(Page):
         c["att_db"] = self.att.get_value()
         c["out_fs_vrms"] = [self.out_l.get_value() or None, self.out_r.get_value() or None]
         c["in_fs_vrms"] = [self.in_l.get_value() or None, self.in_r.get_value() or None]
+        c["auto_apply_response"] = self.auto_response.get_active()
+        c["auto_show_noise_floor"] = self.auto_noise.get_active()
         calib.save(c)
-        self.win.toast("Настройки сохранены")
+        self.win.toast("Настройки и калибровки сохранены")
+
+    def calibrate_response(self):
+        dev = self.win.cards[self.win.dev.get_selected()][0]
+        key = stable_device_identity(dev)
+        fs = self.win.rig_fs()
+        hw = dev
+        before_fp = gainmatch.mixer_fingerprint_from_hw(hw)
+        self.fr_status.set_subtitle("Выполняется плоский свип по прямой петле…")
+
+        def job(rig):
+            if getattr(rig.be, "hw", "sim") != hw:
+                raise m.MeasureError("выбранная звуковая карта изменилась; выбери её снова")
+            res = m.sweep(rig, f_lo=20.0, f_hi=min(20000.0, 0.40 * rig.fs), dur=12.0,
+                          level_1k_dbfs=-12.0, mode="flat", iec=False)
+            after_fp = gainmatch.mixer_fingerprint_from_hw(hw)
+            if hw != "sim" and (before_fp is None or after_fp is None):
+                raise m.MeasureError("не удалось прочитать состояние ALSA-микшера; профиль не сохранён")
+            if before_fp and after_fp != before_fp:
+                raise m.MeasureError("настройки микшера изменились во время калибровки; профиль не сохранён")
+            profile = m.build_response_calibration(res, key, after_fp, fs=rig.fs)
+            profile["mixer_fingerprint"] = after_fp
+            return profile
+
+        def done(profile):
+            self.win.cal["frequency_response_profiles"][str(fs)] = profile
+            self.win._mixer_fingerprint_cache.clear()
+            calib.save(self.win.cal)
+            self.refresh_from_calibration()
+            self.say("КАЛИБРОВКА АЧХ/ФАЗЫ СОХРАНЕНА ДЛЯ ЭТОЙ КАРТЫ И ЧАСТОТЫ. "
+                     "Теперь можно подключить проверяемое устройство. При включённой автокоррекции "
+                     "измерение будет очищено от собственного частотного отклика ЦАП/АЦП отдельно для L и R.")
+            self.win.toast("Профиль АЧХ карты сохранён")
+
+        self.win.run_job(job, done, "калибрую АЧХ/фазу карты по плоской петле L→L, R→R")
+
+    def calibrate_noise(self):
+        dev = self.win.cards[self.win.dev.get_selected()][0]
+        key = stable_device_identity(dev)
+        fs = self.win.rig_fs()
+        before_fp = gainmatch.mixer_fingerprint_from_hw(dev)
+        self.noise_status.set_subtitle("Записываю 12 секунд тишины с входами, нагруженными на землю/сопротивление…")
+
+        def job(rig):
+            res = m.noise(rig, seconds=12.0)
+            after_fp = gainmatch.mixer_fingerprint_from_hw(dev)
+            if dev != "sim" and (before_fp is None or after_fp is None):
+                raise m.MeasureError("не удалось прочитать состояние ALSA-микшера; шумовой профиль не сохранён")
+            if before_fp and after_fp != before_fp:
+                raise m.MeasureError("микшер изменился во время записи; шумовой профиль не сохранён")
+            if any("ПЕРЕГРУЗКА" in str(w).upper() for w in res.get("warnings", [])):
+                raise m.MeasureError("АЦП перегружен во время измерения шума; профиль не сохранён")
+            profile = {
+                "kind": "adc_noise_floor", "schema": 1, "device_key": key,
+                "fs": int(rig.fs), "created": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "mixer_fingerprint": after_fp,
+                "frequency_hz": np.asarray(res["ch"]["L"]["freq"], dtype=float).tolist(),
+                "channels": {ch: {"density_dbfs_sqrt_hz": np.asarray(res["ch"][ch]["dens_dbfs"], dtype=float).tolist()}
+                             for ch in ("L", "R")},
+            }
+            return profile, res
+
+        def done(result):
+            profile, measured = result
+            self.win.cal["noise_floor_profiles"][str(fs)] = profile
+            self.win._mixer_fingerprint_cache.clear()
+            calib.save(self.win.cal)
+            self.refresh_from_calibration()
+            self.say("ШУМОВОЙ ПОЛ АЦП СОХРАНЁН ДЛЯ ЭТОЙ КАРТЫ И ЧАСТОТЫ. Он будет показан пунктиром "
+                     "в Спектре, THD и IMD. Это одна и та же плотность шума; высота линии в dBFS/bin "
+                     "зависит от полосы разрешения FFT.\n\n" + m.text_noise(measured))
+            self.win.toast("Шумовой профиль карты сохранён")
+
+        self.win.run_job(job, done, "измеряю шумовой пол АЦП (входы должны быть нагружены)")
+
+    def check_clock(self):
+        self.win.run_job(m.clock_check, lambda result: self.say(m.text_clock(result)),
+                         "проверяю согласование тактов ЦАП и АЦП")
 
     def cal_out(self):
         ml, mr = self.meter_l.get_value(), self.meter_r.get_value()
@@ -1485,7 +1842,7 @@ class SetupPage(Page):
             self.in_l.set_value(self.win.cal["in_fs_vrms"][0])
             self.in_r.set_value(self.win.cal["in_fs_vrms"][1])
             self.apply()
-        self.win.run_job(job, done, "Калибровка ADC по петле…")
+        self.win.run_job(job, done, "калибровка ADC по петле…")
 
 
 # --------------------------------------------------------------------------- окно
@@ -1495,6 +1852,12 @@ class Window(Adw.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title="ValveBench", default_width=1320, default_height=760)
         self.cal = calib.load()
+        self.ui_prefs = preferences.load()
+        migrated_prefs = preferences.migrate_0_1_16_defaults(self.ui_prefs)
+        if migrated_prefs != self.ui_prefs:
+            self.ui_prefs = migrated_prefs
+            preferences.save(self.ui_prefs)
+        self._mixer_fingerprint_cache = {}
         self.be = None
         self.rig = None
         self.busy = False
@@ -1506,14 +1869,18 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar()
         self.dev = Gtk.DropDown.new_from_strings([n for _, n in self.cards])
         saved_device = self.cal["device"]
-        sel = next((i for i, (d, _) in enumerate(self.cards) if d == saved_device), 0)
-        if self.cards[sel][0] != saved_device:
-            self.cal["device"] = "sim"
+        saved_key = self.cal.get("device_key", "")
+        card_keys = [stable_device_identity(hw) for hw, _label in self.cards]
+        sel = next((i for i, key in enumerate(card_keys) if saved_key and key == saved_key), -1)
+        if sel < 0:
+            sel = next((i for i, (d, _) in enumerate(self.cards) if d == saved_device), 0)
+        selected_hw = self.cards[sel][0]
+        if selected_hw == "sim" and saved_device != "sim":
             self.invalid_saved_device = saved_device
         else:
             self.invalid_saved_device = None
         self.dev.set_selected(sel)
-        selected_hw = self.cards[sel][0]
+        self.cal.activate_profile(stable_device_identity(selected_hw), selected_hw)
         self.rate_values = self._rates_for_device(selected_hw)
         self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in self.rate_values])
         preferred_rate = int(self.cal["fs"])
@@ -1522,7 +1889,8 @@ class Window(Adw.ApplicationWindow):
         self.rate.set_selected(rate_sel)
         self.cal["fs"] = self.rate_values[rate_sel]
         self._updating_rate = False
-        self.live_btn = Gtk.ToggleButton(label="АУДИО ВЫКЛ")
+        self.live_btn = Gtk.ToggleButton(label="АУДИОПОТОК: ОТКРЫТЬ")
+        self.live_btn.set_tooltip_text("Открыть непрерывный поток звука: АЦП начинает захват входа, ЦАП остаётся в тишине до включения генератора. Сигнал измерения подаётся отдельной кнопкой генератора.")
         self.live_btn.add_css_class("pill")
         self.live_btn.connect("toggled", self.on_live)
         self.generator_btn = Gtk.ToggleButton(label="▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
@@ -1536,7 +1904,6 @@ class Window(Adw.ApplicationWindow):
         header.pack_start(self.dev)
         header.pack_start(self.rate)
         header.pack_start(self.live_btn)
-        header.pack_start(button("Такт", self.check_clock))
         header.pack_end(self.spinner)
         header.pack_end(self.status)
         self.dev.connect("notify::selected", self.on_device_changed)
@@ -1546,6 +1913,7 @@ class Window(Adw.ApplicationWindow):
         self.live = LivePage(self)
         self.spectrum = SpectrumPage(self)
         self.noise_response_page = NoiseResponsePage(self)
+        self.setup = SetupPage(self)
         pages = (
             ("live", "Gain Match / Уровень", self.live),
             ("spectrum", "Спектр (большой экран)", self.spectrum),
@@ -1555,10 +1923,12 @@ class Window(Adw.ApplicationWindow):
             ("imd", "IMD", ImdPage(self)),
             ("noise", "Шум / Crosstalk", NoisePage(self)),
             ("vinyl", "TACET / Vinyl Test", VinylPage(self)),
-            ("setup", "Калибровка / Setup", SetupPage(self)),
+            ("setup", "Калибровка / Setup", self.setup),
         )
+        self.page_map = {name: page for name, _title, page in pages}
         for name, title, page in pages:
             self.stack.add_titled(page, name, title)
+        self._restore_and_bind_preferences()
         side = Gtk.StackSidebar(stack=self.stack)
         side.set_size_request(200, -1)
         body = Gtk.Box()
@@ -1576,6 +1946,198 @@ class Window(Adw.ApplicationWindow):
         if self.invalid_saved_device:
             self.toast(f"Сохранённое устройство {self.invalid_saved_device} не найдено. Выбран симулятор; выбери нужную карту вверху.")
 
+    @staticmethod
+    def _widget_tree(root):
+        child = root.get_first_child()
+        while child is not None:
+            yield child
+            yield from Window._widget_tree(child)
+            child = child.get_next_sibling()
+
+    def _device_scope(self):
+        """Preference scope for card-dependent display ranges, not ALSA card numbers."""
+        dev = self.cards[self.dev.get_selected()][0]
+        return f"{stable_device_identity(dev)}@{int(self.rig_fs())}"
+
+    def _device_pref_key(self, page_key, name):
+        return f"{page_key}/device/{self._device_scope()}/{name}"
+
+    def _restore_and_bind_preferences(self):
+        """Restore named settings; Y ranges and FFT floor/top are per card and Fs."""
+        for page_key, page in self.page_map.items():
+            if page_key == "setup":  # physical calibration fields live in the per-card profile
+                continue
+            for widget in self._widget_tree(page):
+                name = widget.get_name() if hasattr(widget, "get_name") else ""
+                if not name or not (name.startswith("pref_") or name in ("plot_y_min", "plot_y_max")):
+                    continue
+                card_scoped = (page_key == "spectrum" and name in
+                               ("pref_spectrum_floor", "pref_spectrum_top"))
+                key = self._device_pref_key(page_key, name) if card_scoped else f"{page_key}/{name}"
+                legacy_key = f"{page_key}/{name}"
+                if key in self.ui_prefs:
+                    value = self.ui_prefs[key]
+                elif card_scoped and legacy_key in self.ui_prefs:
+                    value = self.ui_prefs[legacy_key]
+                    self.ui_prefs[key] = value
+                else:
+                    value = None
+                if value is not None:
+                    try:
+                        if isinstance(widget, Adw.SpinRow):
+                            widget.set_value(float(value))
+                        elif isinstance(widget, Adw.ComboRow):
+                            count = widget.get_model().get_n_items()
+                            if 0 <= int(value) < count:
+                                widget.set_selected(int(value))
+                        elif isinstance(widget, Adw.EntryRow):
+                            widget.set_text(str(value))
+                        elif isinstance(widget, Gtk.DropDown):
+                            count = widget.get_model().get_n_items()
+                            if 0 <= int(value) < count:
+                                widget.set_selected(int(value))
+                        elif isinstance(widget, Gtk.SpinButton):
+                            widget.set_value(float(value))
+                    except (TypeError, ValueError, AttributeError):
+                        pass
+                if card_scoped and isinstance(widget, Gtk.DropDown):
+                    widget.connect("notify::selected",
+                                   lambda w, _p, pk=page_key, nm=name:
+                                   self._store_pref(self._device_pref_key(pk, nm), w.get_selected()))
+                elif isinstance(widget, Adw.SpinRow):
+                    widget.connect("notify::value", lambda w, _p, k=key: self._store_pref(k, w.get_value()))
+                elif isinstance(widget, (Adw.ComboRow, Gtk.DropDown)):
+                    widget.connect("notify::selected", lambda w, _p, k=key: self._store_pref(k, w.get_selected()))
+                elif isinstance(widget, Adw.EntryRow):
+                    widget.connect("notify::text", lambda w, _p, k=key: self._store_pref(k, w.get_text()))
+                elif isinstance(widget, Gtk.SpinButton):
+                    widget.connect("value-changed", lambda w, k=key: self._store_pref(k, w.get_value()))
+            # Migrate an old global plot range to the currently selected card once.
+            if isinstance(page, Page) and page.plot is not None:
+                scale_key = self._device_pref_key(page_key, "plot_scale")
+                scale = self.ui_prefs.get(scale_key)
+                if scale is None:
+                    scale = self.ui_prefs.get(f"{page_key}/plot_scale")
+                    if isinstance(scale, dict):
+                        self.ui_prefs[scale_key] = scale
+                if isinstance(scale, dict):
+                    view = page.view.get_selected() if hasattr(page, "view") else None
+                    if scale.get("view") == view:
+                        try:
+                            page.plot.set_manual_ylim(float(scale["min"]), float(scale["max"]))
+                        except (KeyError, TypeError, ValueError):
+                            pass
+        preferences.save(self.ui_prefs)
+
+    def restore_device_scoped_preferences(self):
+        """Load per-card graph ranges and FFT dB bounds after card/Fs changes."""
+        scope = self._device_scope()
+        for page_key, page in self.page_map.items():
+            if page_key == "spectrum":
+                for control_name, widget in (("pref_spectrum_floor", self.spectrum.floor),
+                                             ("pref_spectrum_top", self.spectrum.top)):
+                    key = f"spectrum/device/{scope}/{control_name}"
+                    value = self.ui_prefs.get(key)
+                    if value is not None:
+                        try:
+                            if 0 <= int(value) < widget.get_model().get_n_items():
+                                widget.set_selected(int(value))
+                        except (TypeError, ValueError):
+                            pass
+            if isinstance(page, Page) and page.plot is not None:
+                page.plot.manual_ylim = None
+                scale = self.ui_prefs.get(f"{page_key}/device/{scope}/plot_scale")
+                view = page.view.get_selected() if hasattr(page, "view") else None
+                if isinstance(scale, dict) and scale.get("view") == view:
+                    try:
+                        page.plot.set_manual_ylim(float(scale["min"]), float(scale["max"]))
+                    except (KeyError, TypeError, ValueError):
+                        pass
+                else:
+                    page._sync_plot_scale(page.plot.ylim)
+
+    def _store_pref(self, key, value):
+        self.ui_prefs[key] = value
+        try:
+            preferences.save(self.ui_prefs)
+        except OSError as exc:
+            self.toast(f"Не удалось сохранить настройку интерфейса: {exc}")
+
+    def persist_plot_scale(self, page):
+        page_key = next((name for name, obj in self.page_map.items() if obj is page), None)
+        if page_key is None or page.plot is None:
+            return
+        view = page.view.get_selected() if hasattr(page, "view") else None
+        self.ui_prefs[self._device_pref_key(page_key, "plot_scale")] = {
+            "view": view, "min": float(page.plot.ylim[0]), "max": float(page.plot.ylim[1])}
+        try:
+            preferences.save(self.ui_prefs)
+        except OSError as exc:
+            self.toast(f"Не удалось сохранить масштаб: {exc}")
+
+    def clear_plot_scale_preference(self, page):
+        page_key = next((name for name, obj in self.page_map.items() if obj is page), None)
+        if page_key:
+            self.ui_prefs.pop(self._device_pref_key(page_key, "plot_scale"), None)
+            preferences.save(self.ui_prefs)
+
+    def _cached_mixer_fingerprint(self, dev):
+        # Live FFT asks for a noise-floor overlay several times per second.
+        # Do not spawn `amixer` on every frame; re-check at most every 3 seconds.
+        now = time.monotonic()
+        key = str(dev)
+        cached = self._mixer_fingerprint_cache.get(key)
+        if cached and now - cached[0] < 3.0:
+            return cached[1]
+        fingerprint = gainmatch.mixer_fingerprint_from_hw(dev)
+        self._mixer_fingerprint_cache[key] = (now, fingerprint)
+        return fingerprint
+
+    def get_response_calibration(self, fs):
+        """Return a valid per-card/per-rate response profile or a human-readable reason."""
+        if not bool(self.cal.get("auto_apply_response", True)):
+            return None, "АЧХ показана без коррекции измерительной карты (автоприменение отключено)."
+        dev = self.cards[self.dev.get_selected()][0]
+        key = stable_device_identity(dev)
+        profile = self.cal.get("frequency_response_profiles", {}).get(str(int(fs)))
+        if not isinstance(profile, dict):
+            return None, f"Для этой карты и {int(fs)} Гц нет калибровки АЧХ; показан сырой тракт."
+        if profile.get("device_key") != key or int(profile.get("fs", -1)) != int(fs):
+            return None, "Профиль АЧХ принадлежит другой карте/частоте и не применён."
+        expected = profile.get("mixer_fingerprint")
+        if dev != "sim" and not expected:
+            return None, "У профиля нет снимка ALSA-микшера; он не применён. Повтори калибровку."
+        if expected:
+            # A one-shot response measurement must never use a 3-second stale
+            # mixer snapshot: ALSA volume/source may have changed just before go().
+            actual = gainmatch.mixer_fingerprint_from_hw(dev)
+            self._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), actual)
+            if actual is None or actual != expected:
+                return None, "Настройки микшера изменились после калибровки; АЧХ показана без старой поправки. Повтори калибровку петли."
+        return profile, f"АЧХ скорректирована по калибровке {profile.get('created', '')} этой карты."
+
+    def get_noise_floor_profile(self, fs, fresh=False):
+        """Return measured card noise density only when physical card/mixer/Fs match."""
+        if not bool(self.cal.get("auto_show_noise_floor", True)):
+            return None
+        dev = self.cards[self.dev.get_selected()][0]
+        key = stable_device_identity(dev)
+        profile = self.cal.get("noise_floor_profiles", {}).get(str(int(fs)))
+        if not isinstance(profile, dict) or profile.get("kind") != "adc_noise_floor":
+            return None
+        if profile.get("device_key") != key or int(profile.get("fs", -1)) != int(fs):
+            return None
+        expected = profile.get("mixer_fingerprint")
+        if dev != "sim" and not expected:
+            return None
+        if expected:
+            actual = (gainmatch.mixer_fingerprint_from_hw(dev) if fresh
+                      else self._cached_mixer_fingerprint(dev))
+            self._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), actual)
+            if actual is None or actual != expected:
+                return None
+        return profile
+
     def _rates_for_device(self, dev):
         if dev == "sim":
             return list(RATES)
@@ -1586,8 +2148,9 @@ class Window(Adw.ApplicationWindow):
         return available or list(RATES)
 
     def on_device_changed(self, *_):
+        self._mixer_fingerprint_cache.clear()
         dev, _label = self.cards[self.dev.get_selected()]
-        self.cal["device"] = dev
+        self.cal.activate_profile(stable_device_identity(dev), dev)
         old_rate = int(self.cal.get("fs", 96000))
         self.rate_values = self._rates_for_device(dev)
         new_index = (self.rate_values.index(old_rate) if old_rate in self.rate_values
@@ -1601,15 +2164,24 @@ class Window(Adw.ApplicationWindow):
         calib.save(self.cal)
         if hasattr(self, "live"):
             self.live.refresh_gain_reference()
+        if hasattr(self, "setup"):
+            self.setup.refresh_from_calibration()
+        if hasattr(self, "page_map"):
+            self.restore_device_scoped_preferences()
 
     def on_rate_changed(self, *_):
         if getattr(self, "_updating_rate", False):
             return
         self.reset_rig()
+        self._mixer_fingerprint_cache.clear()
         self.cal["fs"] = self.rig_fs()
         calib.save(self.cal)
         if hasattr(self, "live"):
             self.live.refresh_gain_reference()
+        if hasattr(self, "setup"):
+            self.setup.refresh_from_calibration()
+        if hasattr(self, "page_map"):
+            self.restore_device_scoped_preferences()
 
     def on_page_changed(self, *_):
         page = self.stack.get_visible_child()
@@ -1656,7 +2228,7 @@ class Window(Adw.ApplicationWindow):
         active = btn.get_active()
         if active and not self.live_on:
             btn.set_active(False)
-            self.toast("Сначала включи «АУДИО ВКЛ»: это открывает физические ЦАП и АЦП.")
+            self.toast("Сначала нажми «АУДИОПОТОК: ОТКРЫТЬ». Это запускает захват АЦП и подготавливает ЦАП; тестовый сигнал пока не подаётся.")
             return
         btn.set_label("ГЕНЕРАТОР: ВКЛ" if active else "ГЕНЕРАТОР: ВЫКЛ")
         if active:
@@ -1679,7 +2251,7 @@ class Window(Adw.ApplicationWindow):
             self.live_btn.set_active(False)
             return
         self.live_on = True
-        self.live_btn.set_label("АУДИО ВКЛ")
+        self.live_btn.set_label("АУДИОПОТОК: ЗАКРЫТЬ")
         self.live_btn.add_css_class("suggested-action")
         self.generator_btn.set_sensitive(True)
         self.generator_btn.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
@@ -1700,7 +2272,7 @@ class Window(Adw.ApplicationWindow):
         if self.be is not None:
             self.be.live_stop()
         self.live_on = False
-        self.live_btn.set_label("АУДИО ВЫКЛ")
+        self.live_btn.set_label("АУДИОПОТОК: ОТКРЫТЬ")
         self.live_btn.remove_css_class("suggested-action")
         self.spectrum.reset_average()
         if self.spectrum.timer is not None:
@@ -1787,8 +2359,8 @@ class Window(Adw.ApplicationWindow):
         threading.Thread(target=work, daemon=True).start()
 
     def check_clock(self):
-        self.run_job(m.clock_check, lambda r: (self.stack.set_visible_child_name("setup"),
-                                               self.stack.get_visible_child().say(m.text_clock(r))), "Проверка такта…")
+        self.run_job(m.clock_check, lambda r: self.stack.get_visible_child().say(m.text_clock(r)),
+                     "проверяю согласование тактов ЦАП и АЦП")
 
     def toast(self, text):
         self.toasts.add_toast(Adw.Toast.new(text))
@@ -1796,6 +2368,7 @@ class Window(Adw.ApplicationWindow):
     def on_close(self, *_):
         self.stop_live()
         calib.save(self.cal)
+        preferences.save(self.ui_prefs)
         return False
 
 

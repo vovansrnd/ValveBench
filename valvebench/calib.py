@@ -1,4 +1,4 @@
-"""Независимая калибровка ЦАП L/R, АЦП L/R и внешнего аттенюатора."""
+"""Независимая калибровка ЦАП/АЦП, сохранённая отдельно для каждой физической карты."""
 from __future__ import annotations
 
 import json
@@ -9,28 +9,49 @@ PATH = os.path.expanduser("~/.config/valvebench/config.json")
 
 DEFAULTS = {
     "device": "sim",
+    "device_key": "sim",
     "fs": 96000,
     "in_map": [0, 1],
     "out_map": [0, 1],
-    "out_fs_vrms": [None, None],  # напряжение ЦАП L/R при 0 dBFS (полный синус)
-    "in_fs_vrms": [None, None],   # напряжение АЦП L/R при 0 dBFS
-    "att_db": 0.0,                # общий внешний аттенюатор DAC→DUT, ≤0 dB
+    "out_fs_vrms": [None, None],
+    "in_fs_vrms": [None, None],
+    "att_db": 0.0,
     "mains": 50.0,
     "band_hi": 20000.0,
+    "frequency_response_profiles": {},
+    "noise_floor_profiles": {},
+    "auto_apply_response": True,
+    "auto_show_noise_floor": True,
 }
+
+PROFILE_KEYS = (
+    "in_map", "out_map", "out_fs_vrms", "in_fs_vrms", "att_db", "mains", "band_hi",
+    "frequency_response_profiles", "noise_floor_profiles",
+)
+
+
+def _copy_value(value):
+    if isinstance(value, dict):
+        return {str(k): _copy_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_copy_value(v) for v in value]
+    if isinstance(value, tuple):
+        return [_copy_value(v) for v in value]
+    return value
 
 
 class Calibration:
     def __init__(self, data=None):
-        self.d = {k: (list(v) if isinstance(v, list) else v) for k, v in DEFAULTS.items()}
-        if data:
-            for k in DEFAULTS:
-                if k in data:
-                    value = data[k]
-                    # Совместимость с ранним config.json, где ЦАП калибровался одним числом.
-                    if k == "out_fs_vrms" and isinstance(value, (int, float)):
-                        value = [float(value), float(value)]
-                    self.d[k] = value
+        data = data or {}
+        self.d = {k: _copy_value(v) for k, v in DEFAULTS.items()}
+        for key in DEFAULTS:
+            if key in data:
+                value = data[key]
+                if key == "out_fs_vrms" and isinstance(value, (int, float)):
+                    value = [float(value), float(value)]
+                self.d[key] = _copy_value(value)
+        self._profiles = _copy_value(data.get("device_profiles", {}))
+        self._active_profile_key = str(data.get("active_device_key") or self.d.get("device_key") or "sim")
         for key in ("out_fs_vrms", "in_fs_vrms"):
             value = self.d.get(key)
             if not isinstance(value, (list, tuple)):
@@ -40,6 +61,51 @@ class Calibration:
                 while len(vals) < 2:
                     vals.append(None)
                 self.d[key] = vals
+        if not isinstance(self.d.get("frequency_response_profiles"), dict):
+            self.d["frequency_response_profiles"] = {}
+        if not isinstance(self.d.get("noise_floor_profiles"), dict):
+            self.d["noise_floor_profiles"] = {}
+        # Load a saved per-device profile, if the persisted active key is known.
+        saved = self._profiles.get(self._active_profile_key)
+        if isinstance(saved, dict):
+            self._apply_profile(saved)
+
+    def _profile_snapshot(self):
+        return {key: _copy_value(self.d[key]) for key in PROFILE_KEYS}
+
+    def _apply_profile(self, profile):
+        for key in PROFILE_KEYS:
+            if key in profile:
+                self.d[key] = _copy_value(profile[key])
+
+    def activate_profile(self, device_key, device_hw=None):
+        """Switch active per-card calibration; cards never share voltage/FR data."""
+        key = str(device_key or "sim")
+        old_key = self._active_profile_key
+        if old_key:
+            self._profiles[old_key] = self._profile_snapshot()
+        if key in self._profiles and isinstance(self._profiles[key], dict):
+            self._apply_profile(self._profiles[key])
+        else:
+            # A legacy config without a profile belongs to its previously selected
+            # ALSA endpoint only. Migrate it once; do not copy it to other cards.
+            same_legacy_endpoint = (not self._profiles and
+                                    str(self.d.get("device", "sim")) == str(device_hw or "sim"))
+            if not same_legacy_endpoint:
+                fresh = {k: _copy_value(DEFAULTS[k]) for k in PROFILE_KEYS}
+                self._apply_profile(fresh)
+            self._profiles[key] = self._profile_snapshot()
+        self._active_profile_key = key
+        self.d["device_key"] = key
+        if device_hw is not None:
+            self.d["device"] = str(device_hw)
+
+    def serialize(self):
+        self._profiles[self._active_profile_key] = self._profile_snapshot()
+        data = _copy_value(self.d)
+        data["device_profiles"] = _copy_value(self._profiles)
+        data["active_device_key"] = self._active_profile_key
+        return data
 
     def __getitem__(self, k):
         return self.d[k]
@@ -47,12 +113,13 @@ class Calibration:
     def __setitem__(self, k, v):
         self.d[k] = v
 
+    def get(self, k, default=None):
+        return self.d.get(k, default)
+
     def out_full_scale_vrms(self, ch):
         return self.d["out_fs_vrms"][int(ch)]
 
-    # ---- физические напряжения
     def out_v(self, dbfs, ch=0):
-        """В RMS на выходе ЦАП для синуса dbfs и выбранного канала."""
         v = self.out_full_scale_vrms(ch)
         return None if v is None else float(v) * 10 ** (float(dbfs) / 20)
 
@@ -70,12 +137,10 @@ class Calibration:
             return None
         return 20 * math.log10(vo / vi)
 
-    # ---- калибровка по измерениям
     def set_out_from_meter(self, gen_dbfs, vrms, ch=0):
         self.d["out_fs_vrms"][int(ch)] = float(vrms) / 10 ** (float(gen_dbfs) / 20)
 
     def set_in_from_loop(self, gen_dbfs, rec_dbfs, ch):
-        """Петля DAC→ADC без внешнего аттенюатора: входное напряжение = выходному."""
         v = self.out_v(gen_dbfs, ch)
         if v is None:
             raise ValueError(f"сначала откалибруй выход ЦАП {('L','R')[int(ch)]}")
@@ -97,11 +162,14 @@ def load():
     try:
         with open(PATH, encoding="utf-8") as f:
             return Calibration(json.load(f))
-    except (OSError, ValueError):
+    except (OSError, ValueError, TypeError):
         return Calibration()
 
 
 def save(cal):
     os.makedirs(os.path.dirname(PATH), exist_ok=True)
-    with open(PATH, "w", encoding="utf-8") as f:
-        json.dump(cal.d, f, ensure_ascii=False, indent=1)
+    tmp = PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(cal.serialize(), f, ensure_ascii=False, indent=1)
+        f.write("\n")
+    os.replace(tmp, PATH)

@@ -98,14 +98,18 @@ class Plot(Gtk.DrawingArea):
         self.traces = []
         for t in traces:
             x = np.asarray(t["x"], dtype=float)
-            y = np.asarray(t["y"], dtype=float)
+            y = np.asarray(t["y"], dtype=float).copy()
+            # Exact zero is important in deviation plots: remove floating-point
+            # residue from subtraction/interpolation before rendering or cursor labels.
+            y[np.abs(y) < 1e-8] = 0.0
             ok = np.isfinite(x) & np.isfinite(y)
             if self.xlog:
                 ok &= x > 0
             c = t.get("color", "L")
             self.traces.append({"x": x[ok], "y": y[ok], "label": t.get("label", ""),
                                 "color": COLORS[c] if isinstance(c, str) else c,
-                                "dash": t.get("dash", False), "width": t.get("width", 1.6)})
+                                "dash": t.get("dash", False), "width": t.get("width", 1.6),
+                                "marker": t.get("marker", False)})
         self.queue_draw()
 
     def autoscale_y(self, pad=0.08, min_span=1.0):
@@ -154,19 +158,25 @@ class Plot(Gtk.DrawingArea):
         # At ordinary desktop sizes use 10 dB subdivisions for a spectrum;
         # the former coarse grid made a 160 dB range show only a few labels.
         step = _nice_step(yhi - ylo, target=max(8, min(24, int(ph / 24))))
-        v = math.ceil(ylo / step) * step
-        while v <= yhi + 1e-9:
+        first_tick = math.ceil(ylo / step - 1e-10)
+        last_tick = math.floor(yhi / step + 1e-10)
+        decimals = max(0, min(6, int(math.ceil(-math.log10(step))) if step < 1 else 0))
+        for tick_index in range(first_tick, last_tick + 1):
+            # Calculate each tick from its integer index; repeated float addition
+            # used to turn the mathematical zero into labels such as 7.5e-16.
+            v = round(tick_index * step, decimals + 2)
+            if abs(v) < max(1e-12, abs(step) * 1e-9):
+                v = 0.0
             y = ty(v)
             rgba(0.13)
             cr.move_to(ml, y); cr.line_to(ml + pw, y); cr.stroke()
             rgba(0.75)
-            lab = f"{v:g}"
+            lab = "0" if v == 0.0 else (f"{v:.{decimals}f}" if decimals else f"{v:.0f}")
             ext = cr.text_extents(lab)
             cr.move_to(ml - 6 - ext.x_advance, y + fs * 0.35); cr.show_text(lab)
             if self.right_y_axis:
                 cr.move_to(ml + pw + 9.0, y + fs * 0.35)
                 cr.show_text(lab)
-            v += step
         if self.xlog:
             xs = []
             d = 10 ** math.floor(math.log10(self.xlim[0]))
@@ -247,6 +257,16 @@ class Plot(Gtk.DrawingArea):
                 px, py = self._tx(x[i], ml, pw), ty(float(np.clip(y[i], ylo - 1e4, yhi + 1e4)))
                 (cr.move_to if i == 0 else cr.line_to)(px, py)
             cr.stroke()
+            if t.get("marker"):
+                # Filled markers keep sparse measurements (e.g. three crosstalk
+                # frequencies) visible instead of relying on a thin connecting line.
+                cr.set_dash([])
+                cr.set_source_rgba(*t["color"], 1.0)
+                for xv, yv in zip(x, y):
+                    px = self._tx(float(xv), ml, pw)
+                    py = ty(float(np.clip(yv, ylo - 1e4, yhi + 1e4)))
+                    cr.arc(px, py, 5.8, 0, 2 * math.pi)
+                    cr.fill()
         cr.restore()
         cr.set_dash([])
 
@@ -278,7 +298,10 @@ class Plot(Gtk.DrawingArea):
             parts = [f"{xv:.4g} {unit}"]
             for t in self.traces:
                 if t["x"].size > 1 and t["x"][0] <= xv <= t["x"][-1] and t["label"]:
-                    parts.append(f"{t['label']} {float(np.interp(xv, t['x'], t['y'])):.1f}")
+                    value = float(np.interp(xv, t['x'], t['y']))
+                    if abs(value) < 1e-9:
+                        value = 0.0
+                    parts.append(f"{t['label']} {value:.1f}")
             rgba(0.95)
             cr.move_to(ml + 8, mt + ph - 8); cr.show_text("   ".join(parts))
 

@@ -333,7 +333,7 @@ def noise_transfer_capture(source, rec, fs, f_lo=20.0, f_hi=20000.0, iec=False,
 
 
 def noise_response(rig, seconds=10.0, kind="pink", level_dbfs=-24.0, f_lo=20.0, f_hi=20000.0,
-                   iec=False, seed=12345):
+                   iec=False, seed=12345, response_calibration=None):
     """Измерение передаточной функции шумовым сигналом (H1 + coherence).
 
     Это не просто RTA выхода: известный цифровой сигнал сопоставляется с записью.
@@ -370,14 +370,27 @@ def noise_response(rig, seconds=10.0, kind="pink", level_dbfs=-24.0, f_lo=20.0, 
     for name, r in out["ch"].items():
         if r["valid_fraction_coh_0_8"] < 0.8:
             warns.append(f"{name}: coherence ниже 0.8 на значительной части полосы; проверьте уровень, шум и перегрузку")
+    if response_calibration is not None:
+        apply_response_calibration(out, response_calibration)
     return out
 
 
 def text_noise_response(res):
     title = {"white": "белый шум", "pink": "розовый шум", "riaa": "шум с inverse-RIAA"}.get(res["mode"], res["mode"])
-    lines = [f"Шумовая АЧХ / H1: {title}; {res['seconds']:.1f} с; генератор {res['signal']['actual_rms_dbfs']:.1f} dBFS RMS",
+    sig = res["signal"]
+    view = int(res.get("display_view", 1))
+    if view == 0:
+        value_key, heading = "riaa_dev_db", "Отклонение от RIAA, дБ"
+    elif view == 2:
+        value_key, heading = "coherence", "Когерентность"
+    else:
+        value_key, heading = "fr_norm_db", "АЧХ, нормированная на 1 кГц, дБ"
+    lines = [f"Шумовая АЧХ / H1: {title}; {res['seconds']:.1f} с; "
+             f"запрошено {sig.get('requested_rms_dbfs', res['level_dbfs']):.1f} dBFS RMS, "
+             f"фактически {sig['actual_rms_dbfs']:.1f} dBFS RMS; пик {sig['peak_dbfs']:.1f} dBFS",
              f"Разрешение Welch: {res['ch']['L']['freq'][1] - res['ch']['L']['freq'][0]:.3f} Гц; сегмент {res['ch']['L']['nperseg']} отсчётов",
-             "Частота, Гц | L откл. RIAA, дБ | R откл. RIAA, дБ | coherence L/R"]
+             heading,
+             f"{'Гц':>8s} | {'L':>9s} | {'R':>9s} | {'coh L/R':>9s}"]
     f = res["ch"]["L"]["freq"]
     rows = []
     for fq in (20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 315, 500, 1000, 2000,
@@ -386,12 +399,15 @@ def text_noise_response(res):
             continue
         i = int(np.argmin(np.abs(f - fq)))
         l, r = res["ch"]["L"], res["ch"]["R"]
-        rows.append(f"{f[i]:9.1f} | {l['riaa_dev_db'][i]:+9.2f} | {r['riaa_dev_db'][i]:+9.2f} | {l['coherence'][i]:.2f}/{r['coherence'][i]:.2f}")
+        rows.append(f"{f[i]:8.1f} | {l[value_key][i]:+9.2f} | {r[value_key][i]:+9.2f} | "
+                    f"{l['coherence'][i]:.2f}/{r['coherence'][i]:.2f}")
     lines.extend(rows)
-    lines += ["", res["calibration_note"], f"Совмещение сигнала: {res['alignment_samples']} отсчётов"]
-    if res["signal"]["peak_limited"]:
-        lines.append("! RMS тестового шума снижен для удержания пика ниже -3 dBFS")
+    lines += ["", "Калибровка тракта: " + str(res.get("calibration_note", "не применялась")),
+              f"Совмещение сигнала: {res['alignment_samples']} отсчётов"]
+    if sig["peak_limited"]:
+        lines.append("! RMS тестового шума снижен для удержания пика ниже −3 dBFS")
     return "\n".join(lines + [f"! {w}" for w in res["warnings"]])
+
 
 # -------------------------------------------------------------------------- шум
 
@@ -454,7 +470,7 @@ def text_crosstalk(res):
 
 
 def sweep(rig, f_lo=20.0, f_hi=20000.0, dur=8.0, level_1k_dbfs=-20.0, mode="riaa", iec=False,
-          nharm=5):
+          nharm=5, response_calibration=None):
     """АЧХ, фаза и THD(f) по гармоникам за один проход (экспоненциальный свип, Фарина).
 
     mode='flat'  — постоянный уровень на входе DUT;
@@ -479,7 +495,7 @@ def sweep(rig, f_lo=20.0, f_hi=20000.0, dur=8.0, level_1k_dbfs=-20.0, mode="riaa
     warns += list(rig.be.notes)
     if float(np.max(np.abs(rec))) >= 0.98:
         warns.append("ПЕРЕГРУЗКА ВХОДА АЦП во время свипа — результат недостоверен")
-    out = {"kind": "sweep", "mode": mode, "iec": iec, "level_1k_dbfs": dsp.db20(a1),
+    out = {"kind": "sweep", "fs": int(rig.fs), "mode": mode, "iec": iec, "level_1k_dbfs": dsp.db20(a1),
            "f_lo": f_lo, "f_hi": f_hi, "dur": dur, "warnings": warns, "ch": {}}
     for c in (0, 1):
         r = dsp.analyze_sweep(rec[:, c], spec, f_lo=f_lo, f_hi=f_hi, nharm=nharm,
@@ -487,25 +503,173 @@ def sweep(rig, f_lo=20.0, f_hi=20000.0, dur=8.0, level_1k_dbfs=-20.0, mode="riaa
         f = r["freq"]
         i1k = int(np.argmin(np.abs(f - 1000.0)))
         norm = r["fr_db"] - r["fr_db"][i1k]
+        norm[np.abs(norm) < 1e-9] = 0.0
         r["fr_norm_db"] = norm
-        r["riaa_dev_db"] = norm - dsp.riaa_playback_db(f, iec)
+        r["riaa_curve_db"] = dsp.riaa_playback_db(f, iec)
+        riaa_dev = norm - r["riaa_curve_db"]
+        riaa_dev[np.abs(riaa_dev) < 1e-9] = 0.0
+        r["riaa_dev_db"] = riaa_dev
         ci, co = rig.cal["in_fs_vrms"][c], rig.cal.out_full_scale_vrms(c)
         r["gain_1k_db"] = (r["fr_db"][i1k] + 20 * math.log10(ci / (co * 10 ** (rig.cal["att_db"] / 20)))
                            if ci and co else None)
         r["phase_deg"] = np.degrees(r["phase"])
         out["ch"][CH[c]] = r
+    if response_calibration is not None:
+        apply_response_calibration(out, response_calibration)
     return out
+
+
+def build_response_calibration(result, device_key, mixer_fingerprint=None, fs=None):
+    """Build a per-card/per-rate FR correction from a flat direct DAC→ADC sweep."""
+    if result.get("kind") != "sweep" or result.get("mode") != "flat":
+        raise MeasureError("калибровка АЧХ карты требует плоского свипа прямой петли")
+    channels = {}
+    for name in CH:
+        r = result.get("ch", {}).get(name)
+        if not r:
+            raise MeasureError(f"нет данных канала {name} в калибровочной петле")
+        freq = np.asarray(r.get("freq", []), dtype=float)
+        fr = np.asarray(r.get("fr_norm_db", []), dtype=float)
+        phase = np.asarray(r.get("phase_deg", []), dtype=float)
+        absolute = np.asarray(r.get("fr_db", []), dtype=float)
+        if freq.size < 50 or fr.size != freq.size or phase.size != freq.size or absolute.size != freq.size:
+            raise MeasureError(f"неполная калибровочная кривая {name}")
+        valid = np.isfinite(freq) & np.isfinite(fr) & np.isfinite(phase) & np.isfinite(absolute) & (freq > 0)
+        if np.count_nonzero(valid) < 50:
+            raise MeasureError(f"недостаточно достоверных точек калибровки {name}")
+        # A disconnected loop can still produce a mathematically shaped curve
+        # from noise. The calibration is explicitly a direct DAC→ADC cable loop,
+        # so a transfer below -35 dB at 1 kHz is not accepted as a real path.
+        # This leaves ample margin for card gain differences while rejecting
+        # open/weak/noise-only captures that can otherwise look smooth.
+        level_1k = float(np.interp(1000.0, freq[valid], absolute[valid]))
+        if not (-35.0 <= level_1k <= 20.0):
+            raise MeasureError(
+                f"{name}: петля не подтверждена — передача на 1 кГц {level_1k:.1f} дБ; "
+                "проверь L→L/R→R и повтори калибровку"
+            )
+        channels[name] = {
+            "frequency_hz": freq[valid].tolist(),
+            "fr_norm_db": fr[valid].tolist(),
+            "phase_deg": phase[valid].tolist(),
+        }
+    if any("ПЕРЕГРУЗКА" in str(w).upper() for w in result.get("warnings", [])):
+        raise MeasureError("петля перегрузила АЦП; профиль АЧХ не сохранён")
+    return {
+        "kind": "frequency_response_calibration", "schema": 1,
+        "created": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "device_key": str(device_key), "fs": int(fs or result.get("fs", 0) or 0),
+        "f_lo": float(result["f_lo"]), "f_hi": float(result["f_hi"]),
+        "mixer_fingerprint": mixer_fingerprint, "channels": channels,
+        "source": "flat DAC→ADC loopback sweep; curves normalized at 1 kHz",
+    }
+
+
+def apply_response_calibration(result, profile):
+    """Remove the measured per-channel DAC/ADC loop response from FR/phase/THD(f)."""
+    if not isinstance(profile, dict) or profile.get("kind") != "frequency_response_calibration":
+        raise MeasureError("неверный профиль частотной калибровки")
+    warnings = result.setdefault("warnings", [])
+    for name in CH:
+        r = result.get("ch", {}).get(name)
+        p = profile.get("channels", {}).get(name)
+        if not r or not p:
+            continue
+        pf = np.asarray(p.get("frequency_hz", []), dtype=float)
+        pfr = np.asarray(p.get("fr_norm_db", []), dtype=float)
+        pph = np.asarray(p.get("phase_deg", []), dtype=float)
+        f = np.asarray(r.get("freq", []), dtype=float)
+        if pf.size < 2 or pfr.size != pf.size or f.size == 0:
+            warnings.append(f"{name}: профиль АЧХ неполон; канал показан без коррекции")
+            continue
+        # Interpolate on log-frequency; never extrapolate beyond the calibrated band.
+        pf_log = np.log10(pf)
+        valid = (f >= pf[0]) & (f <= pf[-1]) & (f > 0)
+        if np.count_nonzero(valid) < 2:
+            warnings.append(f"{name}: частоты вне диапазона калибровки {pf[0]:.0f}–{pf[-1]:.0f} Гц")
+            continue
+        cal_db = np.interp(np.log10(f[valid]), pf_log, pfr)
+        cal_1k = float(np.interp(3.0, pf_log, pfr))
+        correction = cal_db - cal_1k
+        fr = np.asarray(r.get("fr_norm_db", []), dtype=float).copy()
+        fr[valid] -= correction
+        # Set exact numerical zero at the normalization anchor, avoiding tiny residues such as 7e-16.
+        i1k = int(np.argmin(np.abs(f - 1000.0)))
+        if f.size and abs(f[i1k] - 1000.0) <= max(2.0, 0.01 * 1000.0):
+            fr -= fr[i1k]
+        fr[np.abs(fr) < 1e-9] = 0.0
+        r["fr_norm_db"] = fr
+        if "riaa_dev_db" in r:
+            target_curve = np.asarray(
+                r.get("riaa_curve_db", dsp.riaa_playback_db(f, bool(result.get("iec", False)))),
+                dtype=float)
+            dev = fr - target_curve
+            dev[np.abs(dev) < 1e-9] = 0.0
+            r["riaa_dev_db"] = dev
+        # All sweep and H1 curves carry the target curve separately when available.
+        if "phase_deg" in r and pph.size == pf.size:
+            phase = np.asarray(r["phase_deg"], dtype=float).copy()
+            pphase = np.interp(np.log10(f[valid]), pf_log, pph)
+            phase[valid] -= pphase
+            i1k = int(np.argmin(np.abs(f - 1000.0)))
+            phase -= phase[i1k]
+            r["phase_deg"] = phase
+        # Correct harmonic response ratios by calibration response at f and k·f.
+        h_db = r.get("h_db")
+        if isinstance(h_db, dict) and h_db:
+            powers = []
+            for harmonic, values in h_db.items():
+                try:
+                    order = int(harmonic)
+                except (TypeError, ValueError):
+                    continue
+                values = np.asarray(values, dtype=float).copy()
+                thd_f = np.asarray(r.get("thd_freq", []), dtype=float)
+                harm_f = thd_f * order
+                if values.size != thd_f.size:
+                    h_db[harmonic] = values
+                    continue
+                mask = (thd_f >= pf[0]) & (thd_f <= pf[-1]) & (harm_f >= pf[0]) & (harm_f <= pf[-1]) & (thd_f > 0)
+                if np.any(mask):
+                    base_c = np.interp(np.log10(thd_f[mask]), pf_log, pfr)
+                    harm_c = np.interp(np.log10(harm_f[mask]), pf_log, pfr)
+                    values[mask] += base_c - harm_c
+                h_db[harmonic] = values
+                powers.append(10.0 ** (values / 10.0))
+            if powers:
+                total_power = np.nansum(np.stack(powers), axis=0)
+                r["thd_db"] = 10.0 * np.log10(np.maximum(total_power, 1e-30))
+                r["thd_pct"] = 100.0 * np.sqrt(total_power)
+        r["response_calibration_applied"] = True
+    result["response_calibration"] = {
+        "applied": True, "device_key": profile.get("device_key"),
+        "fs": profile.get("fs"), "created": profile.get("created"),
+        "range_hz": [profile.get("f_lo"), profile.get("f_hi")],
+    }
+    result["calibration_note"] = "АЧХ/фаза скорректированы по сохранённой петле этой карты; вне полосы профиля коррекция не экстраполируется."
+    return result
 
 
 def text_sweep(res):
     ref = "RIAA+IEC" if res["iec"] else "RIAA"
+    is_riaa = res["mode"] == "riaa"
     L = [f"АЧХ и THD(f), свип {res['dur']:.0f} с, генератор: "
-         + (f"inverse-{ref}" if res["mode"] == "riaa" else "плоский")
+         + (f"inverse-{ref}" if is_riaa else "плоский")
          + f", {res['level_1k_dbfs']:.1f} dBFS @1 кГц"]
+    if res.get("calibration_note"):
+        L.append("Калибровка тракта: " + str(res["calibration_note"]))
+    elif res.get("response_calibration", {}).get("applied"):
+        L.append("Калибровка тракта: коррекция АЧХ/фазы применена")
+    else:
+        L.append("Калибровка тракта: не применена — показано измерение ЦАП + DUT + АЦП")
     for c, r in res["ch"].items():
         if r["gain_1k_db"] is not None:
             L.append(f"[{c}] усиление на 1 кГц: {r['gain_1k_db']:+.2f} дБ")
-    L.append(f"\nОтклонение от {ref}, дБ")
+    if is_riaa:
+        values_key, heading = "riaa_dev_db", f"Отклонение от {ref}, дБ"
+    else:
+        values_key, heading = "fr_norm_db", "АЧХ, нормированная на 1 кГц, дБ"
+    L.append("\n" + heading)
     L.append(f"{'Гц':>8s}{'L':>9s}{'R':>9s}{'L−R':>9s}  {'THD L %':>10s}{'THD R %':>10s}")
     f = res["ch"]["L"]["freq"]
     tf = res["ch"]["L"]["thd_freq"]
@@ -514,12 +678,16 @@ def text_sweep(res):
             continue
         i = int(np.argmin(np.abs(f - fq)))
         j = int(np.argmin(np.abs(tf - fq)))
-        dl, dr = res["ch"]["L"]["riaa_dev_db"][i], res["ch"]["R"]["riaa_dev_db"][i]
+        dl, dr = res["ch"]["L"][values_key][i], res["ch"]["R"][values_key][i]
         tl, tr = res['ch']['L']['thd_pct'][j], res['ch']['R']['thd_pct'][j]
-        fm = lambda v: f"{v:10.5f}" if np.isfinite(v) else f"{'—':>10s}"
+        fm = lambda v: (f"{0.0:10.5f}" if abs(float(v)) < 1e-9 else f"{v:10.5f}") if np.isfinite(v) else f"{'—':>10s}"
         L.append(f"{fq:8d}{dl:9.2f}{dr:9.2f}{dl - dr:9.2f}  {fm(tl)}{fm(tr)}")
-    d = np.array([[np.nanmax(np.abs(res['ch'][c]['riaa_dev_db'])) for c in CH]]).max()
-    L.append(f"\nмакс. |отклонение| в полосе: {d:.2f} дБ")
+    if is_riaa:
+        d = max(float(np.nanmax(np.abs(res['ch'][c]['riaa_dev_db']))) for c in CH)
+        L.append(f"\nмакс. |отклонение от {ref}| в полосе: {d:.2f} дБ")
+    else:
+        delta = np.asarray(res['ch']['L']['fr_norm_db']) - np.asarray(res['ch']['R']['fr_norm_db'])
+        L.append(f"\nмакс. |разница L−R| в полосе: {float(np.nanmax(np.abs(delta))):.2f} дБ")
     return "\n".join(L + [f"! {w}" for w in res["warnings"]])
 
 

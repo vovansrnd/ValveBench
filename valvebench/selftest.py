@@ -3,19 +3,21 @@ from __future__ import annotations
 
 import math
 import time
+import hashlib
 import tempfile
 import json
 from pathlib import Path
 import numpy as np
 
-from . import dsp, gainmatch, scans, looptest, passport, steady, store
+from . import dsp, gainmatch, scans, looptest, passport, steady, store, preferences
 from . import pcm as pcm_mod
 from . import io_health as io_health_mod
 from .pcm import to_pcm
-from .backend import SimBackend, SimChannel, AltSet
+from .backend import SimBackend, SimChannel, AltSet, usb_profile_identity
 from . import backend as backend_module
 from .calib import Calibration
-from .measure import Rig, sweep, noise_response, noise_transfer_capture
+from .measure import (Rig, sweep, noise_response, noise_transfer_capture,
+                      build_response_calibration, apply_response_calibration)
 from .vinyl import analyze_3150_stability, analyze_vta_sum, analyze_frequency_response, analyze_phase, analyze_crosstalk
 
 
@@ -89,6 +91,61 @@ def run_selftest():
     dev = max(float(np.nanmax(np.abs(sr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))
     check("Sweep inverse-RIAA через SimBackend", dev < 0.45,
           f"максимальное отклонение={dev:.3f} dB; критерий <0.45 dB")
+
+    # Per-card full-band response calibration: the loop profile contains separate
+    # L/R magnitude and phase curves. Applying it must remove the soundcard curve
+    # while retaining the synthetic DUT response.
+    fcal = np.geomspace(20.0, 20000.0, 256)
+    log_ratio = np.log10(fcal / 1000.0)
+    card_l, card_r = 0.35 * log_ratio, -0.22 * log_ratio
+    dut_l, dut_r = 0.12 * log_ratio, -0.08 * log_ratio
+    ph_l, ph_r = 8.0 * log_ratio, -5.0 * log_ratio
+    dut_ph_l, dut_ph_r = 0.6 * log_ratio, -0.4 * log_ratio
+    loop_result = {"kind": "sweep", "mode": "flat", "fs": fs, "f_lo": 20.0, "f_hi": 20000.0,
+                   "warnings": [], "ch": {
+                       "L": {"freq": fcal, "fr_db": np.zeros_like(fcal), "fr_norm_db": card_l, "phase_deg": ph_l},
+                       "R": {"freq": fcal, "fr_db": np.zeros_like(fcal), "fr_norm_db": card_r, "phase_deg": ph_r}}}
+    fr_profile = build_response_calibration(loop_result, "sim-card", "mixer-A", fs=fs)
+    no_loop = {"kind": "sweep", "mode": "flat", "fs": fs, "f_lo": 20.0, "f_hi": 20000.0,
+               "warnings": [], "ch": {}}
+    for ch in ("L", "R"):
+        no_loop["ch"][ch] = {"freq": fcal, "fr_db": np.full_like(fcal, -90.0),
+                             "fr_norm_db": np.zeros_like(fcal), "phase_deg": np.zeros_like(fcal)}
+    try:
+        build_response_calibration(no_loop, "sim-card", "mixer-A", fs=fs)
+        rejected_no_loop = False
+    except (ValueError, RuntimeError):
+        rejected_no_loop = True
+    check("Soundcard response calibration refuses an open/no-signal loopback",
+          rejected_no_loop, "no loop signal at 1 kHz must not become a saved correction")
+    measured_fr = {"kind": "sweep", "fs": fs, "iec": False, "warnings": [], "ch": {}}
+    for channel, card_curve, dut_curve, card_phase in (("L", card_l, dut_l, ph_l), ("R", card_r, dut_r, ph_r)):
+        measured_fr["ch"][channel] = {"freq": fcal.copy(),
+                                      "fr_norm_db": card_curve + dut_curve,
+                                      "phase_deg": card_phase + (dut_ph_l if channel == "L" else dut_ph_r),
+                                      "riaa_curve_db": dsp.riaa_playback_db(fcal)}
+    apply_response_calibration(measured_fr, fr_profile)
+    cal_fr_err = max(float(np.max(np.abs(measured_fr["ch"][ch]["fr_norm_db"] - dut)))
+                     for ch, dut in (("L", dut_l), ("R", dut_r)))
+    cal_phase_err = max(float(np.max(np.abs(measured_fr["ch"][ch]["phase_deg"] - (dut_ph_l if ch == "L" else dut_ph_r))))
+                        for ch in ("L", "R"))
+    check("Soundcard FR calibration removes separate L/R loop curves but preserves DUT response",
+          cal_fr_err < 1e-9 and cal_phase_err < 0.005 and measured_fr["response_calibration"]["applied"],
+          f"max FR error={cal_fr_err:.2e} dB; phase residual={cal_phase_err:.2e} deg; saved Fs={fr_profile['fs']}")
+
+    # Device profiles must remain isolated across card selection and serialization.
+    cal_profiles = Calibration()
+    cal_profiles.activate_profile("usb:aaa:port=1-1:pcm0", "hw:2,0")
+    cal_profiles["out_fs_vrms"] = [2.0, 2.1]
+    cal_profiles["frequency_response_profiles"] = {"192000": {"device_key": "card-A"}}
+    cal_profiles.activate_profile("usb:bbb:port=1-2:pcm0", "hw:3,0")
+    cal_profiles["out_fs_vrms"] = [1.0, 1.1]
+    cal_profiles.activate_profile("usb:aaa:port=1-1:pcm0", "hw:2,0")
+    restored_cal = Calibration(cal_profiles.serialize())
+    check("Per-device calibration profiles survive switching and serialization",
+          restored_cal["out_fs_vrms"] == [2.0, 2.1]
+          and "192000" in restored_cal["frequency_response_profiles"],
+          f"active card A DAC fullscale={restored_cal['out_fs_vrms']}; response profiles={list(restored_cal['frequency_response_profiles'])}")
 
     nr = noise_response(rig, seconds=4, kind="pink", level_dbfs=-42, f_lo=30, f_hi=16000)
     ndev = max(float(np.nanmax(np.abs(nr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))
@@ -857,6 +914,54 @@ def run_selftest():
           f"симметричный случай: right_unverified={on_s['right_channel_unverified']}")
     check("P1: onset симметричен для раннего/позднего старта; граница поиска и отсутствие тона дают None",
           ok_all, " | ".join(det))
+
+    # UI preference migration is one-time: update only old defaults, preserve user choices.
+    h = lambda title: "pref_" + hashlib.sha1(str(title).encode("utf-8")).hexdigest()[:12]
+    old_ui = {
+        "resp/" + h("Показывать"): 0,
+        "resp/" + h("Генератор"): 0,
+        "resp/" + h("Уровень @1 кГц, dBFS"): -20.0,
+        "imd/" + h("Пик суммы, dBFS"): -12.0,
+        "noise_response/" + h("График"): 0,
+        "live/" + h("Уровень генератора, dBFS"): -20.0,
+        "thd/" + h("Уровень генератора, dBFS"): -12.0,
+        "live/" + h("Уровень теста, dBFS"): -30.0,
+        "noise_response/" + h("Цифровой RMS-уровень, dBFS"): -42.0,
+        "spectrum/pref_spectrum_fft": 0,
+    }
+    # Fix the helper to use the same hashlib function in a clean independent expression.
+    old_ui = {k: v for k, v in old_ui.items()}
+    # USB calibration identity survives port changes when VID:PID is unique,
+    # but remains disambiguated by port for identical serial-less cards.
+    usb_a = usb_profile_identity("0b05", "180c", "", "1-1", 1, 0)
+    usb_b = usb_profile_identity("0B05", "180C", "", "1-2", 1, 0)
+    usb_dup_a = usb_profile_identity("0b05", "180c", "", "1-1", 2, 0)
+    usb_dup_b = usb_profile_identity("0b05", "180c", "", "1-2", 2, 0)
+    check("Per-card calibration identity survives moving a unique USB card to another port",
+          usb_a == usb_b and usb_dup_a != usb_dup_b,
+          f"unique={usb_a == usb_b}; duplicate ports distinct={usb_dup_a != usb_dup_b}")
+
+    migrated_ui = preferences.migrate_0_1_16_defaults(old_ui)
+    migrated_again = preferences.migrate_0_1_16_defaults(migrated_ui)
+    check("UI migration updates RIAA/low-level defaults once and preserves user choices",
+          migrated_ui["resp/" + h("Показывать")] == 1
+          and migrated_ui["noise_response/" + h("График")] == 1
+          and migrated_ui["live/" + h("Уровень генератора, dBFS")] == -6
+          and migrated_ui["thd/" + h("Уровень генератора, dBFS")] == -12.0
+          and migrated_ui["live/" + h("Уровень теста, dBFS")] == -12
+          and migrated_ui["noise_response/" + h("Желаемый RMS-уровень шума, dBFS")] == -12.0
+          and migrated_ui["resp/" + h("Тестовый сигнал")] == 0
+          and migrated_ui["resp/" + h("Уровень генератора @1 кГц, dBFS")] == -6.0
+          and migrated_ui["imd/" + h("Пиковый уровень суммы двух тонов, dBFS")] == -6.0
+          and migrated_ui["spectrum/pref_spectrum_fft"] == 5
+          and migrated_again == migrated_ui,
+          "старые значения по умолчанию исправлены; выбранные значения и повторный запуск миграции не изменяют настройки")
+    user_ui = {"resp/" + h("Показывать"): 3, "live/" + h("Уровень генератора, dBFS"): -9.5}
+    migrated_user = preferences.migrate_0_1_16_defaults(user_ui)
+    check("UI migration does not overwrite non-default user selections",
+          migrated_user["resp/" + h("Показывать")] == 3
+          and migrated_user["live/" + h("Уровень генератора, dBFS")] == -9.5,
+          f"RIAA view={migrated_user['resp/' + h('Показывать')]}; generator={migrated_user['live/' + h('Уровень генератора, dBFS')]} dBFS")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}

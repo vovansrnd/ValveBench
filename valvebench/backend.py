@@ -14,6 +14,7 @@ snd_pcm_link. USB-карты с implicit feedback (E-MU, многие UAC2) в �
 from __future__ import annotations
 
 import os
+import glob
 import re
 import subprocess
 import threading
@@ -106,6 +107,86 @@ def list_pcm_devices():
             label = names.get(card, f"ALSA card {card}")
             result[direction].append((hw, f"{hw} — {label}, PCM {device}"))
     return result
+
+
+
+def usb_profile_identity(vid, pid, serial="", physical_port="", matching_devices=1, pcm=0):
+    """Stable USB calibration key that survives port changes when unambiguous."""
+    vid, pid = str(vid).lower(), str(pid).lower()
+    serial = str(serial or "").strip()
+    if serial:
+        identity = f"usb:{vid}:{pid}:serial={serial}"
+    elif int(matching_devices) <= 1:
+        identity = f"usb:{vid}:{pid}"
+    else:
+        identity = f"usb:{vid}:{pid}:port={physical_port}"
+    return f"{identity}:pcm{int(pcm)}"
+
+def stable_device_identity(hw):
+    """Stable physical identity for an ALSA hw:C,D endpoint.
+
+    Prefer USB serial. Without a serial, use VID:PID when that device is unique;
+    use the physical USB port only to distinguish two identical connected cards.
+    PCI devices use their sysfs address. Never use the volatile ALSA card number.
+    """
+    value = str(hw or "sim")
+    if value == "sim":
+        return "sim"
+    match = re.fullmatch(r"hw:(\d+)(?:,(\d+))?", value)
+    if not match:
+        return value
+    card, pcm = int(match.group(1)), int(match.group(2) or 0)
+    base = f"/sys/class/sound/card{card}/device"
+    try:
+        current = os.path.realpath(base)
+    except OSError:
+        current = ""
+    node = current
+    while node and node != "/":
+        try:
+            names = set(os.listdir(node))
+        except OSError:
+            names = set()
+        if {"idVendor", "idProduct"}.issubset(names):
+            def read(name):
+                try:
+                    return open(os.path.join(node, name), encoding="utf-8").read().strip()
+                except OSError:
+                    return ""
+            vid, pid = read("idVendor"), read("idProduct")
+            serial = read("serial")
+            physical = os.path.basename(node)
+            matches = set()
+            if not serial:
+                # Most audio cards have a unique VID:PID. In that common case
+                # keep calibration when moved to another USB socket. If two
+                # identical serial-less devices are connected, retain port ID.
+                for candidate in glob.glob("/sys/bus/usb/devices/*"):
+                    try:
+                        cvid = open(os.path.join(candidate, "idVendor"), encoding="utf-8").read().strip()
+                        cpid = open(os.path.join(candidate, "idProduct"), encoding="utf-8").read().strip()
+                        cserial = open(os.path.join(candidate, "serial"), encoding="utf-8").read().strip() if os.path.exists(os.path.join(candidate, "serial")) else ""
+                    except OSError:
+                        continue
+                    if cvid == vid and cpid == pid and not cserial:
+                        matches.add(os.path.realpath(candidate))
+            return usb_profile_identity(vid, pid, serial, physical, max(1, len(matches)), pcm)
+        if {"vendor", "device"}.issubset(names) and os.path.basename(node).startswith("0000:"):
+            def read_pci(name):
+                try:
+                    return open(os.path.join(node, name), encoding="utf-8").read().strip()
+                except OSError:
+                    return ""
+            return f"pci:{read_pci('vendor')}:{read_pci('device')}:{os.path.basename(node)}:pcm{pcm}"
+        parent = os.path.dirname(node)
+        if parent == node:
+            break
+        node = parent
+    try:
+        card_id = open(f"/proc/asound/card{card}/id", encoding="utf-8").read().strip()
+    except OSError:
+        card_id = f"card{card}"
+    return f"alsa:{card_id}:pcm{pcm}"
 
 
 def list_duplex_devices():

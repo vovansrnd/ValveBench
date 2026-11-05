@@ -145,19 +145,23 @@ DEFAULT_MATCH_TOL_DB = 0.20
 
 
 def device_key_from_hw(hw):
-    """Stable-ish ALSA identity for a local loopback reference (not card index alone)."""
-    value = str(hw or "sim")
-    if value == "sim":
-        return "sim"
-    match = re.fullmatch(r"hw:(\d+)(?:,(\d+))?", value)
-    if not match:
-        return value
-    card, pcm = int(match.group(1)), int(match.group(2) or 0)
+    """Stable physical identity; unlike hw:N, it survives ALSA card re-numbering."""
     try:
-        card_id = open(f"/proc/asound/card{card}/id", encoding="utf-8").read().strip()
-    except OSError:
-        card_id = f"card{card}"
-    return f"alsa:{card_id}:pcm{pcm}"
+        from .backend import stable_device_identity
+        return stable_device_identity(hw)
+    except Exception:
+        value = str(hw or "sim")
+        if value == "sim":
+            return "sim"
+        match = re.fullmatch(r"hw:(\d+)(?:,(\d+))?", value)
+        if not match:
+            return value
+        card, pcm = int(match.group(1)), int(match.group(2) or 0)
+        try:
+            card_id = open(f"/proc/asound/card{card}/id", encoding="utf-8").read().strip()
+        except OSError:
+            card_id = f"card{card}"
+        return f"alsa:{card_id}:pcm{pcm}"
 
 
 def _device_description(backend):
