@@ -949,7 +949,7 @@ class Window(Adw.ApplicationWindow):
         header.pack_end(self.spinner)
         header.pack_end(self.status)
         self.dev.connect("notify::selected", self.on_device_changed)
-        self.rate.connect("notify::selected", lambda *_: self.reset_rig())
+        self.rate.connect("notify::selected", self.on_rate_changed)
 
         self.stack = Gtk.Stack()
         self.live = LivePage(self)
@@ -982,6 +982,14 @@ class Window(Adw.ApplicationWindow):
         dev, _label = self.cards[self.dev.get_selected()]
         self.cal["device"] = dev
         self.reset_rig()
+        # Сохраняем выбор сразу: внешний debug-процесс должен видеть
+        # текущее устройство, даже пока GUI остаётся открытым.
+        calib.save(self.cal)
+
+    def on_rate_changed(self, *_):
+        self.reset_rig()
+        # Частота также является частью конфигурации аппаратного потока.
+        calib.save(self.cal)
 
     def on_page_changed(self, *_):
         # Не оставляем тестовый шум подаваемым, если пользователь ушёл с прибора.
