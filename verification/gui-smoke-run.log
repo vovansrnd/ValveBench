@@ -1,0 +1,23 @@
+
+(gui_smoke.py:155677): Gtk-WARNING **: 21:45:01.024: Theme directory  of theme Humanity has no size field
+
+
+(gui_smoke.py:155677): Gtk-WARNING **: 21:45:01.374: Theme directory  of theme Humanity has no size field
+
+on_activate: окно получено, конвейер запланирован
+on_activate: win = Window
+PASS  S1 блок «Генератор» на странице содержит Частоту/Уровень/Канал :: group=найден; f/lv/route внутри: True
+PASS  S2 прокрутка Live: максимум достигается; низ достижим (worst ≤ upper); верх с нуля :: max=335 (Δ0px); нижний край L/R: 1020/1020 vs upper 1355 (перелив -335px); top=0; худший LivePage
+PASS  S3 аудиотракт: rig поднят, live_running, статус содержит Аудио активно/ADC OK/DAC OK :: status='Аудио активно · Fs=192000 Гц · ADC OK (0.0 с принято) · DAC OK (0.0 с отправлено)'
+PASS  S4 генератор подан: ПОДАНО точно равно Частота/Уровень/Канал; входной метр видит тон :: vlabel='ПОДАНО: 1000 Гц · -6.0 dBFS · L + R'; ожидалось 'ПОДАНО: 1000 Гц · -6.0 dBFS · L + R'; вход L='  -9.71 dBFS RMS'
+PASS  S5 отклонение уровня −6→−20 dBFS: падение входного RMS = 14,0 ± 0,5 дБ :: было -9.71 -> стало -23.71; падение 14.0 дБ
+PASS  S6 маршрут «Только L»: правый −40 дБ и более, левый стабилен (±0,3 дБ) :: L -23.71 -> -23.71 (сдвиг 0.0 дБ); R падение 80.7 дБ
+PASS  S7 фактическая частота по захваченному сигналу = 500 ± 2 Гц :: измерено 500.0 Гц (петля ASUS)
+PASS  S7b возврат на 1000 Гц: фактическая частота подтверждена :: измерено 1000.0 Гц
+PASS  S8 все 9 страниц (окно 900x550): максимум прокрутки достигается; нижний контент достижим (верх/низ, левая/правая колонки) :: проблемных: 0 []; детали: {"spectrum": {"max_reached": true, "upper_ok": true, "bottom_left": 0, "bottom_right": 0, "upper": 0, "viewport": 0, "value_at_max": 0.0}, "thd": {"max_reached": true, "upper_ok": true, "bottom_left": 0, "bottom_right": 0, "upper": 34, "viewport": 0, "va
+
+===== GUI SMOKE v4: 9/9 PASS =====
+результаты: /opt/MyApps/Adudio/for_z/audit-steady/usb-asus/gui-smoke/gui-smoke-results.json
+
+===== GUI SMOKE v4: 9/9 PASS =====
+результаты: /opt/MyApps/Adudio/for_z/audit-steady/usb-asus/gui-smoke/gui-smoke-results.json
