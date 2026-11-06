@@ -1,17 +1,44 @@
-# ValveBench 0.1.18 — independent package verification
-
-This report covers an independently reconstructed 0.1.18 candidate from the
-uploaded 0.1.17 archive, applying the one-line UI layout restoration and the
-version bump. It does not claim to reproduce the other agent's GUI run or
-physical-device session.
+# ValveBench 0.1.18 — test report (GUI smoke + generator controls)
 
 - `python3 -m py_compile valvebench/*.py`: PASS.
-- `python3 -m valvebench --version`: `ValveBench 0.1.18`.
-- `python3 -m valvebench selftest`: **71/71 PASS**.
-- Diff from 0.1.17: exactly `valvebench/ui.py` and `valvebench/__init__.py`.
-- P0/P1 protected modules `pcm.py`, `steady.py`, and `io_health.py`: unchanged.
+- `python3 -m valvebench selftest`: **71/71 PASS** (без изменений; измерительное ядро
+  p0/p1 — pcm.py/steady.py/io_health.py — бит-в-бит идентично принятой контрольной точке).
+- **Автоматизированный GUI smoke на реальном десктопе Ubuntu (GNOME/Wayland),
+  8/8 PASS** (драйвер: audit-steady/gui_smoke.py — программное управление виджетами,
+  тот же кодовый путь, что и у пользователя; аудио на реальной карте ASUS hw:2,0):
+  1. Блок «Генератор» (Частота/Уровень/Канал) возвращён на страницу «Gain Match / Уровень»
+     и содержит все три виджета (структурная проверка по дереву виджетов).
+  2. Live-страница прокручивается целиком (page-scroll 0.1.17 жив: upper 1433 px при
+     высоте страницы 1020 px).
+  3. Аудиопоток открывается (rig поднят на hw:2,0).
+  4. «ПОДАНО» точно равно текущим Частота/Уровень/Канал; входной метр видит тон
+     (L RMS −6,76 dBFS).
+  5. Уровень генератора −6→−20 dBFS: входной RMS падает на 14,0 дБ.
+  6. Маршрут «Только L»: правый вход падает на 70,7 дБ к шумовому полу, левый держится.
+  7. Частота 1000→500 Гц применяется (строка «ПОДАНО» обновляется от движка).
+  8. Контент всех 9 страниц достижим прокруткой (0 недостижимых).
+- **GUI smoke v4 (092e0a3-линия, после ревью координатора): 9/9 PASS** — добавлены:
+  строгие состояния аудиотракта (rig + live_running + «Аудио активно/ADC OK/DAC OK»);
+  точность отклонения уровня (−6→−20 дБ = 14,0 дБ падения входного RMS, допуск ±0,5);
+  стабильность левого канала при маршруте «Только L» (сдвиг 0,00 дБ); фактическая
+  частота по захваченному сигналу петли (500,0 и 1000,0 Гц, LS-оценка по огибающей
+  FFT, ±2 Гц); достижение максимума прокрутки и видимость нижнего контента на всех
+  9 страницах (координаты в системе скроллера, левая/правая колонки раздельно).
+- **Исправление методики по ревью**: координаты нижних краёв теперь считаются через
+  translate_coordinates в систему координат СКРОЛЛЕРА (учтён scroll-offset), форма
+  возврата GTK 4.22 обрабатывается совместимо; сравнение — с upper (полнота
+  прокручиваемого диапазона) и с value+page_size (видимость при макс. прокрутке) —
+  конвенции не смешиваются. Для будущих тестов учтено: translate_coordinates
+  deprecated с GTK 4.12 → предпочтительно compute_point().
+- Предложенный координатором дефект прокрутки НЕ подтвердился: нижний край
+  контента 1020 px при upper 1355 (запас 335 px), максимум прокрутки достигается
+  (Δ ≤ 2 px). Первоначальные 1196–1357 px — ошибка измерения координат драйвера,
+  признана и исправлена.
+- Single instance: flock (схема координатора), один экземпляр приложения за прогон.
+- Ограничение: скриншоты автоматизацией не получены (gnome-screenshot зависает на
+  Wayland, Shell dbus API недоступна, import/Xvfb конфликт; noctalia
+  screenshot-fullscreen работает, но открывает интерактивный оверлей) —
+  визуальное подтверждение прикладывает пользователь (PrtSc окна 0.1.18).
 
-GTK interactive GUI and physical hardware were not independently tested in
-this environment. The separate agent-reported GUI/hardware checks are reviewed
-in the accompanying conversation, but their logs/archive were not attached
-here for independent reproduction.
+Изменён только `ui.py` (возврат блока «Генератор» в раскладку + комментарий) и версия.
+`pcm.py`/`steady.py`/`io_health.py` не изменялись. Методика Gain Match не менялась.
