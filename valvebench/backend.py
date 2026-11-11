@@ -63,6 +63,21 @@ def parse_alsa_log(text):
     return events, rest
 
 
+def xrun_suspect(kind, tail, fs, dur_ms=None):
+    """Подозрительный интервал [a, b] в кадрах кольцевого буфера для события XRUN.
+
+    capture (overrun АЦП): потерянные отсчёты в записи ОТСУТСТВУЮТ, а в позиции потери стоит
+      разрыв; позиция известна с точностью опроса/очереди pipe (запас 0.15 с назад), после
+      перезапуска потока возможен переходный процесс (0.05 с + длительность вперёд).
+    playback (underrun ЦАП): тишина в сигнале длилась ≥ dur (началась за dur до сообщения) и
+      дойдёт до захвата позже на задержку буферов воспроизведения (до ~0.6 с; берём 1.2 с)
+      плюс длительность. Неизвестная длительность считается равной 0.1 с."""
+    d = (float(dur_ms) / 1000.0) if dur_ms else 0.1
+    if kind == "capture":
+        return int(tail - 0.15 * fs), int(tail + (0.05 + d) * fs)
+    return int(tail - (0.10 + d) * fs), int(tail + (1.20 + d) * fs)
+
+
 def _set_pipe_size(fd, size):
     """Увеличить буфер pipe (Linux F_SETPIPE_SZ). Возвращает фактический размер или None."""
     try:
@@ -414,6 +429,7 @@ class AlsaCli(Backend):
         self._ring_total = 0                   # кадров записано в кольцо (растёт под _ring_lock)
         self._events = collections.deque(maxlen=512)
         self._events_lock = threading.Lock()
+        self._poll_lock = threading.Lock()     # весь цикл чтения/разбора stderr — один поток за раз
         self._live_carry = ["", ""]
         self._live_gap_max_s = 0.0
         self._live_buffers_used = None
@@ -653,7 +669,7 @@ class AlsaCli(Backend):
         frame = self.ch_in * BYTES[self.fmt_in]
         rest = b""
         last_arrival = time.monotonic()
-        med_gap = None
+        period = None            # типичный интервал между «пачками» данных (период ALSA)
         while not self._live_stop.is_set():
             b = self._live_cap.stdout.read(frame * 2048)
             if not b:
@@ -673,18 +689,19 @@ class AlsaCli(Backend):
             # Пауза прихода данных: либо хост не успевал читать (данные придут пачкой и без
             # потерь), либо устройство молчало. Само по себе потерей не считается — это
             # информационное событие; потерю подтверждают XRUN и детекторы в данных.
+            # arecord отдаёт данные ПЕРИОДАМИ (с буфером 400 мс — раз в ~100 мс), поэтому
+            # порог привязан к типичному интервалу между пачками, а не к интервалу между
+            # чтениями по 2048 кадров (так ложно срабатывало на каждом периоде).
             gap = now - last_arrival
             last_arrival = now
-            if med_gap is None:
-                med_gap = gap
-            else:
-                med_gap = 0.95 * med_gap + 0.05 * min(gap, 4.0 * med_gap + 0.01)
-            if gap > max(0.06, 6.0 * med_gap) and self._ring_total > 0:
-                self._live_gap_max_s = max(self._live_gap_max_s, gap)
-                self._add_event("capture_gap", self._ring_total, gap_ms=gap * 1e3,
-                                suspect=(self._ring_total - int(0.05 * self.fs),
-                                         self._ring_total + int(0.05 * self.fs)),
-                                fatal=False)
+            if gap >= 0.003:
+                period = gap if period is None else 0.9 * period + 0.1 * min(gap, 2.5 * period)
+                if self._ring_total > self.fs and gap > max(0.15, 3.0 * period):
+                    self._live_gap_max_s = max(self._live_gap_max_s, gap)
+                    self._add_event("capture_gap", self._ring_total, gap_ms=gap * 1e3,
+                                    suspect=(self._ring_total - int(0.05 * self.fs),
+                                             self._ring_total + int(0.05 * self.fs)),
+                                    fatal=False)
             self._live_capture_frames += n
             self._live_capture_last_progress_at = now
             with self._ring_lock:
@@ -725,6 +742,12 @@ class AlsaCli(Backend):
         лежащих в pipe, но ещё не прочитанных). Подозрительный интервал выбран с запасом:
         для overrun АЦП сообщение приходит сразу после потери, для underrun ЦАП дефект
         дойдёт до захвата только через задержку буферов воспроизведения."""
+        with self._poll_lock:
+            self._poll_logs_locked()
+
+    def _poll_logs_locked(self):
+        # Вызывается и монитором (каждые 20 мс), и live_status() из GUI: без общей блокировки
+        # два потока читали один и тот же диапазон stderr и регистрировали XRUN дважды.
         import os
         with self._events_lock:
             files = list(self._live_err_files)
@@ -756,12 +779,12 @@ class AlsaCli(Backend):
                 if idx == 0:
                     self._live_xruns_capture += 1
                     self._add_event("xrun_capture", tail,
-                                    suspect=(tail - int(0.12 * self.fs), tail + int(0.02 * self.fs)),
+                                    suspect=xrun_suspect("capture", tail, self.fs, dur),
                                     fatal=True, dur_ms=dur, text=ev["text"])
                 else:
                     self._live_xruns_playback += 1
                     self._add_event("xrun_playback", tail,
-                                    suspect=(tail - int(0.10 * self.fs), tail + int(1.20 * self.fs)),
+                                    suspect=xrun_suspect("playback", tail, self.fs, dur),
                                     fatal=True, dur_ms=dur, text=ev["text"])
 
     def live_events(self, since_frame=0):

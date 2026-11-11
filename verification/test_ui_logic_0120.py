@@ -60,10 +60,13 @@ def mk_page(front=0, vis=(True, True), show_bad=False, mode=1):
     p = ui.SpectrumPage.__new__(ui.SpectrumPage)
     p.win = FWin(); p.fft = Sel(5); p.mode = Sel(mode); p.floor = Sel(3); p.top = Sel(0); p.band = Sel(2)
     p.avg_mode = Sel(1); p.chk_l = Chk(vis[0]); p.chk_r = Chk(vis[1]); p.front = Sel(front)
-    p.chk_diff = Chk(True); p.chk_card = Chk(True); p.chk_bad = Chk(show_bad)
+    p.chk_diff = Chk(True); p.card_pos = Sel(0); p.view = Sel(0); p.chk_peaks = Chk(False); p.chk_bad = Chk(show_bad)
     p.banner = Lab(); p._banner_class = None; p.state = Lab()
-    p.plot = FPlot(); p.diff_plot = FPlot()
+    p.plot = FPlot(); p.plot_r = FPlot(); p.diff_plot = FPlot()
     p.avg_line_power = None; p.avg_bin_power = None; p.rejected = 0; p._frames_ok = 0
+    p._seen_events = set(); p.event_counts = {"L": 0, "R": 0}
+    import tempfile as _t
+    p.EVENTS_PATH = os.path.join(_t.mkdtemp(), "events.csv")      # тесты не пишут в ~/.config
     return p
 
 fs, n = 192000, 262144
@@ -126,6 +129,34 @@ p = mk_page(); p.win.be.events.append({"kind": "xrun_capture", "frame": 3*n, "t"
 p._apply(job(make()), meta)
 check("old XRUN outside the window does not reject", p.rejected == 0)
 
+# 5b. раздельный вид и положение панели
+p = mk_page(); p.view = Sel(1); p._apply(res, meta)
+check("split view: L on the main plot, R on the second plot, markers per channel",
+      [tr["label"] for tr in p.plot.traces] == ["L"] and [tr["label"] for tr in p.plot_r.traces] == ["R"]
+      and p.plot.markers and p.plot_r.markers)
+p = mk_page(); p.card_pos = Sel(2); p._apply(res, meta)
+check("card off: no overlay and no markers", p.plot.overlay is None and p.plot.markers == [])
+p = mk_page(); p.chk_peaks = Chk(True); p._apply(res, meta)
+check("peak-envelope switch selects 'both' decimation", all(tr["decim"] == "both" for tr in p.plot.traces))
+p = mk_page(mode=0); p._apply(res, meta)
+check("line-amplitude mode keeps max decimation so single tones stay visible", all(tr["decim"] == "max" for tr in p.plot.traces))
+
+# 5c. журнал событий: одно событие в перекрывающихся кадрах пишется один раз
+import tempfile as _tf
+p = mk_page(); p.EVENTS_PATH = os.path.join(_tf.mkdtemp(), "events.csv"); p._seen_events = set(); p.event_counts = {"L": 0, "R": 0}
+n_long = n + n // 4
+tl = np.arange(n_long) / fs
+def ch_long(h2):
+    return (0.3 * np.sin(2 * np.pi * 1000 * tl) + 0.3 * 10 ** (h2 / 20) * np.sin(2 * np.pi * 2000 * tl + 1)
+            + 1e-6 * rng.standard_normal(n_long))
+Xl = np.column_stack([ch_long(-86), ch_long(-71)]); Xl[100000, 0] += 2e-3
+p._apply(job(Xl[:n]), meta)
+p._apply(job(Xl[n // 4:]), dict(meta, end=meta["end"] + n // 4))      # окно сдвинулось на четверть
+lines = open(p.EVENTS_PATH, encoding="utf-8").read().strip().splitlines()
+check("event log: one 1-sample glitch seen in two overlapping frames is written once, as single_sample on L with sign/amplitude",
+      len(lines) == 2 and ",L,single_sample," in lines[1] and lines[1].split(",")[-2] == "1" and p.event_counts == {"L": 1, "R": 0},
+      " | ".join(lines))
+
 # 6. смена размера FFT между съёмом и показом — кадр игнорируется
 p = mk_page(); p.fft = Sel(4); p._apply(res, meta)
 check("stale-size result is dropped", p.plot.traces is None)
@@ -157,6 +188,7 @@ class FMeters:
         s.stale = False; s.rms[c] = r; s.hold[c] = max(s.hold[c], p); s.clipped[c] = s.clipped[c] or clip
     def set_stale(s, text=""): s.stale = text; s.delta = (None, "none")
     def set_delta(s, v, kind): s.delta = (v, kind)
+    def set_volts(s, texts): s.volts = list(texts)
     def reset_holds(s): pass
 class FStrip:
     def __init__(s): s.meters = FMeters(); s.health = None
@@ -230,4 +262,62 @@ check("stale capture: strip shows stale, no delta", lp3.win.strip.meters.stale a
 lp.win.generator_btn = Chk(False); lp.last_generator_settings = None
 lp.tick()
 check("generator off: no validated delta lingers", lp.win.strip.meters.delta[1] in ("none",), str(lp.win.strip.meters.delta))
+print(f"\n{OK} проверок пройдено")
+
+# ======================================================== PeakHoldPage (АЧХ по пластинке)
+import tempfile, json as _json
+from valvebench import peakhold as _ph
+os.environ["HOME"] = tempfile.mkdtemp()
+ui.PeakHoldPage.OVERLAYS_PATH = os.path.join(os.environ["HOME"], "overlays.json")
+ui.PeakHoldPage.EXPORT_DIR = os.path.join(os.environ["HOME"], "exports")
+
+class PWin(FWin):
+    live_on = True
+    def __init__(s):
+        super().__init__(); s.toasts_ = []; s.generator_btn = Chk(False)
+    def toast(s, m): s.toasts_.append(m)
+    def rig_fs(s): return 96000
+w = PWin()
+pp = ui.PeakHoldPage(w)
+check("PeakHoldPage builds under the stub; default = tone tracking, 1/12 octave", pp.mode_key() == "tone" and pp.acc.per_octave == 12)
+
+# смоделированный свип «с пластинки»: 20 с, 200 Гц … 12 кГц, L ведущий, R утечка -45 дБ
+fs_p, n_p = 96000, 32768
+Tt = 20.0; tt_ = np.arange(int(Tt * fs_p)) / fs_p; kk = 12000 / 200
+ph_ = 2 * np.pi * 200 * Tt / math.log(kk) * (kk ** (tt_ / Tt) - 1)
+Lp = 0.1 * np.sin(ph_); Rp = 0.1 * 10 ** (-45 / 20) * np.sin(ph_ + 0.5)
+Rp += 1e-5 * np.random.default_rng(3).standard_normal(Rp.size)
+XP = np.column_stack([Lp, Rp])
+for s0 in range(0, XP.shape[0] - n_p, int(0.3 * fs_p)):
+    res_p = _ph.rta_job(XP[s0:s0 + n_p], fs_p, n_p, 12)
+    pp._apply(res_p, {"kind": "peak", "end": None, "n": n_p, "fs": fs_p, "po": 12})
+cov, tot = pp.acc.coverage()
+check("sweep fills the cells it passed through (200 Hz-12 kHz = ~72 of 120 cells)", cov >= 60, f"{cov}/{tot}")
+labels = [t["label"] for t in pp.plot.traces]
+check("current curves are drawn for L and R", labels == ["Сейчас L", "Сейчас R"], str(labels))
+pp.name_entry = types.SimpleNamespace(get_text=lambda: "AT120 №2", set_text=lambda t: None)
+pp.on_save()
+check("save creates an overlay with a palette colour and writes it to disk",
+      len(pp.overlays) == 1 and pp.overlays[0].name == "AT120 №2" and os.path.exists(ui.PeakHoldPage.OVERLAYS_PATH)
+      and len(_json.load(open(ui.PeakHoldPage.OVERLAYS_PATH))["overlays"]) == 1)
+pp.on_reset()
+check("reset clears the live hold but keeps saved curves", not np.isfinite(pp.acc.tone_hold()).any() and len(pp.overlays) == 1)
+check("after reset only the saved overlay is drawn (L solid, R dashed)",
+      [t["label"] for t in pp.plot.traces] == ["AT120 №2 L", "AT120 №2 R"] and [t["dash"] for t in pp.plot.traces] == [False, True])
+pp.view = Sel(2); pp._redraw()
+xt_tr = pp.plot.traces[0]; sel_ = (xt_tr["x"] > 300) & (xt_tr["x"] < 10000)
+check("crosstalk view: separation ≈ -45 dB (|error| < 2 dB)", abs(float(np.median(xt_tr["y"][sel_])) + 45) < 2.0,
+      f"{float(np.median(xt_tr['y'][sel_])):.1f} dB")
+pp.view = Sel(0)
+pp2 = ui.PeakHoldPage(w)
+check("saved curves are restored on the next start", len(pp2.overlays) == 1 and pp2.overlays[0].name == "AT120 №2")
+pp2.on_export()
+check("CSV export writes a file", any(f.endswith(".csv") for f in os.listdir(ui.PeakHoldPage.EXPORT_DIR)))
+pp._delete(pp.overlays[0])
+check("delete removes the curve and updates the file", not pp.overlays and _json.load(open(ui.PeakHoldPage.OVERLAYS_PATH))["overlays"] == [])
+# событие XRUN в окне — кадр не копится
+pp.on_reset(); w.be.events.append({"kind": "xrun_capture", "frame": 100, "t": time.monotonic(), "fatal": True, "dur_ms": 50.0,
+                                    "suspect": (0, 200)})
+pp._apply(res_p, {"kind": "peak", "end": 150, "n": 100, "fs": fs_p, "po": 12})
+check("frame with a stream event is not accumulated", pp.acc.frames == 0 and pp.rejected == 1)
 print(f"\n{OK} проверок пройдено")

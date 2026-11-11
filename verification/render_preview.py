@@ -59,7 +59,7 @@ def render_plot(Wd, Hd, draw_card=True):
                 marks.append({"x": h["f"], "y": float(psd[res.index(r_)][k-2:k+3].max()), "text": f"{h['h']}", "color": col})
     marks.append({"x": res[0]["f0"], "y": float(psd[0].max()), "text": "1"})
     p.set_markers(marks)
-    p.set_overlay(lambda cr, l, tp, w, h, fg: W.draw_analysis_card(cr, l, tp, w, h, fg, rows, "BH · N=131 072 · f₀ по МНК", compact=(h < 330)) if draw_card else None)
+    p.set_overlay(lambda cr, l, tp, w, h, fg: W.draw_analysis_card(cr, l, tp, w, h, fg, rows, "BH · N=131 072 · f₀ по МНК", compact=(h < 330), side="right") if draw_card else None)
     cr = FakeContext(Wd, Hd, scale=2); p._draw(None, cr, Wd, Hd); return cr
 
 def render_strip(Hd):
@@ -84,8 +84,8 @@ def oct_smooth(f_, p_, per_oct=6):
 PL, PR = (blocks[0].P[1:], blocks[1].P[1:])
 fc, a = oct_smooth(f, PL); _, b = oct_smooth(f, PR)
 diff = 10*np.log10(a/b)
-sp = Plot(True, "Частота, Гц", "L−R, дБ"); sp.xlim = (10.0, fs/2); sp.ylim = (-12.0, 12.0)
-sp.set_traces([{"x": fc, "y": diff, "label": "L−R", "color": "ref", "width": 1.6}])
+sp = Plot(True, "Частота, Гц", "L-R, дБ"); sp.xlim = (10.0, fs/2); sp.ylim = (-12.0, 12.0)
+sp.set_traces([{"x": fc, "y": diff, "label": "L-R", "color": "ref", "width": 1.6}])
 c2 = FakeContext(1200, 150, scale=2); sp._draw(None, c2, 1200, 150); canvas.paste(c2.img.convert("RGB"), (0, Hs*2 + 8))
 strip = render_strip(Hs + 150 + 8); canvas.paste(strip.img.convert("RGB"), ((1200 + 24)*2, 0))
 canvas.save(os.path.join(HERE, "preview-spectrum.png"))

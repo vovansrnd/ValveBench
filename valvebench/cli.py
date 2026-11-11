@@ -12,7 +12,7 @@ from .backend import (AlsaCli, SimBackend, SimChannel, list_cards, parse_stream,
                       list_pcm_devices, list_duplex_devices, supported_duplex_rates, supported_pcm_rates)
 from .selftest import run_selftest, format_selftest
 from .looptest import run_loopback_report
-from . import scans, passport, steady
+from . import scans, passport, steady, glitch_test
 from .measure import Rig
 
 
@@ -90,6 +90,16 @@ def main(argv=None):
     p.add_argument("--play-format", default="auto", help="auto, S24_3LE, S24_LE, S32_LE, S16_LE")
     p.add_argument("--rec-format", default="auto", help="auto, S24_3LE, S24_LE, S32_LE, S16_LE")
     p.add_argument("--outdir", default="emu_measurements", help="каталог для summary/CSV/WAV")
+    p = sub.add_parser("glitch", help="локализация сбойных отсчётов и остановок потока: один тон или тишина (опыты A–E)")
+    p.add_argument("--play-dev", required=True, help="ALSA PCM ЦАП, например hw:2,0")
+    p.add_argument("--rec-dev", required=True, help="ALSA PCM АЦП, например hw:2,0")
+    p.add_argument("--channel", choices=("L", "R", "both", "none"), default="L", help="куда подать тон; none — тишина")
+    p.add_argument("--tone", type=float, default=997.0, help="частота тона, Гц")
+    p.add_argument("--tone-level", type=float, default=-18.0, help="цифровой уровень ЦАП, dBFS")
+    p.add_argument("--seconds", type=float, default=60.0, help="длительность устойчивого участка, секунд (10–600)")
+    p.add_argument("--idle-seconds", type=float, default=6.0, help="тишина до и после, секунд")
+    p.add_argument("--keep-wav", action="store_true", help="сохранить запись как float32 WAV")
+    p.add_argument("--outdir", default="emu_measurements", help="каталог для summary/CSV/JSON")
     p = sub.add_parser("steady-compare", help="свести несколько steady.json в одну сравнительную таблицу")
     p.add_argument("runs", nargs="+", help="пути к steady.json или каталогам измерений")
     p.add_argument("--csv", help="дополнительно сохранить таблицу в CSV")
@@ -178,6 +188,19 @@ def main(argv=None):
             return 130
         except Exception as exc:
             print(f"STEADY TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    if a.cmd == "glitch":
+        try:
+            glitch_test.run_glitch_test(
+                play_dev=a.play_dev, rec_dev=a.rec_dev, fs=a.rate or 192000, channel=a.channel,
+                tone_level_dbfs=a.tone_level, seconds=a.seconds, tone_hz=a.tone, idle_s=a.idle_seconds,
+                out_root=a.outdir, keep_wav=a.keep_wav)
+            return 0
+        except KeyboardInterrupt:
+            print("\nОстановлено пользователем.")
+            return 130
+        except Exception as exc:
+            print(f"GLITCH TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2
     if a.cmd == "steady-compare":
         try:

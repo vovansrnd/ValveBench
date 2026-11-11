@@ -5,6 +5,10 @@
 столбцами, а не под ними, поэтому они не уезжают за нижний край окна.
 
 Рисование — только те примитивы Cairo, что уже используются в проекте.
+
+Текст, рисуемый Cairo («игрушечный» API шрифтов), не должен содержать U+2212 «−»: на целевой
+системе в нём нет этого глифа (виден квадрат «L□R»). Вместо него — ASCII «-». Обычные
+виджеты GTK (Pango) подставляют шрифт сами, там «−» допустим.
 """
 from __future__ import annotations
 
@@ -57,6 +61,7 @@ class LevelMeters(Gtk.DrawingArea):
         self.delta = None            # дБ, L−R
         self.delta_kind = "none"     # 'validated' | 'raw' | 'none'
         self.range_db = 90.0
+        self.volts = [None, None]    # строки «1.23 mV», если вход откалиброван
         self.set_content_width(176)
         self.set_content_height(260)
         self.set_vexpand(True)
@@ -83,6 +88,10 @@ class LevelMeters(Gtk.DrawingArea):
         self.hold = [-120.0, -120.0]
         self.queue_draw()
 
+    def set_volts(self, texts):
+        self.volts = list(texts)
+        self.queue_draw()
+
     def set_delta(self, value, kind):
         self.delta = None if value is None else float(value)
         self.delta_kind = kind if value is not None else "none"
@@ -101,11 +110,12 @@ class LevelMeters(Gtk.DrawingArea):
     # ---- рисование
     def _draw(self, area, cr, W, H, *_):
         draw_meters(cr, W, H, self.get_color(), self.rms, self.peak, self.hold, self.clipped,
-                    self.stale, self.stale_text, self.delta, self.delta_kind, self.range_db)
+                    self.stale, self.stale_text, self.delta, self.delta_kind, self.range_db,
+                    self.volts)
 
 
 def draw_meters(cr, W, H, fg, rms, peak, hold, clipped, stale, stale_text, delta, delta_kind,
-                range_db):
+                range_db, volts=None):
     """Чистая функция рисования — отделена от виджета для проверки без GTK."""
     cr.select_font_face("Sans")
 
@@ -144,11 +154,13 @@ def draw_meters(cr, W, H, fg, rms, peak, hold, clipped, stale, stale_text, delta
         text("dBFS RMS", cx, 53, 9.5, 0.55, "c")
         pk = fmt_db(peak[c], 1) if not stale else "—"
         text(f"pk {pk}", cx, 68, 11, 0.75, "c")
+        if volts and volts[c] and not stale:
+            text(volts[c], cx, 81, 10.5, 0.85, "c")      # откалиброванное напряжение, если есть
     # разбег L−R — отдельной строкой
     if delta is None or stale:
-        text("Δ L−R  —", W / 2, 90, 14, 0.5, "c")
+        text("Δ L-R  —", W / 2, 90, 14, 0.5, "c")
     else:
-        text(f"Δ L−R  {delta:+.3f} dB", W / 2, 90, 14, 1.0, "c")
+        text(f"Δ L-R  {delta:+.3f} dB", W / 2, 90, 14, 1.0, "c")
         tag = {"validated": "проверено ΔG", "raw": "по RMS, без проверки"}.get(delta_kind, "")
         if tag:
             text(tag, W / 2, 103, 9.5, 0.6, "c")
@@ -221,7 +233,7 @@ def draw_meters(cr, W, H, fg, rms, peak, hold, clipped, stale, stale_text, delta
         cr.set_line_width(1.5 if k == 0.0 else 1)
         cr.move_to(x_d, yy); cr.line_to(x_d + dbar_w, yy); cr.stroke()
     text(f"+{span:g}", x_d + dbar_w / 2, y0 + 11, 9, 0.6, "c")
-    text(f"−{span:g}", x_d + dbar_w / 2, y1 - 3, 9, 0.6, "c")
+    text(f"-{span:g}", x_d + dbar_w / 2, y1 - 3, 9, 0.6, "c")
     if delta is not None:
         v = max(-span, min(span, delta))
         ymark = ymid - v / span * (track / 2)
@@ -310,10 +322,22 @@ def format_analysis_rows(res_l, res_r, nharm=9):
                  "dim": dim(lambda r: False)})
     rows.append({"label": "Уровень, dBFS", "cells": cell(lambda r: f"{r['level_dbfs']:.2f}"),
                  "kind": "main", "dim": dim(lambda r: False)})
-    rows.append({"label": f"THD H2–H{nharm}",
-                 "cells": cell(lambda r: f"{_fmt_pct(r['thd_pct'] if not r['thd_bound'] else r['thd_upper_pct'], r['thd_bound'])}"
-                                         f" {(r['thd_db'] if not r['thd_bound'] else r['thd_upper_db']):.1f}дБ"),
-                 "kind": "main", "dim": dim(lambda r: r["thd_bound"])})
+    def thd_cell(r):
+        if r.get("thd_na"):
+            return "н/д (H2>полосы)"
+        bound = r["thd_bound"]
+        pct = r["thd_upper_pct"] if bound else r["thd_pct"]
+        db = r["thd_upper_db"] if bound else r["thd_db"]
+        mark = "~" if r.get("thd_partial") else ""
+        return f"{mark}{_fmt_pct(pct, bound)} {db:.1f}дБ"
+    rows.append({"label": f"THD H2–H{nharm}", "cells": cell(thd_cell), "kind": "main",
+                 "dim": dim(lambda r: r["thd_bound"] or r.get("thd_na"))})
+    if any(r and r.get("ok") and r.get("thd_partial") for r in results):
+        # часть гармоник не поднялась над шумом: показать оценку и верхнюю границу
+        rows.append({"label": "THD верх. гр.",
+                     "cells": [f"≤{_fmt_pct(r['thd_upper_pct'])} {r['thd_upper_db']:.1f}дБ"
+                               if (r and r.get("ok") and r.get("thd_partial")) else "—" for r in results],
+                     "kind": "main", "dim": [True, True]})
     rows.append({"label": "THD+N 20–20к",
                  "cells": cell(lambda r: f"{_fmt_pct(r['thdn_pct'])} {r['thdn_db']:.1f}дБ"),
                  "kind": "main", "dim": dim(lambda r: False)})
@@ -325,7 +349,7 @@ def format_analysis_rows(res_l, res_r, nharm=9):
                  "kind": "main", "dim": dim(lambda r: False)})
     rows.append({"label": "ENOB, бит", "cells": cell(lambda r: f"{r['enob']:.1f}"),
                  "kind": "main", "dim": dim(lambda r: False)})
-    rows.append({"label": "DR (FS−N), дБ", "cells": cell(lambda r: f"{r['dr_db']:.1f}"),
+    rows.append({"label": "DR (FS-N), дБ", "cells": cell(lambda r: f"{r['dr_db']:.1f}"),
                  "kind": "main", "dim": dim(lambda r: False)})
     for h in range(2, int(nharm) + 1):
         def pick(r, h=h):
@@ -344,8 +368,8 @@ def format_analysis_rows(res_l, res_r, nharm=9):
     return rows
 
 
-def draw_analysis_card(cr, left, top, width, height, fg, rows, subtitle="", compact=False):
-    """Полупрозрачная панель с таблицей L | R в левом верхнем углу графика."""
+def draw_analysis_card(cr, left, top, width, height, fg, rows, subtitle="", compact=False, side="left"):
+    """Полупрозрачная панель с таблицей L | R в верхнем углу графика (side: left | right)."""
     cr.select_font_face("Monospace")
     fs = 11.5
     cr.set_font_size(fs)
@@ -354,7 +378,8 @@ def draw_analysis_card(cr, left, top, width, height, fg, rows, subtitle="", comp
     shown = [r for r in rows if not (compact and r["kind"] == "harm")]
     card_w = pad * 2 + lab_w + 2 * col_w
     card_h = pad * 2 + line * (len(shown) + (1 if subtitle else 0))
-    x0, y0 = left + 10.0, top + 10.0
+    x0 = (left + width - card_w - 10.0) if side == "right" else (left + 10.0)
+    y0 = top + 10.0
     if card_h > height - 20.0 or card_w > width - 20.0:
         return
     cr.set_source_rgba(1.0 - fg.red, 1.0 - fg.green, 1.0 - fg.blue, 0.86)

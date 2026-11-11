@@ -1177,6 +1177,73 @@ def run_selftest():
     check("Сглаживание по долям октавы усредняет бины (белый шум остаётся белым)",
           np.allclose(pc_, 1.0) and fc_.size < 120, f"{fc_.size} полос")
 
+    # ---- 0.1.20-dev2: замечания аудита и «АЧХ по пластинке»
+    from .backend import xrun_suspect
+    from . import peakhold as ph_mod
+    tz = np.arange(131072) / 192000.0
+
+    def _h2(f, h2=-40.0):
+        return (0.3 * np.sin(2 * np.pi * f * tz + 0.4) + 0.3 * 10 ** (h2 / 20) * np.sin(2 * np.pi * 2 * f * tz + 1.0)
+                + 1e-6 * rg.standard_normal(tz.size))
+    r12 = lm.analyze_live_tone(_h2(12000.0), 192000, 12000.0)
+    r10 = lm.analyze_live_tone(_h2(10000.0), 192000, 10000.0)
+    check("THD: гармоник нет в полосе — «н/д», а не 0 %; H2 на границе полосы согласован с THD+N",
+          r12["ok"] and r12["thd_na"] and r12["thd_pct"] is None
+          and abs(r10["thd_pct"] - 1.0) < 0.02 and abs(r10["thdn_db"] + 40.0) < 0.2,
+          f"12 кГц: n/a={r12['thd_na']}; 10 кГц: THD {r10['thd_pct']:.3f} %, THD+N {r10['thdn_db']:.2f} дБ")
+    lv20 = [lm.analyze_live_tone(0.3 * np.sin(2 * np.pi * 20.0 * tz + ph) + 1e-7 * rg.standard_normal(tz.size),
+                                 192000, 20.0)["level_dbfs"] for ph in np.linspace(0, 2 * np.pi, 7)[:-1]]
+    check("Уровень тона по МНК не зависит от фазы даже на 20 Гц (разброс < 0.001 дБ; проекция давала 0.14 дБ)",
+          max(lv20) - min(lv20) < 1e-3 and abs(np.mean(lv20) - 20 * math.log10(0.3)) < 1e-3,
+          f"размах {max(lv20) - min(lv20):.5f} дБ")
+    a1, b1 = xrun_suspect("capture", 10 * 192000, 192000, 300.0)
+    a2, b2 = xrun_suspect("playback", 10 * 192000, 192000, 2000.0)
+    check("Интервалы XRUN растут с длительностью: capture 300 мс → +0.35 с, playback 2 с → −2.1…+3.2 с",
+          b1 - 10 * 192000 == int(0.35 * 192000) and a2 == 10 * 192000 - int(2.1 * 192000)
+          and b2 == 10 * 192000 + int(3.2 * 192000),
+          f"capture 300 мс: [{(a1 - 10 * 192000) / 192000:+.2f}; {(b1 - 10 * 192000) / 192000:+.2f}] с; "
+          f"playback 2 с: [{(a2 - 10 * 192000) / 192000:+.2f}; {(b2 - 10 * 192000) / 192000:+.2f}] с")
+    fs_s, n_s = 48000, 16384
+    ts_ = np.arange(int(12 * fs_s)) / fs_s
+    k_ = 12000 / 100.0
+    ph_s = 2 * np.pi * 100.0 * 12 / math.log(k_) * (k_ ** (ts_ / 12) - 1)
+    fr_s = lambda f: -20.0 + 4.0 * np.log2(f / 1000.0)
+    A_s = 10 ** (fr_s(100.0 * k_ ** (ts_ / 12)) / 20)
+    Xs = np.column_stack([A_s * np.sin(ph_s), A_s * 10 ** (-45 / 20) * np.sin(ph_s + 0.4)
+                          + 1e-6 * rg.standard_normal(ts_.size)])
+    acc_s = ph_mod.PeakHoldAccumulator(6)
+    for s0 in range(0, Xs.shape[0] - n_s, int(0.25 * fs_s)):
+        rr = ph_mod.rta_job(Xs[s0:s0 + n_s], fs_s, n_s, 6)
+        acc_s.update(rr["bands"], rr["tone"])
+    th_ = acc_s.tone_hold()
+    cs_ = acc_s.centers
+    sl_ = (cs_ > 200) & (cs_ < 8000) & np.isfinite(th_[0])
+    d_s, xt_s = ph_mod.split_driven(th_)
+    check("АЧХ по пластинке (трекинг тона): свип «снят» с ошибкой ≤ 0.8 дБ, переходное затухание −45±2 дБ",
+          sl_.sum() >= 15 and np.max(np.abs(th_[0][sl_] - fr_s(cs_[sl_]))) <= 0.8 and d_s == 0
+          and abs(np.median(xt_s[sl_]) + 45.0) < 2.0,
+          f"ошибка АЧХ {np.max(np.abs(th_[0][sl_] - fr_s(cs_[sl_]))):.2f} дБ; перекр. {np.median(xt_s[sl_]):.1f} дБ")
+    ov_s = acc_s.snapshot("тест", ph_mod.PALETTE[0], "tone", fs_s)
+    back_s = ph_mod.overlays_from_json(ph_mod.overlays_to_json([ov_s]))
+    check("Сохранённые кривые переживают JSON (NaN ↔ null, цвет)",
+          len(back_s) == 1 and np.allclose(back_s[0].levels, ov_s.levels, equal_nan=True, atol=1e-3),
+          f"{len(back_s)} кривая, {int(np.isfinite(ov_s.levels).sum())} значений")
+
+    # ---- 0.1.20-dev2: окно демодулятора — ровно целое число периодов даже при нецелом fs/f0
+    fs97, n97 = 96000, 1 << 17
+    t97 = np.arange(n97) / fs97
+    x97 = 0.126 * np.sin(2 * np.pi * 997.0 * t97) + 2e-7 * rg.standard_normal(n97)
+    r97 = lm._Demod(x97, fs97, 997.0).residual()[2000:-2000]
+    rms97 = float(np.sqrt(np.mean(r97 ** 2)))
+    check("Остаток после вычитания несущей 997 Гц на 96 кГц лежит на уровне шума (раньше пульсация 2f₀ ≈ −88 dBFS)",
+          rms97 < 6e-7, f"остаток {20 * math.log10(math.sqrt(2) * rms97):.1f} dBFS (шум −127 dBFS)")
+    g97 = x97.copy()
+    g97[60000] += 4e-4
+    ev97 = lm.detect_sample_glitches(g97, fs97, 997.0)
+    check("Сбой 1 отсчёт −68 dBFS на тоне 997 Гц найден ровно один раз (юбки демодулятора подавлены)",
+          len(ev97) == 1 and ev97[0]["kind"] == "single_sample" and ev97[0]["sign"] == 1 and ev97[0]["index"] == 60000,
+          f"{[(e['index'], e['kind']) for e in ev97]}")
+
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
 

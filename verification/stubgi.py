@@ -11,9 +11,19 @@ class _V:
     __ror__ = __or__
     def __int__(self): return 0
     __index__ = __int__
+_STATE = ("selected", "active", "value", "text")
+
+
 class _Stub:
     def __init__(self, *a, **k): pass
     def __getattr__(self, n):
+        if n.startswith("__"):
+            raise AttributeError(n)
+        # set_selected/get_selected, set_active/get_active, ... хранят значение — как настоящие виджеты
+        if n[:4] == "set_" and n[4:] in _STATE:
+            return lambda v=None, *a, **k: self.__dict__.__setitem__("_" + n[4:], v)
+        if n[:4] == "get_" and n[4:] in _STATE and ("_" + n[4:]) in self.__dict__:
+            return lambda *a, **k: self.__dict__["_" + n[4:]]
         if n in _DEF:
             v = _DEF[n]; return lambda *a, **k: v
         return lambda *a, **k: _Stub()

@@ -42,16 +42,43 @@ MARGIN_OK_DB = dsp.MARGIN_OK_DB
 # ------------------------------------------------------------------ вспомогательное
 
 
-def _movmean_complex(z: np.ndarray, n: int) -> np.ndarray:
+def _movmean_complex(z: np.ndarray, n) -> np.ndarray:
     """Центрированное скользящее среднее через накопленные суммы (O(N), без БПФ).
 
-    На краях окно усекается (деление на фактическое число отсчётов)."""
-    n = max(1, int(n))
+    Длина окна n — ДРОБНАЯ: края окна интерполируются линейно между накопленными суммами, поэтому
+    окно ровно на целое число периодов тона даже когда fs/f0 не целое (997 Гц при 96 кГц).
+    С целым окном остаток после вычитания несущей хранил пульсацию 2f₀ около −88 dBFS и
+    маскировал мелкие сбои. На краях записи окно усекается (деление на фактическую длину)."""
+    n = float(max(1.0, n))
+    N = len(z)
     c = np.concatenate(([0j], np.cumsum(z)))
-    idx = np.arange(len(z))
-    lo = np.clip(idx - n // 2, 0, len(z))
-    hi = np.clip(idx - n // 2 + n, 0, len(z))
-    return (c[hi] - c[lo]) / np.maximum(hi - lo, 1)
+    mid = np.arange(N, dtype=np.float64) + 0.5
+    lo = np.clip(mid - n / 2.0, 0.0, float(N))
+    hi = np.clip(mid + n / 2.0, 0.0, float(N))
+
+    def cum(t):
+        k = np.minimum(t.astype(np.int64), N - 1)
+        return c[k] + (t - k) * z[k]
+    return (cum(hi) - cum(lo)) / np.maximum(hi - lo, 1e-9)
+
+
+def _cexp_ramp(theta, n, block=512):
+    """exp(j·theta·k), k = 0..n−1, без transcendental-функций на каждый отсчёт.
+
+    k = q·block + r:  e^{jθk} = e^{jθ·q·block} · e^{jθ·r} — две короткие таблицы и внешнее
+    произведение (≈10× быстрее np.exp от 262 тыс. комплексных аргументов; погрешность
+    ~1e-16, как у прямого вычисления)."""
+    r = np.arange(block, dtype=np.float64)
+    q = np.arange((n + block - 1) // block, dtype=np.float64)
+    lo = np.exp(1j * theta * r)
+    hi = np.exp(1j * theta * block * q)
+    return (hi[:, None] * lo[None, :]).reshape(-1)[:n]
+
+
+def _rmed(a, stride=8):
+    """Медиана по прореженной выборке — для робастных порогов (MAD) полная выборка не нужна."""
+    a = np.asarray(a)
+    return float(np.median(a[::stride] if a.size > 4096 else a))
 
 
 class _Demod:
@@ -62,38 +89,54 @@ class _Demod:
         self.fs, self.f0 = float(fs), float(f0)
         if n_periods is None:
             n_periods = max(3, int(math.ceil(0.002 * f0)))
-        self.win = max(8, int(round(n_periods * fs / f0)))
-        n = np.arange(self.x.size, dtype=np.float64)
-        self._rot = np.exp(2j * np.pi * f0 * n / fs)
-        self.zm = _movmean_complex(self.x * np.conj(self._rot), self.win)
+        win_f = max(8.0, n_periods * fs / f0)       # дробная длина окна: ровно n_periods периодов
+        self.win = int(round(win_f))
+        self._rot = _cexp_ramp(2.0 * np.pi * f0 / fs, self.x.size)
+        self.zm = _movmean_complex(self.x * np.conj(self._rot), win_f)
 
     def residual(self):
         """x минус реконструированная несущая."""
         return self.x - 2.0 * np.real(self.zm * self._rot)
 
 
-def refine_tone(x, fs, f_est, iters=4):
-    """Уточнить частоту тона по фазовому набегу между половинами окна и вычесть синус МНК.
+def _ls_fit(x, fs, f, i0=0):
+    """МНК-подгонка x ≈ a·cos + b·sin + c на частоте f (индексы отсчётов начинаются с i0).
 
-    Возвращает (f_ref, amp_peak, residual). Точность частоты ограничена шумом, а не сеткой
-    БПФ: остаток после вычитания не содержит утечки окна, так что N и THD+N не упираются в
-    боковые лепестки Блэкмана–Харриса (≈ −92 дБ относительно тона)."""
+    Возвращает (a, b, c, A, φ): x ≈ A·cos(2πf·n/fs + φ) + c. В отличие от проекции
+    2·mean(x·e^{-jωn}) учитывает отрицательно-частотную составляющую, поэтому оценка
+    амплитуды и фазы не зависит от числа периодов в окне (на 20 Гц проекция «плавала»
+    на 0.14 дБ в зависимости от фазы)."""
     x = np.asarray(x, dtype=np.float64)
     n = x.size
-    idx = np.arange(n, dtype=np.float64)
+    ph = (2.0 * np.pi * f / fs) * (np.arange(n, dtype=np.float64) + i0)
+    c_, s_ = np.cos(ph), np.sin(ph)
+    sc, ss = float(c_.sum()), float(s_.sum())
+    gram = np.array([[c_ @ c_, c_ @ s_, sc], [c_ @ s_, s_ @ s_, ss], [sc, ss, float(n)]])
+    rhs = np.array([x @ c_, x @ s_, float(x.sum())])
+    a, b, c0 = np.linalg.solve(gram, rhs)
+    return a, b, c0, float(math.hypot(a, b)), float(math.atan2(-b, a)), c_, s_
+
+
+def refine_tone(x, fs, f_est, iters=3):
+    """Уточнить частоту тона и вычесть синус по МНК.
+
+    Частота: подгонка (cos, sin, const) отдельно в двух половинах окна; расстройка — это
+    набег фазы между ними (Δφ = 2π·δf·h/fs). Амплитуда и остаток — полная МНК-подгонка
+    в окне на найденной частоте. Остаток не содержит утечки окна, так что N и THD+N не
+    упираются в боковые лепестки Блэкмана–Харриса (≈ −92 дБ относительно тона).
+
+    Возвращает (f_ref, amp_peak, residual)."""
+    x = np.asarray(x, dtype=np.float64)
+    n = x.size
     h = n // 2
     f = float(f_est)
     for _ in range(max(1, int(iters))):
-        rot = np.exp(-2j * np.pi * f * idx / fs)
-        ca = np.sum(x[:h] * rot[:h])
-        cb = np.sum(x[h:2 * h] * rot[h:2 * h])
-        dphi = float(np.angle(cb * np.conj(ca)))
-        # cb относительно ca уже набрал 2π·f·h/fs от опорного вращения; остаток — расстройка
-        f += dphi * fs / (2.0 * np.pi * h)
-    rot = np.exp(-2j * np.pi * f * idx / fs)
-    c = 2.0 * np.mean(x * rot)
-    fit = np.real(c * np.conj(rot))
-    return f, float(np.abs(c)), x - fit
+        pa = _ls_fit(x[:h], fs, f, 0)[4]
+        pb = _ls_fit(x[h:2 * h], fs, f, h)[4]
+        dphi = (pb - pa + math.pi) % (2.0 * math.pi) - math.pi
+        f += dphi * fs / (2.0 * math.pi * h)
+    a, b, c0, amp, _phi, c_, s_ = _ls_fit(x, fs, f, 0)
+    return f, amp, x - (a * c_ + b * s_ + c0)
 
 
 def _runs(mask: np.ndarray):
@@ -227,9 +270,12 @@ def analyze_live_tone(x, fs, f_hint=None, nharm=9, band=(20.0, 20000.0), mains=5
     thd_upper = math.sqrt(raw_power / Pf)
     n_cred = sum(1 for h in harms if h["credible"])
 
-    # --- шум и THD+N в полосе: всё, кроме лепестка тона (и гармоник — для N)
+    # --- шум и THD+N в полосе: всё, кроме лепестка тона (и гармоник — для N).
+    # Верхняя граница расширяется до конца лепестка последней учтённой гармоники: иначе THD
+    # захватывает весь лепесток гармоники на границе полосы, а THD+N — только его половину.
+    kb_n = min(nb - 1, max(kb, harm_k[-1][2] + half_f)) if harm_k else kb
     sel = np.zeros(nb, dtype=bool)
-    sel[ka:kb + 1] = True
+    sel[ka:kb_n + 1] = True
     fund = np.zeros(nb, dtype=bool)
     fund[max(0, k0 - half_f): k0 + half_f + 1] = True
     hmask = np.zeros(nb, dtype=bool)
@@ -251,8 +297,13 @@ def analyze_live_tone(x, fs, f_hint=None, nharm=9, band=(20.0, 20000.0), mains=5
     out.update({
         "ok": True, "f0": f_est, "k0": k0, "level_dbfs": level_dbfs,
         "harmonics": harms, "nharm": len(harms),
-        "thd_pct": 100.0 * thd, "thd_db": dsp.db20(thd),
-        "thd_upper_pct": 100.0 * thd_upper, "thd_upper_db": dsp.db20(thd_upper),
+        # Если в полосу не попала ни одна гармоника, THD НЕ ИЗМЕРЕН (а не «0 %»).
+        "thd_na": not harms,
+        "thd_na_reason": (f"H2 ({2 * f_est:.0f} Гц) выше полосы анализа ({b_hi:.0f} Гц)"
+                          if not harms else ""),
+        "thd_pct": 100.0 * thd if harms else None, "thd_db": dsp.db20(thd) if harms else None,
+        "thd_upper_pct": 100.0 * thd_upper if harms else None,
+        "thd_upper_db": dsp.db20(thd_upper) if harms else None,
         "thd_bound": bool(harms) and n_cred == 0,
         "thd_partial": bool(harms) and 0 < n_cred < len(harms),
         "thdn_pct": 100.0 * math.sqrt(p_dn / Pf), "thdn_db": thdn_db,
@@ -261,7 +312,7 @@ def analyze_live_tone(x, fs, f_hint=None, nharm=9, band=(20.0, 20000.0), mains=5
         "sinad_db": sinad, "enob": (sinad - 1.76) / 6.02,
         # DR здесь — оценка «полная шкала минус шум в полосе» (не AES17 с тоном −60 dBFS)
         "dr_db": -noise_dbfs, "dr_a_db": -noise_a_dbfs,
-        "band": (b_lo, b_hi), "mains_k": mains_k,
+        "band": (b_lo, kb_n * df if harm_k else b_hi), "mains_k": mains_k,
     })
     return out
 
@@ -325,12 +376,12 @@ def detect_phase_jumps(x, fs, f0, thr_deg=15.0, demod=None):
         return []
     a, b = zm[lag:], zm[:-lag]
     mag = np.abs(zm)
-    ref = float(np.median(mag))
+    ref = _rmed(mag)
     if ref <= 0:
         return []
     ok = (np.abs(a) > 0.5 * ref) & (np.abs(b) > 0.5 * ref)
     ph = np.angle(a * np.conj(b))
-    base = float(np.median(ph[ok])) if ok.any() else 0.0
+    base = _rmed(ph[ok]) if ok.any() else 0.0
     j = (ph - base + np.pi) % (2 * np.pi) - np.pi
     j[~ok] = 0.0
     # Края окна: усечённое скользящее среднее даёт ложную фазу — отступаем на win
@@ -368,22 +419,36 @@ def detect_sample_glitches(x, fs, f0=None, sigma=GLITCH_SIGMA, min_abs=GLITCH_MI
     else:
         r, guard = x - np.mean(x), 4
     h = np.abs(np.diff(r, 2))
-    med = float(np.median(h))
-    mad = float(np.median(np.abs(h - med))) * 1.4826
+    med = _rmed(h)
+    mad = _rmed(np.abs(h - med)) * 1.4826
     thr = max(sigma * mad, 2.0 * min_abs)
     over = h > thr
     over[:guard] = False
     over[-guard:] = False
     ev = []
+    smear = (demod.win if (f0 and demod is not None) else (_Demod(x, fs, f0).win if f0 else 0))
     for a, b in _merge(_runs(over), gap=3):
         # выброс шириной w даёт в d² серию длиной w+2
         w = max(1, (b - a + 1) - 2)
         if w >= 20:
             continue                        # широкие события — в detect_residual_bursts
         i0, i1 = a + 1, b + 1
-        amp = float(np.max(np.abs(r[i0:i1 + 1])))
-        ev.append({"index": int(i0), "t_s": float(i0 / fs), "width": int(w), "amp": amp,
-                   "amp_dbfs": dsp.db20(amp), "kind": "single_sample" if w <= 2 else "short"})
+        seg = r[i0:i1 + 1]
+        k = int(np.argmax(np.abs(seg)))
+        amp = float(abs(seg[k]))
+        ev.append({"index": int(i0 + k), "t_s": float((i0 + k) / fs), "width": int(w), "amp": amp,
+                   "amp_dbfs": dsp.db20(amp), "sign": 1 if seg[k] > 0 else -1,
+                   "kind": "single_sample" if w <= 2 else "short"})
+    if smear and len(ev) > 1:
+        # Выброс A размазывается вычитанием несущей (скользящее среднее): по краям окна остаются
+        # ступеньки ~2A/окно. Это «юбка» того же события, а не новые сбои.
+        big = sorted(ev, key=lambda e: -e["amp"])
+        kept = []
+        for e in big:
+            if any(abs(e["index"] - k["index"]) <= smear + 4 and k["amp"] >= 10.0 * e["amp"] for k in kept):
+                continue
+            kept.append(e)
+        ev = sorted(kept, key=lambda e: e["index"])
     return ev
 
 
@@ -513,10 +578,23 @@ def frame_integrity(x, fs, f0=None, driven=(False, False), hf_lo=40000.0, names=
         pad = (dm.win / float(fs) if dm is not None else 0.0) + 0.004
         spans = [(d["start_s"] - pad, d["start_s"] + d["dur_s"] + pad) for d in ci.dropouts]
         ci.bursts = [b for b in ci.bursts if not _overlaps(b["start_s"], b["start_s"] + b["dur_s"], spans)]
+        # Короткий «всплеск» блочного RMS (≤ 2.5 мс), внутри которого найден острый выброс, — это
+        # тот же выброс на грубом разрешении: оставляем более точную классификацию (1 отсчёт).
+        # «Всплеск» блочного RMS короче 2 окон демодулятора + 2 мс вокруг острого выброса — это его
+        # «юбка» после вычитания несущей (ступеньки ~2A/окно), а не отдельное событие.
+        skirt_s = max(0.0025, 2.0 * (dm.win / float(fs) if dm is not None else 0.0) + 0.002)
+        ci.bursts = [b for b in ci.bursts
+                     if not (b["dur_s"] <= skirt_s and any(
+                         b["start_s"] - 0.001 <= g["t_s"] <= b["start_s"] + b["dur_s"] + 0.001
+                         for g in ci.glitches))]
         spans += [(b["start_s"] - 0.001, b["start_s"] + b["dur_s"] + 0.001) for b in ci.bursts]
         ci.glitches = [g for g in ci.glitches if not _overlaps(g["t_s"], g["t_s"], spans)]
         t, db = hf_burst_track(seg, fs, hf_lo)
-        ci.hf_bursts = detect_hf_bursts(t, db)
+        # ВЧ-метка — информационная: не дублируем ею события, уже найденные в этом окне
+        ev_spans = [(a - 0.012, b2 + 0.012) for a, b2 in spans]
+        ev_spans += [(g["t_s"] - 0.012, g["t_s"] + 0.012) for g in ci.glitches]
+        ci.hf_bursts = [h for h in detect_hf_bursts(t, db)
+                        if not _overlaps(h["start_s"], h["start_s"] + h["dur_s"], ev_spans)]
         res.append(ci)
     return res
 
@@ -623,3 +701,33 @@ def octave_smooth(freq, p, per_octave=6):
     s = np.bincount(b, weights=p)
     fc = np.bincount(b, weights=freq)
     return fc[good] / cnt[good], s[good] / cnt[good]
+
+
+def event_rows(integrity, t_start_s, seen=None):
+    """Строки журнала событий окна (для CSV): [(время потока, канал, тип, величина1, величина2, знак)].
+
+    t_start_s — время начала окна по счёту кадров захвата. ``seen`` — множество ключей уже
+    записанных событий: окна перекрываются на ~60%, одно и то же событие видно в нескольких
+    кадрах подряд и в журнал должно попасть один раз."""
+    seen = seen if seen is not None else set()
+    rows = []
+
+    def add(ch, kind, t_rel, tol, v1, v2, sign=""):
+        ts = t_start_s + t_rel
+        key = (ch, kind, round(ts / tol))
+        if key in seen:
+            return
+        seen.add(key)
+        rows.append((ts, ch, kind, v1, v2, sign))
+    for ci in integrity:
+        for e in ci.dropouts:
+            add(ci.name, "dropout", e["start_s"], 0.05, f"{e['dur_s'] * 1e3:.1f} мс", f"{e['depth_db']:.0f} дБ")
+        for e in ci.phase_jumps:
+            add(ci.name, "phase_jump", e["t_s"], 0.05, f"{e['jump_deg']:+.0f}°", "")
+        for e in ci.glitches:
+            add(ci.name, e["kind"], e["t_s"], 0.001, f"{e['width']} отсч.", f"{e['amp_dbfs']:.1f} dBFS", e.get("sign", ""))
+        for e in ci.bursts:
+            add(ci.name, "burst", e["start_s"], 0.05, f"{e['dur_s'] * 1e3:.0f} мс", f"+{e['rise_db']:.0f} дБ")
+        for e in ci.hf_bursts:
+            add(ci.name, "hf_burst", e["start_s"], 0.05, f"{e['dur_s'] * 1e3:.0f} мс", f"+{e['rise_db']:.0f} дБ")
+    return rows

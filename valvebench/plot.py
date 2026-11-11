@@ -51,6 +51,7 @@ class Plot(Gtk.DrawingArea):
         # 0.1.20: надстройки поверх графика — маркеры (номера гармоник) и произвольная панель
         self.markers = []
         self.overlay_draw = None
+        self.underlay_draw = None     # рисуется после сетки, ПОД кривыми (например столбцы RTA)
         self.set_content_width(520)
         self.set_content_height(320)
         self.set_hexpand(True)
@@ -124,6 +125,18 @@ class Plot(Gtk.DrawingArea):
         """markers: [{'x','y','text','color':(r,g,b)|None}] — подписи над точками графика."""
         self.markers = list(markers or [])
         self.queue_draw()
+
+    def set_underlay(self, draw_fn):
+        """draw_fn(cr, left, top, width, height, fg) — рисунок под кривыми (внутри области графика)."""
+        self.underlay_draw = draw_fn
+        self.queue_draw()
+
+    def x_to_px(self, x, left, width):
+        return self._tx(float(x), left, width)
+
+    def y_to_px(self, v, top, height):
+        ylo, yhi = self.ylim
+        return top + (yhi - v) / (yhi - ylo) * height
 
     def set_overlay(self, draw_fn):
         """draw_fn(cr, left, top, width, height, fg) рисует панель поверх графика."""
@@ -264,11 +277,26 @@ class Plot(Gtk.DrawingArea):
         # кривые
         cr.save()
         cr.rectangle(ml, mt, pw, ph); cr.clip()
+        if self.underlay_draw is not None:
+            cr.save()
+            try:
+                self.underlay_draw(cr, ml, mt, pw, ph, fg)
+            finally:
+                cr.restore()
+        draws = []
         for t in self.traces:
-            x, y = self._decimate_cached(t, int(pw))
+            if t.get("decim") == "both":
+                # огибающая максимумов — блёклой подложкой (видны одиночные спуры), среднее по
+                # мощности — поверх (честная шумовая полка без завышения на ВЧ)
+                draws.append((t, "max", 0.35 * t.get("alpha", 1.0)))
+                draws.append((t, "mean", t.get("alpha", 1.0)))
+            else:
+                draws.append((t, t.get("decim", "max"), t.get("alpha", 1.0)))
+        for t, dmode, dalpha in draws:
+            x, y = self._decimate_cached(t, int(pw), dmode)
             if x.size < 2:
                 continue
-            cr.set_source_rgba(*t["color"], t.get("alpha", 1.0))
+            cr.set_source_rgba(*t["color"], dalpha)
             cr.set_line_width(t["width"])
             cr.set_dash([6.0, 4.0] if t["dash"] else [])
             for i in range(x.size):
@@ -348,15 +376,17 @@ class Plot(Gtk.DrawingArea):
             rgba(0.95)
             cr.move_to(ml + 8, mt + ph - 8); cr.show_text("   ".join(parts))
 
-    def _decimate_cached(self, t, n):
+    def _decimate_cached(self, t, n, mode=None):
         """Прореживание с кэшем в самой кривой: перерисовка от движения мыши не пересчитывает
         np.unique по 131 тыс. бинов для каждой кривой."""
-        key = (int(n), self.xlim, bool(self.xlog))
+        mode = mode or t.get("decim", "max")
+        key = (int(n), self.xlim, bool(self.xlog), mode)
         cache = t.setdefault("_dec", {})
         hit = cache.get(key)
         if hit is None:
-            cache.clear()
-            hit = cache[key] = self._decimate(t["x"], t["y"], n, t.get("decim", "max"))
+            if len(cache) > 4:
+                cache.clear()
+            hit = cache[key] = self._decimate(t["x"], t["y"], n, mode)
         return hit
 
     def _decimate(self, x, y, n, mode="max"):
