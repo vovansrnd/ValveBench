@@ -1,0 +1,96 @@
+{
+ "label": "before-blas4",
+ "states": {
+  "A": {
+   "proc_pct": 0.1,
+   "child_pct": 0,
+   "threads": {
+    "GUI (main)": 0.1
+   },
+   "children": {},
+   "tick_p50_ms": 0,
+   "tick_p95_ms": 0,
+   "tick_max_ms": 0
+  },
+  "B": {
+   "proc_pct": 2.6,
+   "child_pct": 0.2,
+   "threads": {
+    "GUI (main)": 0.2,
+    "cap_loop": 0.9,
+    "play_loop": 0.8,
+    "monitor_loop": 0.7
+   },
+   "children": {
+    "arecord": 0.1,
+    "aplay": 0.1
+   },
+   "tick_p50_ms": 0,
+   "tick_p95_ms": 0,
+   "tick_max_ms": 0
+  },
+  "C": {
+   "proc_pct": 32.8,
+   "child_pct": 0.4,
+   "threads": {
+    "GUI (main)": 26.9,
+    "служебный (python3)": 2.5,
+    "cap_loop": 1.0,
+    "play_loop": 1.7,
+    "monitor_loop": 0.7
+   },
+   "children": {
+    "arecord": 0.1,
+    "aplay": 0.3
+   },
+   "tick_p50_ms": 20.6,
+   "tick_p95_ms": 29.7,
+   "tick_max_ms": 54.4
+  },
+  "D": {
+   "proc_pct": 25.2,
+   "child_pct": 184.8,
+   "threads": {
+    "GUI (main)": 21.6,
+    "служебный (Thread-1)": 0.3,
+    "служебный (QueueFeed)": 0.7,
+    "cap_loop": 0.7,
+    "play_loop": 1.2,
+    "monitor_loop": 0.7
+   },
+   "children": {
+    "analysis-worker": 184.6,
+    "arecord": 0.1,
+    "aplay": 0.1
+   },
+   "tick_p50_ms": 21.3,
+   "tick_p95_ms": 38.2,
+   "tick_max_ms": 47.9
+  },
+  "E": {
+   "proc_pct": 25.2,
+   "child_pct": 181.6,
+   "threads": {
+    "GUI (main)": 21.4,
+    "служебный (Thread-1)": 0.5,
+    "служебный (QueueFeed)": 0.8,
+    "cap_loop": 0.7,
+    "play_loop": 1.2,
+    "monitor_loop": 0.6
+   },
+   "children": {
+    "analysis-worker": 181.4,
+    "arecord": 0.1,
+    "aplay": 0.1
+   },
+   "tick_p50_ms": 19.4,
+   "tick_p95_ms": 38.4,
+   "tick_max_ms": 65.8
+  }
+ },
+ "delta_b_c": 30.4,
+ "fs": 48000,
+ "tick_s": 0.075,
+ "spectrum_ms": 500,
+ "peak_ms": 250
+}

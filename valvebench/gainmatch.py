@@ -66,12 +66,28 @@ TARE_CONTEXT_KEYS = ("freq", "level_dbfs", "fs", "route", "device_key",
 
 
 def tone_fit(x, fs, f):
-    """(пиковая амплитуда, фаза рад, rms остатка) тона частоты f в x (LSQ cos/sin/const)."""
+    """(пиковая амплитуда, фаза рад, rms остатка) тона частоты f в x (LSQ cos/sin/const).
+
+    Базис из трёх колонок и его псевдообратная кешируются по (fs, f, n):
+    в живом цикле кандидаты частоты квантованы до 0.01 Гц, ключ стабилен.
+    Решение — через обращённый Грам 3×3 (тот же приём, что в
+    _harmonic_basis: базис хорошо обусловлен) вместо lstsq/SVD — на окне
+    24000 отсчётов экономит ~2 мс на каждый вызов при идентичном результате
+    (проверено регрессией ref_tone_fit).
+    """
     x = np.asarray(x, dtype=np.float64)
-    t = np.arange(x.size) / float(fs)
-    w = 2.0 * math.pi * f
-    a = np.column_stack((np.cos(w * t), np.sin(w * t), np.ones_like(t)))
-    coef, *_ = np.linalg.lstsq(a, x, rcond=None)
+    key = (int(fs), round(float(f), 6), int(x.size))
+    got = _cache_get(_TONE_CACHE, key, _TONE_CACHE_MAX)
+    if got is None:
+        t = np.arange(x.size, dtype=np.float64) / float(fs)
+        w = 2.0 * math.pi * f
+        a = np.column_stack((np.cos(w * t), np.sin(w * t), np.ones_like(t)))
+        gram = a.T @ a
+        pinv = np.linalg.pinv(gram, rcond=1e-12) @ a.T
+        got = (pinv, a)
+        _cache_put(_TONE_CACHE, key, got, _TONE_CACHE_MAX)
+    pinv, a = got
+    coef = pinv @ x
     res = x - a @ coef
     amp = math.hypot(coef[0], coef[1])
     return amp, math.atan2(-coef[1], coef[0]), float(np.sqrt(np.mean(res * res)))
@@ -99,6 +115,17 @@ _PINV_CACHE_BUDGET = 64 * 1024 * 1024
 _SUB_CACHE = _OrderedDict()
 _SUB_CACHE_MAX = 8
 _SUB_CACHE_BUDGET = 4 * 1024 * 1024
+# Отдельные семейства (0.1.20-dev3, профиль CPU): базис tone_fit
+# (косинус/синус/константа, ~1.2 МиБ на профиль) и комплексная экспонента
+# демодуляции оценки частоты (~0.4 МиБ) — каждое со своим лимитом, чтобы
+# вращение по частотам не вытесняло соседние семейства и не превращало
+# каждый тик в cache miss.
+_TONE_CACHE = _OrderedDict()
+_TONE_CACHE_MAX = 8
+_TONE_CACHE_BUDGET = 16 * 1024 * 1024
+_DEMOD_CACHE = _OrderedDict()
+_DEMOD_CACHE_MAX = 8
+_DEMOD_CACHE_BUDGET = 8 * 1024 * 1024
 _PINV_STATS = {"hit": 0, "miss": 0}
 
 
@@ -122,8 +149,17 @@ def _cache_get(store, key, max_len):
     return None
 
 
+_CACHE_BUDGETS = None  # заполняется лениво: id(хранилища) → бюджет
+
+
 def _cache_put(store, key, value, max_len):
-    budget = _PINV_CACHE_BUDGET if store is _PINV_CACHE else _SUB_CACHE_BUDGET
+    global _CACHE_BUDGETS
+    if _CACHE_BUDGETS is None:
+        _CACHE_BUDGETS = {id(_PINV_CACHE): _PINV_CACHE_BUDGET,
+                          id(_SUB_CACHE): _SUB_CACHE_BUDGET,
+                          id(_TONE_CACHE): _TONE_CACHE_BUDGET,
+                          id(_DEMOD_CACHE): _DEMOD_CACHE_BUDGET}
+    budget = _CACHE_BUDGETS[id(store)]
     size = _cache_nbytes(value)
     # Не вытесняем полезный кеш ради профиля, который всё равно не помещается.
     if size > budget:
@@ -380,8 +416,16 @@ def estimate_signal_frequency(x, fs, f_nominal, n_blocks=4):
     # Демодуляция по ГЛОБАЛЬНОМУ времени: при локальном времени подотрезка
     # фазовый набег между блоками содержал алиас несущей (2π·f_real·T_blk mod 2π),
     # а не расстройку тактов — оценка частоты срывалась (регрессия U1).
-    t_glob = np.arange(n_blocks * m) / float(fs)
-    z = x[:n_blocks * m] * np.exp(-2j * np.pi * f_nominal * t_glob)
+    # Экспонента зависит только от (fs, f_nominal, длина) и кешируется:
+    # f_nominal постоянен в течение живого измерения, exp на 24000 точек
+    # стоил ~0.5 мс на каждый тик.
+    key = (int(fs), round(float(f_nominal), 6), int(n_blocks * m))
+    demod = _cache_get(_DEMOD_CACHE, key, _DEMOD_CACHE_MAX)
+    if demod is None:
+        t_glob = np.arange(n_blocks * m) / float(fs)
+        demod = np.exp((-2j * np.pi * f_nominal) * t_glob)
+        _cache_put(_DEMOD_CACHE, key, demod, _DEMOD_CACHE_MAX)
+    z = x[:n_blocks * m] * demod
     zb = z.reshape(n_blocks, m).mean(axis=1)
     if float(np.max(np.abs(zb))) < 1e-9:
         return float(f_nominal), False
