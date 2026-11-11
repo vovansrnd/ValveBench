@@ -38,6 +38,9 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
+# изоляция от реальных экземпляров пользователя на общей шине D-Bus
+os.environ.setdefault("VALVEBENCH_APPLICATION_ID",
+                      "local.valvebench.test.{os.getpid()}")
 from valvebench import ui  # noqa: E402
 
 EMU_USBID = "041e:3f04"   # E-MU 0404 USB; fallback — любая duplex-карта

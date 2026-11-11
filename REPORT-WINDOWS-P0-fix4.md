@@ -115,6 +115,27 @@ selftest **96/96**; приёмочный блок **11/11**; compileall OK. Ед
    стабилизации одиночного окна; прогон приёмки GUI выполнен на ASUS DLX
    (fallback-карта, та же кодовая дорога AlsaCli).
 
+## 5а. fix4.1 — изоляция application_id (P0.1, по дополнению координатора)
+
+Реализовано ровно по заданию: dev-копии получают детерминированный
+`local.valvebench.dev.p<12 hex SHA-256(realpath)>`, установленная копия
+(без `verification/`) сохраняет `local.valvebench`, `VALVEBENCH_APPLICATION_ID`
+переопределяет всё. Полная последовательность координатора A→A→B→B→A→закрыть-A
+пройдена E2E в одной D-Bus-сессии: **18 PASS / 0 FAIL**
+(`test_dev_ids_e2e.sh`, вердикт: /tmp/dev-ids-verdict.txt) — запуск B поднимает
+ИМЕННО B (живой процесс, своё окно, свой id на шине), повторные запуски не
+плодят окон, повторная активация A показывает существующее окно A.
+
+Побочная находка при отладке: GDK внутри проверочных Xvfb-сессий может уходить
+на Wayland пользователя (сокет wayland-0 в унаследованном XDG_RUNTIME_DIR) —
+окна тестов тогда появляются на рабочем столе пользователя. Оба E2E-стенда
+теперь подменяют XDG_RUNTIME_DIR и фиксируют GDK_BACKEND=x11: тесты полностью
+изолированы от твоей сессии. (Это же объясняет, почему окна моих прошлых
+проверок иногда выглядели «на твоём столе».)
+
+Архив: `ValveBench-0.1.20-dev3-reviewfix4.1-singlewindow.tar.gz`
+(SHA256 в `.sha256` рядом); архивы fix3 и fix4 сохранены без изменений.
+
 ## 6. Состав fix4
 
 | Файл | Что |
@@ -123,7 +144,7 @@ selftest **96/96**; приёмочный блок **11/11**; compileall OK. Ед
 | `verification/test_app_single_window.py` | НОВЫЙ: in-process тест activate ×3 + закрытие (7 проверок) |
 | `verification/test_single_window_e2e.sh` | НОВЫЙ: E2E 4 сценария реальных запусков на изолированном D-Bus+Xvfb |
 | `verification/gui_live_probe.py` | пробник переведён на окно App (без второго окна) |
-| `verification/fix3-to-fix4-ui-app-singlewindow.patch` | диф fix3 → fix4 |
+| `verification/fix3-to-fix4.1-ui-singlewindow-and-ids.patch` | диф fix3 → fix4.1 (окно + id) |
 | `CHANGES-0.1.20-dev3-reviewfix4.md` | changelog |
 
 Архив: `/opt/MyApps/Adudio/ValveBench-0.1.20-dev3-reviewfix4-singlewindow.tar.gz`

@@ -24,6 +24,9 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib  # noqa: E402
 
+# изоляция от реальных экземпляров пользователя на общей шине D-Bus
+os.environ.setdefault("VALVEBENCH_APPLICATION_ID",
+                      "local.valvebench.test.{os.getpid()}")
 import valvebench.ui as ui  # noqa: E402
 
 STEPS = []

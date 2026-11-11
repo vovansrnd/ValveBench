@@ -3484,6 +3484,30 @@ class Window(Adw.ApplicationWindow):
         return False
 
 
+def _application_id() -> str:
+    """Идентификатор экземпляра приложения (fix4.1, P0.1 «изоляция копий»).
+
+    GApplication делает единственный экземпляр на СЕССИЮ по application_id.
+    При одном id у 27 рабочих копий запуск dev-копии активировал чужое окно
+    (иногда чужой версии), а сам процесс молча завершался. Правило:
+
+    * ``VALVEBENCH_APPLICATION_ID`` — явное переопределение (тесты, спецзапуски);
+    * в дереве есть каталог ``verification/`` → рабочая копия: детерминированный
+      ``local.valvebench.dev.p`` + 12 hex SHA-256 от realpath дерева — постоянен
+      для каталога, различен для разных копий;
+    * иначе (установленная копия, verification/ отсутствует) — стабильный
+      ``local.valvebench``, как и раньше.
+    """
+    override = os.environ.get("VALVEBENCH_APPLICATION_ID")
+    if override:
+        return override
+    tree = os.path.realpath(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if not os.path.isdir(os.path.join(tree, "verification")):
+        return "local.valvebench"          # установленная копия — стабильный id
+    digest = hashlib.sha256(tree.encode("utf-8", "surrogateescape")).hexdigest()[:12]
+    return f"local.valvebench.dev.p{digest}"
+
+
 class App(Adw.Application):
     """Строго одно главное окно на экземпляр приложения (fix4, P0 «два окна»).
 
@@ -3496,10 +3520,14 @@ class App(Adw.Application):
     активация только показывает существующее. Штатный обработчик close-request
     самого Window (остановка аудиопотока, освобождение ресурсов) не
     затрагивается; при закрытии окна сбрасывается только ссылка.
+
+    С fix4.1 идентификатор зависит от рабочего каталога (_application_id):
+    повторный запуск КОПИИ активирует её окно, запуск ДРУГОЙ копии поднимает
+    отдельный экземпляр — копии не активируют код друг друга.
     """
 
     def __init__(self):
-        super().__init__(application_id="local.valvebench")
+        super().__init__(application_id=_application_id())
         self._window = None
         self.connect("activate", self._on_activate)
 

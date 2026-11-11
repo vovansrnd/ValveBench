@@ -16,7 +16,13 @@
 if [ "${1:-}" != "__inner" ]; then
     TREE="${1:-$(dirname "$0")/..}"
     TREE="$(cd "$TREE" && pwd)"
-    exec dbus-run-session -- bash "$0" __inner "$TREE"
+    rm -f /tmp/single-window-verdict.txt
+    # dbus-run-session может не вернуть управление: порталы сессии живут дольше
+    # теста — потому timeout; итог берём из verdict-файла, а не из кода выхода
+    timeout -k 5 300 dbus-run-session -- bash "$0" __inner "$TREE"
+    grep -q FAIL /tmp/single-window-verdict.txt 2>/dev/null && exit 1
+    grep -q PASS /tmp/single-window-verdict.txt 2>/dev/null && exit 0
+    echo "нет вердикта — тест не дошёл до конца"; exit 1
 fi
 TREE="${2:-.}"
 cd "$TREE" || exit 1
@@ -67,6 +73,7 @@ Xvfb :97 -screen 0 1280x800x24 &
 XVFB_PID=$!
 sleep 1.5
 export DISPLAY=:97
+export GDK_BACKEND=x11
 
 echo "=== Сценарий 1: первый запуск ==="
 P1=$(run_app first)
@@ -105,4 +112,4 @@ pass_fail "повторный запуск: по-прежнему 1" "$N2" 1 | t
 pass_fail "третий запуск: по-прежнему 1"    "$N3" 1 | tee -a "$VERDICT"
 pass_fail "после закрытия: 1 новое окно"    "$N4" 1 | tee -a "$VERDICT"
 echo "$N1 $N2 $N3 $N4" > /tmp/single-window-counts.txt
-grep -q FAIL "$VERDICT" && exit 1 || exit 0
+exit 0
