@@ -1124,6 +1124,59 @@ def run_selftest():
           and migrated_user["live/" + h("Уровень генератора, dBFS")] == -9.5,
           f"RIAA view={migrated_user['resp/' + h('Показывать')]}; generator={migrated_user['live/' + h('Уровень генератора, dBFS')]} dBFS")
 
+    # ---- 0.1.20: живые метрики и контроль целостности (valvebench/livemetrics.py)
+    from . import livemetrics as lm
+    from .backend import parse_alsa_log
+    fs_l, n_l = 192000, 131072
+    tt = np.arange(n_l) / fs_l
+    rg = np.random.default_rng(2026)
+
+    def _tone(h2=-80.0, noise=-110.0, f=1000.37):
+        sig = dsp.dbfs_to_amp(noise) / math.sqrt(2) * math.sqrt(0.5 * fs_l / 20000.0)
+        return (0.3 * np.sin(2 * np.pi * f * tt) + 0.3 * 10 ** (h2 / 20) * np.sin(2 * np.pi * 2 * f * tt + 1.0)
+                + sig * rg.standard_normal(n_l))
+    xt = _tone()
+    r_live = lm.analyze_live_tone(xt, fs_l, 1000.0)
+    check("Живая панель: тон вне сетки БПФ — уровень, H2 и шум в пределах 0.15 дБ / 1 дБ",
+          r_live["ok"] and abs(r_live["level_dbfs"] - 20 * math.log10(0.3)) < 0.05
+          and abs(r_live["harmonics"][0]["dbc"] + 80.0) < 0.15 and abs(r_live["noise_dbfs"] + 110.0) < 1.0,
+          f"уровень {r_live['level_dbfs']:.3f}; H2 {r_live['harmonics'][0]['dbc']:.2f} dBc; N {r_live['noise_dbfs']:.2f} dBFS")
+    r_nt = lm.analyze_live_tone(1e-6 * rg.standard_normal(n_l), fs_l, 1000.0)
+    check("Живая панель: на шуме без тона честно «тона нет»", not r_nt["ok"], r_nt.get("reason", ""))
+    z = xt.copy(); z[50000:50000 + 16500] = 0.0
+    de = lm.detect_carrier_dropouts(z, fs_l, 1000.0)
+    check("Провал несущей 86 мс найден с длительностью ±3 мс",
+          len(de) == 1 and abs(de[0]["dur_s"] - 0.086) < 0.003,
+          f"{[(round(e['start_s'], 3), round(e['dur_s'] * 1e3, 1)) for e in de]}")
+    lost = np.concatenate([xt[:60000], xt[60000 + int(0.0505 * fs_l):]])[:110000]
+    pj = lm.detect_phase_jumps(lost, fs_l, 1000.0)
+    ci_lost = lm.frame_integrity(np.column_stack([lost, lost]), fs_l, 1000.0, (True, True))[0]
+    check("Потеря отсчётов без обнуления: скачок фазы найден, окно забраковано, ложного «провала» нет",
+          len(pj) == 1 and ci_lost.fatal and ci_lost.phase_jumps and not ci_lost.dropouts, f"{pj}")
+    g1 = xt.copy(); g1[70000] += 1e-3
+    gl = lm.detect_sample_glitches(g1, fs_l, 1000.0)
+    check("Аномалия 1 отсчёта: найдена и классифицирована как single_sample",
+          len(gl) == 1 and gl[0]["kind"] == "single_sample" and gl[0]["width"] == 1, f"{gl}")
+    clean_fp = 0
+    for k in range(10):
+        rg2 = np.random.default_rng(900 + k)
+        xx = _tone(h2=-60.0, noise=-100.0, f=float(rg2.uniform(300, 15000)))
+        clean_fp += any(c.fatal for c in lm.frame_integrity(np.column_stack([xx, xx]), fs_l, None, (False, False)))
+    check("Контроль целостности: 0 ложных срабатываний на 10 чистых окнах", clean_fp == 0, f"{clean_fp} ложных")
+    quiet = 1e-6 * rg.standard_normal(n_l)
+    ci = lm.frame_integrity(np.column_stack([xt, quiet]), fs_l, 1000.0, (True, True))
+    check("Тихий канал не порождает ложных «остановок несущей»; в отчёте стоит пометка",
+          not ci[1].dropouts and not ci[1].phase_jumps and bool(ci[1].note) and ci[0].driven, ci[1].note)
+    ev_log, rest = parse_alsa_log("overrun!!! (at least 84.612 ms long)\nunderrun!!! (at least 960 frames long)\nover")
+    ev_log2, rest2 = parse_alsa_log(rest + "run!!! (at least 12.5 ms long)\n")
+    check("Разбор stderr ALSA: длительность в мс и кадрах, разорванная строка не теряется",
+          len(ev_log) == 2 and abs(ev_log[0]["dur_ms"] - 84.612) < 1e-9 and ev_log[1]["dur_frames"] == 960.0
+          and len(ev_log2) == 1 and abs(ev_log2[0]["dur_ms"] - 12.5) < 1e-9, f"{ev_log} / {ev_log2}")
+    fw = np.arange(1, 20000) * 1.0
+    fc_, pc_ = lm.octave_smooth(fw, np.ones_like(fw), 6)
+    check("Сглаживание по долям октавы усредняет бины (белый шум остаётся белым)",
+          np.allclose(pc_, 1.0) and fc_.size < 120, f"{fc_.size} полос")
+
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
 
