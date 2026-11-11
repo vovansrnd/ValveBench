@@ -66,28 +66,12 @@ TARE_CONTEXT_KEYS = ("freq", "level_dbfs", "fs", "route", "device_key",
 
 
 def tone_fit(x, fs, f):
-    """(пиковая амплитуда, фаза рад, rms остатка) тона частоты f в x (LSQ cos/sin/const).
-
-    Базис из трёх колонок и его псевдообратная кешируются по (fs, f, n):
-    в живом цикле кандидаты частоты квантованы до 0.01 Гц, ключ стабилен.
-    Решение — через обращённый Грам 3×3 (тот же приём, что в
-    _harmonic_basis: базис хорошо обусловлен) вместо lstsq/SVD — на окне
-    24000 отсчётов экономит ~2 мс на каждый вызов при идентичном результате
-    (проверено регрессией ref_tone_fit).
-    """
+    """(пиковая амплитуда, фаза рад, rms остатка) тона частоты f в x (LSQ cos/sin/const)."""
     x = np.asarray(x, dtype=np.float64)
-    key = (int(fs), round(float(f), 6), int(x.size))
-    got = _cache_get(_TONE_CACHE, key, _TONE_CACHE_MAX)
-    if got is None:
-        t = np.arange(x.size, dtype=np.float64) / float(fs)
-        w = 2.0 * math.pi * f
-        a = np.column_stack((np.cos(w * t), np.sin(w * t), np.ones_like(t)))
-        gram = a.T @ a
-        pinv = np.linalg.pinv(gram, rcond=1e-12) @ a.T
-        got = (pinv, a)
-        _cache_put(_TONE_CACHE, key, got, _TONE_CACHE_MAX)
-    pinv, a = got
-    coef = pinv @ x
+    t = np.arange(x.size) / float(fs)
+    w = 2.0 * math.pi * f
+    a = np.column_stack((np.cos(w * t), np.sin(w * t), np.ones_like(t)))
+    coef, *_ = np.linalg.lstsq(a, x, rcond=None)
     res = x - a @ coef
     amp = math.hypot(coef[0], coef[1])
     return amp, math.atan2(-coef[1], coef[0]), float(np.sqrt(np.mean(res * res)))
@@ -115,17 +99,6 @@ _PINV_CACHE_BUDGET = 64 * 1024 * 1024
 _SUB_CACHE = _OrderedDict()
 _SUB_CACHE_MAX = 8
 _SUB_CACHE_BUDGET = 4 * 1024 * 1024
-# Отдельные семейства (0.1.20-dev3, профиль CPU): базис tone_fit
-# (косинус/синус/константа, ~1.2 МиБ на профиль) и комплексная экспонента
-# демодуляции оценки частоты (~0.4 МиБ) — каждое со своим лимитом, чтобы
-# вращение по частотам не вытесняло соседние семейства и не превращало
-# каждый тик в cache miss.
-_TONE_CACHE = _OrderedDict()
-_TONE_CACHE_MAX = 8
-_TONE_CACHE_BUDGET = 16 * 1024 * 1024
-_DEMOD_CACHE = _OrderedDict()
-_DEMOD_CACHE_MAX = 8
-_DEMOD_CACHE_BUDGET = 8 * 1024 * 1024
 _PINV_STATS = {"hit": 0, "miss": 0}
 
 
@@ -149,17 +122,8 @@ def _cache_get(store, key, max_len):
     return None
 
 
-_CACHE_BUDGETS = None  # заполняется лениво: id(хранилища) → бюджет
-
-
 def _cache_put(store, key, value, max_len):
-    global _CACHE_BUDGETS
-    if _CACHE_BUDGETS is None:
-        _CACHE_BUDGETS = {id(_PINV_CACHE): _PINV_CACHE_BUDGET,
-                          id(_SUB_CACHE): _SUB_CACHE_BUDGET,
-                          id(_TONE_CACHE): _TONE_CACHE_BUDGET,
-                          id(_DEMOD_CACHE): _DEMOD_CACHE_BUDGET}
-    budget = _CACHE_BUDGETS[id(store)]
+    budget = _PINV_CACHE_BUDGET if store is _PINV_CACHE else _SUB_CACHE_BUDGET
     size = _cache_nbytes(value)
     # Не вытесняем полезный кеш ради профиля, который всё равно не помещается.
     if size > budget:
@@ -179,15 +143,12 @@ def _harmonic_basis(fs, f, n, nharm):
     got = _cache_get(_PINV_CACHE, key, _PINV_CACHE_MAX)
     if got is not None:
         return got
-    # Заполняем матрицу сразу: список из 1+2H отдельных массивов и
-    # column_stack создавали несколько временных копий N×(1+2H), заметно
-    # удорожая cache miss в живом 75-мс цикле.
-    t = (np.arange(n, dtype=np.float64) / float(fs)) * (2.0 * math.pi * f)
-    A = np.empty((n, 1 + 2 * nharm), dtype=np.float64)
-    A[:, 0] = 1.0
+    t = np.arange(n) / float(fs)
+    w = 2.0 * math.pi * f
+    cols = [np.ones(n)]
     for h in range(1, nharm + 1):
-        np.cos(h * t, out=A[:, 2 * h - 1])
-        np.sin(h * t, out=A[:, 2 * h])
+        cols += [np.cos(h * w * t), np.sin(h * w * t)]
+    A = np.column_stack(cols)
     # A is tall (N×19). Form the tiny Gram matrix and compute its inverse
     # pseudo-inverse instead of an SVD of the full tall matrix: for this
     # normalized harmonic basis stayed well-conditioned in the tested domain
@@ -273,18 +234,22 @@ def calc_carrier_residual_db(level_dbfs, analysis):
     Add the reported hum powers back here so Static and Live use the same gate
     semantics (carrier divided by noise + hum, with DUT harmonics excluded).
     """
-    # ВАЖНО: dsp.analyze_tone НЕ исключает сетевые линии из noise_dbfs —
-    # маскируются только несущая и гармоники тона. Значит, hum уже входит в
-    # noise_dbfs, и добавлять его здесь второй раз нельзя (двойной учёт
-    # занижал C/R на ~3 дБ при hum −50 dBFS — найдено приёмкой 0.1.20).
-    # Функция сохранена для документирования семантики ворот:
-    # C/R = несущая / (шум + фон сети) в полосе анализатора.
+    powers = []
     noise_dbfs = analysis.get("noise_dbfs")
     try:
-        noise_power = 10.0 ** (float(noise_dbfs) / 10.0)
+        value = float(noise_dbfs)
+        if math.isfinite(value):
+            powers.append(10.0 ** (value / 10.0))
     except (TypeError, ValueError):
-        noise_power = 0.0
-    residual_dbfs = 10.0 * math.log10(max(noise_power, 1e-30))
+        pass
+    for item in analysis.get("hum", ()) or ():
+        try:
+            value = float(item.get("dbfs"))
+            if math.isfinite(value):
+                powers.append(10.0 ** (value / 10.0))
+        except (AttributeError, TypeError, ValueError):
+            continue
+    residual_dbfs = 10.0 * math.log10(max(math.fsum(powers), 1e-30))
     return float(level_dbfs) - residual_dbfs
 
 
@@ -371,6 +336,10 @@ def mains_proximity_warnings(freqs, mains_hz: float, df_hz: float = 1.0,
     if max_harmonic is None:
         max_harmonic = 400
     k_max = min(int(max_harmonic), int(math.floor(max(freqs) / mains_hz) + 1))
+    # альтернативные точки других профилей: совет уместен, только если замена
+    # реально уводит от данной гармоники
+    alternatives = sorted({round(float(g), 6) for name, (_, g) in FREQUENCY_PROFILES.items()
+                           for g in g} - {round(float(f), 6) for f in freqs})
     for f in freqs:
         for k in range(1, k_max + 1):
             fh = k * mains_hz
@@ -378,19 +347,9 @@ def mains_proximity_warnings(freqs, mains_hz: float, df_hz: float = 1.0,
                 continue
             distance_bins = abs(f - fh) / float(df_hz)
             if distance_bins < min_bins:
-                # Динамический обход: предлагаем ближайшую точку по обе стороны
-                # опасной гармоники. Это работает и для 50, и для 60 Гц, а также
-                # для дрейфующей фактической частоты сети (например, 49.97 Гц).
-                margin_hz = min_bins * float(df_hz) + 0.5 * float(df_hz)
-                dynamic = (fh - margin_hz, fh + margin_hz)
-                profile_alts = [float(g) for _name, (_label, values) in FREQUENCY_PROFILES.items()
-                                for g in values]
-                candidates = sorted(set(dynamic + tuple(profile_alts)), key=lambda g: abs(g - f))
-                alt = next((g for g in candidates if g > 0 and
-                            abs(g - fh) / float(df_hz) >= min_bins and
-                            all(abs(g - j * mains_hz) / float(df_hz) >= min_bins
-                                for j in range(1, int(math.floor(g / mains_hz)) + 1))), None)
-                tail = (f" — ближайшая безопасная частота около {alt:g} Гц" if alt
+                alt = next((g for g in alternatives
+                            if abs(g - fh) / float(df_hz) >= min_bins), None)
+                tail = (f" — рассмотрите частоту {alt:g} Гц" if alt
                         else " — измените частоту или убедитесь в малости фона сети")
                 out.append(
                     f"частота {f:g} Гц на {distance_bins:.1f} бина от {k}-й гармоники "
@@ -416,16 +375,8 @@ def estimate_signal_frequency(x, fs, f_nominal, n_blocks=4):
     # Демодуляция по ГЛОБАЛЬНОМУ времени: при локальном времени подотрезка
     # фазовый набег между блоками содержал алиас несущей (2π·f_real·T_blk mod 2π),
     # а не расстройку тактов — оценка частоты срывалась (регрессия U1).
-    # Экспонента зависит только от (fs, f_nominal, длина) и кешируется:
-    # f_nominal постоянен в течение живого измерения, exp на 24000 точек
-    # стоил ~0.5 мс на каждый тик.
-    key = (int(fs), round(float(f_nominal), 6), int(n_blocks * m))
-    demod = _cache_get(_DEMOD_CACHE, key, _DEMOD_CACHE_MAX)
-    if demod is None:
-        t_glob = np.arange(n_blocks * m) / float(fs)
-        demod = np.exp((-2j * np.pi * f_nominal) * t_glob)
-        _cache_put(_DEMOD_CACHE, key, demod, _DEMOD_CACHE_MAX)
-    z = x[:n_blocks * m] * demod
+    t_glob = np.arange(n_blocks * m) / float(fs)
+    z = x[:n_blocks * m] * np.exp(-2j * np.pi * f_nominal * t_glob)
     zb = z.reshape(n_blocks, m).mean(axis=1)
     if float(np.max(np.abs(zb))) < 1e-9:
         return float(f_nominal), False
@@ -526,21 +477,16 @@ class GainTracker:
             band_hi = 20000.0
         band_hi = min(band_hi, 0.45 * fs)
 
-        def _frequency_residual(fc):
-            # Для выбора между номиналом и оценкой достаточно LSQ основного
-            # тона: гармоники и широкополосный остаток остаются в residual.
-            # Не строим два полноразмерных H1…H9 базиса только ради выбора f.
-            # Раньше два кандидата могли вызвать два cache miss подряд в GUI;
-            # полный базис теперь строится ровно один раз для выбранной частоты.
-            return tone_fit(seg[:, 0], fs, fc)[2]
+        def _rms_nh(fc, ch):
+            return tone_fit_harmonics(seg[:, ch], fs, fc, nharm=9, f_max=0.45 * fs,
+                                      f_band_hi=band_hi, include_sinad=False)[2]
 
         # Фактическая частота: расстройка тактов (десятки ppm) при LSQ на
         # номинале попадает в остаток и ложно снижает C/R (10 кГц, 21 ppm →
         # ~14 дБ). Оценка по медианному фазовому набегу может сорваться на
         # мультилинейном сигнале (гребёнка гармоник, близкая линия), поэтому
-        # частота выбирается по минимуму остатка после LSQ основного тона
-        # между номиналом и оценкой. Гармоники/фон остаются в остатке, но
-        # полноразмерный H1…H9 базис не строится дважды ради выбора кандидата.
+        # частота выбирается по МИНИМУМУ негармонического остатка между
+        # номиналом и оценкой — метрологически осмысленный критерий.
         # Кандидаты нормализуются ДО оценки остатка. Раньше округление было
         # только после min(...): шумовая f_est гуляла на ~1e-3 Гц, а _rms_nh()
         # успевал создавать новый ключ pinv-кеша с точностью 1e-6 на каждом тике.
@@ -555,7 +501,7 @@ class GainTracker:
         # Порог вставки после квантования — половина шага 0.01 Гц.
         if f_ok and abs(f_est_q - f_nom) >= 0.01:
             candidates.insert(0, f_est_q)
-        f_fit = min(candidates, key=_frequency_residual)
+        f_fit = min(candidates, key=lambda fc: _rms_nh(fc, 0))
         amps, phs, res_nh, res_full, stab = [], [], [], [], []
         for c in (0, 1):
             a, ph, r_nh, r_full = tone_fit_harmonics(seg[:, c], fs, f_fit, nharm=9,
@@ -705,94 +651,15 @@ def device_key_from_hw(hw):
         return f"alsa:{card_id}:pcm{pcm}"
 
 
-def backend_device_key(backend):
-    """Stable identity for the complete DAC→ADC route.
-
-    Legacy full-duplex backends keep their old single-device identity. Split
-    ALSA endpoints use the same pair-key algorithm as the GTK calibration
-    profiles; never pass the textual ``hw:OUT|hw:IN`` composite to a parser
-    expecting one ALSA endpoint.
-    """
-    hw_out = getattr(backend, "hw_out", None)
-    hw_in = getattr(backend, "hw_in", None)
-    if hw_out is None and hw_in is None:
-        return device_key_from_hw(getattr(backend, "hw", "sim"))
-    if hw_out is None:
-        hw_out = getattr(backend, "hw", "sim")
-    if hw_in is None:
-        hw_in = getattr(backend, "hw", "sim")
-    out_key = device_key_from_hw(hw_out)
-    in_key = device_key_from_hw(hw_in)
-    if out_key == in_key:
-        return out_key
-    digest = hashlib.sha256((out_key + "\0" + in_key).encode("utf-8")).hexdigest()[:24]
-    return f"pair:{digest}"
-
-
-def backend_mixer_fingerprint(backend):
-    """Snapshot playback and capture mixer controls independently.
-
-    A split route is only fingerprinted when both physical snapshots are
-    available. Returning None is safer than creating a reference that cannot
-    later detect a mixer change on one side.
-    """
-    hw_out = getattr(backend, "hw_out", None)
-    hw_in = getattr(backend, "hw_in", None)
-    if hw_out is None and hw_in is None:
-        return mixer_fingerprint_from_hw(getattr(backend, "hw", None))
-    if hw_out is None:
-        hw_out = getattr(backend, "hw", "sim")
-    if hw_in is None:
-        hw_in = getattr(backend, "hw", "sim")
-    if str(hw_out) == str(hw_in):
-        return mixer_fingerprint_from_hw(hw_out)
-    out_fp = None if str(hw_out) == "sim" else mixer_fingerprint_from_hw(hw_out)
-    in_fp = None if str(hw_in) == "sim" else mixer_fingerprint_from_hw(hw_in)
-    if (str(hw_out) != "sim" and out_fp is None) or (str(hw_in) != "sim" and in_fp is None):
-        return None
-    return {"dac": out_fp, "adc": in_fp}
-
-
 def _device_description(backend):
-    hw_out = getattr(backend, "hw_out", None)
-    hw_in = getattr(backend, "hw_in", None)
-    if hw_out is not None or hw_in is not None:
-        if hw_out == hw_in:
-            return str(hw_in or getattr(backend, "hw", "sim"))
-        return f"{hw_out or '?'} → {hw_in or '?'}"
     hw = getattr(backend, "hw", None)
     if hw:
         return str(hw)
     return getattr(backend, "name", type(backend).__name__)
 
 
-def _mixer_only_blocks(contents_text):
-    """Keep only iface=MIXER control blocks of ``amixer contents``.
-
-    PCM-iface elements (например, Capture/Playback Channel Map) меняются
-    в зависимости от того, открыт ли PCM прямо сейчас (0,0 → 3,4 на E-MU
-    0404 USB), и не являются настройками микшера. Включать их в отпечаток —
-    делать каждый эталон невалидным между открытиями устройства
-    (найдено аппаратной приёмкой 0.1.21-dev4).
-    """
-    blocks, current = [], None
-    for line in contents_text.splitlines():
-        if line.startswith("numid="):
-            if current:
-                blocks.append(current)
-            current = [line]
-        elif current is not None:
-            current.append(line)
-    if current:
-        blocks.append(current)
-    keep = [b for b in blocks if ",iface=MIXER," in b[0]]
-    return "\n".join("\n".join(b) for b in keep)
-
-
 def mixer_fingerprint_from_hw(hw):
-    """Hash ALSA mixer controls so a loopback reference cannot survive
-    mixer changes. Только iface=MIXER: PCM-элементы летучи (см.
-    _mixer_only_blocks)."""
+    """Hash ALSA controls so a loopback reference cannot survive mixer changes."""
     match = re.fullmatch(r"hw:(\d+)(?:,\d+)?", str(hw or ""))
     if not match:
         return None
@@ -804,7 +671,7 @@ def mixer_fingerprint_from_hw(hw):
         return None
     if proc.returncode != 0 or not proc.stdout:
         return None
-    return hashlib.sha256(_mixer_only_blocks(proc.stdout.decode("utf-8", "replace")).encode("utf-8")).hexdigest()
+    return hashlib.sha256(proc.stdout).hexdigest()
 
 
 def riaa_level_adjust_db(f, iec=False):
@@ -828,14 +695,14 @@ def validate_loopback_reference(rig, reference, level_dbfs, frequencies=SERIES_F
     if not isinstance(reference, dict) or reference.get("kind") != "gain_match_loopback_reference":
         raise ValueError("нет эталона петли карты: сначала выполни шаг 1")
     backend = rig.be
-    key = backend_device_key(backend)
+    key = device_key_from_hw(getattr(backend, "hw", "sim"))
     if reference.get("device_key") != key:
         raise ValueError("эталон петли создан для другой звуковой карты; повтори шаг 1")
     if int(reference.get("repeats", 0)) < MIN_REPEATS_FOR_REFERENCE:
         raise ValueError("эталон петли создан без подтверждённой повторяемости; повтори шаг 1")
     expected_mixer = reference.get("mixer_fingerprint")
     if expected_mixer:
-        current_mixer = backend_mixer_fingerprint(backend)
+        current_mixer = mixer_fingerprint_from_hw(getattr(backend, "hw", None))
         if current_mixer is None:
             raise ValueError("не удалось проверить настройки ALSA-микшера; повтори шаг 1")
         if current_mixer != expected_mixer:
@@ -953,8 +820,9 @@ def measure_series(rig, frequencies=SERIES_FREQUENCIES, level_dbfs=-30.0, repeat
         generator_levels = {round(f, 6): level_dbfs for f in freqs}
 
     backend = rig.be
-    device_key = backend_device_key(backend)
-    mixer_fingerprint = backend_mixer_fingerprint(backend)
+    hw = getattr(backend, "hw", "sim")
+    device_key = device_key_from_hw(hw)
+    mixer_fingerprint = mixer_fingerprint_from_hw(hw)
 
     refs = None
     if purpose == "dut":

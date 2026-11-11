@@ -3,11 +3,10 @@
 Почему aplay/arecord, а не PortAudio-дуплекс
 --------------------------------------------
 Захват и воспроизведение — два независимых ALSA-потока (два процесса), без
-snd_pcm_link. Воспроизведение и запись могут идти через разные PCM endpoints.
-Абсолютное смещение старта находится по записанному сигналу, но независимые
-аппаратные тактовые генераторы могут иметь относительный дрейф. Поэтому точные
-измерения на разных устройствах выполняют низкоуровневую clock-проверку и
-отказываются продолжать при расхождении более 100 ppm; дрейф не исправляется.
+snd_pcm_link. USB-карты с implicit feedback (E-MU, многие UAC2) в связанном
+дуплексе ведут себя нестабильно, а раздельные потоки проверены годами.
+Расхождение стартов не важно: измерения построены так, что им не нужна
+привязка по времени (когерентные тоны, свип с деконволюцией).
 
 Здесь же — SimBackend: виртуальная карта с виртуальным усилителем для
 отладки без железа и для тестов.
@@ -22,80 +21,12 @@ import threading
 import time
 import tempfile
 import math
-import collections
 from dataclasses import dataclass
 
 import numpy as np
 
 from . import dsp
 from .pcm import BYTES, FORMATS, from_pcm, to_pcm
-
-
-
-
-# ----------------------------------------------------- события живого потока (0.1.20)
-
-_XRUN_WORD = re.compile(r"underrun|overrun|xrun", re.I)
-_XRUN_LEN = re.compile(r"at least\s+([\d.]+)\s*(ms|frames|samples)", re.I)
-
-
-def parse_alsa_log(text):
-    """Разобрать stderr aplay/arecord построчно: ([{'dur_ms','dur_frames','text'}], остаток).
-
-    Последняя строка без перевода строки не разбирается, а возвращается как остаток:
-    сообщение, разорванное границей чтения, раньше терялось (слово «over|run» пополам).
-    Длительность берётся из «(at least N ms long)»; вариант в кадрах/сэмплах учитывается тоже.
-    Это оценка СНИЗУ: реальный пропуск мог быть длиннее."""
-    lines = text.split("\n")
-    rest = lines.pop()
-    events = []
-    for ln in lines:
-        if not _XRUN_WORD.search(ln):
-            continue
-        ev = {"dur_ms": None, "dur_frames": None, "text": ln.strip()[:200]}
-        m = _XRUN_LEN.search(ln)
-        if m:
-            val, unit = float(m.group(1)), m.group(2).lower()
-            if unit == "ms":
-                ev["dur_ms"] = val
-            else:
-                ev["dur_frames"] = val
-        events.append(ev)
-    return events, rest
-
-
-def xrun_suspect(kind, tail, fs, dur_ms=None):
-    """Подозрительный интервал [a, b] в кадрах кольцевого буфера для события XRUN.
-
-    capture (overrun АЦП): потерянные отсчёты в записи ОТСУТСТВУЮТ, а в позиции потери стоит
-      разрыв; позиция известна с точностью опроса/очереди pipe (запас 0.15 с назад), после
-      перезапуска потока возможен переходный процесс (0.05 с + длительность вперёд).
-    playback (underrun ЦАП): тишина в сигнале длилась ≥ dur (началась за dur до сообщения) и
-      дойдёт до захвата позже на задержку буферов воспроизведения (до ~0.6 с; берём 1.2 с)
-      плюс длительность. Неизвестная длительность считается равной 0.1 с."""
-    d = (float(dur_ms) / 1000.0) if dur_ms else 0.1
-    if kind == "capture":
-        return int(tail - 0.15 * fs), int(tail + (0.05 + d) * fs)
-    return int(tail - (0.10 + d) * fs), int(tail + (1.20 + d) * fs)
-
-
-def _set_pipe_size(fd, size):
-    """Увеличить буфер pipe (Linux F_SETPIPE_SZ). Возвращает фактический размер или None."""
-    try:
-        import fcntl
-        return int(fcntl.fcntl(fd, getattr(fcntl, "F_SETPIPE_SZ", 1031), int(size)))
-    except Exception:  # noqa: BLE001 — не-Linux, лимит pipe-max-size и т.п.
-        return None
-
-
-def _pipe_pending_bytes(fd):
-    try:
-        import fcntl
-        import struct
-        import termios
-        return struct.unpack("i", fcntl.ioctl(fd, termios.FIONREAD, b"\0\0\0\0"))[0]
-    except Exception:  # noqa: BLE001
-        return 0
 
 
 # ------------------------------------------------------------ обнаружение карт
@@ -143,35 +74,6 @@ def supported_pcm_rates(hw, direction):
     streams = parse_stream(int(m.group(1)))
     rates = {rate for alt in streams[direction] if alt.channels >= 2 for rate in alt.rates}
     return tuple(sorted(rates))
-
-
-def common_pcm_rates(hw_out, hw_in, candidates=(44100, 48000, 88200, 96000, 176400, 192000)):
-    """Common measurement rates for separate DAC/ADC endpoints.
-
-    The measurement Rig has one timebase, so only rates advertised by both
-    physical directions are returned. If one driver omits stream0 data, the
-    known side constrains the candidates and the exact PCM open is authoritative.
-    If neither side publishes capabilities, candidates are returned for probing.
-    """
-    is_sim_out, is_sim_in = str(hw_out) == "sim", str(hw_in) == "sim"
-    if is_sim_out and is_sim_in:
-        return tuple(int(r) for r in candidates)
-    if is_sim_out != is_sim_in:
-        # The virtual rig is full-duplex; a half-simulated signal path would
-        # not represent the selected physical route.
-        return ()
-    out_rates = (set(supported_pcm_rates(hw_out, "Playback"))
-                 if str(hw_out) != "sim" else set(int(r) for r in candidates))
-    in_rates = (set(supported_pcm_rates(hw_in, "Capture"))
-                if str(hw_in) != "sim" else set(int(r) for r in candidates))
-    allowed = set(int(r) for r in candidates)
-    if out_rates and in_rates:
-        return tuple(sorted((out_rates & in_rates) & allowed))
-    if out_rates:
-        return tuple(sorted(out_rates & allowed))
-    if in_rates:
-        return tuple(sorted(in_rates & allowed))
-    return tuple(int(r) for r in candidates)
 
 
 def supported_duplex_rates(hw):
@@ -389,14 +291,6 @@ class Backend:
     def live_recent(self, seconds):
         raise NotImplementedError
 
-    def live_recent_stamped(self, seconds):
-        """(данные, номер_кадра_конца) — атомарная пара. Номер None, если backend не ведёт счёт."""
-        return self.live_recent(seconds), None
-
-    def live_events(self, since_frame=0):
-        """События потока (XRUN, паузы прихода данных) с подозрительным интервалом в кадрах."""
-        return []
-
     def live_status(self):
         return {"backend": self.name, "running": bool(self.live_running), "xruns": None,
                 "capture_frames": 0, "playback_frames": 0, "capture_alive": bool(self.live_running),
@@ -419,21 +313,10 @@ class AlsaCli(Backend):
 
     name = "alsa"
 
-    def __init__(self, hw="hw:0,0", in_map=(0, 1), out_map=(0, 1), buffer_ms=100,
-                 hw_out=None, hw_in=None):
-        # Backward-compatible single-endpoint alias plus independently selected
-        # playback (DAC) and capture (ADC) endpoints. Measurement Rig still
-        # requires one common sample rate; separate clock domains are checked
-        # by the measurement workflow and are not assumed synchronized.
-        self.hw_out = str(hw_out if hw_out is not None else hw)
-        self.hw_in = str(hw_in if hw_in is not None else hw)
-        self.hw = self.hw_in if self.hw_in == self.hw_out else f"{self.hw_out}|{self.hw_in}"
-        mo = re.match(r"hw:(\d+)", self.hw_out)
-        mi = re.match(r"hw:(\d+)", self.hw_in)
-        self.card_out = int(mo.group(1)) if mo else None
-        self.card_in = int(mi.group(1)) if mi else None
-        # Legacy attribute used by older diagnostics; it describes capture.
-        self.card = self.card_in
+    def __init__(self, hw="hw:0,0", in_map=(0, 1), out_map=(0, 1), buffer_ms=100):
+        self.hw = hw
+        m = re.match(r"hw:(\d+)", hw)
+        self.card = int(m.group(1)) if m else None
         self.in_map, self.out_map = tuple(in_map), tuple(out_map)
         self.buffer_ms = buffer_ms
         self.fmt_in = self.fmt_out = "S24_3LE"
@@ -463,65 +346,32 @@ class AlsaCli(Backend):
         self._live_playback_last_progress_at = None
         self._live_progress_timeout_s = 0.5
         self._live_last_status = None
-        # 0.1.20: события потока с привязкой к позиции в кольце, большие буферы live-режима
-        self.live_capture_buffer_ms = 400      # arecord --buffer-time (None = по умолчанию ALSA)
-        self.live_playback_buffer_ms = 250     # aplay --buffer-time
-        self.live_capture_pipe_bytes = 1 << 20
-        self._ring_total = 0                   # кадров записано в кольцо (растёт под _ring_lock)
-        self._events = collections.deque(maxlen=512)
-        self._events_lock = threading.Lock()
-        self._poll_lock = threading.Lock()     # весь цикл чтения/разбора stderr — один поток за раз
-        self._live_carry = ["", ""]
-        self._live_gap_max_s = 0.0
-        self._live_buffers_used = None
-        self._pipe_sizes = (None, None)
 
     # -- настройка
 
     def open(self, fs):
         self.fs = int(fs)
         self.notes = []
-        # The ring is a fixed-duration history buffer. It was previously
-        # allocated in __init__ against Backend.fs (48 kHz), so at 192 kHz
-        # it silently retained only one quarter of the intended 12 seconds.
-        self._ring_capacity = int(12.0 * self.fs)
-        self._ring = np.zeros((self._ring_capacity, 2), dtype=np.float64)
-        self._ring_pos = 0
-        self._ring_count = 0
-        self._ring_total = 0
-        if self.card_in is not None:
-            streams_in = parse_stream(self.card_in)
-            ci = choose_format(streams_in["Capture"], self.fs)
-            if ci is None:
-                self.notes.append(
-                    f"ADC {self.hw_in} не заявляет {self.fs} Гц с ≥2 каналами "
-                    f"(/proc/asound/card{self.card_in}/stream0) — пробую 2 канала, S24_3LE")
+        if self.card is not None:
+            st = parse_stream(self.card)
+            ci, co = choose_format(st["Capture"], self.fs), choose_format(st["Playback"], self.fs)
+            if ci is None or co is None:
+                self.notes.append(f"карта не заявляет {self.fs} Гц с ≥2 каналами "
+                                  f"(/proc/asound/card{self.card}/stream0) — пробую 2 канала, S24_3LE")
             else:
-                self.fmt_in, self.ch_in = ci
-        if self.card_out is not None:
-            streams_out = parse_stream(self.card_out)
-            co = choose_format(streams_out["Playback"], self.fs)
-            if co is None:
-                self.notes.append(
-                    f"DAC {self.hw_out} не заявляет {self.fs} Гц с ≥2 каналами "
-                    f"(/proc/asound/card{self.card_out}/stream0) — пробую 2 канала, S24_3LE")
-            else:
-                self.fmt_out, self.ch_out = co
+                (self.fmt_in, self.ch_in), (self.fmt_out, self.ch_out) = ci, co
         if max(self.in_map) >= self.ch_in or max(self.out_map) >= self.ch_out:
             raise BackendError(f"карта открывается как {self.ch_in} вх / {self.ch_out} вых, "
                                f"а выбраны каналы {self.in_map}/{self.out_map}")
 
-    def _cmd(self, tool, direction, quiet=True, buffer_ms=None):
+    def _cmd(self, tool, direction, quiet=True):
         fmt, ch = (self.fmt_in, self.ch_in) if direction == "c" else (self.fmt_out, self.ch_out)
         c = [tool]
         if quiet:
             c.append("-q")
-        endpoint = self.hw_in if direction == "c" else self.hw_out
-        c += ["-D", endpoint, "-t", "raw", "-f", fmt, "-r", str(self.fs), "-c", str(ch)]
+        c += ["-D", self.hw, "-t", "raw", "-f", fmt, "-r", str(self.fs), "-c", str(ch)]
         if direction == "p":
-            c += [f"--buffer-time={int(buffer_ms if buffer_ms is not None else self.buffer_ms) * 1000}"]
-        elif buffer_ms is not None:
-            c += [f"--buffer-time={int(buffer_ms) * 1000}"]
+            c += [f"--buffer-time={self.buffer_ms * 1000}"]
         return c
 
     def _to_hw_out(self, out):
@@ -560,20 +410,13 @@ class AlsaCli(Backend):
         timeout = max(12.0, duration + 8.0)
         notes = []
 
-        def _read_err(f):
-            f.seek(0)
-            return f.read().decode("utf-8", "replace")
-
-        # stderr arecord — во временный файл, а не в pipe: при шторме XRUN (>64 КиБ сообщений)
-        # он читался только после wait() и блокировал arecord до таймаута.
-        with tempfile.TemporaryFile(mode="w+b") as capture, \
-                tempfile.TemporaryFile(mode="w+b") as cap_err_file:
-            cap = subprocess.Popen(rec_cmd, stdout=capture, stderr=cap_err_file)
+        with tempfile.TemporaryFile(mode="w+b") as capture:
+            cap = subprocess.Popen(rec_cmd, stdout=capture, stderr=subprocess.PIPE)
             try:
                 # Даём ALSA открыть PCM и начать запись до подачи сигнала.
                 time.sleep(0.30)
                 if cap.poll() is not None:
-                    err = _read_err(cap_err_file)
+                    err = cap.stderr.read().decode("utf-8", "replace") if cap.stderr else ""
                     raise BackendError(f"arecord не смог открыть захват (код {cap.returncode}): {err.strip()}")
                 try:
                     play = subprocess.run(play_cmd, input=data, stdout=subprocess.DEVNULL,
@@ -587,7 +430,7 @@ class AlsaCli(Backend):
                     cap.wait(timeout=timeout)
                 except subprocess.TimeoutExpired as exc:
                     raise BackendError(f"arecord не завершился за {timeout:.1f} с; процесс остановлен") from exc
-                cap_err = _read_err(cap_err_file)
+                cap_err = cap.stderr.read().decode("utf-8", "replace") if cap.stderr else ""
                 if cap.returncode != 0:
                     raise BackendError(f"arecord завершился с кодом {cap.returncode}: {cap_err.strip()}")
                 if re.search(r"underrun|overrun|xrun", cap_err, re.I):
@@ -648,26 +491,6 @@ class AlsaCli(Backend):
 
     # -- живой режим
 
-    def _open_live_processes(self, cap_buf, play_buf):
-        """Запустить arecord/aplay; вернуть список ошибок (пусто — оба открылись)."""
-        self._live_err_files = [tempfile.TemporaryFile(mode="w+b"),
-                                tempfile.TemporaryFile(mode="w+b")]
-        self._live_cap = subprocess.Popen(
-            self._cmd("arecord", "c", quiet=False, buffer_ms=cap_buf),
-            stdout=subprocess.PIPE, stderr=self._live_err_files[0])
-        self._live_play = subprocess.Popen(
-            self._cmd("aplay", "p", quiet=False, buffer_ms=play_buf),
-            stdin=subprocess.PIPE, stderr=self._live_err_files[1])
-        time.sleep(0.20)
-        failed = []
-        for proc, name, err_file in ((self._live_cap, "arecord", self._live_err_files[0]),
-                                     (self._live_play, "aplay", self._live_err_files[1])):
-            if proc.poll() is not None:
-                err_file.seek(0)
-                err = err_file.read().decode("utf-8", "replace")
-                failed.append(f"{name} (код {proc.returncode}): {err.strip()}")
-        return failed
-
     def live_start(self):
         if self.live_running:
             return
@@ -677,48 +500,38 @@ class AlsaCli(Backend):
             self._ring = np.zeros((self._ring_capacity, 2), dtype=np.float64)
             self._ring_pos = 0
             self._ring_count = 0
-            self._ring_total = 0
         self.live_error = ""
         self._live_capture_frames = 0
         self._live_playback_frames = 0
         self._live_xruns_capture = 0
         self._live_xruns_playback = 0
         self._live_log_offsets = [0, 0]
-        self._live_carry = ["", ""]
-        self._live_gap_max_s = 0.0
-        with self._events_lock:
-            self._events.clear()
         self._live_started_at = time.monotonic()
         self._live_capture_last_progress_at = None
         self._live_playback_last_progress_at = None
         self._live_last_status = None
         try:
-            # stderr — во временные файлы (не pipe без читателя: поток xrun-сообщений способен
-            # заполнить pipe и заблокировать ALSA-процесс); их читает монитор раз в 20 мс.
-            # Большие буферы live-режима дают запас против пауз GUI/планировщика; если карта
-            # их не принимает — повтор с прежними значениями.
-            attempts = [(self.live_capture_buffer_ms, self.live_playback_buffer_ms),
-                        (None, self.buffer_ms)]
+            # Не оставляем stderr=PIPE без читателя: поток xrun-предупреждений
+            # способен заполнить pipe и намертво заблокировать процесс ALSA.
+            self._live_err_files = [tempfile.TemporaryFile(mode="w+b"),
+                                    tempfile.TemporaryFile(mode="w+b")]
+            self._live_cap = subprocess.Popen(self._cmd("arecord", "c", quiet=False), stdout=subprocess.PIPE,
+                                              stderr=self._live_err_files[0])
+            self._live_play = subprocess.Popen(self._cmd("aplay", "p", quiet=False), stdin=subprocess.PIPE,
+                                               stderr=self._live_err_files[1])
+            time.sleep(0.20)
             failed = []
-            for cap_buf, play_buf in attempts:
-                failed = self._open_live_processes(cap_buf, play_buf)
-                if not failed:
-                    self._live_buffers_used = (cap_buf, play_buf)
-                    break
-                self.live_stop()
-                self._live_stop.clear()
-                self._live_log_offsets = [0, 0]
+            for proc, name, err_file in ((self._live_cap, "arecord", self._live_err_files[0]),
+                                         (self._live_play, "aplay", self._live_err_files[1])):
+                if proc.poll() is not None:
+                    err_file.seek(0)
+                    err = err_file.read().decode("utf-8", "replace")
+                    failed.append(f"{name} (код {proc.returncode}): {err.strip()}")
             if failed:
                 raise BackendError("не удалось открыть live audio: " + "; ".join(failed))
-            frame_out = self.ch_out * BYTES[self.fmt_out]
-            play_target = 1 << max(16, int(math.log2(max(1, 0.25 * self.fs * frame_out))))
-            self._pipe_sizes = (
-                _set_pipe_size(self._live_cap.stdout.fileno(), self.live_capture_pipe_bytes),
-                _set_pipe_size(self._live_play.stdin.fileno(), min(play_target, 1 << 20)))
             self.live_running = True
             self._threads = [threading.Thread(target=self._cap_loop, daemon=True),
-                             threading.Thread(target=self._play_loop, daemon=True),
-                             threading.Thread(target=self._monitor_loop, daemon=True)]
+                             threading.Thread(target=self._play_loop, daemon=True)]
             for t in self._threads:
                 t.start()
         except Exception:
@@ -728,15 +541,12 @@ class AlsaCli(Backend):
     def _cap_loop(self):
         frame = self.ch_in * BYTES[self.fmt_in]
         rest = b""
-        last_arrival = time.monotonic()
-        period = None            # типичный интервал между «пачками» данных (период ALSA)
         while not self._live_stop.is_set():
             b = self._live_cap.stdout.read(frame * 2048)
             if not b:
                 if not self._live_stop.is_set():
                     self._live_failure(f"arecord завершился неожиданно (код {self._live_cap.poll()})")
                 break
-            now = time.monotonic()
             rest += b
             use = len(rest) // frame * frame
             if not use:
@@ -746,24 +556,8 @@ class AlsaCli(Backend):
             n = len(blk)
             if n == 0:
                 continue
-            # Пауза прихода данных: либо хост не успевал читать (данные придут пачкой и без
-            # потерь), либо устройство молчало. Само по себе потерей не считается — это
-            # информационное событие; потерю подтверждают XRUN и детекторы в данных.
-            # arecord отдаёт данные ПЕРИОДАМИ (с буфером 400 мс — раз в ~100 мс), поэтому
-            # порог привязан к типичному интервалу между пачками, а не к интервалу между
-            # чтениями по 2048 кадров (так ложно срабатывало на каждом периоде).
-            gap = now - last_arrival
-            last_arrival = now
-            if gap >= 0.003:
-                period = gap if period is None else 0.9 * period + 0.1 * min(gap, 2.5 * period)
-                if self._ring_total > self.fs and gap > max(0.15, 3.0 * period):
-                    self._live_gap_max_s = max(self._live_gap_max_s, gap)
-                    self._add_event("capture_gap", self._ring_total, gap_ms=gap * 1e3,
-                                    suspect=(self._ring_total - int(0.05 * self.fs),
-                                             self._ring_total + int(0.05 * self.fs)),
-                                    fatal=False)
             self._live_capture_frames += n
-            self._live_capture_last_progress_at = now
+            self._live_capture_last_progress_at = time.monotonic()
             with self._ring_lock:
                 cap = self._ring_capacity
                 if n >= cap:
@@ -779,78 +573,6 @@ class AlsaCli(Backend):
                         self._ring[:remaining] = blk[first:]
                     self._ring_pos = (pos + n) % cap
                     self._ring_count = min(cap, self._ring_count + n)
-                self._ring_total += n
-
-    def _monitor_loop(self):
-        while not self._live_stop.wait(0.02):
-            try:
-                self._poll_logs()
-            except Exception:  # noqa: BLE001 — монитор не должен падать
-                pass
-
-    def _add_event(self, kind, frame, suspect, fatal, **extra):
-        ev = {"kind": kind, "frame": int(frame), "t": time.monotonic(),
-              "suspect": (int(suspect[0]), int(suspect[1])), "fatal": bool(fatal)}
-        ev.update(extra)
-        with self._events_lock:
-            self._events.append(ev)
-
-    def _poll_logs(self):
-        """Прочитать новые строки stderr обоих процессов; каждое XRUN-сообщение — событие.
-
-        Позиция события — конец потока в кадрах на момент разбора (с учётом данных, уже
-        лежащих в pipe, но ещё не прочитанных). Подозрительный интервал выбран с запасом:
-        для overrun АЦП сообщение приходит сразу после потери, для underrun ЦАП дефект
-        дойдёт до захвата только через задержку буферов воспроизведения."""
-        with self._poll_lock:
-            self._poll_logs_locked()
-
-    def _poll_logs_locked(self):
-        # Вызывается и монитором (каждые 20 мс), и live_status() из GUI: без общей блокировки
-        # два потока читали один и тот же диапазон stderr и регистрировали XRUN дважды.
-        import os
-        with self._events_lock:
-            files = list(self._live_err_files)
-        for idx, err_file in enumerate(files):
-            try:
-                size = os.fstat(err_file.fileno()).st_size
-                off = self._live_log_offsets[idx]
-                if size <= off:
-                    continue
-                chunk = os.pread(err_file.fileno(), size - off, off)
-                self._live_log_offsets[idx] = size
-            except (OSError, ValueError):
-                continue
-            text = self._live_carry[idx] + chunk.decode("utf-8", "replace")
-            events, self._live_carry[idx] = parse_alsa_log(text)
-            if not events:
-                continue
-            pending = 0
-            try:
-                if self._live_cap is not None and self._live_cap.stdout is not None:
-                    pending = _pipe_pending_bytes(self._live_cap.stdout.fileno()) // max(
-                        1, self.ch_in * BYTES[self.fmt_in])
-            except (OSError, ValueError):
-                pending = 0
-            tail = self._ring_total + pending
-            for ev in events:
-                dur = ev["dur_ms"] if ev["dur_ms"] is not None else (
-                    ev["dur_frames"] / self.fs * 1e3 if ev["dur_frames"] else None)
-                if idx == 0:
-                    self._live_xruns_capture += 1
-                    self._add_event("xrun_capture", tail,
-                                    suspect=xrun_suspect("capture", tail, self.fs, dur),
-                                    fatal=True, dur_ms=dur, text=ev["text"])
-                else:
-                    self._live_xruns_playback += 1
-                    self._add_event("xrun_playback", tail,
-                                    suspect=xrun_suspect("playback", tail, self.fs, dur),
-                                    fatal=True, dur_ms=dur, text=ev["text"])
-
-    def live_events(self, since_frame=0):
-        """События, подозрительный интервал которых заканчивается не раньше since_frame."""
-        with self._events_lock:
-            return [dict(e) for e in self._events if e["suspect"][1] >= int(since_frame)]
 
     def _play_loop(self):
         silence = np.zeros((self.fs // 10, 2))
@@ -893,28 +615,36 @@ class AlsaCli(Backend):
             self._loop = value
 
     def live_recent(self, seconds):
-        return self.live_recent_stamped(seconds)[0]
-
-    def live_recent_stamped(self, seconds):
-        """(данные, номер кадра конца окна). Пара снимается под одной блокировкой."""
         wanted = max(0, int(float(seconds) * self.fs))
         with self._ring_lock:
-            total = self._ring_total
             n = min(wanted, self._ring_count)
             if n <= 0:
-                return np.zeros((0, 2), dtype=np.float64), total
+                return np.zeros((0, 2), dtype=np.float64)
             start = (self._ring_pos - n) % self._ring_capacity
             end = start + n
             if end <= self._ring_capacity:
-                return self._ring[start:end].copy(), total
-            return np.vstack((self._ring[start:], self._ring[:end - self._ring_capacity])).copy(), total
+                return self._ring[start:end].copy()
+            return np.vstack((self._ring[start:], self._ring[:end - self._ring_capacity])).copy()
 
     def live_status(self):
-        """Снимок счётчиков и XRUN-сообщений ALSA (логи читает монитор; здесь — дочитывание)."""
-        try:
-            self._poll_logs()
-        except Exception:  # noqa: BLE001
-            pass
+        """Snapshot counters and ALSA xrun messages without moving shared file offsets."""
+        import os
+        import re
+
+        for idx, err_file in enumerate(self._live_err_files):
+            try:
+                size = os.fstat(err_file.fileno()).st_size
+                offset = self._live_log_offsets[idx]
+                if size > offset:
+                    chunk = os.pread(err_file.fileno(), size - offset, offset).decode("utf-8", "replace")
+                    self._live_log_offsets[idx] = size
+                    hits = len(re.findall(r"underrun|overrun|xrun", chunk, re.I))
+                    if idx == 0:
+                        self._live_xruns_capture += hits
+                    else:
+                        self._live_xruns_playback += hits
+            except (OSError, ValueError):
+                pass
         cap_alive = self._live_cap is not None and self._live_cap.poll() is None
         play_alive = self._live_play is not None and self._live_play.poll() is None
         now = time.monotonic()
@@ -924,9 +654,6 @@ class AlsaCli(Backend):
         play_age = max(0.0, now - play_ref) if play_ref is not None else None
         timeout_s = float(getattr(self, "_live_progress_timeout_s", 0.5))
         running = bool(self.live_running)
-        with self._events_lock:
-            n_events = len(self._events)
-            last = dict(self._events[-1]) if self._events else None
         status = {
             "backend": "alsa", "running": running,
             "capture_alive": cap_alive, "playback_alive": play_alive,
@@ -940,11 +667,7 @@ class AlsaCli(Backend):
             "capture_xruns": int(self._live_xruns_capture),
             "playback_xruns": int(self._live_xruns_playback),
             "xruns": int(self._live_xruns_capture + self._live_xruns_playback),
-            "events": n_events, "last_event": last,
-            "gap_max_ms": self._live_gap_max_s * 1e3,
-            "buffers_ms": self._live_buffers_used, "pipe_bytes": self._pipe_sizes,
             "details": self.live_error or "ALSA stderr checked for underrun/overrun messages",
-            "dac_device": self.hw_out, "adc_device": self.hw_in,
         }
         self._live_last_status = status
         return status
@@ -983,13 +706,12 @@ class AlsaCli(Backend):
             if thread.is_alive() and thread is not threading.current_thread():
                 thread.join(timeout=1.0)
         self._threads = []
-        with self._events_lock:
-            files, self._live_err_files = self._live_err_files, []
-        for err_file in files:
+        for err_file in self._live_err_files:
             try:
                 err_file.close()
             except Exception:
                 pass
+        self._live_err_files = []
         self._live_play = self._live_cap = None
         self.live_running = False
 
@@ -1083,12 +805,6 @@ class SimBackend(Backend):
 
     def live_stop(self):
         self.live_running = False
-
-    def live_events(self, since_frame=0):
-        return []
-
-    def live_recent_stamped(self, seconds):
-        return self.live_recent(seconds), None
 
     def live_status(self):
         return {"backend": "sim", "running": bool(self.live_running), "capture_alive": bool(self.live_running),

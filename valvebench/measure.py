@@ -149,13 +149,7 @@ class Rig:
             env = np.maximum(env, amp)
         blocks = env[: m * blk].reshape(m, blk).max(axis=1)
         noise = max(float(np.median(blocks[: int(0.2 / 0.005)])), 1e-7)
-        # Робастный пик: одиночный щелчок открытия (±0.5 FS на одном сэмпле,
-        # 0.14 % блоков на DLX при холодном старте; найдено приёмкой
-        # 0.1.21-dev4, отказ воспроизведён 60-с циклами) через 0.1*max
-        # поднимал порог выше огибающей тона и отвергал настоящий тон
-        # при отношении тон/шум 190x. 99-й перцентиль исключает редкие
-        # выбросы; sustain-критерий ниже по-прежнему отбрасывает щелчки.
-        peak = float(np.percentile(blocks, 99))
+        peak = float(blocks.max())
         thr = max(8.0 * noise, 0.1 * peak)
         # Устойчивость: за 1 с от кандидата огибающая выше порога ≥90 % времени.
         # Щелчок (50 мс подъёма) даёт ~5 % — отклоняется; настоящий тон с
@@ -188,20 +182,10 @@ class Rig:
 # ------------------------------------------------------------------ проверка такта
 
 
-def clock_check(rig, level_dbfs=-72.0):
-    """Check DAC/ADC clock agreement with a deliberately low-level 1 kHz tone.
-
-    The signal passes through the user's physical path (which may include an
-    Anti-RIAA network and a phono preamp). A high default level could overdrive
-    a DUT, so the preflight uses -72 dBFS unless the caller explicitly opts in
-    to another level.
-    """
-    level_dbfs = float(level_dbfs)
-    if not math.isfinite(level_dbfs) or not -120.0 <= level_dbfs <= -24.0:
-        raise MeasureError("уровень проверки такта должен быть от -120 до -24 dBFS")
-    k, a = rig.amp_tone(1000.0, level_dbfs)
+def clock_check(rig):
+    k, a = rig.amp_tone(1000.0, -12.0)
     wins, warns = rig.run([([(k, a)], [(k, a)], 0.4)])
-    out = {"kind": "clock", "test_level_dbfs": level_dbfs, "warnings": warns, "ch": {}}
+    out = {"kind": "clock", "warnings": warns, "ch": {}}
     for c in (0, 1):
         r = rig._tone_an(wins[0], c, k, nharm=2)
         err = (r["f0"] / rig.f_of(k) - 1.0) * 1e6
@@ -216,7 +200,7 @@ def clock_check(rig, level_dbfs=-72.0):
 
 
 def text_clock(r):
-    lines = [f"Проверка такта (1 кГц, {r.get('test_level_dbfs', -72.0):.1f} dBFS):"]
+    lines = ["Проверка такта (1 кГц, −12 dBFS):"]
     for c, v in r["ch"].items():
         lines.append(f"  {c}: {v['f0']:.3f} Гц  ({v['ppm']:+.1f} ppm)  уровень {v['level_dbfs']:.1f} dBFS")
     lines.append("  такт ЦАП = такту АЦП; тон когерентен окну" if r["ok"] else "  ТАКТ/КОГЕРЕНТНОСТЬ НЕ ПРОШЛИ ПРОВЕРКУ")

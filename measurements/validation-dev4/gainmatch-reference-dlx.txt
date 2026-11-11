@@ -1,7 +1,0 @@
-device_key: usb:0b05:180c:pcm0 | fingerprint: есть
-  100 Гц: ΔADC=-0.0137, разброс=0.0000, valid=True
-  1000 Гц: ΔADC=-0.0142, разброс=0.0000, valid=True
-  10000 Гц: ΔADC=-0.1265, разброс=0.0000, valid=True
-PASS: повторное использование
-ПРИМЕЧАНИЕ: numid=5 на card3 не PCM Playback Volume — отвержение по отпечатку проверено на E-MU
-ИТОГ: PASS

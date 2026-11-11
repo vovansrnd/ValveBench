@@ -20,41 +20,14 @@ class GainDeltaView(Gtk.DrawingArea):
         super().__init__()
         self.state = {"valid": False, "msg": "Подай тестовый сигнал L + R"}
         self.tol = 0.10
-        self._draw_signature = None
         self.set_content_width(520)
         self.set_content_height(200)
         self.set_hexpand(True)
         self.set_draw_func(self._draw)
 
-    @staticmethod
-    def _signature(state, tol):
-        if not isinstance(state, dict) or not state.get("valid"):
-            return (False, str((state or {}).get("msg", "")), round(float(tol), 3))
-        def rounded(values, digits):
-            if values is None:
-                return None
-            return tuple(None if v is None else round(float(v), digits) for v in values)
-        return (
-            True, round(float(tol), 3),
-            round(float(state.get("delta", 0.0)), 3),
-            round(float(state.get("filt", 0.0)), 3),
-            round(float(state.get("sigma", 0.0) or 0.0), 4),
-            rounded(state.get("level_dbfs"), 2),
-            rounded(state.get("sinad_db"), 0),
-            round(float(state.get("phase_deg", 0.0)), 2),
-            round(float(state.get("tare_db", 0.0)), 3),
-            rounded(state.get("gain_db"), 2),
-            round(float(state.get("freq_est_hz", 0.0)), 2),
-            round(float(state.get("freq_offset_hz", 0.0)), 3),
-            bool(state.get("calibrated")),
-        )
-
     def set_state(self, state, tol):
         self.state, self.tol = state, float(tol)
-        signature = self._signature(state, self.tol)
-        if signature != self._draw_signature:
-            self._draw_signature = signature
-            self.queue_draw()
+        self.queue_draw()
 
     def _draw(self, area, cr, w, h, *_):
         fg = self.get_color()

@@ -88,10 +88,10 @@ def test_frequency_quantized_before_cache_lookup():
         states = [tracker.update(ring, fs, 1000.0, -20.0, 0, None, now=i * 0.075)
                   for i in range(30)]
     unique_f = sorted({round(v, 6) for v in seen})
-    ok_freqs = {1000.03}
-    check("Only the selected quantized frequency builds the full harmonic basis",
-          set(unique_f) == ok_freqs,
-          f"basis frequencies={unique_f}; candidate residuals use the cheap fundamental fit")
+    ok_freqs = {1000.0, 1000.03}
+    check("Frequency candidates are quantized before residual scoring",
+          set(unique_f).issubset(ok_freqs) and len(unique_f) == 2,
+          f"basis frequencies={unique_f}")
     check("Detuned Live updates reuse bounded cache keys",
           len(gainmatch._PINV_CACHE) <= 2 and gainmatch._PINV_STATS["hit"] > 0
           and all(st.get("valid") for st in states),

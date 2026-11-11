@@ -147,22 +147,6 @@ def _med(v):
 # ------------------------------------------------------------------------ съёмка
 
 
-def io_config_for_backend(be):
-    """Stable, explicit I/O configuration snapshot for a single or split route."""
-    return {
-        "backend": getattr(be, "name", type(be).__name__),
-        # Keep the legacy combined `device` field for old readers, but make
-        # the physical playback/capture endpoints explicit in new passports.
-        "device": getattr(be, "hw", getattr(be, "name", "?")),
-        "dac_device": getattr(be, "hw_out", getattr(be, "hw", None)),
-        "adc_device": getattr(be, "hw_in", getattr(be, "hw", None)),
-        "capture_format": getattr(be, "fmt_in", None),
-        "playback_format": getattr(be, "fmt_out", None),
-        "capture_channels": getattr(be, "ch_in", None),
-        "playback_channels": getattr(be, "ch_out", None),
-    }
-
-
 def run_rate(rig, levels=(-1.0, -12.0), repeats=3, silence_s=8.0, nharm=9, progress=print):
     """Паспорт на одной частоте дискретизации; rig уже открыт.
 
@@ -170,7 +154,14 @@ def run_rate(rig, levels=(-1.0, -12.0), repeats=3, silence_s=8.0, nharm=9, progr
     зависят от момента запуска потоков, и разброс между открытиями — часть паспорта."""
     fs = rig.fs
     be = rig.be
-    io_config = io_config_for_backend(be)
+    io_config = {
+        "backend": getattr(be, "name", type(be).__name__),
+        "device": getattr(be, "hw", getattr(be, "name", "?")),
+        "capture_format": getattr(be, "fmt_in", None),
+        "playback_format": getattr(be, "fmt_out", None),
+        "capture_channels": getattr(be, "ch_in", None),
+        "playback_channels": getattr(be, "ch_out", None),
+    }
     out = {"fs": fs, "blocks": rig.blocks, "io_config": io_config, "warnings": []}
     progress(f"  [{fs} Гц] тишина {silence_s:.0f} с…")
     x, notes = capture_silence(rig, silence_s)
@@ -241,9 +232,6 @@ def run_passport(make_rig, rates=(96000, 192000), label="", levels=(-1.0, -12.0)
     for fs in rates:
         rig = make_rig(int(fs))
         p["device"] = getattr(rig.be, "hw", getattr(rig.be, "name", "?"))
-        if hasattr(rig.be, "hw_out") or hasattr(rig.be, "hw_in"):
-            p["dac_device"] = getattr(rig.be, "hw_out", getattr(rig.be, "hw", None))
-            p["adc_device"] = getattr(rig.be, "hw_in", getattr(rig.be, "hw", None))
         p["rates"][str(int(fs))] = run_rate(rig, levels, repeats, silence_s, progress=progress)
     return p
 
@@ -310,18 +298,7 @@ def _verdict(delta, tol):
 def passport_mismatches(a, b):
     """Differences that make a strict before/after comparison unsafe."""
     mismatches = []
-    a_has_pair = bool(a.get("dac_device") or a.get("adc_device"))
-    b_has_pair = bool(b.get("dac_device") or b.get("adc_device"))
-    if a_has_pair != b_has_pair:
-        mismatches.append("в одном паспорте нет раздельной идентификации ЦАП/АЦП")
-    elif a_has_pair and b_has_pair:
-        for key, label in (("dac_device", "ЦАП"), ("adc_device", "АЦП")):
-            va, vb = a.get(key), b.get(key)
-            if not va or not vb:
-                mismatches.append(f"в одном из паспортов отсутствует идентификатор {label}")
-            elif va != vb:
-                mismatches.append(f"{label} различается: {va} → {vb}")
-    elif a.get("device") and b.get("device") and a.get("device") != b.get("device"):
+    if a.get("device") and b.get("device") and a.get("device") != b.get("device"):
         mismatches.append(f"устройства различаются: {a.get('device')} → {b.get('device')}")
     keys = ("tone_hz", "levels_dbfs", "repeats", "silence_seconds")
     for key in keys:

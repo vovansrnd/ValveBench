@@ -48,10 +48,6 @@ class Plot(Gtk.DrawingArea):
         # user explicitly chooses Auto. This is important for sub-dB response plots.
         self.manual_ylim = None
         self._view_changed_callback = None
-        # 0.1.20: надстройки поверх графика — маркеры (номера гармоник) и произвольная панель
-        self.markers = []
-        self.overlay_draw = None
-        self.underlay_draw = None     # рисуется после сетки, ПОД кривыми (например столбцы RTA)
         self.set_content_width(520)
         self.set_content_height(320)
         self.set_hexpand(True)
@@ -86,29 +82,16 @@ class Plot(Gtk.DrawingArea):
         self.autoscale_y()
 
     def set_view(self, xlim=None, ylim=None, xlabel=None, ylabel=None):
-        changed = False
-        y_changed = False
         if xlim:
-            value = (float(xlim[0]), float(xlim[1]))
-            if value != self.xlim:
-                self.xlim = value
-                changed = True
+            self.xlim = (float(xlim[0]), float(xlim[1]))
         if ylim and self.manual_ylim is None:
-            value = (float(ylim[0]), float(ylim[1]))
-            if value != self.ylim:
-                self.ylim = value
-                changed = True
-                y_changed = True
-        if xlabel is not None and xlabel != self.xlabel:
-            self.xlabel = xlabel
-            changed = True
-        if ylabel is not None and ylabel != self.ylabel:
-            self.ylabel = ylabel
-            changed = True
-        if y_changed:
+            self.ylim = (float(ylim[0]), float(ylim[1]))
             self._notify_view_changed()
-        if changed:
-            self.queue_draw()
+        if xlabel is not None:
+            self.xlabel = xlabel
+        if ylabel is not None:
+            self.ylabel = ylabel
+        self.queue_draw()
 
     def set_traces(self, traces):
         """traces: [{'x','y','label','color':(r,g,b)|'L'|'R'|'ref','dash':bool,'width'}]"""
@@ -126,34 +109,7 @@ class Plot(Gtk.DrawingArea):
             self.traces.append({"x": x[ok], "y": y[ok], "label": t.get("label", ""),
                                 "color": COLORS[c] if isinstance(c, str) else c,
                                 "dash": t.get("dash", False), "width": t.get("width", 1.6),
-                                "marker": t.get("marker", False),
-                                "alpha": float(t.get("alpha", 1.0)),
-                                # 'max' — огибающая максимумов (для линий/тонов);
-                                # 'mean' — среднее по мощности (для шумовой плотности:
-                                # максимум по сотням бинов на столбец завышает полку на ~7–10 дБ)
-                                "decim": t.get("decim", "max"), "_dec": {}})
-        self.queue_draw()
-
-    def set_markers(self, markers):
-        """markers: [{'x','y','text','color':(r,g,b)|None}] — подписи над точками графика."""
-        self.markers = list(markers or [])
-        self.queue_draw()
-
-    def set_underlay(self, draw_fn):
-        """draw_fn(cr, left, top, width, height, fg) — рисунок под кривыми (внутри области графика)."""
-        self.underlay_draw = draw_fn
-        self.queue_draw()
-
-    def x_to_px(self, x, left, width):
-        return self._tx(float(x), left, width)
-
-    def y_to_px(self, v, top, height):
-        ylo, yhi = self.ylim
-        return top + (yhi - v) / (yhi - ylo) * height
-
-    def set_overlay(self, draw_fn):
-        """draw_fn(cr, left, top, width, height, fg) рисует панель поверх графика."""
-        self.overlay_draw = draw_fn
+                                "marker": t.get("marker", False)})
         self.queue_draw()
 
     def autoscale_y(self, pad=0.08, min_span=1.0):
@@ -290,26 +246,11 @@ class Plot(Gtk.DrawingArea):
         # кривые
         cr.save()
         cr.rectangle(ml, mt, pw, ph); cr.clip()
-        if self.underlay_draw is not None:
-            cr.save()
-            try:
-                self.underlay_draw(cr, ml, mt, pw, ph, fg)
-            finally:
-                cr.restore()
-        draws = []
         for t in self.traces:
-            if t.get("decim") == "both":
-                # огибающая максимумов — блёклой подложкой (видны одиночные спуры), среднее по
-                # мощности — поверх (честная шумовая полка без завышения на ВЧ)
-                draws.append((t, "max", 0.35 * t.get("alpha", 1.0)))
-                draws.append((t, "mean", t.get("alpha", 1.0)))
-            else:
-                draws.append((t, t.get("decim", "max"), t.get("alpha", 1.0)))
-        for t, dmode, dalpha in draws:
-            x, y = self._decimate_cached(t, int(pw), dmode)
+            x, y = self._decimate(t["x"], t["y"], int(pw))
             if x.size < 2:
                 continue
-            cr.set_source_rgba(*t["color"], dalpha)
+            cr.set_source_rgba(*t["color"], 1.0)
             cr.set_line_width(t["width"])
             cr.set_dash([6.0, 4.0] if t["dash"] else [])
             for i in range(x.size):
@@ -326,33 +267,8 @@ class Plot(Gtk.DrawingArea):
                     py = ty(float(np.clip(yv, ylo - 1e4, yhi + 1e4)))
                     cr.arc(px, py, 5.8, 0, 2 * math.pi)
                     cr.fill()
-        # маркеры (например номера гармоник)
-        cr.save()
-        cr.rectangle(ml, mt, pw, ph); cr.clip()
-        cr.set_font_size(fs - 2)
-        for mk in self.markers:
-            try:
-                mx = self._tx(float(mk["x"]), ml, pw)
-                my = ty(float(np.clip(mk["y"], ylo - 1e4, yhi + 1e4)))
-            except (ValueError, KeyError):
-                continue
-            col = mk.get("color") or (fg.red, fg.green, fg.blue)
-            cr.set_source_rgba(*col, 0.95)
-            cr.move_to(mx, my - 3); cr.line_to(mx - 3, my - 9); cr.line_to(mx + 3, my - 9)
-            cr.close_path(); cr.fill()
-            lab = str(mk.get("text", ""))
-            ext = cr.text_extents(lab)
-            cr.move_to(mx - ext.x_advance / 2, my - 12); cr.show_text(lab)
-        cr.restore()
-        cr.set_font_size(fs)
         cr.restore()
         cr.set_dash([])
-        if self.overlay_draw is not None:
-            cr.save()
-            try:
-                self.overlay_draw(cr, ml, mt, pw, ph, fg)
-            finally:
-                cr.restore()
 
         # легенда
         ly = mt + 16
@@ -389,20 +305,7 @@ class Plot(Gtk.DrawingArea):
             rgba(0.95)
             cr.move_to(ml + 8, mt + ph - 8); cr.show_text("   ".join(parts))
 
-    def _decimate_cached(self, t, n, mode=None):
-        """Прореживание с кэшем в самой кривой: перерисовка от движения мыши не пересчитывает
-        np.unique по 131 тыс. бинов для каждой кривой."""
-        mode = mode or t.get("decim", "max")
-        key = (int(n), self.xlim, bool(self.xlog), mode)
-        cache = t.setdefault("_dec", {})
-        hit = cache.get(key)
-        if hit is None:
-            if len(cache) > 4:
-                cache.clear()
-            hit = cache[key] = self._decimate(t["x"], t["y"], n, mode)
-        return hit
-
-    def _decimate(self, x, y, n, mode="max"):
+    def _decimate(self, x, y, n):
         if x.size <= 2 * n:
             return x, y
         lo, hi = self.xlim
@@ -410,8 +313,4 @@ class Plot(Gtk.DrawingArea):
                if self.xlog else (x - lo) / (hi - lo))
         px = np.clip((pos * n).astype(int), -1, n + 1)
         _, idx = np.unique(px, return_index=True)
-        if mode == "mean":
-            cnt = np.diff(np.append(idx, x.size)).astype(float)
-            p = np.add.reduceat(np.power(10.0, y / 10.0), idx) / cnt
-            return np.add.reduceat(x, idx) / cnt, 10.0 * np.log10(np.maximum(p, 1e-300))
         return x[idx], np.maximum.reduceat(y, idx)

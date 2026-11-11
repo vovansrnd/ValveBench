@@ -9,13 +9,13 @@ import json
 from pathlib import Path
 import numpy as np
 
-from . import dsp, gainmatch, scans, looptest, passport, steady, store, preferences, signals
+from . import dsp, gainmatch, scans, looptest, passport, steady, store, preferences
 from . import pcm as pcm_mod
 from . import io_health as io_health_mod
 from .pcm import to_pcm
 from .backend import SimBackend, SimChannel, AltSet, usb_profile_identity
 from . import backend as backend_module
-from .calib import Calibration, response_profile_pad_matches
+from .calib import Calibration
 from .measure import (Rig, sweep, noise_response, noise_transfer_capture,
                       build_response_calibration, apply_response_calibration)
 from .vinyl import analyze_3150_stability, analyze_vta_sum, analyze_frequency_response, analyze_phase, analyze_crosstalk
@@ -26,124 +26,6 @@ def run_selftest():
 
     def check(name, ok, detail):
         checks.append({"name": name, "ok": bool(ok), "detail": str(detail)})
-
-    # Device passport output must follow the application tree rather than cwd:
-    # desktop launchers often inherit an unrelated working directory.
-    expected_measurement_root = Path(__file__).resolve().parent.parent / "measurements" / "devices"
-    check("DUT passport default path is relative to the active application, not CWD",
-          Path(store.device_measurements_root()) == expected_measurement_root,
-          f"root={store.device_measurements_root()}; expected={expected_measurement_root}")
-
-    # Device passport export: immutable, portable JSON + tabular curves, with
-    # path-safe device IDs, strict JSON numbers, checksums and no overwrite.
-    export_sample = {
-        "kind": "sweep", "fs": 96000, "f_lo": 20.0, "f_hi": 20000.0,
-        "ch": {
-            "L": {"freq": [20.0, 1000.0, 20000.0], "fr_norm_db": [0.2, None, -0.3],
-                  "thd_freq": [100.0, 1000.0], "thd_pct": [0.01, 0.02]},
-            "R": {"freq": [20.0, 1000.0, 20000.0], "fr_norm_db": [0.1, 0.0, -0.2]},
-        },
-        "warnings": [], "nonfinite_probe": float("nan"),
-    }
-    with tempfile.TemporaryDirectory(prefix="vb-device-export-") as td:
-        export_path = Path(store.save_device_measurement(
-            export_sample, "590", note="6Н2П V1/V2", context={"audio_io": {"sample_rate_hz": 96000}},
-            directory=td))
-        export_path2 = Path(store.save_device_measurement(export_sample, "590", directory=td))
-        try:
-            store.save_device_measurement(export_sample, "../outside", directory=td)
-            id_rejected = False
-        except ValueError:
-            id_rejected = True
-        session = json.loads((export_path / "session.json").read_text(encoding="utf-8"))
-        manifest = json.loads((export_path / "MANIFEST.json").read_text(encoding="utf-8"))
-        curve_rows = (export_path / "curves.csv").read_text(encoding="utf-8").splitlines()
-        curve_count = len(curve_rows) - 1
-        checksums_ok = all(
-            hashlib.sha256((export_path / name).read_bytes()).hexdigest() == meta["sha256"]
-            and (export_path / name).stat().st_size == meta["size_bytes"]
-            for name, meta in manifest["files"].items())
-        export_ok = (session["format"] == "valvebench-device-measurement"
-                     and session["device_id"] == "590"
-                     and session["note"] == "6Н2П V1/V2"
-                     and session["measurement_context"]["audio_io"]["sample_rate_hz"] == 96000
-                     and session["result"]["nonfinite_probe"] is None
-                     and export_path != export_path2 and checksums_ok and curve_count == 8
-                     and id_rejected)
-        check("DUT passport export: JSON, context, CSV curves, checksums, unique paths and safe ID",
-              export_ok,
-              f"session={export_path.name}; CSV rows={curve_count}; checksums={checksums_ok}; unsafe ID rejected={id_rejected}")
-        missing_values_preserved = any(row.endswith(",fr_norm_db,") for row in curve_rows)
-        outside = Path(td) / "external-target"
-        outside.mkdir()
-        devices_root = Path(td) / "symlink-test"
-        devices_root.mkdir()
-        try:
-            (devices_root / "591").symlink_to(outside, target_is_directory=True)
-            try:
-                store.save_device_measurement(export_sample, "591", directory=str(devices_root))
-                symlink_rejected = False
-            except ValueError:
-                symlink_rejected = True
-        except (OSError, NotImplementedError):
-            symlink_rejected = True  # platform cannot create this test symlink
-        check("DUT passport export: CSV keeps missing curve samples blank; symlink escape rejected",
-              missing_values_preserved and symlink_rejected,
-              f"missing curve sample exported as blank={missing_values_preserved}; symlink rejected={symlink_rejected}")
-
-    # Batch passport must retain several independent measurements in one session.
-    batch_sample = {
-        "kind": "dut_batch", "schema": 1, "state": "complete",
-        "test_order": ["noise", "response", "thd"],
-        "tests": {
-            "noise": {"kind": "noise", "ch": {
-                "L": {"freq": [20.0, 1000.0], "dens_dbfs": [-120.0, -130.0]},
-                "R": {"freq": [20.0, 1000.0], "dens_dbfs": [-121.0, -131.0]}}},
-            "response": export_sample,
-            "thd": {"kind": "thd", "ch": {"L": {"freq": [997.0], "spec_db": [-6.0]}}},
-        },
-    }
-    with tempfile.TemporaryDirectory(prefix="vb-batch-export-") as td:
-        batch_path = Path(store.save_device_measurement(batch_sample, "592", directory=td))
-        batch_session = json.loads((batch_path / "session.json").read_text(encoding="utf-8"))
-        batch_curves = (batch_path / "curves.csv").read_text(encoding="utf-8")
-        batch_metrics = (batch_path / "metrics.csv").read_text(encoding="utf-8")
-        check("DUT batch passport: noise, response and THD remain together with nested curves",
-              batch_session["result"]["test_order"] == ["noise", "response", "thd"]
-              and set(batch_session["result"]["tests"]) == {"noise", "response", "thd"}
-              and "result.tests.noise.ch.L" in batch_curves
-              and "result.tests.response.ch.L" in batch_curves
-              and "result.tests.thd.ch.L" in batch_curves
-              and "result.tests.response.kind" in batch_metrics,
-              f"tests={list(batch_session['result']['tests'])}; curve rows={len(batch_curves.splitlines()) - 1}")
-
-    # The generator preview and live DAC buffer share the same waveform builder.
-    periodic_ok = True
-    periodic_notes = []
-    for shape in ("sine", "triangle", "square", "sawtooth"):
-        gx, gi = signals.make_generator_signal(48000, shape, 1000.0, -6.0, 0.1)
-        peak_db = float(20.0 * np.log10(max(float(np.max(np.abs(gx))), 1e-30)))
-        shape_ok = (len(gx) == 4800 and np.all(np.isfinite(gx))
-                    and abs(peak_db + 6.0) < 0.03
-                    and gi["level_definition"] == "peak_dbfs")
-        periodic_ok &= shape_ok
-        periodic_notes.append(f"{shape} peak={peak_db:.2f} dBFS")
-    check("Generator periodic waveforms: finite, expected frame count and peak level",
-          periodic_ok, "; ".join(periodic_notes))
-    noise_ok = True
-    noise_notes = []
-    for shape in ("white", "pink"):
-        gx, gi = signals.make_generator_signal(48000, shape, 1000.0, -20.0, 0.2,
-                                               noise_low_hz=30.0, noise_high_hz=16000.0,
-                                               seed=7123)
-        ok = (len(gx) == 9600 and np.all(np.isfinite(gx))
-              and gi["level_definition"] == "rms_dbfs"
-              and gi["peak_dbfs"] <= -3.0 + 1e-9
-              and gi["f_lo"] == 30.0)
-        noise_ok &= ok
-        noise_notes.append(f"{shape} RMS={gi['actual_rms_dbfs']:.2f}, peak={gi['peak_dbfs']:.2f} dBFS")
-    check("Generator noise: white/pink band limits and peak safety ceiling",
-          noise_ok, "; ".join(noise_notes))
 
     # Точная синусоида с известной H2=-60 dBc.
     fs, n, f0 = 48000, 48000, 1000.0
@@ -209,18 +91,6 @@ def run_selftest():
     dev = max(float(np.nanmax(np.abs(sr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))
     check("Sweep inverse-RIAA через SimBackend", dev < 0.45,
           f"максимальное отклонение={dev:.3f} dB; критерий <0.45 dB")
-    with tempfile.TemporaryDirectory(prefix="vb-real-sweep-export-") as td:
-        exported = Path(store.save_device_measurement(
-            sr, "SIM-DUT", note="simulated sweep integration", directory=td))
-        exported_doc = json.loads((exported / "session.json").read_text(encoding="utf-8"))
-        exported_curves = (exported / "curves.csv").read_text(encoding="utf-8")
-        integration_ok = (exported_doc["result"]["kind"] == "sweep"
-                          and len(exported_doc["result"]["ch"]["L"]["freq"]) > 100
-                          and "fr_norm_db" in exported_curves and "thd_pct" in exported_curves
-                          and "thd_freq" in exported_curves and len(exported_curves.splitlines()) > 500)
-        check("DUT passport export: full SimBackend sweep result retains FR and THD curves",
-              integration_ok,
-              f"frequency points={len(exported_doc['result']['ch']['L']['freq'])}; CSV lines={len(exported_curves.splitlines())}")
 
     # Per-card full-band response calibration: the loop profile contains separate
     # L/R magnitude and phase curves. Applying it must remove the soundcard curve
@@ -267,7 +137,6 @@ def run_selftest():
     cal_profiles = Calibration()
     cal_profiles.activate_profile("usb:aaa:port=1-1:pcm0", "hw:2,0")
     cal_profiles["out_fs_vrms"] = [2.0, 2.1]
-    cal_profiles["adc_att_db"] = -20.1
     cal_profiles["frequency_response_profiles"] = {"192000": {"device_key": "card-A"}}
     cal_profiles.activate_profile("usb:bbb:port=1-2:pcm0", "hw:3,0")
     cal_profiles["out_fs_vrms"] = [1.0, 1.1]
@@ -275,32 +144,8 @@ def run_selftest():
     restored_cal = Calibration(cal_profiles.serialize())
     check("Per-device calibration profiles survive switching and serialization",
           restored_cal["out_fs_vrms"] == [2.0, 2.1]
-          and restored_cal.get("adc_att_db") == -20.1
           and "192000" in restored_cal["frequency_response_profiles"],
-          f"active card A DAC fullscale={restored_cal['out_fs_vrms']}; ADC pad={restored_cal.get('adc_att_db')}; "
-          f"response profiles={list(restored_cal['frequency_response_profiles'])}")
-
-    pad_off = Calibration({"in_fs_vrms": [1.0, 1.0]})
-    pad_on = Calibration({"in_fs_vrms": [1.0, 1.0], "adc_att_db": -20.1})
-    adc_raw = pad_off.in_v(-20.1, 0)
-    dut_referred = pad_on.in_v(-20.1, 0)
-    check("ADC PAD correction refers measured voltage back to DUT output",
-          abs(adc_raw - 0.0988) < 0.001 and abs(dut_referred - 1.0) < 0.01,
-          f"ADC connector={adc_raw:.4f} V; DUT-side corrected={dut_referred:.4f} V at -20.1 dBFS")
-    pad_loop = Calibration({"out_fs_vrms": [1.0, 1.0], "adc_att_db": -20.1})
-    pad_loop.set_in_from_loop(-20.1, -40.2, 0)
-    loop_fullscale = pad_loop["in_fs_vrms"][0]
-    loop_voltage = pad_loop.in_v(-40.2, 0)
-    check("ADC loopback calibration accounts for PAD and restores DUT-side volts",
-          abs(loop_fullscale - 1.0) < 0.02 and abs(loop_voltage - 10 ** (-20.1 / 20)) < 0.002,
-          f"stored ADC connector fullscale={loop_fullscale:.4f} V; referred DUT output={loop_voltage:.4f} V")
-    pad_profile_ok = (response_profile_pad_matches({"adc_att_db": -20.17}, -20.17)
-                      and response_profile_pad_matches({}, 0.0)
-                      and not response_profile_pad_matches({"adc_att_db": -20.17}, 0.0)
-                      and not response_profile_pad_matches({"adc_att_db": "invalid"}, -20.17))
-    check("Response calibration is rejected when ADC PAD configuration changes",
-          pad_profile_ok,
-          "legacy 0 dB profile remains valid at 0 dB; −20.17 dB pad mismatch is rejected")
+          f"active card A DAC fullscale={restored_cal['out_fs_vrms']}; response profiles={list(restored_cal['frequency_response_profiles'])}")
 
     nr = noise_response(rig, seconds=4, kind="pink", level_dbfs=-42, f_lo=30, f_hi=16000)
     ndev = max(float(np.nanmax(np.abs(nr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))
@@ -1278,145 +1123,6 @@ def run_selftest():
           migrated_user["resp/" + h("Показывать")] == 3
           and migrated_user["live/" + h("Уровень генератора, dBFS")] == -9.5,
           f"RIAA view={migrated_user['resp/' + h('Показывать')]}; generator={migrated_user['live/' + h('Уровень генератора, dBFS')]} dBFS")
-
-    # ---- 0.1.20: живые метрики и контроль целостности (valvebench/livemetrics.py)
-    from . import livemetrics as lm
-    from .backend import parse_alsa_log
-    fs_l, n_l = 192000, 131072
-    tt = np.arange(n_l) / fs_l
-    rg = np.random.default_rng(2026)
-
-    def _tone(h2=-80.0, noise=-110.0, f=1000.37):
-        sig = dsp.dbfs_to_amp(noise) / math.sqrt(2) * math.sqrt(0.5 * fs_l / 20000.0)
-        return (0.3 * np.sin(2 * np.pi * f * tt) + 0.3 * 10 ** (h2 / 20) * np.sin(2 * np.pi * 2 * f * tt + 1.0)
-                + sig * rg.standard_normal(n_l))
-    xt = _tone()
-    r_live = lm.analyze_live_tone(xt, fs_l, 1000.0)
-    check("Живая панель: тон вне сетки БПФ — уровень, H2 и шум в пределах 0.15 дБ / 1 дБ",
-          r_live["ok"] and abs(r_live["level_dbfs"] - 20 * math.log10(0.3)) < 0.05
-          and abs(r_live["harmonics"][0]["dbc"] + 80.0) < 0.15 and abs(r_live["noise_dbfs"] + 110.0) < 1.0,
-          f"уровень {r_live['level_dbfs']:.3f}; H2 {r_live['harmonics'][0]['dbc']:.2f} dBc; N {r_live['noise_dbfs']:.2f} dBFS")
-    r_nt = lm.analyze_live_tone(1e-6 * rg.standard_normal(n_l), fs_l, 1000.0)
-    check("Живая панель: на шуме без тона честно «тона нет»", not r_nt["ok"], r_nt.get("reason", ""))
-    z = xt.copy(); z[50000:50000 + 16500] = 0.0
-    de = lm.detect_carrier_dropouts(z, fs_l, 1000.0)
-    check("Провал несущей 86 мс найден с длительностью ±3 мс",
-          len(de) == 1 and abs(de[0]["dur_s"] - 0.086) < 0.003,
-          f"{[(round(e['start_s'], 3), round(e['dur_s'] * 1e3, 1)) for e in de]}")
-    lost = np.concatenate([xt[:60000], xt[60000 + int(0.0505 * fs_l):]])[:110000]
-    pj = lm.detect_phase_jumps(lost, fs_l, 1000.0)
-    ci_lost = lm.frame_integrity(np.column_stack([lost, lost]), fs_l, 1000.0, (True, True))[0]
-    check("Потеря отсчётов без обнуления: скачок фазы найден, окно забраковано, ложного «провала» нет",
-          len(pj) == 1 and ci_lost.fatal and ci_lost.phase_jumps and not ci_lost.dropouts, f"{pj}")
-    g1 = xt.copy(); g1[70000] += 1e-3
-    gl = lm.detect_sample_glitches(g1, fs_l, 1000.0)
-    check("Аномалия 1 отсчёта: найдена и классифицирована как single_sample",
-          len(gl) == 1 and gl[0]["kind"] == "single_sample" and gl[0]["width"] == 1, f"{gl}")
-    clean_fp = 0
-    for k in range(10):
-        rg2 = np.random.default_rng(900 + k)
-        xx = _tone(h2=-60.0, noise=-100.0, f=float(rg2.uniform(300, 15000)))
-        clean_fp += any(c.fatal for c in lm.frame_integrity(np.column_stack([xx, xx]), fs_l, None, (False, False)))
-    check("Контроль целостности: 0 ложных срабатываний на 10 чистых окнах", clean_fp == 0, f"{clean_fp} ложных")
-    quiet = 1e-6 * rg.standard_normal(n_l)
-    ci = lm.frame_integrity(np.column_stack([xt, quiet]), fs_l, 1000.0, (True, True))
-    check("Тихий канал не порождает ложных «остановок несущей»; в отчёте стоит пометка",
-          not ci[1].dropouts and not ci[1].phase_jumps and bool(ci[1].note) and ci[0].driven, ci[1].note)
-    ev_log, rest = parse_alsa_log("overrun!!! (at least 84.612 ms long)\nunderrun!!! (at least 960 frames long)\nover")
-    ev_log2, rest2 = parse_alsa_log(rest + "run!!! (at least 12.5 ms long)\n")
-    check("Разбор stderr ALSA: длительность в мс и кадрах, разорванная строка не теряется",
-          len(ev_log) == 2 and abs(ev_log[0]["dur_ms"] - 84.612) < 1e-9 and ev_log[1]["dur_frames"] == 960.0
-          and len(ev_log2) == 1 and abs(ev_log2[0]["dur_ms"] - 12.5) < 1e-9, f"{ev_log} / {ev_log2}")
-    fw = np.arange(1, 20000) * 1.0
-    fc_, pc_ = lm.octave_smooth(fw, np.ones_like(fw), 6)
-    check("Сглаживание по долям октавы усредняет бины (белый шум остаётся белым)",
-          np.allclose(pc_, 1.0) and fc_.size < 120, f"{fc_.size} полос")
-
-    # ---- 0.1.20-dev2: замечания аудита и «АЧХ по пластинке»
-    from .backend import xrun_suspect
-    from . import peakhold as ph_mod
-    tz = np.arange(131072) / 192000.0
-
-    def _h2(f, h2=-40.0):
-        return (0.3 * np.sin(2 * np.pi * f * tz + 0.4) + 0.3 * 10 ** (h2 / 20) * np.sin(2 * np.pi * 2 * f * tz + 1.0)
-                + 1e-6 * rg.standard_normal(tz.size))
-    r12 = lm.analyze_live_tone(_h2(12000.0), 192000, 12000.0)
-    r10 = lm.analyze_live_tone(_h2(10000.0), 192000, 10000.0)
-    check("THD: гармоник нет в полосе — «н/д», а не 0 %; H2 на границе полосы согласован с THD+N",
-          r12["ok"] and r12["thd_na"] and r12["thd_pct"] is None
-          and abs(r10["thd_pct"] - 1.0) < 0.02 and abs(r10["thdn_db"] + 40.0) < 0.2,
-          f"12 кГц: n/a={r12['thd_na']}; 10 кГц: THD {r10['thd_pct']:.3f} %, THD+N {r10['thdn_db']:.2f} дБ")
-    lv20 = [lm.analyze_live_tone(0.3 * np.sin(2 * np.pi * 20.0 * tz + ph) + 1e-7 * rg.standard_normal(tz.size),
-                                 192000, 20.0)["level_dbfs"] for ph in np.linspace(0, 2 * np.pi, 7)[:-1]]
-    check("Уровень тона по МНК не зависит от фазы даже на 20 Гц (разброс < 0.001 дБ; проекция давала 0.14 дБ)",
-          max(lv20) - min(lv20) < 1e-3 and abs(np.mean(lv20) - 20 * math.log10(0.3)) < 1e-3,
-          f"размах {max(lv20) - min(lv20):.5f} дБ")
-    a1, b1 = xrun_suspect("capture", 10 * 192000, 192000, 300.0)
-    a2, b2 = xrun_suspect("playback", 10 * 192000, 192000, 2000.0)
-    check("Интервалы XRUN растут с длительностью: capture 300 мс → +0.35 с, playback 2 с → −2.1…+3.2 с",
-          b1 - 10 * 192000 == int(0.35 * 192000) and a2 == 10 * 192000 - int(2.1 * 192000)
-          and b2 == 10 * 192000 + int(3.2 * 192000),
-          f"capture 300 мс: [{(a1 - 10 * 192000) / 192000:+.2f}; {(b1 - 10 * 192000) / 192000:+.2f}] с; "
-          f"playback 2 с: [{(a2 - 10 * 192000) / 192000:+.2f}; {(b2 - 10 * 192000) / 192000:+.2f}] с")
-    fs_s, n_s = 48000, 16384
-    ts_ = np.arange(int(12 * fs_s)) / fs_s
-    k_ = 12000 / 100.0
-    ph_s = 2 * np.pi * 100.0 * 12 / math.log(k_) * (k_ ** (ts_ / 12) - 1)
-    fr_s = lambda f: -20.0 + 4.0 * np.log2(f / 1000.0)
-    A_s = 10 ** (fr_s(100.0 * k_ ** (ts_ / 12)) / 20)
-    Xs = np.column_stack([A_s * np.sin(ph_s), A_s * 10 ** (-45 / 20) * np.sin(ph_s + 0.4)
-                          + 1e-6 * rg.standard_normal(ts_.size)])
-    acc_s = ph_mod.PeakHoldAccumulator(6)
-    for s0 in range(0, Xs.shape[0] - n_s, int(0.25 * fs_s)):
-        rr = ph_mod.rta_job(Xs[s0:s0 + n_s], fs_s, n_s, 6)
-        acc_s.update(rr["bands"], rr["tone"])
-    th_ = acc_s.tone_hold()
-    cs_ = acc_s.centers
-    sl_ = (cs_ > 200) & (cs_ < 8000) & np.isfinite(th_[0])
-    d_s, xt_s = ph_mod.split_driven(th_)
-    check("АЧХ по пластинке (трекинг тона): свип «снят» с ошибкой ≤ 0.8 дБ, переходное затухание −45±2 дБ",
-          sl_.sum() >= 15 and np.max(np.abs(th_[0][sl_] - fr_s(cs_[sl_]))) <= 0.8 and d_s == 0
-          and abs(np.median(xt_s[sl_]) + 45.0) < 2.0,
-          f"ошибка АЧХ {np.max(np.abs(th_[0][sl_] - fr_s(cs_[sl_]))):.2f} дБ; перекр. {np.median(xt_s[sl_]):.1f} дБ")
-    ov_s = acc_s.snapshot("тест", ph_mod.PALETTE[0], "tone", fs_s)
-    back_s = ph_mod.overlays_from_json(ph_mod.overlays_to_json([ov_s]))
-    check("Сохранённые кривые переживают JSON (NaN ↔ null, цвет)",
-          len(back_s) == 1 and np.allclose(back_s[0].levels, ov_s.levels, equal_nan=True, atol=1e-3),
-          f"{len(back_s)} кривая, {int(np.isfinite(ov_s.levels).sum())} значений")
-
-    # ---- 0.1.20-dev2: окно демодулятора — ровно целое число периодов даже при нецелом fs/f0
-    fs97, n97 = 96000, 1 << 17
-    t97 = np.arange(n97) / fs97
-    x97 = 0.126 * np.sin(2 * np.pi * 997.0 * t97) + 2e-7 * rg.standard_normal(n97)
-    r97 = lm._Demod(x97, fs97, 997.0).residual()[2000:-2000]
-    rms97 = float(np.sqrt(np.mean(r97 ** 2)))
-    check("Остаток после вычитания несущей 997 Гц на 96 кГц лежит на уровне шума (раньше пульсация 2f₀ ≈ −88 dBFS)",
-          rms97 < 6e-7, f"остаток {20 * math.log10(math.sqrt(2) * rms97):.1f} dBFS (шум −127 dBFS)")
-    g97 = x97.copy()
-    g97[60000] += 4e-4
-    ev97 = lm.detect_sample_glitches(g97, fs97, 997.0)
-    check("Сбой 1 отсчёт −68 dBFS на тоне 997 Гц найден ровно один раз (юбки демодулятора подавлены)",
-          len(ev97) == 1 and ev97[0]["kind"] == "single_sample" and ev97[0]["sign"] == 1 and ev97[0]["index"] == 60000,
-          f"{[(e['index'], e['kind']) for e in ev97]}")
-
-    # ---- 0.1.20-dev3: порог детектора одиночных сбоев на длинном шуме (раньше «9σ» были ≈5.3σ)
-    fp_total, fp_detail = 0, []
-    rg3 = np.random.default_rng(303)
-    for lsb in (2.5, 21.0, 100.0):
-        cnt = 0
-        for _ in range(4):
-            xn = np.round(lsb * rg3.standard_normal(1_000_000)) * 2.0 ** -23
-            cnt += len(lm.detect_sample_glitches(xn, 192000, None))
-        fp_total += cnt
-        fp_detail.append(f"{lsb:g} LSB: {cnt}")
-    found12 = 0
-    for _ in range(40):
-        xs = 21 * 2.0 ** -23 * rg3.standard_normal(40000)
-        xs[20000] += 12 * 21 * 2.0 ** -23
-        found12 += any(abs(e["index"] - 20000) <= 1 for e in lm.detect_sample_glitches(xs, 192000, None))
-    check("Детектор одиночных сбоев: 0 ложных срабатываний на 12 млн отсчётов шума (2.5/21/100 LSB), "
-          "выброс 12σ шума находится в 100% случаев",
-          fp_total == 0 and found12 == 40, "; ".join(fp_detail) + f"; найдено 12σ: {found12}/40")
 
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
