@@ -45,6 +45,18 @@ def band_centers(edges):
     return np.sqrt(edges[:-1] * edges[1:])
 
 
+def lf_limit_hz(fs, n):
+    """Частота, ниже которой окно слишком короткое: тон ближе ~6 бинов к нулю сливается со своим
+    зеркальным отражением и со стоком постоянной составляющей — оценка недостоверна."""
+    return 6.0 * float(fs) / float(n)
+
+
+def window_samples(fs, seconds):
+    """Размер FFT-окна (степень двойки) для заданной длительности — окно задаётся временем, а не
+    числом отсчётов: одинаковая точность на НЧ при 96 и 192 кГц."""
+    return int(2 ** round(math.log2(max(1024.0, float(seconds) * float(fs)))))
+
+
 def band_levels_db(freq, power, edges):
     """Уровень в полосах, dBFS (0 dB = синус во всю шкалу). power — (nbins,) или (ch, nbins) RMS²/бин.
 
@@ -75,12 +87,38 @@ def detect_tone(freq, power2, f_lo=20.0, f_hi=20000.0, prominence_db=TONE_PROMIN
     return float(np.sum(freq[lo:hi] * w) / np.sum(w)), k
 
 
-def tone_levels_db(freq, power, f0):
-    """Уровень каналов в полосе ±1/12 октавы вокруг f0 (энергия плавно идущего свипа внутри окна)."""
+def tone_band_bins(freq, power_sum, f0):
+    """Диапазон бинов [lo, hi), в котором лежит энергия тона f0 (в том числе размазанного свипом).
+
+    Не уже ±1/12 октавы И не уже ±5 бинов: главный лепесток окна Блэкмана–Харриса — ±4 бина.
+    На 20–40 Гц при коротком окне ±1/12 октавы (±1.2…2.4 Гц) меньше одного бина, и без этого
+    уровень занижался до −2.4 дБ (192 кГц, окно 0.34 с). Дополнительно полоса расширяется по
+    «следу» свипа — соседним бинам не слабее −30 дБ от пика, но не дальше ±1/6 октавы: при
+    быстром свипе и длинном окне тон успевает пройти заметный участок частот."""
+    df = float(freq[1] - freq[0])
     bw = 2.0 ** (1.0 / 12.0)
-    lo = int(np.searchsorted(freq, f0 / bw))
-    hi = max(int(np.searchsorted(freq, f0 * bw)), lo + 1)
-    p = np.sum(np.atleast_2d(power)[:, lo:hi], axis=1)
+    lo = int(np.searchsorted(freq, min(f0 / bw, f0 - 5.0 * df)))
+    hi = max(int(np.searchsorted(freq, max(f0 * bw, f0 + 5.0 * df))), lo + 1)
+    lo = max(lo, 0)
+    hi = min(hi, power_sum.size)
+    k = lo + int(np.argmax(power_sum[lo:hi]))
+    thr = float(power_sum[k]) * 1e-3
+    lim_lo = int(np.searchsorted(freq, f0 / 2.0 ** (1.0 / 6.0)))
+    lim_hi = int(np.searchsorted(freq, f0 * 2.0 ** (1.0 / 6.0)))
+    a_ = lo
+    while a_ > lim_lo and a_ > 0 and power_sum[a_ - 1] >= thr:
+        a_ -= 1
+    b_ = hi
+    while b_ < lim_hi and b_ < power_sum.size and power_sum[b_] >= thr:
+        b_ += 1
+    return max(0, a_ - 5 if a_ < lo else lo), min(power_sum.size, b_ + 5 if b_ > hi else hi)
+
+
+def tone_levels_db(freq, power, f0):
+    """Уровень каналов (dBFS) в полосе тона — см. tone_band_bins."""
+    power = np.atleast_2d(power)
+    lo, hi = tone_band_bins(freq, power.sum(axis=0), f0)
+    p = np.sum(power[:, lo:hi], axis=1)
     return dsp.rms_dbfs(np.sqrt(np.maximum(p, 1e-30)))
 
 
@@ -121,16 +159,15 @@ def rta_job(x, fs, n, per_octave=12, fmin=20.0, fmax=20000.0):
         P[:, -1] *= 0.5
     freq = np.arange(P.shape[1]) * (fs / n)
     edges = band_edges(per_octave, fmin, fmax)
-    out = {"n": int(n), "fs": float(fs), "edges": edges, "bands": band_levels_db(freq, P, edges),
+    out = {"n": int(n), "fs": float(fs), "df": float(fs / n), "lf_limit_hz": lf_limit_hz(fs, n),
+           "edges": edges, "bands": band_levels_db(freq, P, edges),
            "tone": None, "level_db": [float(dsp.rms_dbfs(np.sqrt(np.mean(x[:, c] ** 2)))) for c in (0, 1)]}
     tn = detect_tone(freq, P[0] + P[1], fmin, fmax)
     if tn is not None:
         f0 = tn[0]
         lvl = tone_levels_db(freq, P, f0)
         d = 0 if lvl[0] >= lvl[1] else 1
-        bw = 2.0 ** (1.0 / 12.0)
-        lo = int(np.searchsorted(freq, f0 / bw))
-        hi = max(int(np.searchsorted(freq, f0 * bw)), lo + 1)
+        lo, hi = tone_band_bins(freq, P[0] + P[1], f0)
         cs = coherent_sums(X[d], X[1 - d], P[d], lo, hi)
         out["tone"] = {"f": f0, "lvl": np.array(lvl, dtype=float), "driven": d,
                        "num": cs[0] if cs else None, "den": cs[1] if cs else None}
@@ -213,11 +250,40 @@ class PeakHoldAccumulator:
         """(охвачено ячеек, всего) — прогресс свипа в режиме трекинга тона."""
         return int(np.count_nonzero(self.count)), int(self.count.size)
 
-    def snapshot(self, name, color, mode, fs):
+    def snapshot(self, name, color, mode, fs, card="", mixer="", corr_db=None, corr_note=""):
         levels = self.tone_hold() if mode == "tone" else self.bands.copy()
         return Overlay(name=name, color=tuple(color), mode=mode, per_octave=self.per_octave,
                        fmin=self.fmin, fmax=self.fmax, fs=float(fs), centers=self.centers.copy(),
-                       levels=levels)
+                       levels=levels, card=card, mixer=mixer,
+                       corr_db=None if corr_db is None else np.array(corr_db, dtype=float),
+                       corr_note=corr_note)
+
+
+def correction_curve(profile, centers):
+    """Поправка АЧХ карты (дБ) для центров полос: (2, nb) или None.
+
+    Профиль — калибровка петли ЦАП→АЦП (`measure.build_response_calibration`), нормированная на
+    1 кГц. Для записи с пластинки нужен только вход, но отдельного профиля АЦП нет: петля
+    включает и ЦАП (у современных карт его вклад мал, но не нулевой — об этом пишет страница).
+    Вне калиброванного диапазона поправка нулевая (без экстраполяции), как в apply_response_calibration."""
+    if not isinstance(profile, dict):
+        return None
+    out = np.zeros((2, centers.size))
+    ok = False
+    for c, name in enumerate(("L", "R")):
+        p = (profile.get("channels") or {}).get(name)
+        if not p:
+            continue
+        pf = np.asarray(p.get("frequency_hz", []), dtype=float)
+        pfr = np.asarray(p.get("fr_norm_db", []), dtype=float)
+        if pf.size < 2 or pfr.size != pf.size:
+            continue
+        lf = np.log10(pf)
+        valid = (centers >= pf[0]) & (centers <= pf[-1])
+        if valid.any():
+            out[c, valid] = np.interp(np.log10(centers[valid]), lf, pfr) - float(np.interp(3.0, lf, pfr))
+            ok = True
+    return out if ok else None
 
 
 def split_driven(levels):
@@ -270,6 +336,11 @@ class Overlay:
     levels: np.ndarray                  # (2, nb) dBFS, NaN — нет данных
     visible: bool = True
     created: str = field(default_factory=lambda: time.strftime("%Y-%m-%d %H:%M:%S"))
+    # Измерительный контекст: сравнивать кривые из разных контекстов можно только условно
+    card: str = ""                     # устойчивый идентификатор карты
+    mixer: str = ""                    # короткий отпечаток настроек ALSA-микшера
+    corr_db: object = None             # (2, nb) поправка петли карты на момент записи или None
+    corr_note: str = ""
 
     def to_json(self):
         return {"name": self.name, "color": list(self.color), "mode": self.mode,
@@ -277,7 +348,10 @@ class Overlay:
                 "centers": [round(float(v), 4) for v in self.centers],
                 "levels": [[None if not math.isfinite(v) else round(float(v), 3) for v in row]
                            for row in self.levels],
-                "visible": self.visible, "created": self.created}
+                "visible": self.visible, "created": self.created,
+                "card": self.card, "mixer": self.mixer, "corr_note": self.corr_note,
+                "corr_db": None if self.corr_db is None else
+                [[round(float(v), 3) for v in row] for row in np.asarray(self.corr_db)]}
 
     @staticmethod
     def from_json(d):
@@ -285,7 +359,10 @@ class Overlay:
         return Overlay(name=str(d["name"]), color=tuple(float(c) for c in d["color"]), mode=d["mode"],
                        per_octave=int(d["per_octave"]), fmin=float(d["fmin"]), fmax=float(d["fmax"]),
                        fs=float(d.get("fs", 0.0)), centers=np.array(d["centers"], dtype=float),
-                       levels=lv, visible=bool(d.get("visible", True)), created=str(d.get("created", "")))
+                       levels=lv, visible=bool(d.get("visible", True)), created=str(d.get("created", "")),
+                       card=str(d.get("card", "")), mixer=str(d.get("mixer", "")),
+                       corr_db=(None if d.get("corr_db") is None else np.array(d["corr_db"], dtype=float)),
+                       corr_note=str(d.get("corr_note", "")))
 
 
 def overlays_to_json(overlays):
@@ -302,21 +379,30 @@ def overlays_from_json(data):
     return out
 
 
-def overlays_csv(overlays, normalize=False):
-    """CSV: частота и по каждой кривой L, R (dB) и переходное затухание."""
+def overlays_csv(overlays, normalize=False, corrected=False):
+    """CSV: частота и по каждой кривой L, R (dB) и переходное затухание.
+
+    corrected — вычесть поправку петли карты, записанную с кривой (если её не было — сырая, это
+    видно в строке-комментарии). Строки «#» перед заголовком — метаданные измерительного контекста."""
     if not overlays:
         return ""
+    meta = []
     cols = ["freq_hz"]
     data = [overlays[0].centers]
     for o in overlays:
-        lv = relative_levels(o.centers, o.levels) if normalize else o.levels
+        applied = bool(corrected and o.corr_db is not None)
+        meta.append(f"# {o.name}: card={o.card or '?'} fs={o.fs:.0f} mixer={o.mixer or '?'} mode={o.mode} "
+                    f"1/{o.per_octave}oct created={o.created} correction={'applied' if applied else 'raw'}"
+                    + (f" ({o.corr_note})" if o.corr_note else ""))
+        base = o.levels - np.asarray(o.corr_db) if applied else o.levels
+        lv = relative_levels(o.centers, base) if normalize else base
         d, xt = split_driven(o.levels)
         for c, ch in enumerate("LR"):
             cols.append(f"{o.name} {ch}")
             data.append(_resample(o, lv[c], overlays[0].centers))
         cols.append(f"{o.name} xtalk(other-driven)")
         data.append(_resample(o, xt, overlays[0].centers))
-    lines = [",".join('"' + c.replace('"', "'") + '"' for c in cols)]
+    lines = meta + [",".join('"' + c.replace('"', "'") + '"' for c in cols)]
     for i in range(len(data[0])):
         lines.append(",".join("" if (j > 0 and not math.isfinite(col[i])) else f"{col[i]:.4f}"
                               for j, col in enumerate(data)))

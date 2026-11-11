@@ -89,6 +89,65 @@ check("JSON: кривые переживают сохранение (NaN ↔ nul
       and back[0].color == tuple(ph.PALETTE[0]))
 data["overlays"].insert(0, {"name": "битая"})
 check("повреждённая запись пропускается, остальные не теряются", len(ph.overlays_from_json(data)) == 2)
-csv = ph.overlays_csv([o1, o2], normalize=True).splitlines()
-check("CSV: заголовок и строки по числу полос", csv[0].startswith('"freq_hz"') and len(csv) == 1 + acc.centers.size and "xtalk" in csv[0])
+csv_all = ph.overlays_csv([o1, o2], normalize=True).splitlines()
+meta_lines = [l for l in csv_all if l.startswith("#")]
+csv = [l for l in csv_all if not l.startswith("#")]
+check("CSV: метаданные контекста в «#»-строках, заголовок и строки по числу полос",
+      len(meta_lines) == 2 and "correction=raw" in meta_lines[0] and csv[0].startswith('"freq_hz"')
+      and len(csv) == 1 + acc.centers.size and "xtalk" in csv[0])
+
+# ---- dev3: НЧ-точность зависит от длительности окна, а не от числа отсчётов
+def lf_error(fs_, secs, T_=40.0):
+    n_ = ph.window_samples(fs_, secs)
+    tt_ = np.arange(int(T_ * fs_)) / fs_; k_ = 1000.0
+    phs = 2 * np.pi * 20 * T_ / math.log(k_) * (k_ ** (tt_ / T_) - 1)
+    Xf = np.column_stack([0.1 * np.sin(phs), 1e-9 * np.sin(phs)])
+    ac = ph.PeakHoldAccumulator(12)
+    for s0 in range(0, Xf.shape[0] - n_, int(0.3 * fs_)):
+        r_ = ph.rta_job(Xf[s0:s0 + n_], fs_, n_, 12); ac.update(r_["bands"], r_["tone"])
+    cc = ac.centers; th_ = ac.tone_hold()[0]; m_ = (cc >= 20) & (cc < 40) & np.isfinite(th_)
+    return float(np.mean(th_[m_] - 20 * math.log10(0.1))), int(m_.sum())
+errs = {(fs_, sec): lf_error(fs_, sec) for fs_ in (96000, 192000) for sec in (0.35, 0.7)}
+check("НЧ (20–40 Гц): окно 0.35 и 0.7 с при 96 и 192 кГц — средняя ошибка ≤ 0.1 дБ (было −2.4 дБ при 192 кГц/64k)",
+      all(abs(e) <= 0.1 and cnt >= 4 for e, cnt in errs.values()),
+      "; ".join(f"{fs_ // 1000}k/{sec} с: {e:+.3f} дБ" for (fs_, sec), (e, _c) in errs.items()))
+check("окно задаётся временем: 0.7 с = 65536 отсчётов при 96 кГц и 131072 при 192 кГц",
+      ph.window_samples(96000, 0.7) == 65536 and ph.window_samples(192000, 0.7) == 131072)
+check("предел НЧ окна: 6·Δf (0.35 с @192 кГц → 17.6 Гц)", abs(ph.lf_limit_hz(192000, 65536) - 17.58) < 0.05)
+
+# ---- dev3: одиночные аномалии отсчётов почти не влияют на накопление
+def glitch_effect(gdb, chan):
+    fs_ = 96000; T_ = 30.0; n_ = 65536; rg = np.random.default_rng(12)
+    tt_ = np.arange(int(T_ * fs_)) / fs_; k_ = 1000.0
+    phs = 2 * np.pi * 20 * T_ / math.log(k_) * (k_ ** (tt_ / T_) - 1)
+    Lg = 0.1 * np.sin(phs) + 1e-6 * rg.standard_normal(tt_.size)
+    Rg = 0.1 * 10 ** (-45 / 20) * np.sin(phs + 0.4) + 2e-6 * rg.standard_normal(tt_.size)
+    for pos in rg.integers(1000, tt_.size - 1000, 20):
+        (Lg if chan == "L" else Rg)[pos] += 10 ** (gdb / 20) * rg.choice([-1, 1])
+    ac = ph.PeakHoldAccumulator(12)
+    for s0 in range(0, tt_.size - n_, int(0.3 * fs_)):
+        r_ = ph.rta_job(np.column_stack([Lg[s0:s0 + n_], Rg[s0:s0 + n_]]), fs_, n_, 12); ac.update(r_["bands"], r_["tone"])
+    cc = ac.centers; sel_ = (cc > 60) & (cc < 15000); th_ = ac.tone_hold()
+    return (float(np.nanmax(np.abs(th_[0][sel_] - 20 * math.log10(0.1)))),
+            float(np.nanmax(np.abs(th_[1][sel_] - (20 * math.log10(0.1) - 45)))))
+eL, eR = glitch_effect(-20.0, "R")
+check("20 одиночных выбросов −20 dBFS в слабом канале: ошибка АЧХ ведущего и переходного затухания ≤ 0.3 дБ (трекинг тона)",
+      eL <= 0.3 and eR <= 0.3, f"ведущий {eL:.2f} дБ, слабый {eR:.2f} дБ")
+eL2, eR2 = glitch_effect(-20.0, "L")
+check("то же в ведущем канале", eL2 <= 0.3 and eR2 <= 0.3, f"ведущий {eL2:.2f} дБ, слабый {eR2:.2f} дБ")
+
+# ---- dev3: поправка АЧХ карты
+prof = {"kind": "frequency_response_calibration", "channels": {
+    "L": {"frequency_hz": [20.0, 1000.0, 20000.0], "fr_norm_db": [-1.0, 0.0, -3.0]},
+    "R": {"frequency_hz": [20.0, 1000.0, 20000.0], "fr_norm_db": [-1.0, 0.0, -3.0]}}}
+cv = ph.correction_curve(prof, acc.centers)
+i20k = int(np.argmin(np.abs(np.log(acc.centers / 15000.0))))
+check("поправка карты: на 1 кГц 0 дБ, на ВЧ — по профилю, вне диапазона 0",
+      cv is not None and abs(cv[0][int(np.argmin(np.abs(np.log(acc.centers / 1000.0))))]) < 0.05 and cv[0][i20k] < -1.5,
+      f"15 кГц: {cv[0][i20k]:+.2f} дБ")
+ovm = acc.snapshot("м", ph.PALETTE[0], "tone", fs, card="usb-emu", mixer="abc123", corr_db=cv, corr_note="петля")
+back2 = ph.overlays_from_json(json.loads(json.dumps(ph.overlays_to_json([ovm]))))[0]
+check("метаданные кривой (карта, Fs, микшер, поправка) переживают JSON",
+      back2.card == "usb-emu" and back2.mixer == "abc123" and back2.corr_db is not None
+      and np.allclose(back2.corr_db, cv, atol=1e-3) and back2.fs == fs)
 print(f"\n{ok} проверок пройдено")

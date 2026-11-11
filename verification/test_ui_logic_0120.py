@@ -321,3 +321,48 @@ pp.on_reset(); w.be.events.append({"kind": "xrun_capture", "frame": 100, "t": ti
 pp._apply(res_p, {"kind": "peak", "end": 150, "n": 100, "fs": fs_p, "po": 12})
 check("frame with a stream event is not accumulated", pp.acc.frames == 0 and pp.rejected == 1)
 print(f"\n{OK} проверок пройдено")
+
+# ======================================================== dev3: Peak Hold привязан к измерительному контексту
+w3 = PWin(); w3.cards = [("hw:1,0", "E-MU 0404 USB"), ("hw:2,0", "ASUS Strix")]; w3.dev = Sel(0)
+w3.get_response_calibration = lambda fs: (None, "Для этой карты и %d Гц нет калибровки АЧХ; показан сырой тракт." % fs)
+ui.PeakHoldPage.OVERLAYS_PATH = os.path.join(tempfile.mkdtemp(), "o.json")
+p3 = ui.PeakHoldPage(w3)
+def feed(page, k=3):
+    for s0 in range(0, k * int(0.3 * fs_p), int(0.3 * fs_p)):
+        page._apply(_ph.rta_job(XP[s0:s0 + n_p], fs_p, n_p, 12), {"kind": "peak", "end": None, "n": n_p, "fs": fs_p, "po": 12})
+feed(p3)
+frames_before = p3.acc.frames
+w3.dev = Sel(1)                                    # пользователь переключил карту, не останавливая страницу
+p3._apply(_ph.rta_job(XP[:n_p], fs_p, n_p, 12), {"kind": "peak", "end": None, "n": n_p, "fs": fs_p, "po": 12})
+check("смена карты посреди накопления: накопление сброшено, предупреждение показано, в новое попал только свежий кадр",
+      frames_before == 3 and p3.acc.frames == 1 and any("сброшено" in m for m in w3.toasts_) and p3.ctx[0] != "")
+p3.on_context_changed()
+check("on_context_changed (смена карты/Fs в окне) очищает несохранённое накопление, сохранённые кривые остаются",
+      p3.acc.frames == 0 and p3.ctx is None)
+feed(p3, 4); p3.name_entry = types.SimpleNamespace(get_text=lambda: "A", set_text=lambda t_: None); p3.on_save()
+ov3 = p3.overlays[0]
+check("сохранённая кривая несёт карту и Fs измерения", ov3.card != "" and ov3.fs == fs_p, f"card={ov3.card!r} fs={ov3.fs:.0f}")
+w3.dev = Sel(0); p3.on_context_changed(); feed(p3, 2)
+check("кривая другой карты помечена в баннере как условно сопоставимая",
+      "другой карте" in p3.banner.get_text() and "«A»" in p3.banner.get_text(), p3.banner.get_text())
+
+# поправка карты: профиль есть → показ «с поправкой» отличается от сырого ровно на поправку; кривая без неё помечена [сырая]
+profile3 = {"kind": "frequency_response_calibration", "channels": {
+    "L": {"frequency_hz": [20.0, 1000.0, 20000.0], "fr_norm_db": [-1.0, 0.0, -3.0]},
+    "R": {"frequency_hz": [20.0, 1000.0, 20000.0], "fr_norm_db": [-1.0, 0.0, -3.0]}}}
+p3.on_reset(); feed(p3, 64)
+p3.norm = Sel(0); p3.corr_mode = Sel(0); p3._redraw()
+raw_tr = {t_["label"]: (t_["x"].copy(), t_["y"].copy()) for t_ in p3.plot.traces if t_["label"].startswith("Сейчас")}
+w3.get_response_calibration = lambda fs: (profile3, "АЧХ скорректирована по калибровке 2026-11-08.")
+p3.corr_mode = Sel(1); p3._refresh_correction(); p3._redraw()
+cor_tr = {t_["label"]: (t_["x"].copy(), t_["y"].copy()) for t_ in p3.plot.traces if t_["label"].startswith("Сейчас")}
+xr_, yr_ = raw_tr["Сейчас L"]; xc_, yc_ = cor_tr["Сейчас L"]
+exp_corr = _ph.correction_curve(profile3, p3.acc.centers)[0]
+idx_ = np.array([int(np.argmin(np.abs(p3.acc.centers - xv))) for xv in xr_])
+diff_ = yr_ - yc_
+check("поправка карты вычитается из показа ровно по профилю (петля ЦАП→АЦП, нормирована на 1 кГц)",
+      len(xr_) == len(xc_) and len(xr_) >= 30 and np.allclose(diff_, exp_corr[idx_], atol=1e-9) and np.max(np.abs(diff_)) > 1.5,
+      f"{len(xr_)} ячеек, макс поправка {np.max(np.abs(diff_)):.2f} дБ")
+check("кривая, сохранённая без профиля, при показе «с поправкой» подписана [сырая]",
+      any("[сырая]" in t_["label"] for t_ in p3.plot.traces if t_["label"].startswith("A")))
+print(f"\n{OK} проверок пройдено")

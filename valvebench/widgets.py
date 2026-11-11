@@ -71,7 +71,8 @@ class LevelMeters(Gtk.DrawingArea):
         click.connect("pressed", self._on_click)
         self.add_controller(click)
         self.set_tooltip_text("Клик — сменить шкалу (60 / 90 / 120 дБ). "
-                              "Жёлтая черта — Peak Hold, красная полоса вверху — CLIP.")
+                              "Жёлтая черта — Peak Hold, красная полоса вверху — CLIP, красный пунктир — "
+                              "предупредительная граница запаса −3 dBFS (цифровое ограничение — около 0 dBFS).")
 
     # ---- API
     def set_reading(self, c, rms_db, peak_db, clip=False):
@@ -220,6 +221,17 @@ def draw_meters(cr, W, H, fg, rms, peak, hold, clipped, stale, stale_text, delta
             cr.set_source_rgba(*BAD, 1.0)
             cr.rectangle(x0, y0 - 5, bar_w, 5)
             cr.fill()
+
+    # ----- предупредительная граница запаса −3 dBFS (цифровое ограничение начинается около 0 dBFS)
+    y3 = ypos(-3.0)
+    cr.set_source_rgba(*BAD, 0.85)
+    cr.set_line_width(1.2)
+    cr.set_dash([4.0, 3.0])
+    cr.move_to(x_l, y3)
+    cr.line_to(x_r + bar_w, y3)
+    cr.stroke()
+    cr.set_dash([])
+    text("-3", x_l - 5, y3 + 3.5, 9, 0.95, "r", BAD)
 
     # ----- столбец разбега: вверх — L громче, вниз — R громче
     ymid = (y0 + y1) / 2

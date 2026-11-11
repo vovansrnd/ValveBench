@@ -66,3 +66,42 @@ check("опыт D (тишина): сбой найден без тона; про�
       res2["adc"]["L"]["single_sample"] == 1 and not res2["adc"]["L"]["dropouts"], str(res2["adc"]["L"]["single_sample"]))
 print("\n" + "\n".join(lines[-4:]))
 print(f"\n{ok} проверок пройдено")
+
+# ---- память: пик не зависит от длины записи (файл читается окнами)
+import tracemalloc
+from valvebench import glitch_test as _gt
+def make_capture_file(path, fs, seconds, glitch_at):
+    """S24_3LE, тон 997 Гц в L (-18 dBFS), шум; пишется по секундам — генератор сам память не раздувает."""
+    rng = np.random.default_rng(9)
+    with open(path, "wb") as fh:
+        for s0 in range(0, int(seconds * fs), fs):
+            n = min(fs, int(seconds * fs) - s0)
+            t = (np.arange(s0, s0 + n)) / fs
+            x = np.column_stack([0.126 * np.sin(2 * np.pi * 997.0 * t), np.zeros(n)]) + 3e-7 * rng.standard_normal((n, 2))
+            for g in glitch_at:
+                if s0 <= g < s0 + n: x[g - s0, 0] += 5e-4
+            fh.write(to_pcm(np.clip(x, -1, 1), "S24_3LE"))
+peaks = {}
+for secs in (30, 90):
+    fs_m = 192000
+    d = Path(tempfile.mkdtemp()); f = d / "cap.raw"
+    make_capture_file(f, fs_m, secs, [int(7.3 * fs_m), int((secs - 9.0) * fs_m)])
+    src = _gt._FileSource(f, "S24_3LE", 2)
+    tracemalloc.start()
+    outd = d / "out"; outd.mkdir()
+    total_s = secs
+    # «программа»: lead 0, idle 3 с, fade 0.5 с, тон до конца минус хвост
+    _gt.analyse_recording(src, fs_m, "L", -18.0, seconds=secs - 8.0, tone_hz=997.0, idle_s=3.0, fade_s=0.5, lead=0.0,
+                          total_s=secs, xr={"playback": [], "capture": []}, outdir=outd, print_fn=lambda s: None)
+    peaks[secs] = tracemalloc.get_traced_memory()[1] / 2 ** 20
+    tracemalloc.stop()
+    res_m = json.loads((outd / "glitch.json").read_text())
+    check(f"{secs} с @192 кГц из файла: найдено 2 внесённых одиночных сбоя", res_m["adc"]["L"]["single_sample"] == 2,
+          str(res_m["adc"]["L"]["single_sample"]))
+raw_mib = lambda secs: secs * 192000 * 2 * 3 / 2 ** 20
+f64_mib = lambda secs: secs * 192000 * 2 * 8 / 2 ** 20
+check("пик памяти не растёт с длиной записи (30 с → 90 с) и не превышает 150 МиБ",
+      peaks[90] < 1.3 * peaks[30] and peaks[90] < 150.0,
+      f"пик {peaks[30]:.0f} МиБ (30 с) / {peaks[90]:.0f} МиБ (90 с); раньше только массив float64 на 90 с — {f64_mib(90):.0f} МиБ, "
+      f"на 10 мин — {f64_mib(600):.0f} МиБ при файле {raw_mib(600):.0f} МиБ")
+print(f"\n{ok} проверок пройдено")

@@ -1244,6 +1244,25 @@ def run_selftest():
           len(ev97) == 1 and ev97[0]["kind"] == "single_sample" and ev97[0]["sign"] == 1 and ev97[0]["index"] == 60000,
           f"{[(e['index'], e['kind']) for e in ev97]}")
 
+    # ---- 0.1.20-dev3: порог детектора одиночных сбоев на длинном шуме (раньше «9σ» были ≈5.3σ)
+    fp_total, fp_detail = 0, []
+    rg3 = np.random.default_rng(303)
+    for lsb in (2.5, 21.0, 100.0):
+        cnt = 0
+        for _ in range(4):
+            xn = np.round(lsb * rg3.standard_normal(1_000_000)) * 2.0 ** -23
+            cnt += len(lm.detect_sample_glitches(xn, 192000, None))
+        fp_total += cnt
+        fp_detail.append(f"{lsb:g} LSB: {cnt}")
+    found12 = 0
+    for _ in range(40):
+        xs = 21 * 2.0 ** -23 * rg3.standard_normal(40000)
+        xs[20000] += 12 * 21 * 2.0 ** -23
+        found12 += any(abs(e["index"] - 20000) <= 1 for e in lm.detect_sample_glitches(xs, 192000, None))
+    check("Детектор одиночных сбоев: 0 ложных срабатываний на 12 млн отсчётов шума (2.5/21/100 LSB), "
+          "выброс 12σ шума находится в 100% случаев",
+          fp_total == 0 and found12 == 40, "; ".join(fp_detail) + f"; найдено 12σ: {found12}/40")
+
     passed = sum(q["ok"] for q in checks)
     return {"passed": passed, "total": len(checks), "checks": checks}
 

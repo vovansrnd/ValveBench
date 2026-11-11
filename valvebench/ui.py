@@ -1413,7 +1413,7 @@ class PeakHoldPage(Gtk.Box):
     кривые сохраняются под названием и цветом (другой картридж, другой фонокорректор) и остаются на
     графике для сравнения; переходное затухание — разность «чужой − ведущий канал» на той же частоте."""
 
-    FFT_SIZES = [16384, 32768, 65536, 131072]
+    WINDOWS_S = (0.35, 0.7, 1.4, 2.7)
     OVERLAYS_PATH = os.path.expanduser("~/.config/valvebench/overlays.json")
     EXPORT_DIR = os.path.expanduser("~/.config/valvebench/exports")
 
@@ -1435,7 +1435,18 @@ class PeakHoldPage(Gtk.Box):
             return w
         self.mode = dd("pref_peak_mode", ["Трекинг тона (рекомендуется)", "По полосам (RTA peak hold)"], 0)
         self.res = dd("pref_peak_res", ["1/3 октавы", "1/6 октавы", "1/12 октавы", "1/24 октавы"], 2)
-        self.fft = dd("pref_peak_fft", ["16k · быстро", "32k", "64k", "128k · точнее на НЧ"], 2)
+        # Окно задаётся ВРЕМЕНЕМ, а не числом отсчётов: на НЧ точность определяется длительностью окна
+        # (при 192 кГц 64k отсчётов — 0.34 с, при 96 кГц — 0.68 с).
+        self.fft = dd("pref_peak_win", ["0.35 с · быстро", "0.7 с (рекомендуется)", "1.4 с · точнее на НЧ",
+                                        "2.7 с · очень медленный свип"], 1)
+        self.corr_mode = dd("pref_peak_corr", ["Сырая запись", "С поправкой петли карты (если есть)"], 1)
+        self.corr_label = Gtk.Label(label="", xalign=0, wrap=True)
+        self.corr_label.add_css_class("dim-label")
+        self.ctx = None              # (карта, Fs, микшер), с которыми идёт накопление
+        self._corr = None
+        self._lf_limit = 0.0
+        self._rate = None            # оценка скорости свипа, окт/с
+        self._tone_hist = None
         self.norm = dd("pref_peak_norm", ["Абсолютные dBFS", "0 дБ на 1 кГц"], 1)
         self.view = dd("pref_peak_view", ["Каналы L и R", "Только ведущий канал", "Переходное затухание"], 0)
         self.span = dd("pref_peak_span", ["Авто", "10 дБ", "30 дБ", "60 дБ", "100 дБ"], 0)
@@ -1459,7 +1470,7 @@ class PeakHoldPage(Gtk.Box):
         t1 = Gtk.Label(label="Накопление", xalign=0)
         t1.add_css_class("heading")
         left.append(t1)
-        for title, w in (("Способ", self.mode), ("Разрешение по частоте", self.res), ("FFT-окно", self.fft)):
+        for title, w in (("Способ", self.mode), ("Разрешение по частоте", self.res), ("Длительность окна", self.fft)):
             left.append(labeled(title, w))
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         reset_btn = button("Сброс пиков", self.on_reset)
@@ -1473,8 +1484,11 @@ class PeakHoldPage(Gtk.Box):
         t2.add_css_class("heading")
         t2.set_margin_top(6)
         left.append(t2)
-        for title, w in (("Что показывать", self.view), ("Нормировка", self.norm), ("Масштаб Y", self.span),
-                         ("Фон", self.rta)):
+        for title, w in (("Что показывать", self.view), ("Нормировка", self.norm),
+                         ("Поправка АЧХ измерительной карты", self.corr_mode)):
+            left.append(labeled(title, w))
+        left.append(self.corr_label)
+        for title, w in (("Масштаб Y", self.span), ("Фон", self.rta)):
             left.append(labeled(title, w))
         t3 = Gtk.Label(label="Сохранённые кривые", xalign=0)
         t3.add_css_class("heading")
@@ -1489,12 +1503,19 @@ class PeakHoldPage(Gtk.Box):
         left.append(self.list_box)
         left.append(button("Экспорт видимых кривых в CSV", self.on_export))
         help_lab = Gtk.Label(
-            label="Как пользоваться: открой аудиопоток, поставь свип с пластинки, дождись конца (охват "
-                  "покажет строка состояния). «Сохранить» запоминает кривую под названием и цветом, «Сброс» "
-                  "очищает накопление для следующего измерения; сохранённые кривые остаются и сравниваются "
-                  "на одном графике. Ведущий канал определяется сам; переходное затухание — разность уровней "
-                  "«чужой − ведущий» на той же частоте. Трекинг тона игнорирует щелчки и рокот пластинки, "
-                  "«по полосам» запоминает любые пики. Генератор Gain Match должен быть выключен.",
+            label="Что измеряется: суммарная относительная АЧХ тракта воспроизведения — тестовая дорожка и её "
+                  "запись → картридж → тонарм → фонокорректор → вход АЦП. Нормировка на 1 кГц убирает общий уровень, "
+                  "но не АЧХ самой дорожки, картриджа и входа АЦП. Это инструмент СРАВНЕНИЯ картриджей, каналов и "
+                  "систем; АЧХ самого фонокорректора мерьте калиброванным электрическим свипом с обратной RIAA.\n"
+                  "Как пользоваться: открой аудиопоток, поставь свип с пластинки, дождись конца (охват покажет "
+                  "строка состояния). «Сохранить» запоминает кривую под названием и цветом вместе с картой, "
+                  "частотой, отпечатком микшера и поправкой; «Сброс» очищает накопление. При смене карты, "
+                  "частоты или настроек микшера накопление сбрасывается само — данные разных измерительных "
+                  "контекстов не смешиваются, а сохранённые кривые из другого контекста помечаются. Ведущий канал "
+                  "определяется сам; переходное затухание — «чужой − ведущий» на той же частоте. Трекинг тона "
+                  "игнорирует щелчки и рокот, «по полосам» запоминает любые пики. Окно в секундах: короче — "
+                  "быстрее свип, длиннее — точнее НЧ; серая зона слева — окно для этих частот коротко. "
+                  "Генератор Gain Match должен быть выключен.",
             xalign=0, wrap=True)
         help_lab.add_css_class("dim-label")
         exp = Gtk.Expander(label="Справка")
@@ -1535,6 +1556,8 @@ class PeakHoldPage(Gtk.Box):
         self.page_scroller = self.left_scroller
         for w in (self.mode, self.norm, self.view, self.span, self.rta):
             w.connect("notify::selected", lambda *_: self._redraw())
+        self.corr_mode.connect("notify::selected", lambda *_: (self._refresh_correction(), self._redraw()))
+        self._refresh_correction()
         self.res.connect("notify::selected", lambda *_: self._on_resolution())
         self._rebuild_list()
         self._redraw()
@@ -1551,11 +1574,79 @@ class PeakHoldPage(Gtk.Box):
     def mode_key(self):
         return "tone" if self.mode.get_selected() == 0 else "bands"
 
+    # ---- измерительный контекст и поправка карты
+    def _context(self):
+        """(устойчивый идентификатор карты, Fs, короткий отпечаток микшера) — накопление принадлежит одному контексту."""
+        w = self.win
+        dev = ""
+        try:
+            dev = w.cards[w.dev.get_selected()][0]
+        except Exception:  # noqa: BLE001
+            pass
+        key = ""
+        try:
+            key = str(stable_device_identity(dev)) if dev else ""
+        except Exception:  # noqa: BLE001
+            key = str(dev)
+        mix = ""
+        try:
+            if dev and dev != "sim":
+                fp = w._cached_mixer_fingerprint(dev)
+                mix = hashlib.sha1(repr(fp).encode("utf-8")).hexdigest()[:10] if fp is not None else ""
+        except Exception:  # noqa: BLE001
+            mix = ""
+        return key, int(w.rig_fs()), mix
+
+    def on_context_changed(self):
+        """Сменилась карта или Fs: несохранённое накопление принадлежит старому контексту — сбросить."""
+        self.acc.reset()
+        self.last_res = None
+        self.ctx = None
+        self._rate = None
+        self._tone_hist = None
+        self.rejected = 0
+        self._refresh_correction()
+        self._redraw()
+
+    def _refresh_correction(self):
+        """Профиль АЧХ петли карты для текущей карты/Fs (спрашивает ALSA-микшер — только по событию, не по кадру)."""
+        self._corr = None
+        profile, note = None, "профиль не запрашивался"
+        try:
+            profile, note = self.win.get_response_calibration(self.win.rig_fs())
+        except Exception as exc:  # noqa: BLE001
+            note = f"поправка недоступна: {type(exc).__name__}"
+        self._profile_note = note
+        if profile:
+            self._corr = ph.correction_curve(profile, self.acc.centers)
+        if self.corr_mode.get_selected() == 0:
+            txt = "Показана сырая запись." + (" Профиль карты есть: он будет записан в метаданные кривых." if self._corr is not None else "")
+        elif self._corr is not None:
+            txt = (f"{note} Поправка — петля ЦАП→АЦП, то есть включает и ЦАП; для записи с пластинки нужен только вход.")
+        else:
+            txt = f"{note} Показана сырая запись."
+        self.corr_label.set_text(txt)
+
+    def _active_corr(self):
+        return self._corr if self.corr_mode.get_selected() == 1 else None
+
+    def _ov_levels(self, ov):
+        """(уровни для показа, суффикс легенды): поправка — та, что записана с кривой."""
+        if self.corr_mode.get_selected() == 1:
+            if ov.corr_db is not None:
+                return ov.levels - np.asarray(ov.corr_db), ""
+            # метка нужна, только когда рядом есть скорректированные кривые: если профиля нет вообще,
+            # сырое — всё, и об этом уже сказано строкой под переключателем
+            return ov.levels, (" [сырая]" if self._corr is not None else "")
+        return ov.levels, ""
+
     # ---- кнопки
     def on_reset(self, *_):
         self.acc.reset()
         self.rejected = 0
         self.last_res = None
+        self._rate = None
+        self._tone_hist = None
         self._redraw()
 
     def on_pause(self, btn):
@@ -1571,8 +1662,11 @@ class PeakHoldPage(Gtk.Box):
 
     def on_save(self, *_):
         key = self.mode_key()
+        card, fs_ctx, mixer = self.ctx or self._context()
+        self._refresh_correction()          # профиль запрашивается заново: микшер мог измениться
         ov = self.acc.snapshot(self.name_entry.get_text().strip() or f"Кривая {len(self.overlays) + 1}",
-                               self._next_color(), key, self.win.rig_fs())
+                               self._next_color(), key, fs_ctx, card=card, mixer=mixer,
+                               corr_db=self._corr, corr_note=self._profile_note if self._corr is not None else "")
         if not np.isfinite(ov.levels).any():
             self.win.toast("Нечего сохранять: накопление пусто (нет тона/сигнала)")
             return
@@ -1591,7 +1685,8 @@ class PeakHoldPage(Gtk.Box):
             os.makedirs(self.EXPORT_DIR, exist_ok=True)
             path = os.path.join(self.EXPORT_DIR, "overlays-" + time.strftime("%Y%m%d-%H%M%S") + ".csv")
             with open(path, "w", encoding="utf-8") as fh:
-                fh.write(ph.overlays_csv(vis, normalize=self.norm.get_selected() == 1))
+                fh.write(ph.overlays_csv(vis, normalize=self.norm.get_selected() == 1,
+                                         corrected=self.corr_mode.get_selected() == 1))
             self.win.toast(f"CSV сохранён: {path}")
         except OSError as exc:
             self.win.toast(f"Не удалось сохранить CSV: {exc}")
@@ -1619,7 +1714,9 @@ class PeakHoldPage(Gtk.Box):
             lab = Gtk.Label(label=ov.name, xalign=0)
             lab.set_hexpand(True)
             lab.set_ellipsize(3)           # Pango.EllipsizeMode.END
-            lab.set_tooltip_text(f"{ov.name}\n{ov.created} · {ov.mode} · 1/{ov.per_octave} окт.")
+            lab.set_tooltip_text(f"{ov.name}\n{ov.created} · {ov.mode} · 1/{ov.per_octave} окт.\n"
+                                 f"карта: {ov.card or '?'} · Fs {ov.fs / 1000:g} кГц · микшер {ov.mixer or '?'}\n"
+                                 f"поправка карты: {'записана' if ov.corr_db is not None else 'нет (сырая)'}")
             row.append(lab)
             row.append(button("✕", lambda *_a, o=ov: self._delete(o)))
             self.list_box.append(row)
@@ -1662,12 +1759,14 @@ class PeakHoldPage(Gtk.Box):
 
     # ---- таймер и кадры
     def set_visible(self, visible):
+        if visible:
+            self._refresh_correction()       # профиль и микшер могли измениться, пока страница была скрыта
+            self._redraw()
         if visible and self.win.live_on and self.timer is None:
             self.timer = GLib.timeout_add(100, self.tick)
         elif not visible and self.timer is not None:
             GLib.source_remove(self.timer)
             self.timer = None
-
     def _set_banner(self, level, text):
         if self._banner_class:
             self.banner.remove_css_class(self._banner_class)
@@ -1699,7 +1798,7 @@ class PeakHoldPage(Gtk.Box):
         if now - self._last_submit < 0.25:
             return True
         fs = self.win.rig_fs()
-        n = self.FFT_SIZES[self.fft.get_selected()]
+        n = ph.window_samples(fs, self.WINDOWS_S[self.fft.get_selected()])
         x, end = be.live_recent_stamped(n / fs + 0.02)
         if len(x) < n:
             self.state.set_text(f"Накопление окна: {len(x) / fs:.2f} / {n / fs:.2f} с")
@@ -1713,7 +1812,7 @@ class PeakHoldPage(Gtk.Box):
         be = self.win.be
         if be is None or meta["po"] != self.acc.per_octave or meta["fs"] != self.win.rig_fs():
             return
-        n, end = meta["n"], meta["end"]
+        n, end, fs = meta["n"], meta["end"], meta["fs"]
         ev_bad = []
         if end is not None and hasattr(be, "live_events"):
             ev_bad = lm.window_events(be.live_events(end - n), end - n, end)
@@ -1724,11 +1823,44 @@ class PeakHoldPage(Gtk.Box):
                                  + lm.describe_event(ev_bad[-1]), ttl=4.0)
             self._set_banner("bad", "⚠ Кадр пропущен: " + lm.describe_event(ev_bad[-1]))
             return
+        # Накопление принадлежит одному измерительному контексту: смена карты, Fs или настроек
+        # микшера посреди свипа сшила бы несовместимые уровни в одну «красивую» кривую.
+        cur_ctx = self._context()
+        notes = []
+        if self.ctx is None:
+            self.ctx = cur_ctx
+            self._refresh_correction()
+        elif cur_ctx != self.ctx:
+            if self.acc.frames > 0:
+                self.acc.reset()
+                self._rate = None
+                self._tone_hist = None
+                self.win.toast("Накопление сброшено: изменились карта / частота / настройки микшера")
+                notes.append("накопление сброшено: сменился измерительный контекст")
+            self.ctx = cur_ctx
+            self._refresh_correction()
         gen_on = bool(self.win.generator_btn.get_active())
-        self._set_banner("info" if gen_on else None,
-                         "Включён генератор Gain Match — его тон попадёт в накопление" if gen_on else "")
+        if gen_on:
+            notes.append("включён генератор Gain Match — его тон попадёт в накопление")
+        self._lf_limit = float(res.get("lf_limit_hz", 0.0))
         self.acc.update(res["bands"], res["tone"])
         self.last_res = res
+        # скорость свипа: тон не должен проходить за окно больше ~0.25 октавы, иначе уровень занижается
+        tone = res["tone"]
+        now = time.monotonic()
+        if tone:
+            if self._tone_hist is not None and now - self._tone_hist[0] >= 0.1 and tone["f"] > 0 and self._tone_hist[1] > 0:
+                rate = abs(math.log2(tone["f"] / self._tone_hist[1])) / (now - self._tone_hist[0])
+                self._rate = rate if self._rate is None else 0.7 * self._rate + 0.3 * rate
+            self._tone_hist = (now, tone["f"])
+        smear = (self._rate or 0.0) * (n / fs)
+        if smear > 0.25:
+            notes.append(f"свип быстрый для окна {n / fs:.1f} с: тон проходит {smear:.2f} окт за окно — уровень "
+                         f"занижается, возьмите окно короче")
+        odd = [o.name for o in self.overlays if o.visible and (o.card, int(round(o.fs))) != (self.ctx[0], self.ctx[1])]
+        if odd:
+            notes.append("кривые «" + "», «".join(odd[:3]) + "» получены на другой карте/частоте — сравнение условное")
+        self._set_banner("info" if notes else None, "; ".join(notes))
         self._redraw()
         cov, tot = self.acc.coverage()
         tone = res["tone"]
@@ -1736,6 +1868,7 @@ class PeakHoldPage(Gtk.Box):
             f"{'трекинг тона' if self.mode_key() == 'tone' else 'по полосам'} · кадров {self.acc.frames} "
             f"(с тоном {self.acc.tone_frames}) · охват свипа {cov}/{tot} ячеек · "
             + (f"тон сейчас {tone['f']:.0f} Гц · " if tone else "тона нет · ")
+            + f"окно {n / meta['fs']:.2f} с (Δf {res.get('df', 0.0):.2f} Гц; ниже {self._lf_limit:.0f} Гц окно коротко) · "
             + f"пропущено кадров: {self.rejected} · расчёт {res.get('elapsed', 0.0) * 1e3:.0f} мс")
 
     # ---- рисование
@@ -1745,6 +1878,9 @@ class PeakHoldPage(Gtk.Box):
     def _redraw(self):
         centers = self.acc.centers
         cur = self._current_levels()
+        corr = self._active_corr()
+        if corr is not None:
+            cur = cur - corr
         norm = self.norm.get_selected() == 1
         view = self.view.get_selected()
         traces = []
@@ -1770,7 +1906,8 @@ class PeakHoldPage(Gtk.Box):
         if view == 2:
             ylabel = "Переходное затухание, дБ (чужой - ведущий)"
         else:
-            ylabel = "Относительно 1 кГц, дБ" if norm else "Уровень, dBFS"
+            ylabel = ("Относительная АЧХ тракта воспроизведения, дБ (0 на 1 кГц)" if norm
+                      else "Уровень на входе АЦП, dBFS")
         finite = [t["y"][np.isfinite(t["y"])] for t in traces]
         finite = [f for f in finite if f.size]
         span = (None, 10.0, 30.0, 60.0, 100.0)[self.span.get_selected()]
@@ -1787,18 +1924,26 @@ class PeakHoldPage(Gtk.Box):
         self.plot.set_traces(traces)
 
     def _overlay_traces(self, ov, norm, view):
-        lv = ph.relative_levels(ov.centers, ov.levels) if norm else ov.levels
-        d, xt = ph.split_driven(ov.levels)
+        base, suffix = self._ov_levels(ov)
+        lv = ph.relative_levels(ov.centers, base) if norm else base
+        d, xt = ph.split_driven(base)
         if view == 2:
-            return [{"x": ov.centers, "y": xt, "label": f"{ov.name} (перекр.)", "color": ov.color, "width": 1.6}]
+            return [{"x": ov.centers, "y": xt, "label": f"{ov.name} (перекр.){suffix}", "color": ov.color, "width": 1.6}]
         out = []
         for c in ([d] if view == 1 else [0, 1]):
-            out.append({"x": ov.centers, "y": lv[c], "label": f"{ov.name} {'LR'[c]}", "color": ov.color,
+            out.append({"x": ov.centers, "y": lv[c], "label": f"{ov.name} {'LR'[c]}{suffix}", "color": ov.color,
                         "width": 1.5, "dash": (view == 0 and c == 1)})
         return out
 
     def _draw_rta(self, cr, ml, mt, pw, ph_, fg):
         """Живой RTA столбцами под кривыми: текущий кадр, по каналам максимум."""
+        # Серая зона слева: окно слишком короткое для этих частот (тон ближе ~6 бинов к нулю)
+        if self._lf_limit > 20.0:
+            x0 = self.plot.x_to_px(20.0, ml, pw)
+            x1 = self.plot.x_to_px(min(self._lf_limit, 20000.0), ml, pw)
+            cr.set_source_rgba(fg.red, fg.green, fg.blue, 0.10)
+            cr.rectangle(x0, mt, max(0.0, x1 - x0), ph_)
+            cr.fill()
         res = self.last_res
         if res is None or self.rta.get_selected() == 1:
             return
@@ -3038,6 +3183,8 @@ class Window(Adw.ApplicationWindow):
             self.setup.refresh_from_calibration()
         if hasattr(self, "page_map"):
             self.restore_device_scoped_preferences()
+        if hasattr(self, "peakhold"):
+            self.peakhold.on_context_changed()
 
     def on_rate_changed(self, *_):
         if getattr(self, "_updating_rate", False):
@@ -3050,6 +3197,8 @@ class Window(Adw.ApplicationWindow):
             self.live.refresh_gain_reference()
         if hasattr(self, "setup"):
             self.setup.refresh_from_calibration()
+        if hasattr(self, "peakhold"):
+            self.peakhold.on_context_changed()
         if hasattr(self, "page_map"):
             self.restore_device_scoped_preferences()
 

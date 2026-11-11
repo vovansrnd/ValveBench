@@ -29,7 +29,7 @@ from scipy.io import wavfile
 from . import livemetrics as lm
 from . import steady
 from .backend import parse_alsa_log
-from .pcm import from_pcm, to_pcm
+from .pcm import StreamPcmReader, stream_to_float32_wav, to_pcm
 
 GUARD_S = 0.5            # отступ от краёв устойчивого участка (fade, переходные процессы)
 BLOCK_S = 2.7            # размер блока анализа
@@ -69,20 +69,44 @@ def clusters(times, gap=CLUSTER_GAP_S):
     return 0 if not t else 1 + sum(1 for a, b in zip(t, t[1:]) if b - a > gap)
 
 
-def scan_segment(x, fs, f0, driven, t0, block_s=BLOCK_S, overlap_s=BLOCK_OVERLAP_S):
-    """События на участке x (n, 2) блоками: список словарей с абсолютным временем t0 + t.
+class _ArraySource:
+    """Источник кадров поверх готового массива (тесты, короткие записи)."""
 
-    f0 — частота ведущего тона (None — тишина); driven — (L, R) ведомые каналы. Событие
-    принадлежит блоку, в который попало его время, поэтому перекрытие не дублирует события."""
-    n = x.shape[0]
+    def __init__(self, x):
+        self.x = np.asarray(x)
+        self.frames = self.x.shape[0]
+
+    def read_frames(self, start, count):
+        return self.x[start:start + count, :2]
+
+
+class _FileSource:
+    """Источник кадров поверх raw-файла: читает только запрошенное окно (первые два канала)."""
+
+    def __init__(self, path, fmt, channels):
+        self.reader = StreamPcmReader(path, fmt, channels)
+        self.frames = self.reader.frames
+
+    def read_frames(self, start, count):
+        return self.reader.read_frames(start, count)[:, :2]
+
+
+def scan_range(src, a_frame, b_frame, fs, f0, driven, t0, block_s=BLOCK_S, overlap_s=BLOCK_OVERLAP_S):
+    """События на участке [a_frame, b_frame) источника: список словарей с временем t0 + t.
+
+    Читается и анализируется по одному блоку с перекрытием, поэтому память не зависит от длины
+    записи (пик ≈ несколько десятков МБ). f0 — частота ведущего тона (None — тишина); driven —
+    (L, R) ведомые каналы. Событие принадлежит блоку, в который попало его время."""
     B = int(round(block_s * fs))
     ov = int(round(overlap_s * fs))
+    n = b_frame - a_frame
     out = []
     for s in range(0, n, B):
         a, b = max(0, s - ov), min(n, s + B + ov)
         if b - a < int(0.3 * fs):
             continue
-        res = lm.frame_integrity(x[a:b], fs, f0, driven, hf_lo=40000.0)
+        x = src.read_frames(a_frame + a, b - a)
+        res = lm.frame_integrity(x, fs, f0, driven, hf_lo=40000.0)
         off = a / fs
         lo, hi = s / fs, min(n, s + B) / fs
         for ci in res:
@@ -109,6 +133,12 @@ def scan_segment(x, fs, f0, driven, t0, block_s=BLOCK_S, overlap_s=BLOCK_OVERLAP
     return out
 
 
+def scan_segment(x, fs, f0, driven, t0, block_s=BLOCK_S, overlap_s=BLOCK_OVERLAP_S):
+    """То же для массива x (n, 2) — обёртка над scan_range."""
+    src = _ArraySource(x)
+    return scan_range(src, 0, src.frames, fs, f0, driven, t0, block_s, overlap_s)
+
+
 def run_glitch_test(play_dev: str, rec_dev: str, fs: int = 192000, channel: str = "L",
                     tone_level_dbfs: float = -18.0, seconds: float = 60.0, tone_hz: float = 997.0,
                     idle_s: float = 6.0, fade_s: float = 1.0, out_root: str | Path = "emu_measurements",
@@ -129,12 +159,17 @@ def run_glitch_test(play_dev: str, rec_dev: str, fs: int = 192000, channel: str 
     lead = 1.0
     cap_s = total_s + lead + 2.0
     io = steady._capture_and_play(play_file, cap_file, play, capture, fs, cap_s, lead_seconds=lead)
-    raw = from_pcm(cap_file.read_bytes(), capture.fmt, capture.channels)[:, :2]
+    # Файл НЕ читается целиком: 10 минут при 192 кГц и S24_3LE — это 659 МиБ файла и 1.7 ГиБ float64.
+    src = _FileSource(cap_file, capture.fmt, capture.channels)
     xr = _read_xruns(io)
-    for p in (play_file, cap_file):
-        p.unlink(missing_ok=True)
-    return analyse_recording(raw, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_s, fade_s, lead, total_s,
-                             xr, outdir, play_dev, rec_dev, play.fmt, capture.fmt, keep_wav, print_fn)
+    try:
+        return analyse_recording(src, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_s, fade_s, lead,
+                                 total_s, xr, outdir, play_dev, rec_dev, play.fmt, capture.fmt, False, print_fn,
+                                 raw_path=cap_file if keep_wav else None, raw_fmt=capture.fmt,
+                                 raw_channels=capture.channels)
+    finally:
+        play_file.unlink(missing_ok=True)
+        cap_file.unlink(missing_ok=True)
 
 
 def _read_xruns(io: dict) -> dict:
@@ -153,29 +188,35 @@ def _read_xruns(io: dict) -> dict:
 
 def analyse_recording(raw, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_s, fade_s, lead, total_s,
                       xr, outdir, play_dev="", rec_dev="", play_fmt="", cap_fmt="", keep_wav=False,
-                      print_fn=print) -> Path:
-    """Анализ готовой записи (отделён от ввода-вывода: проверяется на синтетике без ALSA)."""
+                      print_fn=print, raw_path=None, raw_fmt=None, raw_channels=2) -> Path:
+    """Анализ готовой записи (отделён от ввода-вывода: проверяется на синтетике без ALSA).
+
+    raw — массив (n, ≥2) или источник кадров с методами ``frames`` / ``read_frames(start, count)``
+    (файловый источник читает окнами, целиком запись в память не загружается)."""
     outdir = Path(outdir)
+    src = _ArraySource(raw) if isinstance(raw, np.ndarray) else raw
     tone_a = lead + idle_s + fade_s + GUARD_S
     tone_b = lead + idle_s + fade_s + seconds - GUARD_S
     idle_a = (lead + 0.5, lead + idle_s - 0.5)
     idle_b = (lead + total_s - idle_s + fade_s + 0.5, lead + total_s - 0.5)
 
-    def sl(r):
-        return raw[int(r[0] * fs):int(r[1] * fs)]
+    def fr(r):
+        return int(r[0] * fs), min(int(r[1] * fs), src.frames)
     res = {"channel": channel, "level_dbfs": tone_level_dbfs, "fs": fs, "seconds": seconds,
            "xrun": xr, "adc": {}}
     driven_ch = None if channel == "none" else (0 if channel in ("L", "both") else 1)
     driven = (channel in ("L", "both"), channel in ("R", "both"))
     f_used = None
     if channel != "none":
-        seg = sl((tone_a, min(tone_b, tone_a + 4.0)))[:, driven_ch]
-        f_used = lm.refine_tone(seg[: 1 << 17], fs, tone_hz)[0] if seg.size >= (1 << 15) else tone_hz
-    events = scan_segment(sl((tone_a, tone_b)), fs, f_used, driven, tone_a)
+        a0, a1 = fr((tone_a, min(tone_b, tone_a + 4.0)))
+        seg = src.read_frames(a0, min(a1 - a0, 1 << 17))[:, driven_ch]
+        f_used = lm.refine_tone(seg, fs, tone_hz)[0] if seg.size >= (1 << 15) else tone_hz
+    t_lo, t_hi = fr((tone_a, tone_b))
+    events = scan_range(src, t_lo, t_hi, fs, f_used, driven, tone_a)
     idle_events = []
     for r in (idle_a, idle_b):
-        seg = sl(r)
-        idle_events += scan_segment(seg, fs, None, (False, False), r[0])
+        i_lo, i_hi = fr(r)
+        idle_events += scan_range(src, i_lo, i_hi, fs, None, (False, False), r[0])
     minutes = max((tone_b - tone_a) / 60.0, 1e-9)
     idle_min = ((idle_a[1] - idle_a[0]) + (idle_b[1] - idle_b[0])) / 60.0
     xr_all = [("playback", x) for x in xr["playback"]] + [("capture", x) for x in xr["capture"]]
@@ -229,7 +270,9 @@ def analyse_recording(raw, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_
         for e in sorted(events, key=lambda e: e["time_s"]):
             w.writerow([f"{e['time_s']:.5f}", e["adc"], e["class"], e["level_dbfs"], e["error_lsb24"],
                         e["duration_ms"], e["sign"]])
-    if keep_wav:
+    if keep_wav and raw_path is not None:
+        stream_to_float32_wav(raw_path, raw_fmt, raw_channels, outdir / "capture-float32.wav", fs)   # одним проходом, блоками
+    elif keep_wav and isinstance(raw, np.ndarray):
         wavfile.write(str(outdir / "capture-float32.wav"), fs, raw.astype(np.float32))
     for ln in report:
         print_fn(ln)
