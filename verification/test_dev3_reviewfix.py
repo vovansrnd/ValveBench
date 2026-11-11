@@ -21,12 +21,97 @@ from valvebench.pcm import to_pcm
 
 passed = 0
 
+# ============================================================
+# T1-R (0.1.20-dev3-reviewfix2, ТЗ §5.1): независимая проверка SINAD
+# Несущая −20 dBFS, H2 = −32 dBc → −52 dBFS, H3 = −40 dBc → −60 dBFS.
+# Аналитика: SINAD = −20 − 10lg(10^(−5.2) + 10^(−6.0)) = 31.36 dB.
+# Предыдущая версия теста ошибочно задавала H2/H3 как абсолютные −32/−40 dBFS.
+# ============================================================
+import math as _math
+
+FS_T1 = 48000
+N_T1 = int(0.6 * FS_T1)
+CARRIER_DB, H2_DBC, H3_DBC = -20.0, -32.0, -40.0
+F0_T1 = 1000.0
+
+
+def _t1_signal():
+    t = np.arange(N_T1) / FS_T1
+    a_c = 10 ** (CARRIER_DB / 20)
+    a_h2 = a_c * 10 ** (H2_DBC / 20)
+    a_h3 = a_c * 10 ** (H3_DBC / 20)
+    x = (a_c * np.sin(2 * np.pi * F0_T1 * t)
+         + a_h2 * np.sin(2 * np.pi * 2 * F0_T1 * t + 0.7)
+         + a_h3 * np.sin(2 * np.pi * 3 * F0_T1 * t + 1.9))
+    return x, a_c, a_h2, a_h3
+
+
+def _t1_reference(x):
+    """Независимый SINAD: LSQ-проекция H1..H3, остаток = негармонический."""
+    t = np.arange(x.size) / FS_T1
+    w = 2 * np.pi * F0_T1
+    cols = [np.ones_like(t)]
+    for h in range(1, 4):
+        cols += [np.cos(h * w * t), np.sin(h * w * t)]
+    A = np.column_stack(cols)
+    coef, *_ = np.linalg.lstsq(A, x, rcond=None)
+    amp = [math.hypot(coef[1 + 2 * i], coef[2 + 2 * i]) for i in range(3)]
+    res = x - A @ coef
+    p_sig = (amp[0] ** 2) / 2
+    p_dist = sum((a ** 2) / 2 for a in amp[1:])
+    p_res = float(np.mean(res * res))
+    sinad = 10 * math.log10(p_sig / (p_dist + p_res))
+    return sinad, amp
+
+
+def test_t1_sinad_static_live_reference():
+    x, a_c, a_h2, a_h3 = _t1_signal()
+    # 1) абсолютные уровни гармоник: H2 → −52 dBFS, H3 → −60 dBFS
+    ok_levels = (abs(20 * math.log10(a_h2 / a_c) - H2_DBC) < 1e-9
+                 and abs(20 * math.log10(a_h3 / a_c) - H3_DBC) < 1e-9)
+    # 2) аналитика
+    p_h2, p_h3 = 10 ** ((CARRIER_DB + H2_DBC) / 10), 10 ** ((CARRIER_DB + H3_DBC) / 10)
+    sinad_analytic = CARRIER_DB - 10 * math.log10(p_h2 + p_h3)
+    ok_analytic = abs(sinad_analytic - 31.36) < 0.01
+    # 3) независимый LSQ-референс на сигнале
+    sinad_ref, amps = _t1_reference(x)
+    ok_ref = abs(sinad_ref - sinad_analytic) < 0.05
+    # 4) Static: measure_series на этом сигнале (симуляция серии через SimBackend не
+    #    нужна — спектральный анализатор применяется к готовому окну)
+    from valvebench import dsp as _dsp
+    an = _dsp.analyze_tone(x, FS_T1, F0_T1, N_T1, nharm=9, mains=0.0)
+    # SINAD продукта = −thdn_db (тон/шум+искажения в полосе)
+    sinad_static = -float(an["thdn_db"])
+    # 5) Live: GainTracker C/R и SINAD на том же окне
+    from valvebench.gainmatch import GainTracker, tone_fit_harmonics
+    tr = GainTracker()
+    ring = np.column_stack([x, x])
+    st = tr.update(ring, FS_T1, F0_T1, CARRIER_DB, 0, None, now=0.0)
+    sinad_live = min(st["sinad_db"])
+    # 6) подпись в gainview — SINAD, не SNR
+    import valvebench.gainview as gv
+    gv_src = open(gv.__file__, encoding="utf-8").read()
+    label_ok = "SINAD" in gv_src and "SNR " not in gv_src.replace("SINAD", "")
+    ok = (ok_levels and ok_analytic and ok_ref
+          and abs(sinad_static - 31.36) < 0.5
+          and abs(sinad_live - 31.36) < 0.5
+          and label_ok)
+    detail = (f"аналитика={sinad_analytic:.2f}; LSQ-референс={sinad_ref:.2f}; "
+              f"Static={sinad_static:.2f}; Live={sinad_live:.2f}; "
+              f"уровни H2/H3 корректны={ok_levels}; подпись SINAD в UI={label_ok}")
+    check("T1-R: SINAD −20 dBFS + H2 −32 dBc + H3 −40 dBc ≈ 31.36 дБ "
+          "(аналитика=Static=Live, подпись UI — SINAD)", ok, detail)
+
+
 def check(name, cond, detail=""):
     global passed
     print(("PASS " if cond else "FAIL ") + name + (f": {detail}" if detail else ""))
     if not cond:
         raise SystemExit(1)
     passed += 1
+
+
+test_t1_sinad_static_live_reference()
 
 
 # 1. Coherent transfer estimates for L->R and R->L are independent.

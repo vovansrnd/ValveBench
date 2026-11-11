@@ -237,22 +237,18 @@ def calc_carrier_residual_db(level_dbfs, analysis):
     Add the reported hum powers back here so Static and Live use the same gate
     semantics (carrier divided by noise + hum, with DUT harmonics excluded).
     """
-    powers = []
+    # ВАЖНО: dsp.analyze_tone НЕ исключает сетевые линии из noise_dbfs —
+    # маскируются только несущая и гармоники тона. Значит, hum уже входит в
+    # noise_dbfs, и добавлять его здесь второй раз нельзя (двойной учёт
+    # занижал C/R на ~3 дБ при hum −50 dBFS — найдено приёмкой 0.1.20).
+    # Функция сохранена для документирования семантики ворот:
+    # C/R = несущая / (шум + фон сети) в полосе анализатора.
     noise_dbfs = analysis.get("noise_dbfs")
     try:
-        value = float(noise_dbfs)
-        if math.isfinite(value):
-            powers.append(10.0 ** (value / 10.0))
+        noise_power = 10.0 ** (float(noise_dbfs) / 10.0)
     except (TypeError, ValueError):
-        pass
-    for item in analysis.get("hum", ()) or ():
-        try:
-            value = float(item.get("dbfs"))
-            if math.isfinite(value):
-                powers.append(10.0 ** (value / 10.0))
-        except (AttributeError, TypeError, ValueError):
-            continue
-    residual_dbfs = 10.0 * math.log10(max(math.fsum(powers), 1e-30))
+        noise_power = 0.0
+    residual_dbfs = 10.0 * math.log10(max(noise_power, 1e-30))
     return float(level_dbfs) - residual_dbfs
 
 
