@@ -66,15 +66,25 @@ class Rig:
     def run(self, segs):
         """segs: [(tones_l, tones_r, settle|None)] → ([окна (blocks·n, 2)], warnings).
 
-        Первый сегмент должен быть самым громким — по нему находим начало."""
+        Первый сегмент должен быть самым громким — по нему находим начало.
+        Начало сигнала ищется узкополосно на частоте тестового тона (если она
+        известна): одиночный щелчок/звон при открытии ЦАП не принимается за
+        начало программы (0.1.19, регрессия B6)."""
         parts, meta = [], []
         for tl, tr, st in segs:
             sig, s_n = self._seg(tl, tr, self.settle if st is None else st)
             parts.append(sig)
             meta.append((len(sig), s_n))
         rec = self.be.play_record(np.concatenate(parts))
+        tone_hz = None
+        for k, a in list(segs[0][0]) + list(segs[0][1]):
+            if a > 0:
+                tone_hz = self.f_of(k)
+                break
+        d = self._onset(rec, tone_hz=tone_hz)
+        # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
+        # (узкополосный поиск не нашёл тон) не теряется
         warns = list(self.be.notes)
-        d = self._onset(rec)
         wins, pos = [], d
         for (ln, s_n) in meta:
             a = pos + s_n
@@ -88,7 +98,21 @@ class Rig:
             warns.append(f"ПЕРЕГРУЗКА ВХОДА АЦП (пик {dsp.db20(pk):.1f} dBFS): уменьши уровень или добавь делитель")
         return wins, warns
 
-    def _onset(self, rec):
+    def _onset(self, rec, tone_hz=None):
+        if tone_hz is not None:
+            try:
+                return self._onset_narrowband(rec, tone_hz)
+            except MeasureError:
+                if float(np.max(np.abs(rec))) <= 0.0:
+                    raise
+                # узкополосный поиск не нашёл тон: щелчок не должен сработать,
+                # поэтому широкополосный fallback помечается предупреждением
+                self.be.notes = list(getattr(self.be, "notes", [])) + [
+                    "onset: узкополосный поиск не нашёл тон — начало найдено "
+                    "широкополосно; проверь частоту генератора"]
+        return self._onset_broadband(rec)
+
+    def _onset_broadband(self, rec):
         blk = int(0.005 * self.fs)
         m = len(rec) // blk
         env = np.sqrt(np.mean(rec[: m * blk].reshape(m, blk, 2) ** 2, axis=1)).max(axis=1)
@@ -98,6 +122,57 @@ class Rig:
             if np.all(env[i:i + 4] > thr):
                 return i * blk
         raise MeasureError("сигнал на входе не найден: проверь кабели, уровни и выбранные каналы")
+
+    def _onset_narrowband(self, rec, tone_hz):
+        """Начало программы по огибающей ТОНА (демодуляция на tone_hz).
+
+        Одиночный щелчок открытия ЦАП, даже на частоте тона, даёт короткий
+        подъём огибающей; настоящий тон длится секунды. Требуем устойчивого
+        превышения порога до конца записи (не менее 1 с) — иначе это не начало
+        тона (регрессия B6)."""
+        n = len(rec)
+        blk = int(0.005 * self.fs)
+        m = n // blk
+        if m < 8:
+            raise MeasureError("запись слишком коротка для поиска начала тона")
+        t = np.arange(n) / self.fs
+        demod = np.exp(-2j * np.pi * tone_hz * t)
+        win = max(8, int(round(5 * self.fs / tone_hz)))   # 5 периодов тона
+        env = np.zeros(n)
+        for c in (0, 1):
+            z = rec[:, c] * demod
+            cs = np.concatenate(([0j], np.cumsum(z)))
+            idx = np.arange(n)
+            lo = np.clip(idx - win // 2, 0, n)
+            hi = np.clip(idx - win // 2 + win, 0, n)
+            amp = 2.0 * np.abs((cs[hi] - cs[lo]) / np.maximum(hi - lo, 1))
+            env = np.maximum(env, amp)
+        blocks = env[: m * blk].reshape(m, blk).max(axis=1)
+        noise = max(float(np.median(blocks[: int(0.2 / 0.005)])), 1e-7)
+        # Робастный пик: одиночный щелчок открытия (±0.5 FS на одном сэмпле,
+        # 0.14 % блоков на DLX при холодном старте; найдено приёмкой
+        # 0.1.21-dev4, отказ воспроизведён 60-с циклами) через 0.1*max
+        # поднимал порог выше огибающей тона и отвергал настоящий тон
+        # при отношении тон/шум 190x. 99-й перцентиль исключает редкие
+        # выбросы; sustain-критерий ниже по-прежнему отбрасывает щелчки.
+        peak = float(np.percentile(blocks, 99))
+        thr = max(8.0 * noise, 0.1 * peak)
+        # Устойчивость: за 1 с от кандидата огибающая выше порога ≥90 % времени.
+        # Щелчок (50 мс подъёма) даёт ~5 % — отклоняется; настоящий тон с
+        # короткими провалами (дефекты захвата) — ≥90 % — принимается на истинном
+        # старте. Критерий «держится до конца записи» не годится: он смещал бы
+        # начало за последний провал (регрессия B4).
+        above = blocks > thr
+        sustain = max(4, min(int(1.0 / 0.005), m))
+        cum = np.concatenate(([0], np.cumsum(above.astype(np.int64))))
+        for i in range(m - 4):
+            end = min(m, i + sustain)
+            span = end - i
+            if above[i] and (cum[end] - cum[i]) >= 0.9 * span:
+                return i * blk
+        raise MeasureError(
+            "начало тона не найдено узкополосно: проверь кабели, уровни и частоту "
+            f"генератора ({tone_hz:.0f} Гц)")
 
     # ---- переиспользуемое
     def _levels_info(self, gen_dbfs, rec_dbfs, ch):
@@ -113,10 +188,20 @@ class Rig:
 # ------------------------------------------------------------------ проверка такта
 
 
-def clock_check(rig):
-    k, a = rig.amp_tone(1000.0, -12.0)
+def clock_check(rig, level_dbfs=-72.0):
+    """Check DAC/ADC clock agreement with a deliberately low-level 1 kHz tone.
+
+    The signal passes through the user's physical path (which may include an
+    Anti-RIAA network and a phono preamp). A high default level could overdrive
+    a DUT, so the preflight uses -72 dBFS unless the caller explicitly opts in
+    to another level.
+    """
+    level_dbfs = float(level_dbfs)
+    if not math.isfinite(level_dbfs) or not -120.0 <= level_dbfs <= -24.0:
+        raise MeasureError("уровень проверки такта должен быть от -120 до -24 dBFS")
+    k, a = rig.amp_tone(1000.0, level_dbfs)
     wins, warns = rig.run([([(k, a)], [(k, a)], 0.4)])
-    out = {"kind": "clock", "warnings": warns, "ch": {}}
+    out = {"kind": "clock", "test_level_dbfs": level_dbfs, "warnings": warns, "ch": {}}
     for c in (0, 1):
         r = rig._tone_an(wins[0], c, k, nharm=2)
         err = (r["f0"] / rig.f_of(k) - 1.0) * 1e6
@@ -131,7 +216,7 @@ def clock_check(rig):
 
 
 def text_clock(r):
-    lines = ["Проверка такта (1 кГц, −12 dBFS):"]
+    lines = [f"Проверка такта (1 кГц, {r.get('test_level_dbfs', -72.0):.1f} dBFS):"]
     for c, v in r["ch"].items():
         lines.append(f"  {c}: {v['f0']:.3f} Гц  ({v['ppm']:+.1f} ppm)  уровень {v['level_dbfs']:.1f} dBFS")
     lines.append("  такт ЦАП = такту АЦП; тон когерентен окну" if r["ok"] else "  ТАКТ/КОГЕРЕНТНОСТЬ НЕ ПРОШЛИ ПРОВЕРКУ")

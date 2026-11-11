@@ -1,21 +1,27 @@
-# ValveBench 0.1.18 — Generator controls on Live page
+# ValveBench 0.1.18 — Generator controls возвращены на главную страницу
 
-## Change
+## Исправлено
 
-Restored the existing generator-control rows to the `LivePage` layout, above
-`Параметры Gain Match`:
+- Блок «Генератор» (Частота, Гц · Уровень, dBFS · Канал L+R/Только L/Только R)
+  возвращён на главную страницу «Gain Match / Уровень» — размещён над
+  «Параметрами Gain Match». Виджеты создавались и управляли аудиодвижком, но при
+  переработке страниц 0.1.13–0.1.17 были потеряны из раскладки (осиротевшие):
+  генератор работал только с заводскими значениями −6.0 dBFS · 1000 Гц · L+R,
+  и поменять их в интерфейсе было невозможно.
+- Изменение частоты/уровня/маршрута проверено end-to-end на реальной карте
+  (ASUS STRIX RAID DLX, self-loop): «ПОДАНО» точно отражает контролы, входные
+  метры реагируют на уровень (−6→−20 dBFS = −14,0 дБ на входе) и маршрут
+  (Только L → правый вход −70,7 дБ к шумовому полу).
 
-- Частота, Гц (`self.f`)
-- Уровень генератора, dBFS (`self.lv`)
-- Канал генератора (`self.route`)
+## Проверка
 
-The controls already existed and were connected to `LivePage.apply()`, but
-were not inserted into the visible `controls` container. The change exposes
-them without changing generator DSP or measurement logic.
+- `python3 -m valvebench selftest`: **71/71 PASS** (без изменений; измерительное
+  ядро p0/p1 не тронуто — pcm.py/steady.py/io_health.py бит-в-бит идентичны p1).
+- Автоматизированный GUI smoke (Xvfb + программное управление, 8/8 PASS):
+  блок «Генератор» на странице; прокрутка Live; открытие аудиопотока; эффекты
+  уровня/маршрута/частоты на входных метрах; достижимость контента всех 9 страниц.
+- Изменён только `ui.py` (одна строка раскладки + комментарий) и версия.
 
-## Scope
+## Не входит
 
-Only `valvebench/ui.py` and `valvebench/__init__.py` differ from 0.1.17.
-`pcm.py`, `steady.py`, and `io_health.py` are unchanged. Gain Match algorithms,
-TARE behavior, SNR/SINAD naming, calibration, and measurement validity are
-not changed in this release.
+Методика Gain Match (validity/TARE/SINAD-наименования) — отдельная задача координатора.

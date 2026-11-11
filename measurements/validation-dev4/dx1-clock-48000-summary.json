@@ -1,0 +1,202 @@
+[
+ {
+  "run": 1,
+  "cold": true,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run01.wav",
+  "ppm": {
+   "L": -0.17754712466899747,
+   "R": -0.17511879502052352
+  },
+  "levels": {
+   "L": -35.48642073340946,
+   "R": -35.50692897096631
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 2,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run02.wav",
+  "ppm": {
+   "L": -0.24184400149174223,
+   "R": -0.2287241243070781
+  },
+  "levels": {
+   "L": -35.48077687883486,
+   "R": -35.49910593735313
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 3,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run03.wav",
+  "ppm": {
+   "L": -0.3182674175317146,
+   "R": -0.3198458400355264
+  },
+  "levels": {
+   "L": -35.47979151498516,
+   "R": -35.497777916173206
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 4,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run04.wav",
+  "ppm": {
+   "L": -0.3698175243815882,
+   "R": -0.3670768565777749
+  },
+  "levels": {
+   "L": -35.48405539745186,
+   "R": -35.50506410496165
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 5,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run05.wav",
+  "ppm": {
+   "L": -0.4231233591278638,
+   "R": -0.42426635749048813
+  },
+  "levels": {
+   "L": -35.479685393943484,
+   "R": -35.497890614682845
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 6,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run06.wav",
+  "ppm": {
+   "L": -0.46578902201943606,
+   "R": -0.468097935968359
+  },
+  "levels": {
+   "L": -35.48108871692766,
+   "R": -35.50198155609295
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 7,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run07.wav",
+  "ppm": {
+   "L": -0.5068586274026288,
+   "R": -0.5139650898211556
+  },
+  "levels": {
+   "L": -35.47783196658961,
+   "R": -35.49501535636346
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 8,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run08.wav",
+  "ppm": {
+   "L": -0.5394042530415533,
+   "R": -0.5411547218114876
+  },
+  "levels": {
+   "L": -35.47935806518805,
+   "R": -35.49765385892477
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 9,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run09.wav",
+  "ppm": {
+   "L": -0.5705228844909982,
+   "R": -0.5736172040693432
+  },
+  "levels": {
+   "L": -35.47831739486628,
+   "R": -35.495582211767875
+  },
+  "ok": true,
+  "warnings": []
+ },
+ {
+  "run": 10,
+  "cold": false,
+  "rate": 48000,
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "level_dbfs": -30.0,
+  "capture_frames": 336000,
+  "wav": "dx1-clock-48000-run10.wav",
+  "ppm": {
+   "L": -0.5887830483164436,
+   "R": -0.5769050520632035
+  },
+  "levels": {
+   "L": -35.47956541059173,
+   "R": -35.49933694920781
+  },
+  "ok": true,
+  "warnings": []
+ }
+]

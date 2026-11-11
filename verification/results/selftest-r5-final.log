@@ -1,0 +1,80 @@
+ValveBench self-test: 79/79 PASS
+PASS  THD/H2 известного тона: H2=-60.00 dBc; ожидалось -60.00 dBc
+PASS  THD+N: известный белый шум и исключение несущей: THD+N=-74.79 dB; расчётное значение около -74.8 dB относительно несущей
+PASS  FFT line / noise-PSD normalization: full-scale sine=+0.000 dBFS; integrated ASD=-90.00 dBFS; time-domain noise=-89.95 dBFS
+PASS  Spectrum range reaches exact Nyquist at supported sample rates: view limits: 192k=(10.0, 96000.0), 96k=(10.0, 48000.0), 44.1k=(10.0, 22050.0); FFT endpoints=[22050.0, 48000.0, 88200.0, 96000.0]
+PASS  IMD CCIF difference product: 1 кГц продукт=-60.00 dBc; ожидалось -60.00 dBc
+PASS  Sweep inverse-RIAA через SimBackend: максимальное отклонение=0.035 dB; критерий <0.45 dB
+PASS  Soundcard response calibration refuses an open/no-signal loopback: no loop signal at 1 kHz must not become a saved correction
+PASS  Soundcard FR calibration removes separate L/R loop curves but preserves DUT response: max FR error=5.55e-17 dB; phase residual=2.91e-03 deg; saved Fs=48000
+PASS  Per-device calibration profiles survive switching and serialization: active card A DAC fullscale=[2.0, 2.1]; response profiles=['192000']
+PASS  Noise H1 + coherence через SimBackend: max |RIAA deviation|=0.055 dB; min coherence=1.000
+PASS  Live noise H1 / cyclic buffer: max |RIAA deviation|=0.040 dB; periodic source aligned and analysed
+PASS  Live backend status / XRUN field: backend=sim; xruns=0; simulator marks hardware XRUN not applicable
+PASS  TACET A3 mono pink-noise: corr=+1.0000; phase=-0.00°
+PASS  TACET A3 out-of-phase pink-noise: corr=-1.0000; phase=+180.00°
+PASS  TACET A2 3150 Hz: средняя частота=3149.9846 Hz; это оценка стабильности, не DIN W&F
+PASS  TACET A4 crosstalk: утечка=-60.00 dB; ожидалось -60 dB
+PASS  TACET A5 sum tone: 1000 Hz product=-60.00 dB; ожидалось около -60 dB
+PASS  TACET B2 tone sequence: распознаны ступени: [1000, 20, 1000]
+PASS  Гармоники по когерентным линиям: H2 −112 / H3 −125 дБc под шумом −110 dBFS: режим=rect-phase-normalized; H2=-112.5, H3=-126.2, H4 ≤-141.2; пол линии -136.0 dBc
+PASS  Когерентные гармоники сохраняются при фазовом дрейфе между блоками: уровень=-25.39 dBFS; H2=-112.0; H3=-125.0; phase coherence=0.511
+PASS  Чистый тон + шум: случайные гармоники не проходят порог достоверности: достоверных линий=0; порог=10.0 dB
+PASS  Silence profile: stable 3-kHz spur is found, random noise is rejected: spur=-140.5 dBFS, coherence=1.000; noise-only spur power=0.00e+00
+PASS  THD gate includes stationary spur from silence baseline: weak H3 margin=8.1 dB (rejected); strong H3 margin=16.9 dB (accepted)
+PASS  Gain Match: ΔG пары 3.0/2.9, повторный tare и сброс нуля: ΔG=0.2945 dB (истина 0.2945); после tare=-0.0000; повторный tare=-0.0000; после сброса=+0.2945
+PASS  Gain Match step 1: loopback reference records frequency-dependent interface L/R offset: reference=[-0.7713, -0.4213, -0.1713] dB; expected=[-0.7713, -0.4213, -0.1713]
+PASS  Gain Match step 2: loopback correction removes interface imbalance: corrected ΔG=['3.5218', '3.5218', '3.5218'] dB; DUT truth=3.5218 dB; uncorrected interface offset=-0.5213 dB
+PASS  Gain Match: DUT measurement is blocked without loopback reference: нет эталона rejected
+PASS  Gain Match: mismatched generator level invalidates reference: wrong level rejected
+PASS  Gain Match: changed ALSA mixer invalidates loopback reference: mixer change rejected
+PASS  Gain Match: loopback reference and DUT result persist in JSON/CSV: reference=loaded; JSON rows=3; CSV columns=12
+PASS  Gain Match: user report contains corrected verdict, not raw dBFS table: ΔG — относительная разница усиления L/R; абсолютная калибровка вольт для неё не требуется.
+PASS  0.1.19: аппаратные события (XRUN) фатальны — серия невалидна и события видны: fatal=['arecord: overrun!!! (at least 65107 frames)']; reasons=[['hardware_fault'], ['hardware_fault']]
+PASS  0.1.19: ворота — низкий C/R бракует шум, гармоничный каскад (THD≈10%) остаётся валидным: шум-34: reasons=['low_carrier_residual']; лампа a3=6.0: valid=[True, True], SINAD=44.6
+PASS  0.1.19: всплеск внутри окна бракуется подоконным контролем (unstable_carrier): valid=[False, True]; reasons=['low_carrier_residual', 'unstable_carrier']; envelope={'trend_span': 0.01146209426185307, 'z_burst': 22.74904969683624, 'subwindows': 20}
+PASS  0.1.19: предупреждения analyze_tone сохраняются в записи повторов: analyzer_warnings в повторах присутствуют
+PASS  0.1.19: контекстный TARE — смена частоты сбрасывает ноль с причиной: reason=частота; tare=0.0; msg=TARE сброшен автоматически: изменились условия (ча
+PASS  0.1.19: repeats=1 — «повторяемость не оценена», эталон петли не создаётся, вердикт предварительный: repeatability=not_assessed; repeat_stable=None; эталон отклонён=True
+PASS  0.1.19: RIAA-компенсация — уровни по обратной RIAA, переполнение ЦАП отклоняется: уровни={100: -33.09, 1000: -20.00, 10000: -6.27}; отказ при базе −12: True
+PASS  0.1.19: профиль Mains Avoidance (94/994/9994) измеряется и фиксируется в результате: profile=mains_avoidance_50; valid=[True, True, True]
+PASS  Наклон гармоники: кубическая H3 → distortion, фиксированная линия → fixed: H3 наклон=+3.00; фиксированная=+0.00
+PASS  Freqscan distinguishes short-period 1000 Hz and long-period 997 Hz (not aperiodic): периоды={1000.0: 48, 997.0: 48000, 1234.0: 24000}; вывод: [L] на короткопериодичном тоне найдено 4 достоверных гармонических линий; на длиннопериодичном осталось 0. Это указывает на зависимость от периода, но само по себе не доказывает, что линии не связаны с трактом.
+PASS  Валидность серии: правый канал с шумом +87 дБ помечается INVALID, чистый — OK: причины: ['R: в тишине пик 0.0 dBFS (silence after) — вход не тихий', 'R: шум тишины изменился на +87.2 дБ за серию']
+PASS  levelscan: unstable points are not classified as a fixed spur: kind=unstable; fit RMS=6.669332800213233
+PASS  loopback validity distinguishes OK / INCOMPLETE / INVALID XRUN: with deliberately noisy R: INVALID, no silence: INCOMPLETE, XRUN: INVALID
+PASS  passport A/B: different ALSA devices are reported as incompatible: mismatches=['устройства различаются: hw:2,0 → hw:3,0']
+PASS  steady: bounded single-lobe tone fit returns true frequency and level: f=997.092996 Hz (truth 997.092996); level=-23.860 dBFS
+PASS  steady: long tone frequency search remains on the central FFT lobe: f=997.092995 Hz (truth 997.092996); level=-23.400 dBFS
+PASS  steady: coherent L/R map quantifies a -60 dB cross-channel component: main=-23.40 dBFS; cross=-83.40 dBFS; Δ=-60.00 dB
+PASS  steady: LS harmonic removal rejects tone leakage and detects a real broadband burst: L burst windows=1; R=0; L median/max=-97.9/-57.7 dBFS
+PASS  steady: per-output measured frequency is used for each residual projection: L-state=997.093000 Hz; R-state=997.113000 Hz
+PASS  steady: ultrasonic band below Nyquist is reported as N/A, not a false -300 dBFS: raw 40k–Nyquist=None
+PASS  steady: ultrasonic band map is clipped to the actual Nyquist frequency: 192k=['40_50k', '50_60k', '60_70k', '70_80k', '80_90k', '90_96k']; 176.4k=80_88p2k; 96k=['40_48k']
+PASS  steady: ultrasonic band ASD normalization matches integrated band power: band=-86.79 dBFS; equivalent ASD=-126.79 dBFS/√Hz
+PASS  steady: a 45-kHz line is isolated in the 40–50-kHz band: 40–50k=-40.00 dBFS; 50–60k=-266.6 dBFS
+PASS  steady: adjacent burst windows are grouped into physical episodes: windows=4; episodes=2; longest=0.30s
+PASS  steady: simultaneous L/R excursions are counted separately: both=2; either=4; shared episodes=1
+PASS  steady: long baseline test program has symmetric pre/post silence: duration=22.0s; expected=22s; bytes=6336000
+PASS  steady: idle pre/post drift is reported instead of silently folding into baseline: pre=-97.83; post=-77.72; drift=+20.12 dB
+PASS  steady-compare: report keeps explicit DAC→ADC pairing and metrics: rows=1; row={'report': '/tmp/valvebench-steady-compare-7odney9w/steady.json', 'playback': 'hw:3,0', 'capture': 'hw:2,0', 'playback_label': '', 'capture_label': '', 'sample_rate': 192000, 'playback_format': 'S24_3LE', 'capture_format': 'S24_3LE', 'baseline_L_dbfs': -100.0, 'baseline_R_dbfs': -100.0, 'L_to_R_crosstalk_dbc': -82.0, 'R_to_L_crosstalk_dbc': -83.0, 'L_residual_median_dbfs': -95.0, 'L_residual_p95_dbfs': -88.0, 'L_burst_windows': 5, 'L_burst_episodes': 2, 'R_residual_median_dbfs': -95.0, 'R_residual_p95_dbfs': -88.0, 'R_burst_windows': 5, 'R_burst_episodes': 2, 'L_carrier_dropout_episodes': 1, 'L_carrier_longest_dropout_ms': 80.0, 'R_carrier_dropout_episodes': 0, 'R_carrier_longest_dropout_ms': 0.0, 'L_ultrasonic_40_nyquist_dbfs': -78.0, 'R_ultrasonic_40_nyquist_dbfs': -78.0, 'series_level_valid': True, 'baseline_L_stable': None, 'baseline_R_stable': None}
+PASS  steady: ALSA format negotiation falls back to a supported 16-bit mode: selected=S16_LE; tried=['S24_3LE', 'S24_LE', 'S32_LE', 'S16_LE']
+PASS  ALSA capabilities: separate playback/capture rates are reported independently: playback=(48000, 96000); capture=(48000,); duplex=(48000,)
+PASS  passport A/B: a changed PCM capture format is not silently compared: mismatches=["PCM-конфигурация на 96 кГц различается: {'device': 'hw:2,0', 'capture_format': 'S24_3LE', 'playback_format': 'S24_3LE'} → {'device': 'hw:2,0', 'capture_format': 'S16_LE', 'playback_format': 'S24_3LE'}"]
+PASS  steady: stable carrier has no dropout episodes: episodes=0; ref/median=-23.40/-23.40 dBFS
+PASS  steady: 80-ms carrier dropout is detected independently of residual noise: episodes=1; longest=80.0 ms; low windows=8
+PASS  steady: additive noise burst is not classified as carrier dropout: dropout episodes=0; minimum carrier=-23.46 dBFS
+PASS  steady: analysis guard excludes active-state fade boundaries only: L=(10.25, 49.75); R=(60.25, 99.75); idle=(0.0, 2.0)
+PASS  steady: idle gap excludes the R fade-in and active ranges exclude both fades: guard=0.25s; L=(17.25, 56.75); gap=(58.5, 65.5); R=(67.25, 106.75)
+PASS  P0: StreamPcmReader.read_frames совпадает с from_pcm (включая границы блоков): frames=144000; макс. расхождение=0.00e+00
+PASS  P0: stream_to_float32_wav → scipy-читаемый float32 WAV со точными значениями: frames=144000; dtype=float32; макс. расхождение с float32(decoded)=0.00e+00
+PASS  P1: XRUN-скан распознаёт underrun/overrun и не давится >64 КБ stderr: underruns=4000; сохранено строк=20 (лимит 168003 B stderr)
+PASS  P1: overrun записи распознаётся отдельно: overruns=1
+PASS  P1: длина записи классифицируется ok/short/long: статусы=('ok', 'short', 'long')
+PASS  P1: onset оценивается по форме огибающей (сдвиг +0.25 с восстанавливается): dev=+0.2500 с (истина +0.25); SNR L 118 dB; residual 0.000; applied=True
+PASS  P1: мёртвая зона — смещение 0.02 с не применяется (метрики остаются прежними): dev=+0.0200; applied=False (ожидалось False)
+PASS  P1: right_channel_unverified — привязка только по L видна в JSON, алгоритм прежний: L+шумный R: reliable=True, right_unverified=True, dev=+0.300; симметричный случай: right_unverified=False
+PASS  P1: onset симметричен для раннего/позднего старта; граница поиска и отсутствие тона дают None: tau=-0.3: rel=True dev=-0.29998867710915855 hit=False | tau=+0.3: rel=True dev=0.3000097762337181 hit=False | tau=-0.8: rel=True dev=-0.7999888503544748 hit=False | tau=+0.8: rel=True dev=0.8000105009233578 hit=False | tau=+1.2: rel=False dev=None hit=True | tau=+0.0 (без тона): rel=False dev=None hit=False | L/R 0.3/0.5: rel=False (рассогласование)
+PASS  Per-card calibration identity survives moving a unique USB card to another port: unique=True; duplicate ports distinct=True
+PASS  UI migration updates RIAA/low-level defaults once and preserves user choices: старые значения по умолчанию исправлены; выбранные значения и повторный запуск миграции не изменяют настройки
+PASS  UI migration does not overwrite non-default user selections: RIAA view=3; generator=-9.5 dBFS

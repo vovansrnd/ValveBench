@@ -1,0 +1,80 @@
+VALVEBENCH HARDWARE LOOPBACK REPORT
+Time: 2026-11-10 22:26:57 +0300
+============================================================================
+Backend: alsa · device=hw:3,0
+Fs=192000 Hz · format=S24_3LE/S24_3LE · ADC channels=2 · DAC channels=2
+in_map=(0, 1) · out_map=(0, 1)
+Tone=997 Hz · levels=-30,-40 dBFS · repeats=3 · coherent blocks=2 · settle=0.25s
+WARNING: connect selected DAC line outputs directly to matching ADC LINE inputs; do not connect a phono input.
+
+CLOCK CHECK · 1 kHz loopback
+  [L] measured=1000.0001 Hz · error=+0.1 ppm · level=-82.26 dBFS
+  [R] measured=1000.0002 Hz · error=+0.2 ppm · level=-82.24 dBFS
+  PASS: playback/capture clock ratio within 100 ppm
+
+TONE LEVEL -30.0 dBFS
+  Повтор 1: DAC=-30.0 dBFS, f=997.000 Гц
+    [L] ADC fundamental=-40.26 dBFS · loop Δ=-10.26 dB · peak=-39.93 dBFS · headroom=39.93 dB · THD обнаруженных линий=0.000689% (-103.2 dB); сырая сумма бинов=0.000772% (-102.2 dB, включает шум) · THD+N=0.023230% (-72.7 dBc; остаток -112.9 dBFS) · негармонический остаток=-113.0 dBFS (-72.7 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -120.7 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 -109.0 H3 -104.6 H4 ≤-115.4 H5 ≤-129.6 H6 ≤-124.8 H7 ≤-113.8 H8 ≤-131.2 H9 ≤-115.6
+    [R] ADC fundamental=-40.24 dBFS · loop Δ=-10.24 dB · peak=-39.94 dBFS · headroom=39.94 dB · THD обнаруженных линий=0.000588% (-104.6 dB); сырая сумма бинов=0.000708% (-103.0 dB, включает шум) · THD+N=0.026743% (-71.5 dBc; остаток -111.7 dBFS) · негармонический остаток=-111.7 dBFS (-71.5 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -120.2 dBc (-160.4 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-116.5 H3 -104.6 H4 ≤-123.7 H5 ≤-112.1 H6 ≤-123.6 H7 ≤-119.0 H8 ≤-115.3 H9 ≤-119.9
+  Повтор 2: DAC=-30.0 dBFS, f=997.000 Гц
+    [L] ADC fundamental=-40.26 dBFS · loop Δ=-10.26 dB · peak=-39.92 dBFS · headroom=39.92 dB · THD обнаруженных линий=0.000534% (-105.5 dB); сырая сумма бинов=0.000680% (-103.4 dB, включает шум) · THD+N=0.021620% (-73.3 dBc; остаток -113.6 dBFS) · негармонический остаток=-113.6 dBFS (-73.3 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -120.8 dBc (-161.1 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-113.0 H3 -105.5 H4 ≤-122.1 H5 ≤-116.9 H6 ≤-123.0 H7 ≤-113.1 H8 ≤-120.9 H9 ≤-115.3
+    [R] ADC fundamental=-40.24 dBFS · loop Δ=-10.24 dB · peak=-39.91 dBFS · headroom=39.91 dB · THD обнаруженных линий=0.000585% (-104.7 dB); сырая сумма бинов=0.000652% (-103.7 dB, включает шум) · THD+N=0.019316% (-74.3 dBc; остаток -114.5 dBFS) · негармонический остаток=-114.6 dBFS (-74.3 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -120.8 dBc (-161.1 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-117.0 H3 -104.7 H4 ≤-116.5 H5 ≤-125.8 H6 ≤-119.1 H7 ≤-122.9 H8 ≤-124.4 H9 ≤-120.6
+  Повтор 3: DAC=-30.0 dBFS, f=997.000 Гц
+    [L] ADC fundamental=-40.26 dBFS · loop Δ=-10.26 dB · peak=-39.96 dBFS · headroom=39.96 dB · THD обнаруженных линий=0.000449% (-107.0 dB); сырая сумма бинов=0.000567% (-104.9 dB, включает шум) · THD+N=0.021708% (-73.3 dBc; остаток -113.5 dBFS) · негармонический остаток=-113.5 dBFS (-73.3 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -120.6 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-111.8 H3 -107.0 H4 ≤-119.8 H5 ≤-122.5 H6 ≤-127.4 H7 ≤-119.2 H8 ≤-118.5 H9 ≤-127.3
+    [R] ADC fundamental=-40.24 dBFS · loop Δ=-10.24 dB · peak=-39.90 dBFS · headroom=39.90 dB · THD обнаруженных линий=0.000639% (-103.9 dB); сырая сумма бинов=0.000724% (-102.8 dB, включает шум) · THD+N=0.018857% (-74.5 dBc; остаток -114.7 dBFS) · негармонический остаток=-114.8 dBFS (-74.5 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -120.7 dBc (-161.0 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-117.6 H3 -103.9 H4 ≤-139.3 H5 ≤-119.5 H6 ≤-116.6 H7 ≤-115.9 H8 ≤-121.3 H9 ≤-116.2
+
+TONE LEVEL -40.0 dBFS
+  Повтор 1: DAC=-40.0 dBFS, f=997.000 Гц
+    [L] ADC fundamental=-50.26 dBFS · loop Δ=-10.26 dB · peak=-49.19 dBFS · headroom=49.19 dB · THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов (включает шум)=0.001593% (-96.0 dB) · THD+N=0.060663% (-64.3 dBc; остаток -114.6 dBFS) · негармонический остаток=-114.6 dBFS (-64.4 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -110.6 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-104.5 H3 ≤-109.7 H4 ≤-102.1 H5 ≤-101.5 H6 ≤-107.8 H7 ≤-106.3 H8 ≤-105.8 H9 ≤-110.8
+    [R] ADC fundamental=-50.24 dBFS · loop Δ=-10.24 dB · peak=-49.21 dBFS · headroom=49.21 dB · THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов (включает шум)=0.001259% (-98.0 dB) · THD+N=0.058696% (-64.6 dBc; остаток -114.9 dBFS) · негармонический остаток=-114.9 dBFS (-64.6 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -110.6 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-104.0 H3 ≤-109.8 H4 ≤-106.6 H5 ≤-102.7 H6 ≤-111.9 H7 ≤-113.6 H8 ≤-116.1 H9 ≤-107.2
+  Повтор 2: DAC=-40.0 dBFS, f=997.000 Гц
+    [L] ADC fundamental=-50.26 dBFS · loop Δ=-10.26 dB · peak=-49.33 dBFS · headroom=49.33 dB · THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов (включает шум)=0.000894% (-101.0 dB) · THD+N=0.060279% (-64.4 dBc; остаток -114.7 dBFS) · негармонический остаток=-114.7 dBFS (-64.4 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -110.6 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-130.7 H3 ≤-123.6 H4 ≤-111.0 H5 ≤-102.7 H6 ≤-116.4 H7 ≤-110.5 H8 ≤-113.8 H9 ≤-115.5
+    [R] ADC fundamental=-50.24 dBFS · loop Δ=-10.24 dB · peak=-49.12 dBFS · headroom=49.12 dB · THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов (включает шум)=0.001347% (-97.4 dB) · THD+N=0.058749% (-64.6 dBc; остаток -114.9 dBFS) · негармонический остаток=-114.9 dBFS (-64.6 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -110.7 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-105.1 H3 ≤-106.0 H4 ≤-106.0 H5 ≤-104.8 H6 ≤-115.1 H7 ≤-103.5 H8 ≤-107.9 H9 ≤-115.5
+  Повтор 3: DAC=-40.0 dBFS, f=997.000 Гц
+    [L] ADC fundamental=-50.26 dBFS · loop Δ=-10.26 dB · peak=-49.35 dBFS · headroom=49.35 dB · THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов (включает шум)=0.001181% (-98.6 dB) · THD+N=0.060555% (-64.4 dBc; остаток -114.6 dBFS) · негармонический остаток=-114.6 dBFS (-64.4 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -110.6 dBc (-160.9 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-108.2 H3 ≤-120.7 H4 ≤-106.2 H5 ≤-101.4 H6 ≤-111.4 H7 ≤-111.2 H8 ≤-109.6 H9 ≤-117.9
+    [R] ADC fundamental=-50.24 dBFS · loop Δ=-10.24 dB · peak=-49.26 dBFS · headroom=49.26 dB · THD выше порога достоверности не обнаружен; сырая сумма гармонических бинов (включает шум)=0.001372% (-97.3 dB) · THD+N=0.058711% (-64.6 dBc; остаток -114.9 dBFS) · негармонический остаток=-114.9 dBFS (-64.6 dBc) · phase coherence=1.000
+      Средний однобиновый пол когерентного оценивателя: -110.6 dBc (-160.8 dBFS); порог линии 10 dB
+      Гармоники относительно основного тона, dBc: H2 ≤-110.4 H3 ≤-103.2 H4 ≤-104.8 H5 ≤-106.7 H6 ≤-119.0 H7 ≤-107.6 H8 ≤-107.3 H9 ≤-104.1
+
+SERIES VALIDITY: INCOMPLETE — запись тишины отключена (--silence-seconds 0): стабильность фона не проверена
+
+REPEATABILITY SUMMARY · median [min…max]
+ level   ch   ADC level dBFS   loop Δ dB   THD detected %   THD+N dBc   негарм. остаток dBFS   H2 dBc   H3 dBc
+  -30.0  L   -40.26 [-40.26…-40.26] -10.26 [-10.26…-10.26] partial 0.000534 [0.000449…0.000689] -73.27 [-73.30…-72.68] -113.54 [-113.58…-112.95] -111.8 [-113.0…-109.0] -105.5 [-107.0…-104.6]
+  -30.0  R   -40.24 [-40.24…-40.24] -10.24 [-10.24…-10.24] partial 0.000588 [0.000585…0.000639] -74.28 [-74.49…-71.46] -114.55 [-114.76…-111.71] -117.0 [-117.6…-116.5] -104.6 [-104.7…-103.9]
+  -40.0  L   -50.26 [-50.26…-50.26] -10.26 [-10.26…-10.26] ≤ 0.000000 [0.000000…0.000000] -64.36 [-64.40…-64.34] -114.63 [-114.67…-114.62] -108.2 [-130.7…-104.5] -120.7 [-123.6…-109.7]
+  -40.0  R   -50.24 [-50.24…-50.24] -10.24 [-10.24…-10.24] ≤ 0.000000 [0.000000…0.000000] -64.63 [-64.63…-64.62] -114.89 [-114.89…-114.88] -105.1 [-110.4…-104.0] -106.0 [-109.8…-103.2]
+
+INTERPRETATION NOTES
+- ADC fundamental level is normalized to a full-scale sine (dBFS).
+- THD+N dBc is relative to the measured fundamental; residual absolute dBFS is also printed.
+- «негармонический остаток» (noise-only) — всё, кроме основного тона и обнаруженных гармоник: шум, боковые полосы, посторонние линии. Это не шум тихого входа.
+- SILENCE BEFORE/AFTER is the integrated 20 Hz–20 kHz ADC noise while both DAC+ADC streams are open and DAC sends digital zero.
+- Hn values are reported dBc relative to the fundamental. The coherent estimator compares its one-bin averaged line against (a) broadband one-bin noise divided by the signal block count and (b) stable coherent spurs detected in the silence recording on the same DFT bin. This is a conservative engineering detector, not a formal uncertainty budget.
+- The separate ±5-Hz silence comparison integrates a wider band and is diagnostic only; do not compare its dB margin directly with the one-bin coherent threshold.
+- Coherent harmonics are phase-normalized per block using h·phase(fundamental); phase_coherence reports stability of the fundamental phase across blocks.
+- ADC CLIP means samples reached 0.98 FS; it cannot detect every analogue front-end overload.
+- XRUN means ALSA playback underrun or capture overrun. It is a buffer-service failure, not clipping.
+Total elapsed: 41.0 s

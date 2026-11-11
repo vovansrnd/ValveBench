@@ -1,0 +1,355 @@
+{
+ "phases": {
+  "S1": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 0.7
+   },
+   "children_pct": {},
+   "proc_total_pct": 0.7,
+   "child_total_pct": 0,
+   "xruns": [
+    null,
+    null
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    15,
+    15
+   ]
+  },
+  "S2": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 12.0,
+    "прочий ([pango] font)": 0.3,
+    "cap_loop": 0.7,
+    "play_loop": 1.0,
+    "monitor_loop": 0.3
+   },
+   "children_pct": {
+    "analysis-worker": 45.7
+   },
+   "proc_total_pct": 14.3,
+   "child_total_pct": 45.7,
+   "xruns": [
+    null,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    15,
+    20
+   ]
+  },
+  "S3": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 32.7,
+    "cap_loop": 1.0,
+    "play_loop": 1.3,
+    "monitor_loop": 0.7
+   },
+   "children_pct": {
+    "arecord": 0.3
+   },
+   "proc_total_pct": 35.7,
+   "child_total_pct": 0.3,
+   "xruns": [
+    0,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    20,
+    20
+   ]
+  },
+  "S4": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 75.1,
+    "cap_loop": 2.0,
+    "play_loop": 2.3,
+    "monitor_loop": 0.7,
+    "прочий (Thread-5)": 0.3,
+    "прочий (QueueFeederT)": 0.7
+   },
+   "children_pct": {
+    "aplay": 0.3,
+    "analysis-worker": 77.1
+   },
+   "proc_total_pct": 81.1,
+   "child_total_pct": 77.4,
+   "xruns": [
+    0,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    17,
+    17
+   ]
+  },
+  "S5": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 38.1,
+    "cap_loop": 1.0,
+    "play_loop": 1.7,
+    "monitor_loop": 0.7,
+    "прочий (QueueFeederT)": 0.3
+   },
+   "children_pct": {
+    "arecord": 0.3,
+    "aplay": 0.3,
+    "analysis-worker": 3.0
+   },
+   "proc_total_pct": 41.8,
+   "child_total_pct": 3.6,
+   "xruns": [
+    0,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    17,
+    17
+   ]
+  },
+  "S6": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 34.8,
+    "cap_loop": 1.7,
+    "play_loop": 2.7,
+    "monitor_loop": 0.3
+   },
+   "children_pct": {
+    "aplay": 0.3
+   },
+   "proc_total_pct": 39.5,
+   "child_total_pct": 0.3,
+   "xruns": [
+    0,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    17,
+    17
+   ]
+  },
+  "S7_gm": {
+   "dur_s": 5.0,
+   "threads_pct": {
+    "GTK main": 33.2,
+    "cap_loop": 1.4,
+    "play_loop": 2.4,
+    "monitor_loop": 0.4
+   },
+   "children_pct": {
+    "aplay": 0.2
+   },
+   "proc_total_pct": 37.4,
+   "child_total_pct": 0.2,
+   "xruns": [
+    0,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    17,
+    17
+   ]
+  },
+  "S7_spec": {
+   "dur_s": 3.0,
+   "threads_pct": {
+    "GTK main": 63.8,
+    "cap_loop": 1.3,
+    "play_loop": 2.3,
+    "monitor_loop": 0.7,
+    "прочий (Thread-5)": 0.7,
+    "прочий (QueueFeederT)": 1.0
+   },
+   "children_pct": {
+    "arecord": 0.3,
+    "aplay": 0.3,
+    "analysis-worker": 67.1
+   },
+   "proc_total_pct": 69.8,
+   "child_total_pct": 67.7,
+   "xruns": [
+    0,
+    0
+   ],
+   "events": [
+    0,
+    0
+   ],
+   "n_threads": [
+    17,
+    17
+   ]
+  }
+ },
+ "meta": {
+  "display": {
+   "WAYLAND_DISPLAY": "wayland-0",
+   "XDG_SESSION_TYPE": "wayland"
+  },
+  "cards": [
+   "sim",
+   "hw:0,0",
+   "hw:2,0"
+  ],
+  "emu_fallback": "hw:2,0 (hw:2,0 — DLX — USB-Audio - STRIX RAID DLX, PCM 0 · 44.1, 48, 88.2, 96, 176.4, 192 кГц)",
+  "generator_settings": "(1000.0, -0.5, 0)",
+  "final_live_status": {
+   "backend": "alsa",
+   "running": "True",
+   "capture_alive": "True",
+   "playback_alive": "True",
+   "capture_age_s": "0.005716719984775409",
+   "playback_age_s": "0.0050603559939190745",
+   "capture_stale": "False",
+   "playback_stale": "False",
+   "capture_frames": "3551232",
+   "playback_frames": "3580800",
+   "capture_seconds": "36.992",
+   "playback_seconds": "37.3",
+   "capture_xruns": "0",
+   "playback_xruns": "0",
+   "xruns": "0",
+   "events": "0",
+   "last_event": "None",
+   "gap_max_ms": "0.0",
+   "buffers_ms": "(400, 250)",
+   "pipe_bytes": "(1048576, 131072)",
+   "details": "ALSA stderr checked for underrun/overrun messages"
+  }
+ },
+ "callbacks": {
+  "LivePage.tick": {
+   "n": 477,
+   "p50_ms": 19.69,
+   "p95_ms": 33.93,
+   "max_ms": 88.49
+  },
+  "LivePage.apply": {
+   "n": 2,
+   "p50_ms": 20.58,
+   "p95_ms": 20.58,
+   "max_ms": 20.58
+  },
+  "LivePage._update_delta": {
+   "n": 477,
+   "p50_ms": 18.67,
+   "p95_ms": 32.01,
+   "max_ms": 87.7
+  },
+  "SpectrumPage.tick": {
+   "n": 89,
+   "p50_ms": 0.05,
+   "p95_ms": 36.05,
+   "max_ms": 64.5
+  },
+  "SpectrumPage._apply": {
+   "n": 17,
+   "p50_ms": 31.3,
+   "p95_ms": 63.35,
+   "max_ms": 63.35
+  },
+  "PeakHoldPage.tick": {
+   "n": 48,
+   "p50_ms": 0.43,
+   "p95_ms": 4.04,
+   "max_ms": 31.49
+  },
+  "PeakHoldPage._apply": {
+   "n": 16,
+   "p50_ms": 3.13,
+   "p95_ms": 31.43,
+   "max_ms": 31.43
+  }
+ },
+ "main_thread_stacks": {
+  "null": {
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 3
+  },
+  "S1": {
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 4
+  },
+  "S2": {
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 5
+  },
+  "S3": {
+   "ui.py:_update_delta <- gainmatch.py:update <- gainmatch.py:tone_fit_harmonics": 1,
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 3,
+   "gui_live_probe.py:phase_end <- gui_live_probe.py:cpu_snapshot <- gui_live_probe.py:_ticks": 1
+  },
+  "S4": {
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 2,
+   "gui_live_probe.py:phase_end <- gui_live_probe.py:cpu_snapshot <- gui_live_probe.py:_ticks": 1,
+   "gui_live_probe.py:main <- Gio.py:run <- plot.py:_draw": 1
+  },
+  "S5": {
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_begin <- gui_live_probe.py:cpu_snapshot": 1,
+   "gainmatch.py:tone_fit_harmonics <- _pocketfft.py:rfft <- _pocketfft.py:_raw_fft": 1,
+   "widgets.py:_draw <- widgets.py:draw_meters <- widgets.py:text": 1,
+   "ui.py:_update_delta <- gainmatch.py:update <- gainmatch.py:tone_fit_harmonics": 1,
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 1
+  },
+  "S6": {
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_begin <- gui_live_probe.py:cpu_snapshot": 1,
+   "ui.py:_update_delta <- gainmatch.py:update <- gainmatch.py:tone_fit_harmonics": 1,
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 3,
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_end <- gui_live_probe.py:cpu_snapshot": 1,
+   "ui.py:_update_delta <- gainmatch.py:update <- gainmatch.py:estimate_signal_frequency": 1
+  },
+  "S7_gm": {
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_begin <- gui_live_probe.py:cpu_snapshot": 1,
+   "gainmatch.py:tone_fit_harmonics <- _pocketfft.py:rfft <- _pocketfft.py:_raw_fft": 2,
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 2,
+   "ui.py:_update_delta <- gainmatch.py:update <- gainmatch.py:tone_fit_harmonics": 1,
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_end <- gui_live_probe.py:cpu_snapshot": 1
+  },
+  "S7_spec": {
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_begin <- gui_live_probe.py:cpu_snapshot": 1,
+   "gui_live_probe.py:<module> <- gui_live_probe.py:main <- Gio.py:run": 2,
+   "gui_live_probe.py:<lambda> <- gui_live_probe.py:phase_end <- gui_live_probe.py:cpu_snapshot": 1
+  }
+ },
+ "ui": {
+  "frames_n": 0,
+  "frame_interval_p50_ms": null,
+  "frame_interval_p95_ms": null,
+  "frame_gap_max_ms": null,
+  "frames_gap_gt100ms": 0,
+  "timeout16_p50_ms": 17.12,
+  "timeout16_p95_ms": 38.26,
+  "timeout16_max_ms": 241.93
+ }
+}

@@ -1,0 +1,20 @@
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.17-page-scroll/valvebench/__init__.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/__init__.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.17-page-scroll/valvebench/__init__.py	2026-11-05 15:07:35.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/__init__.py	2026-11-05 21:56:44.349780871 +0300
+@@ -1,2 +1,2 @@
+ """ValveBench — измерительная лаборатория для аналоговой аудиотехники."""
+-__version__ = "0.1.17-page-scroll"
++__version__ = "0.1.18"
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.17-page-scroll/valvebench/ui.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/ui.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.17-page-scroll/valvebench/ui.py	2026-11-05 15:06:07.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/ui.py	2026-11-05 21:56:44.347722208 +0300
+@@ -423,6 +423,9 @@
+ 
+         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+         controls.set_size_request(310, -1)
++        # 0.1.18: блок генератора возвращён на страницу — виджеты self.f/self.lv/self.route
++        # создавались и управляли движком, но не были добавлены в раскладку (осиротевшие).
++        controls.append(group("Генератор", self.f, self.lv, self.route))
+         controls.append(group("Параметры Gain Match", self.series_level, self.series_repeats, self.tol))
+         controls.append(self.series_loop_btn)
+         controls.append(self.series_reference_label)

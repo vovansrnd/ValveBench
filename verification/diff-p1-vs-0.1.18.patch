@@ -1,0 +1,3128 @@
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/backend.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/backend.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/backend.py	2026-11-02 15:56:22.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/backend.py	2026-11-05 14:19:48.000000000 +0300
+@@ -14,6 +14,7 @@
+ from __future__ import annotations
+ 
+ import os
++import glob
+ import re
+ import subprocess
+ import threading
+@@ -108,6 +109,86 @@
+     return result
+ 
+ 
++
++def usb_profile_identity(vid, pid, serial="", physical_port="", matching_devices=1, pcm=0):
++    """Stable USB calibration key that survives port changes when unambiguous."""
++    vid, pid = str(vid).lower(), str(pid).lower()
++    serial = str(serial or "").strip()
++    if serial:
++        identity = f"usb:{vid}:{pid}:serial={serial}"
++    elif int(matching_devices) <= 1:
++        identity = f"usb:{vid}:{pid}"
++    else:
++        identity = f"usb:{vid}:{pid}:port={physical_port}"
++    return f"{identity}:pcm{int(pcm)}"
++
++def stable_device_identity(hw):
++    """Stable physical identity for an ALSA hw:C,D endpoint.
++
++    Prefer USB serial. Without a serial, use VID:PID when that device is unique;
++    use the physical USB port only to distinguish two identical connected cards.
++    PCI devices use their sysfs address. Never use the volatile ALSA card number.
++    """
++    value = str(hw or "sim")
++    if value == "sim":
++        return "sim"
++    match = re.fullmatch(r"hw:(\d+)(?:,(\d+))?", value)
++    if not match:
++        return value
++    card, pcm = int(match.group(1)), int(match.group(2) or 0)
++    base = f"/sys/class/sound/card{card}/device"
++    try:
++        current = os.path.realpath(base)
++    except OSError:
++        current = ""
++    node = current
++    while node and node != "/":
++        try:
++            names = set(os.listdir(node))
++        except OSError:
++            names = set()
++        if {"idVendor", "idProduct"}.issubset(names):
++            def read(name):
++                try:
++                    return open(os.path.join(node, name), encoding="utf-8").read().strip()
++                except OSError:
++                    return ""
++            vid, pid = read("idVendor"), read("idProduct")
++            serial = read("serial")
++            physical = os.path.basename(node)
++            matches = set()
++            if not serial:
++                # Most audio cards have a unique VID:PID. In that common case
++                # keep calibration when moved to another USB socket. If two
++                # identical serial-less devices are connected, retain port ID.
++                for candidate in glob.glob("/sys/bus/usb/devices/*"):
++                    try:
++                        cvid = open(os.path.join(candidate, "idVendor"), encoding="utf-8").read().strip()
++                        cpid = open(os.path.join(candidate, "idProduct"), encoding="utf-8").read().strip()
++                        cserial = open(os.path.join(candidate, "serial"), encoding="utf-8").read().strip() if os.path.exists(os.path.join(candidate, "serial")) else ""
++                    except OSError:
++                        continue
++                    if cvid == vid and cpid == pid and not cserial:
++                        matches.add(os.path.realpath(candidate))
++            return usb_profile_identity(vid, pid, serial, physical, max(1, len(matches)), pcm)
++        if {"vendor", "device"}.issubset(names) and os.path.basename(node).startswith("0000:"):
++            def read_pci(name):
++                try:
++                    return open(os.path.join(node, name), encoding="utf-8").read().strip()
++                except OSError:
++                    return ""
++            return f"pci:{read_pci('vendor')}:{read_pci('device')}:{os.path.basename(node)}:pcm{pcm}"
++        parent = os.path.dirname(node)
++        if parent == node:
++            break
++        node = parent
++    try:
++        card_id = open(f"/proc/asound/card{card}/id", encoding="utf-8").read().strip()
++    except OSError:
++        card_id = f"card{card}"
++    return f"alsa:{card_id}:pcm{pcm}"
++
++
+ def list_duplex_devices():
+     """Список всех ALSA PCM endpoints, которые реально есть и в playback, и capture.
+ 
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/calib.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/calib.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/calib.py	2026-11-01 10:39:56.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/calib.py	2026-11-05 13:24:02.000000000 +0300
+@@ -1,4 +1,4 @@
+-"""Независимая калибровка ЦАП L/R, АЦП L/R и внешнего аттенюатора."""
++"""Независимая калибровка ЦАП/АЦП, сохранённая отдельно для каждой физической карты."""
+ from __future__ import annotations
+ 
+ import json
+@@ -9,28 +9,49 @@
+ 
+ DEFAULTS = {
+     "device": "sim",
++    "device_key": "sim",
+     "fs": 96000,
+     "in_map": [0, 1],
+     "out_map": [0, 1],
+-    "out_fs_vrms": [None, None],  # напряжение ЦАП L/R при 0 dBFS (полный синус)
+-    "in_fs_vrms": [None, None],   # напряжение АЦП L/R при 0 dBFS
+-    "att_db": 0.0,                # общий внешний аттенюатор DAC→DUT, ≤0 dB
++    "out_fs_vrms": [None, None],
++    "in_fs_vrms": [None, None],
++    "att_db": 0.0,
+     "mains": 50.0,
+     "band_hi": 20000.0,
++    "frequency_response_profiles": {},
++    "noise_floor_profiles": {},
++    "auto_apply_response": True,
++    "auto_show_noise_floor": True,
+ }
+ 
++PROFILE_KEYS = (
++    "in_map", "out_map", "out_fs_vrms", "in_fs_vrms", "att_db", "mains", "band_hi",
++    "frequency_response_profiles", "noise_floor_profiles",
++)
++
++
++def _copy_value(value):
++    if isinstance(value, dict):
++        return {str(k): _copy_value(v) for k, v in value.items()}
++    if isinstance(value, list):
++        return [_copy_value(v) for v in value]
++    if isinstance(value, tuple):
++        return [_copy_value(v) for v in value]
++    return value
++
+ 
+ class Calibration:
+     def __init__(self, data=None):
+-        self.d = {k: (list(v) if isinstance(v, list) else v) for k, v in DEFAULTS.items()}
+-        if data:
+-            for k in DEFAULTS:
+-                if k in data:
+-                    value = data[k]
+-                    # Совместимость с ранним config.json, где ЦАП калибровался одним числом.
+-                    if k == "out_fs_vrms" and isinstance(value, (int, float)):
+-                        value = [float(value), float(value)]
+-                    self.d[k] = value
++        data = data or {}
++        self.d = {k: _copy_value(v) for k, v in DEFAULTS.items()}
++        for key in DEFAULTS:
++            if key in data:
++                value = data[key]
++                if key == "out_fs_vrms" and isinstance(value, (int, float)):
++                    value = [float(value), float(value)]
++                self.d[key] = _copy_value(value)
++        self._profiles = _copy_value(data.get("device_profiles", {}))
++        self._active_profile_key = str(data.get("active_device_key") or self.d.get("device_key") or "sim")
+         for key in ("out_fs_vrms", "in_fs_vrms"):
+             value = self.d.get(key)
+             if not isinstance(value, (list, tuple)):
+@@ -40,6 +61,51 @@
+                 while len(vals) < 2:
+                     vals.append(None)
+                 self.d[key] = vals
++        if not isinstance(self.d.get("frequency_response_profiles"), dict):
++            self.d["frequency_response_profiles"] = {}
++        if not isinstance(self.d.get("noise_floor_profiles"), dict):
++            self.d["noise_floor_profiles"] = {}
++        # Load a saved per-device profile, if the persisted active key is known.
++        saved = self._profiles.get(self._active_profile_key)
++        if isinstance(saved, dict):
++            self._apply_profile(saved)
++
++    def _profile_snapshot(self):
++        return {key: _copy_value(self.d[key]) for key in PROFILE_KEYS}
++
++    def _apply_profile(self, profile):
++        for key in PROFILE_KEYS:
++            if key in profile:
++                self.d[key] = _copy_value(profile[key])
++
++    def activate_profile(self, device_key, device_hw=None):
++        """Switch active per-card calibration; cards never share voltage/FR data."""
++        key = str(device_key or "sim")
++        old_key = self._active_profile_key
++        if old_key:
++            self._profiles[old_key] = self._profile_snapshot()
++        if key in self._profiles and isinstance(self._profiles[key], dict):
++            self._apply_profile(self._profiles[key])
++        else:
++            # A legacy config without a profile belongs to its previously selected
++            # ALSA endpoint only. Migrate it once; do not copy it to other cards.
++            same_legacy_endpoint = (not self._profiles and
++                                    str(self.d.get("device", "sim")) == str(device_hw or "sim"))
++            if not same_legacy_endpoint:
++                fresh = {k: _copy_value(DEFAULTS[k]) for k in PROFILE_KEYS}
++                self._apply_profile(fresh)
++            self._profiles[key] = self._profile_snapshot()
++        self._active_profile_key = key
++        self.d["device_key"] = key
++        if device_hw is not None:
++            self.d["device"] = str(device_hw)
++
++    def serialize(self):
++        self._profiles[self._active_profile_key] = self._profile_snapshot()
++        data = _copy_value(self.d)
++        data["device_profiles"] = _copy_value(self._profiles)
++        data["active_device_key"] = self._active_profile_key
++        return data
+ 
+     def __getitem__(self, k):
+         return self.d[k]
+@@ -47,12 +113,13 @@
+     def __setitem__(self, k, v):
+         self.d[k] = v
+ 
++    def get(self, k, default=None):
++        return self.d.get(k, default)
++
+     def out_full_scale_vrms(self, ch):
+         return self.d["out_fs_vrms"][int(ch)]
+ 
+-    # ---- физические напряжения
+     def out_v(self, dbfs, ch=0):
+-        """В RMS на выходе ЦАП для синуса dbfs и выбранного канала."""
+         v = self.out_full_scale_vrms(ch)
+         return None if v is None else float(v) * 10 ** (float(dbfs) / 20)
+ 
+@@ -70,12 +137,10 @@
+             return None
+         return 20 * math.log10(vo / vi)
+ 
+-    # ---- калибровка по измерениям
+     def set_out_from_meter(self, gen_dbfs, vrms, ch=0):
+         self.d["out_fs_vrms"][int(ch)] = float(vrms) / 10 ** (float(gen_dbfs) / 20)
+ 
+     def set_in_from_loop(self, gen_dbfs, rec_dbfs, ch):
+-        """Петля DAC→ADC без внешнего аттенюатора: входное напряжение = выходному."""
+         v = self.out_v(gen_dbfs, ch)
+         if v is None:
+             raise ValueError(f"сначала откалибруй выход ЦАП {('L','R')[int(ch)]}")
+@@ -97,11 +162,14 @@
+     try:
+         with open(PATH, encoding="utf-8") as f:
+             return Calibration(json.load(f))
+-    except (OSError, ValueError):
++    except (OSError, ValueError, TypeError):
+         return Calibration()
+ 
+ 
+ def save(cal):
+     os.makedirs(os.path.dirname(PATH), exist_ok=True)
+-    with open(PATH, "w", encoding="utf-8") as f:
+-        json.dump(cal.d, f, ensure_ascii=False, indent=1)
++    tmp = PATH + ".tmp"
++    with open(tmp, "w", encoding="utf-8") as f:
++        json.dump(cal.serialize(), f, ensure_ascii=False, indent=1)
++        f.write("\n")
++    os.replace(tmp, PATH)
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/gainmatch.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/gainmatch.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/gainmatch.py	2026-11-01 10:39:56.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/gainmatch.py	2026-11-05 13:10:03.000000000 +0300
+@@ -9,7 +9,12 @@
+ """
+ from __future__ import annotations
+ 
++import hashlib
+ import math
++import os
++import re
++import subprocess
++import time
+ from collections import deque
+ 
+ import numpy as np
+@@ -132,3 +137,335 @@
+                 "level_dbfs": lv, "snr_db": snr, "phase_deg": dphi,
+                 "gain_db": gains, "calibrated": calibrated, "tare_db": self.tare_db,
+                 "msg": ""}
++
++
++SERIES_FREQUENCIES = (100.0, 1000.0, 10000.0)
++MIN_SERIES_SNR_DB = 25.0
++DEFAULT_MATCH_TOL_DB = 0.20
++
++
++def device_key_from_hw(hw):
++    """Stable physical identity; unlike hw:N, it survives ALSA card re-numbering."""
++    try:
++        from .backend import stable_device_identity
++        return stable_device_identity(hw)
++    except Exception:
++        value = str(hw or "sim")
++        if value == "sim":
++            return "sim"
++        match = re.fullmatch(r"hw:(\d+)(?:,(\d+))?", value)
++        if not match:
++            return value
++        card, pcm = int(match.group(1)), int(match.group(2) or 0)
++        try:
++            card_id = open(f"/proc/asound/card{card}/id", encoding="utf-8").read().strip()
++        except OSError:
++            card_id = f"card{card}"
++        return f"alsa:{card_id}:pcm{pcm}"
++
++
++def _device_description(backend):
++    hw = getattr(backend, "hw", None)
++    if hw:
++        return str(hw)
++    return getattr(backend, "name", type(backend).__name__)
++
++
++def mixer_fingerprint_from_hw(hw):
++    """Hash ALSA controls so a loopback reference cannot survive mixer changes."""
++    match = re.fullmatch(r"hw:(\d+)(?:,\d+)?", str(hw or ""))
++    if not match:
++        return None
++    try:
++        proc = subprocess.run(["amixer", "-c", match.group(1), "contents"],
++                              stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
++                              timeout=3.0, check=False)
++    except (OSError, subprocess.TimeoutExpired):
++        return None
++    if proc.returncode != 0 or not proc.stdout:
++        return None
++    return hashlib.sha256(proc.stdout).hexdigest()
++
++
++def _reference_map(reference):
++    return {round(float(row["frequency_hz"]), 6): row for row in reference.get("rows", [])}
++
++
++def validate_loopback_reference(rig, reference, level_dbfs, frequencies=SERIES_FREQUENCIES):
++    """Reject stale or mismatched reference rather than silently applying it."""
++    if not isinstance(reference, dict) or reference.get("kind") != "gain_match_loopback_reference":
++        raise ValueError("нет эталона петли карты: сначала выполни шаг 1")
++    backend = rig.be
++    key = device_key_from_hw(getattr(backend, "hw", "sim"))
++    if reference.get("device_key") != key:
++        raise ValueError("эталон петли создан для другой звуковой карты; повтори шаг 1")
++    expected_mixer = reference.get("mixer_fingerprint")
++    if expected_mixer:
++        current_mixer = mixer_fingerprint_from_hw(getattr(backend, "hw", None))
++        if current_mixer is None:
++            raise ValueError("не удалось проверить настройки ALSA-микшера; повтори шаг 1")
++        if current_mixer != expected_mixer:
++            raise ValueError("настройки микшера звуковой карты изменились после петли; повтори шаг 1")
++    if int(reference.get("fs", -1)) != int(rig.fs):
++        raise ValueError("частота дискретизации изменилась; повтори шаг 1")
++    if abs(float(reference.get("generator_level_dbfs", 999.0)) - float(level_dbfs)) > 1e-6:
++        raise ValueError("уровень генератора изменился; для точной компенсации повтори шаг 1")
++    rows = _reference_map(reference)
++    wanted = {round(float(f), 6) for f in frequencies}
++    if set(rows) != wanted:
++        raise ValueError("набор частот эталона не совпадает с измерением; повтори шаг 1")
++    bad = [f for f, row in rows.items() if not row.get("valid", False)]
++    if bad:
++        raise ValueError("эталон петли содержит невалидные измерения; повтори шаг 1")
++    return rows
++
++
++def build_loopback_reference(result):
++    """Create a frequency-dependent L/R correction from a direct DAC→ADC loop."""
++    if result.get("purpose") != "loopback":
++        raise ValueError("эталон можно создать только из измерения прямой петли ЦАП→АЦП")
++    rows = []
++    for row in result.get("rows", []):
++        if not row.get("valid"):
++            raise ValueError(f"петля на {row['frequency_hz']:.0f} Гц измерена ненадёжно")
++        if not row.get("repeat_stable", False):
++            raise ValueError(f"петля на {row['frequency_hz']:.0f} Гц нестабильна; проверь соединения и повтори")
++        rows.append({
++            "frequency_hz": float(row["frequency_hz"]),
++            "delta_adc_db": float(row["delta_adc_db"]),
++            "repeat_spread_db": float(row["delta_output_spread_db"]),
++            "snr_l_db": float(row["channels"]["L"]["snr_db"]),
++            "snr_r_db": float(row["channels"]["R"]["snr_db"]),
++            "valid": True,
++        })
++    if len(rows) != len(result.get("frequencies_hz", [])) or not rows:
++        raise ValueError("эталон петли неполон")
++    return {
++        "kind": "gain_match_loopback_reference",
++        "schema": 1,
++        "created": time.strftime("%Y-%m-%d %H:%M:%S"),
++        "device_key": result["device_key"],
++        "device": result["device"],
++        "backend": result["backend"],
++        "mixer_fingerprint": result.get("mixer_fingerprint"),
++        "fs": int(result["fs"]),
++        "generator_level_dbfs": float(result["generator_level_dbfs"]),
++        "frequencies_hz": list(result["frequencies_hz"]),
++        "rows": rows,
++        "instruction": "Direct DAC L→ADC L and DAC R→ADC R loop; repeat after mixer, cable, device or rate changes.",
++    }
++
++
++def measure_series(rig, frequencies=SERIES_FREQUENCIES, level_dbfs=-30.0, repeats=3,
++                   metadata=None, purpose="loopback", reference=None):
++    """Measure three tones for either loopback correction or DUT channel matching.
++
++    Step 1 (purpose='loopback'): connect DAC L→ADC L and R→R directly. The measured
++    per-frequency ADC L−R difference becomes the interface correction.
++    Step 2 (purpose='dut'): insert the DUT and subtract that correction. The result
++    is relative DUT mismatch ΔG(L−R), and does not require absolute volt calibration.
++    """
++    freqs = tuple(float(f) for f in frequencies)
++    if not freqs or len(freqs) < 2:
++        raise ValueError("для серии Gain Match нужны минимум две частоты")
++    if any(not math.isfinite(f) or f <= 0 or f >= rig.fs / 2 for f in freqs):
++        raise ValueError("частоты должны быть положительными и ниже Найквиста")
++    if len({round(f, 9) for f in freqs}) != len(freqs):
++        raise ValueError("частоты в серии не должны повторяться")
++    if purpose not in ("loopback", "dut"):
++        raise ValueError("purpose должен быть loopback или dut")
++    level_dbfs = float(level_dbfs)
++    if not math.isfinite(level_dbfs) or not -80.0 <= level_dbfs <= -0.5:
++        raise ValueError("уровень генератора должен быть в диапазоне −80…−0.5 dBFS")
++    repeats = int(repeats)
++    if not 1 <= repeats <= 10:
++        raise ValueError("число повторов должно быть от 1 до 10")
++
++    backend = rig.be
++    hw = getattr(backend, "hw", "sim")
++    device_key = device_key_from_hw(hw)
++    mixer_fingerprint = mixer_fingerprint_from_hw(hw)
++
++    refs = None
++    if purpose == "dut":
++        if reference is None:
++            raise ValueError("нет эталона петли карты: сначала выполни шаг 1")
++        refs = validate_loopback_reference(rig, reference, level_dbfs, freqs)
++    elif reference is not None:
++        raise ValueError("при измерении петли эталон не нужен")
++
++    tones = {}
++    segments = []
++    order = []
++    for rep in range(repeats):
++        for requested_f in freqs:
++            k, amplitude = rig.amp_tone(requested_f, level_dbfs)
++            actual_f = float(rig.f_of(k))
++            tones[requested_f] = (k, actual_f)
++            segments.append(([(k, amplitude)], [(k, amplitude)], None))
++            order.append((requested_f, rep + 1, actual_f, k))
++
++    windows, warnings = rig.run(segments)
++    per_frequency = {f: {"L": [], "R": []} for f in freqs}
++    for order_item, window in zip(order, windows):
++        requested_f, rep, actual_f, k = order_item
++        for ch_index, channel in enumerate(("L", "R")):
++            signal = np.asarray(window[:, ch_index], dtype=np.float64)
++            analysis = rig._tone_an(window, ch_index, k, nharm=3)
++            measured_f = float(analysis["f0"])
++            level = float(analysis["level_dbfs"])
++            snr = max(0.0, -float(analysis["thdn_db"]))
++            residual_dbfs = level - snr
++            peak = float(np.max(np.abs(signal))) if signal.size else 0.0
++            clipped = peak >= 0.98
++            reasons = []
++            if not math.isfinite(level) or level <= -120.0:
++                reasons.append("tone_missing")
++            if snr < MIN_SERIES_SNR_DB:
++                reasons.append("low_snr")
++            if clipped:
++                reasons.append("adc_clip")
++            absolute_gain = rig.cal.gain_db(level_dbfs, level, ch_index)
++            input_v = rig.cal.dut_in_v(level_dbfs, ch_index)
++            output_v = rig.cal.in_v(level, ch_index)
++            per_frequency[requested_f][channel].append({
++                "repeat": rep,
++                "frequency_hz": measured_f,
++                "level_dbfs": level,
++                "residual_dbfs": residual_dbfs,
++                "snr_db": snr,
++                "phase_coherence": analysis.get("phase_coherence"),
++                "peak_dbfs": to_db(peak),
++                "clipped": clipped,
++                "valid": not reasons,
++                "validity_reasons": reasons,
++                "absolute_gain_db": None if absolute_gain is None else float(absolute_gain),
++                "input_vrms": input_v,
++                "output_vrms": output_v,
++            })
++
++    rows = []
++    for requested_f in freqs:
++        channels = {}
++        for channel in ("L", "R"):
++            samples = per_frequency[requested_f][channel]
++            levels = [q["level_dbfs"] for q in samples]
++            snrs = [q["snr_db"] for q in samples]
++            channels[channel] = {
++                "level_dbfs": float(np.median(levels)),
++                "level_spread_db": float(max(levels) - min(levels)),
++                "residual_dbfs": float(np.median([q["residual_dbfs"] for q in samples])),
++                "snr_db": float(np.median(snrs)),
++                "absolute_gain_db": (float(np.median([q["absolute_gain_db"] for q in samples]))
++                                     if all(q["absolute_gain_db"] is not None for q in samples) else None),
++                "valid": all(q["valid"] for q in samples),
++                "validity_reasons": sorted({reason for q in samples for reason in q["validity_reasons"]}),
++                "repeats": samples,
++            }
++        delta_adc = channels["L"]["level_dbfs"] - channels["R"]["level_dbfs"]
++        per_repeat_delta = [l["level_dbfs"] - r["level_dbfs"]
++                            for l, r in zip(per_frequency[requested_f]["L"], per_frequency[requested_f]["R"])]
++        spread = float(max(per_repeat_delta) - min(per_repeat_delta))
++        ref_row = refs.get(round(requested_f, 6)) if refs else None
++        correction = float(ref_row["delta_adc_db"]) if ref_row else None
++        corrected = (delta_adc - correction) if purpose == "dut" else None
++        rows.append({
++            "requested_frequency_hz": requested_f,
++            "frequency_hz": tones[requested_f][1],
++            "channels": channels,
++            "delta_adc_db": float(delta_adc),
++            "loopback_correction_db": correction,
++            "delta_gain_db": None if corrected is None else float(corrected),
++            "delta_output_spread_db": spread,
++            "repeat_stable": spread <= 0.10,
++            "valid": channels["L"]["valid"] and channels["R"]["valid"],
++        })
++
++    result = {
++        "kind": "gain_match_series",
++        "schema": 2,
++        "purpose": purpose,
++        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
++        "device": _device_description(backend),
++        "device_key": device_key,
++        "mixer_fingerprint": mixer_fingerprint,
++        "backend": getattr(backend, "name", type(backend).__name__),
++        "fs": int(rig.fs),
++        "generator_level_dbfs": level_dbfs,
++        "frequencies_hz": [row["frequency_hz"] for row in rows],
++        "repeats": repeats,
++        "blocks": int(rig.blocks),
++        "settle_seconds": float(rig.settle),
++        "absolute_voltage_calibrated": all(
++            row["channels"]["L"]["absolute_gain_db"] is not None
++            and row["channels"]["R"]["absolute_gain_db"] is not None for row in rows),
++        "loopback_corrected": purpose == "dut",
++        "reference_created": reference.get("created") if reference else None,
++        "rows": rows,
++        "metadata": dict(metadata or {}),
++        "warnings": list(warnings),
++    }
++    return result
++
++
++def text_series(result, tolerance_db=DEFAULT_MATCH_TOL_DB):
++    """Short user-facing result; hides raw dBFS internals unless measurement failed."""
++    rows = result.get("rows", [])
++    if result.get("purpose") == "loopback":
++        lines = ["ШАГ 1 ИЗ 2 · ЭТАЛОН ЗВУКОВОЙ КАРТЫ",
++                 "Петля L→L и R→R проверена. Измерена собственная разница каналов карты:"]
++        for row in rows:
++            lines.append(f"{row['frequency_hz']:g} Гц: поправка {row['delta_adc_db']:+.3f} дБ")
++        lines += ["Эталон сохранён. Теперь подключи проверяемый усилитель, не меняя карту, "
++                  "уровень генератора и аттенюаторы."]
++        if result.get("backend") != "sim" and not result.get("mixer_fingerprint"):
++            lines.append("ПРЕДУПРЕЖДЕНИЕ: снимок ALSA-микшера не получен; его изменения между шагами автоматически не обнаружатся.")
++        if not all(row["valid"] and row["repeat_stable"] for row in rows):
++            lines.append("ВНИМАНИЕ: петля нестабильна или измерена ненадёжно — эталон нельзя применять.")
++        return "\n".join(lines)
++
++    lines = ["ШАГ 2 ИЗ 2 · РЕЗУЛЬТАТ УСИЛИТЕЛЯ",
++             f"Сравнение каналов после компенсации звуковой карты · допуск ±{tolerance_db:.2f} дБ"]
++    values = []
++    all_valid = True
++    all_stable = True
++    for row in rows:
++        delta = row["delta_gain_db"]
++        valid = row["valid"] and delta is not None
++        stable = row["repeat_stable"]
++        all_valid &= valid
++        all_stable &= stable
++        if not valid:
++            verdict = "НЕТ ДОСТОВЕРНОГО ИЗМЕРЕНИЯ"
++        elif not stable:
++            verdict = "НЕСТАБИЛЬНО — повторить"
++        elif abs(delta) <= tolerance_db:
++            verdict = "СОВПАДАЮТ"
++        else:
++            stronger = "левый" if delta > 0 else "правый"
++            verdict = f"{stronger.capitalize()} сильнее на {abs(delta):.3f} дБ"
++        lines.append(f"{row['frequency_hz']:g} Гц:  ΔG L−R = "
++                     f"{'—' if delta is None else f'{delta:+.3f} дБ'}  ·  {verdict}")
++        lines.append(f"       повторяемость: {row['delta_output_spread_db']:.3f} дБ")
++        if valid:
++            values.append(abs(delta))
++    if not all_valid:
++        lines.append("ИТОГ: ИЗМЕРЕНИЕ НЕ ЗАСЧИТАНО — проверь уровни, кабели и перегрузку АЦП.")
++    elif not all_stable:
++        lines.append("ИТОГ: РЕЗУЛЬТАТ НЕСТАБИЛЕН — сначала устрани разброс повторов.")
++    else:
++        worst = max(values, default=0.0)
++        if worst <= tolerance_db:
++            lines.append(f"ИТОГ: КАНАЛЫ СОГЛАСОВАНЫ · максимальная разница {worst:.3f} дБ.")
++        else:
++            lines.append(f"ИТОГ: КАНАЛЫ НЕ СОГЛАСОВАНЫ · максимальная разница {worst:.3f} дБ.")
++    lines.append("ΔG — относительная разница усиления L/R; абсолютная калибровка вольт для неё не требуется.")
++    if result.get("metadata"):
++        meta = result["metadata"]
++        if meta.get("dut"):
++            lines.append(f"Устройство: {meta['dut']}")
++        if meta.get("tubes"):
++            lines.append(f"Лампы/позиции: {meta['tubes']}")
++        if meta.get("notes"):
++            lines.append(f"Примечание: {meta['notes']}")
++    return "\n".join(lines)
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/gainview.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/gainview.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/gainview.py	2026-11-01 10:39:56.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/gainview.py	2026-11-05 09:43:00.000000000 +0300
+@@ -60,8 +60,9 @@
+         col = COLORS[kind]
+ 
+         # шапка: подпись и режим
+-        text("ΔG  L − R", pad, 26, 15, 0.8)
+-        mode = "по калибровке L/R" if st.get("calibrated") else "сырая разность АЦП"
++        calibrated = bool(st.get("calibrated"))
++        text(("ΔG" if calibrated else "ΔADC") + "  L − R", pad, 26, 15, 0.8)
++        mode = "по калибровке L/R" if calibrated else "уровни АЦП без поправки петли"
+         if abs(st.get("tare_db", 0.0)) > 1e-9:
+             mode += f" · ноль сдвинут на {st['tare_db']:+.3f} дБ"
+         text(mode, w - pad, 26, 12, 0.6, "r")
+@@ -71,9 +72,11 @@
+         base = 30 + big                      # базовая линия главного числа
+         text(f"{filt:+.3f} dB", pad, base, big, 1.0)
+         if kind == "ok":
+-            verdict = "каналы совпадают"
++            verdict = "каналы совпадают" if calibrated else "уровни АЦП совпадают"
+         else:
+-            verdict = ("левый сильнее" if filt > 0 else "правый сильнее") + f" на {abs(filt):.3f} dB"
++            side = "левый" if filt > 0 else "правый"
++            what = "сильнее" if calibrated else "уровень АЦП выше"
++            verdict = f"{side} {what} на {abs(filt):.3f} dB"
+         cr.set_source_rgba(*col, 1.0)
+         cr.set_font_size(16)
+         cr.move_to(pad, base + 26)
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/__init__.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/__init__.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/__init__.py	2026-11-04 21:42:40.404911046 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/__init__.py	2026-11-05 21:56:44.349780871 +0300
+@@ -1,2 +1,2 @@
+ """ValveBench — измерительная лаборатория для аналоговой аудиотехники."""
+-__version__ = "0.1.12-p1"
++__version__ = "0.1.18"
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/measure.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/measure.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/measure.py	2026-11-01 10:39:56.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/measure.py	2026-11-05 14:17:45.000000000 +0300
+@@ -333,7 +333,7 @@
+ 
+ 
+ def noise_response(rig, seconds=10.0, kind="pink", level_dbfs=-24.0, f_lo=20.0, f_hi=20000.0,
+-                   iec=False, seed=12345):
++                   iec=False, seed=12345, response_calibration=None):
+     """Измерение передаточной функции шумовым сигналом (H1 + coherence).
+ 
+     Это не просто RTA выхода: известный цифровой сигнал сопоставляется с записью.
+@@ -370,14 +370,27 @@
+     for name, r in out["ch"].items():
+         if r["valid_fraction_coh_0_8"] < 0.8:
+             warns.append(f"{name}: coherence ниже 0.8 на значительной части полосы; проверьте уровень, шум и перегрузку")
++    if response_calibration is not None:
++        apply_response_calibration(out, response_calibration)
+     return out
+ 
+ 
+ def text_noise_response(res):
+     title = {"white": "белый шум", "pink": "розовый шум", "riaa": "шум с inverse-RIAA"}.get(res["mode"], res["mode"])
+-    lines = [f"Шумовая АЧХ / H1: {title}; {res['seconds']:.1f} с; генератор {res['signal']['actual_rms_dbfs']:.1f} dBFS RMS",
++    sig = res["signal"]
++    view = int(res.get("display_view", 1))
++    if view == 0:
++        value_key, heading = "riaa_dev_db", "Отклонение от RIAA, дБ"
++    elif view == 2:
++        value_key, heading = "coherence", "Когерентность"
++    else:
++        value_key, heading = "fr_norm_db", "АЧХ, нормированная на 1 кГц, дБ"
++    lines = [f"Шумовая АЧХ / H1: {title}; {res['seconds']:.1f} с; "
++             f"запрошено {sig.get('requested_rms_dbfs', res['level_dbfs']):.1f} dBFS RMS, "
++             f"фактически {sig['actual_rms_dbfs']:.1f} dBFS RMS; пик {sig['peak_dbfs']:.1f} dBFS",
+              f"Разрешение Welch: {res['ch']['L']['freq'][1] - res['ch']['L']['freq'][0]:.3f} Гц; сегмент {res['ch']['L']['nperseg']} отсчётов",
+-             "Частота, Гц | L откл. RIAA, дБ | R откл. RIAA, дБ | coherence L/R"]
++             heading,
++             f"{'Гц':>8s} | {'L':>9s} | {'R':>9s} | {'coh L/R':>9s}"]
+     f = res["ch"]["L"]["freq"]
+     rows = []
+     for fq in (20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 315, 500, 1000, 2000,
+@@ -386,13 +399,16 @@
+             continue
+         i = int(np.argmin(np.abs(f - fq)))
+         l, r = res["ch"]["L"], res["ch"]["R"]
+-        rows.append(f"{f[i]:9.1f} | {l['riaa_dev_db'][i]:+9.2f} | {r['riaa_dev_db'][i]:+9.2f} | {l['coherence'][i]:.2f}/{r['coherence'][i]:.2f}")
++        rows.append(f"{f[i]:8.1f} | {l[value_key][i]:+9.2f} | {r[value_key][i]:+9.2f} | "
++                    f"{l['coherence'][i]:.2f}/{r['coherence'][i]:.2f}")
+     lines.extend(rows)
+-    lines += ["", res["calibration_note"], f"Совмещение сигнала: {res['alignment_samples']} отсчётов"]
+-    if res["signal"]["peak_limited"]:
+-        lines.append("! RMS тестового шума снижен для удержания пика ниже -3 dBFS")
++    lines += ["", "Калибровка тракта: " + str(res.get("calibration_note", "не применялась")),
++              f"Совмещение сигнала: {res['alignment_samples']} отсчётов"]
++    if sig["peak_limited"]:
++        lines.append("! RMS тестового шума снижен для удержания пика ниже −3 dBFS")
+     return "\n".join(lines + [f"! {w}" for w in res["warnings"]])
+ 
++
+ # -------------------------------------------------------------------------- шум
+ 
+ 
+@@ -454,7 +470,7 @@
+ 
+ 
+ def sweep(rig, f_lo=20.0, f_hi=20000.0, dur=8.0, level_1k_dbfs=-20.0, mode="riaa", iec=False,
+-          nharm=5):
++          nharm=5, response_calibration=None):
+     """АЧХ, фаза и THD(f) по гармоникам за один проход (экспоненциальный свип, Фарина).
+ 
+     mode='flat'  — постоянный уровень на входе DUT;
+@@ -479,7 +495,7 @@
+     warns += list(rig.be.notes)
+     if float(np.max(np.abs(rec))) >= 0.98:
+         warns.append("ПЕРЕГРУЗКА ВХОДА АЦП во время свипа — результат недостоверен")
+-    out = {"kind": "sweep", "mode": mode, "iec": iec, "level_1k_dbfs": dsp.db20(a1),
++    out = {"kind": "sweep", "fs": int(rig.fs), "mode": mode, "iec": iec, "level_1k_dbfs": dsp.db20(a1),
+            "f_lo": f_lo, "f_hi": f_hi, "dur": dur, "warnings": warns, "ch": {}}
+     for c in (0, 1):
+         r = dsp.analyze_sweep(rec[:, c], spec, f_lo=f_lo, f_hi=f_hi, nharm=nharm,
+@@ -487,25 +503,173 @@
+         f = r["freq"]
+         i1k = int(np.argmin(np.abs(f - 1000.0)))
+         norm = r["fr_db"] - r["fr_db"][i1k]
++        norm[np.abs(norm) < 1e-9] = 0.0
+         r["fr_norm_db"] = norm
+-        r["riaa_dev_db"] = norm - dsp.riaa_playback_db(f, iec)
++        r["riaa_curve_db"] = dsp.riaa_playback_db(f, iec)
++        riaa_dev = norm - r["riaa_curve_db"]
++        riaa_dev[np.abs(riaa_dev) < 1e-9] = 0.0
++        r["riaa_dev_db"] = riaa_dev
+         ci, co = rig.cal["in_fs_vrms"][c], rig.cal.out_full_scale_vrms(c)
+         r["gain_1k_db"] = (r["fr_db"][i1k] + 20 * math.log10(ci / (co * 10 ** (rig.cal["att_db"] / 20)))
+                            if ci and co else None)
+         r["phase_deg"] = np.degrees(r["phase"])
+         out["ch"][CH[c]] = r
++    if response_calibration is not None:
++        apply_response_calibration(out, response_calibration)
+     return out
+ 
+ 
++def build_response_calibration(result, device_key, mixer_fingerprint=None, fs=None):
++    """Build a per-card/per-rate FR correction from a flat direct DAC→ADC sweep."""
++    if result.get("kind") != "sweep" or result.get("mode") != "flat":
++        raise MeasureError("калибровка АЧХ карты требует плоского свипа прямой петли")
++    channels = {}
++    for name in CH:
++        r = result.get("ch", {}).get(name)
++        if not r:
++            raise MeasureError(f"нет данных канала {name} в калибровочной петле")
++        freq = np.asarray(r.get("freq", []), dtype=float)
++        fr = np.asarray(r.get("fr_norm_db", []), dtype=float)
++        phase = np.asarray(r.get("phase_deg", []), dtype=float)
++        absolute = np.asarray(r.get("fr_db", []), dtype=float)
++        if freq.size < 50 or fr.size != freq.size or phase.size != freq.size or absolute.size != freq.size:
++            raise MeasureError(f"неполная калибровочная кривая {name}")
++        valid = np.isfinite(freq) & np.isfinite(fr) & np.isfinite(phase) & np.isfinite(absolute) & (freq > 0)
++        if np.count_nonzero(valid) < 50:
++            raise MeasureError(f"недостаточно достоверных точек калибровки {name}")
++        # A disconnected loop can still produce a mathematically shaped curve
++        # from noise. The calibration is explicitly a direct DAC→ADC cable loop,
++        # so a transfer below -35 dB at 1 kHz is not accepted as a real path.
++        # This leaves ample margin for card gain differences while rejecting
++        # open/weak/noise-only captures that can otherwise look smooth.
++        level_1k = float(np.interp(1000.0, freq[valid], absolute[valid]))
++        if not (-35.0 <= level_1k <= 20.0):
++            raise MeasureError(
++                f"{name}: петля не подтверждена — передача на 1 кГц {level_1k:.1f} дБ; "
++                "проверь L→L/R→R и повтори калибровку"
++            )
++        channels[name] = {
++            "frequency_hz": freq[valid].tolist(),
++            "fr_norm_db": fr[valid].tolist(),
++            "phase_deg": phase[valid].tolist(),
++        }
++    if any("ПЕРЕГРУЗКА" in str(w).upper() for w in result.get("warnings", [])):
++        raise MeasureError("петля перегрузила АЦП; профиль АЧХ не сохранён")
++    return {
++        "kind": "frequency_response_calibration", "schema": 1,
++        "created": time.strftime("%Y-%m-%d %H:%M:%S"),
++        "device_key": str(device_key), "fs": int(fs or result.get("fs", 0) or 0),
++        "f_lo": float(result["f_lo"]), "f_hi": float(result["f_hi"]),
++        "mixer_fingerprint": mixer_fingerprint, "channels": channels,
++        "source": "flat DAC→ADC loopback sweep; curves normalized at 1 kHz",
++    }
++
++
++def apply_response_calibration(result, profile):
++    """Remove the measured per-channel DAC/ADC loop response from FR/phase/THD(f)."""
++    if not isinstance(profile, dict) or profile.get("kind") != "frequency_response_calibration":
++        raise MeasureError("неверный профиль частотной калибровки")
++    warnings = result.setdefault("warnings", [])
++    for name in CH:
++        r = result.get("ch", {}).get(name)
++        p = profile.get("channels", {}).get(name)
++        if not r or not p:
++            continue
++        pf = np.asarray(p.get("frequency_hz", []), dtype=float)
++        pfr = np.asarray(p.get("fr_norm_db", []), dtype=float)
++        pph = np.asarray(p.get("phase_deg", []), dtype=float)
++        f = np.asarray(r.get("freq", []), dtype=float)
++        if pf.size < 2 or pfr.size != pf.size or f.size == 0:
++            warnings.append(f"{name}: профиль АЧХ неполон; канал показан без коррекции")
++            continue
++        # Interpolate on log-frequency; never extrapolate beyond the calibrated band.
++        pf_log = np.log10(pf)
++        valid = (f >= pf[0]) & (f <= pf[-1]) & (f > 0)
++        if np.count_nonzero(valid) < 2:
++            warnings.append(f"{name}: частоты вне диапазона калибровки {pf[0]:.0f}–{pf[-1]:.0f} Гц")
++            continue
++        cal_db = np.interp(np.log10(f[valid]), pf_log, pfr)
++        cal_1k = float(np.interp(3.0, pf_log, pfr))
++        correction = cal_db - cal_1k
++        fr = np.asarray(r.get("fr_norm_db", []), dtype=float).copy()
++        fr[valid] -= correction
++        # Set exact numerical zero at the normalization anchor, avoiding tiny residues such as 7e-16.
++        i1k = int(np.argmin(np.abs(f - 1000.0)))
++        if f.size and abs(f[i1k] - 1000.0) <= max(2.0, 0.01 * 1000.0):
++            fr -= fr[i1k]
++        fr[np.abs(fr) < 1e-9] = 0.0
++        r["fr_norm_db"] = fr
++        if "riaa_dev_db" in r:
++            target_curve = np.asarray(
++                r.get("riaa_curve_db", dsp.riaa_playback_db(f, bool(result.get("iec", False)))),
++                dtype=float)
++            dev = fr - target_curve
++            dev[np.abs(dev) < 1e-9] = 0.0
++            r["riaa_dev_db"] = dev
++        # All sweep and H1 curves carry the target curve separately when available.
++        if "phase_deg" in r and pph.size == pf.size:
++            phase = np.asarray(r["phase_deg"], dtype=float).copy()
++            pphase = np.interp(np.log10(f[valid]), pf_log, pph)
++            phase[valid] -= pphase
++            i1k = int(np.argmin(np.abs(f - 1000.0)))
++            phase -= phase[i1k]
++            r["phase_deg"] = phase
++        # Correct harmonic response ratios by calibration response at f and k·f.
++        h_db = r.get("h_db")
++        if isinstance(h_db, dict) and h_db:
++            powers = []
++            for harmonic, values in h_db.items():
++                try:
++                    order = int(harmonic)
++                except (TypeError, ValueError):
++                    continue
++                values = np.asarray(values, dtype=float).copy()
++                thd_f = np.asarray(r.get("thd_freq", []), dtype=float)
++                harm_f = thd_f * order
++                if values.size != thd_f.size:
++                    h_db[harmonic] = values
++                    continue
++                mask = (thd_f >= pf[0]) & (thd_f <= pf[-1]) & (harm_f >= pf[0]) & (harm_f <= pf[-1]) & (thd_f > 0)
++                if np.any(mask):
++                    base_c = np.interp(np.log10(thd_f[mask]), pf_log, pfr)
++                    harm_c = np.interp(np.log10(harm_f[mask]), pf_log, pfr)
++                    values[mask] += base_c - harm_c
++                h_db[harmonic] = values
++                powers.append(10.0 ** (values / 10.0))
++            if powers:
++                total_power = np.nansum(np.stack(powers), axis=0)
++                r["thd_db"] = 10.0 * np.log10(np.maximum(total_power, 1e-30))
++                r["thd_pct"] = 100.0 * np.sqrt(total_power)
++        r["response_calibration_applied"] = True
++    result["response_calibration"] = {
++        "applied": True, "device_key": profile.get("device_key"),
++        "fs": profile.get("fs"), "created": profile.get("created"),
++        "range_hz": [profile.get("f_lo"), profile.get("f_hi")],
++    }
++    result["calibration_note"] = "АЧХ/фаза скорректированы по сохранённой петле этой карты; вне полосы профиля коррекция не экстраполируется."
++    return result
++
++
+ def text_sweep(res):
+     ref = "RIAA+IEC" if res["iec"] else "RIAA"
++    is_riaa = res["mode"] == "riaa"
+     L = [f"АЧХ и THD(f), свип {res['dur']:.0f} с, генератор: "
+-         + (f"inverse-{ref}" if res["mode"] == "riaa" else "плоский")
++         + (f"inverse-{ref}" if is_riaa else "плоский")
+          + f", {res['level_1k_dbfs']:.1f} dBFS @1 кГц"]
++    if res.get("calibration_note"):
++        L.append("Калибровка тракта: " + str(res["calibration_note"]))
++    elif res.get("response_calibration", {}).get("applied"):
++        L.append("Калибровка тракта: коррекция АЧХ/фазы применена")
++    else:
++        L.append("Калибровка тракта: не применена — показано измерение ЦАП + DUT + АЦП")
+     for c, r in res["ch"].items():
+         if r["gain_1k_db"] is not None:
+             L.append(f"[{c}] усиление на 1 кГц: {r['gain_1k_db']:+.2f} дБ")
+-    L.append(f"\nОтклонение от {ref}, дБ")
++    if is_riaa:
++        values_key, heading = "riaa_dev_db", f"Отклонение от {ref}, дБ"
++    else:
++        values_key, heading = "fr_norm_db", "АЧХ, нормированная на 1 кГц, дБ"
++    L.append("\n" + heading)
+     L.append(f"{'Гц':>8s}{'L':>9s}{'R':>9s}{'L−R':>9s}  {'THD L %':>10s}{'THD R %':>10s}")
+     f = res["ch"]["L"]["freq"]
+     tf = res["ch"]["L"]["thd_freq"]
+@@ -514,12 +678,16 @@
+             continue
+         i = int(np.argmin(np.abs(f - fq)))
+         j = int(np.argmin(np.abs(tf - fq)))
+-        dl, dr = res["ch"]["L"]["riaa_dev_db"][i], res["ch"]["R"]["riaa_dev_db"][i]
++        dl, dr = res["ch"]["L"][values_key][i], res["ch"]["R"][values_key][i]
+         tl, tr = res['ch']['L']['thd_pct'][j], res['ch']['R']['thd_pct'][j]
+-        fm = lambda v: f"{v:10.5f}" if np.isfinite(v) else f"{'—':>10s}"
++        fm = lambda v: (f"{0.0:10.5f}" if abs(float(v)) < 1e-9 else f"{v:10.5f}") if np.isfinite(v) else f"{'—':>10s}"
+         L.append(f"{fq:8d}{dl:9.2f}{dr:9.2f}{dl - dr:9.2f}  {fm(tl)}{fm(tr)}")
+-    d = np.array([[np.nanmax(np.abs(res['ch'][c]['riaa_dev_db'])) for c in CH]]).max()
+-    L.append(f"\nмакс. |отклонение| в полосе: {d:.2f} дБ")
++    if is_riaa:
++        d = max(float(np.nanmax(np.abs(res['ch'][c]['riaa_dev_db']))) for c in CH)
++        L.append(f"\nмакс. |отклонение от {ref}| в полосе: {d:.2f} дБ")
++    else:
++        delta = np.asarray(res['ch']['L']['fr_norm_db']) - np.asarray(res['ch']['R']['fr_norm_db'])
++        L.append(f"\nмакс. |разница L−R| в полосе: {float(np.nanmax(np.abs(delta))):.2f} дБ")
+     return "\n".join(L + [f"! {w}" for w in res["warnings"]])
+ 
+ 
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/plot.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/plot.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/plot.py	2026-11-02 18:12:39.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/plot.py	2026-11-05 14:11:50.000000000 +0300
+@@ -44,6 +44,10 @@
+         self.xlim, self.ylim = (20.0, 20000.0), (-100.0, 0.0)
+         self.traces = []
+         self._mouse = None
++        # A manual Y range must survive redraws and new measurements until the
++        # user explicitly chooses Auto. This is important for sub-dB response plots.
++        self.manual_ylim = None
++        self._view_changed_callback = None
+         self.set_content_width(520)
+         self.set_content_height(320)
+         self.set_hexpand(True)
+@@ -55,11 +59,34 @@
+         self.add_controller(mc)
+ 
+     # ---- API
++    def set_view_changed_callback(self, callback):
++        self._view_changed_callback = callback
++        if callback is not None:
++            callback(self.ylim)
++
++    def _notify_view_changed(self):
++        if self._view_changed_callback is not None:
++            self._view_changed_callback(self.ylim)
++
++    def set_manual_ylim(self, lo, hi):
++        lo, hi = float(lo), float(hi)
++        if not math.isfinite(lo) or not math.isfinite(hi) or lo >= hi:
++            raise ValueError("Нижняя граница Y должна быть меньше верхней")
++        self.manual_ylim = (lo, hi)
++        self.ylim = self.manual_ylim
++        self._notify_view_changed()
++        self.queue_draw()
++
++    def clear_manual_ylim(self):
++        self.manual_ylim = None
++        self.autoscale_y()
++
+     def set_view(self, xlim=None, ylim=None, xlabel=None, ylabel=None):
+         if xlim:
+             self.xlim = (float(xlim[0]), float(xlim[1]))
+-        if ylim:
++        if ylim and self.manual_ylim is None:
+             self.ylim = (float(ylim[0]), float(ylim[1]))
++            self._notify_view_changed()
+         if xlabel is not None:
+             self.xlabel = xlabel
+         if ylabel is not None:
+@@ -71,21 +98,28 @@
+         self.traces = []
+         for t in traces:
+             x = np.asarray(t["x"], dtype=float)
+-            y = np.asarray(t["y"], dtype=float)
++            y = np.asarray(t["y"], dtype=float).copy()
++            # Exact zero is important in deviation plots: remove floating-point
++            # residue from subtraction/interpolation before rendering or cursor labels.
++            y[np.abs(y) < 1e-8] = 0.0
+             ok = np.isfinite(x) & np.isfinite(y)
+             if self.xlog:
+                 ok &= x > 0
+             c = t.get("color", "L")
+             self.traces.append({"x": x[ok], "y": y[ok], "label": t.get("label", ""),
+                                 "color": COLORS[c] if isinstance(c, str) else c,
+-                                "dash": t.get("dash", False), "width": t.get("width", 1.6)})
++                                "dash": t.get("dash", False), "width": t.get("width", 1.6),
++                                "marker": t.get("marker", False)})
+         self.queue_draw()
+ 
+     def autoscale_y(self, pad=0.08, min_span=1.0):
++        if self.manual_ylim is not None:
++            return
+         ys = np.concatenate([t["y"] for t in self.traces if t["y"].size] or [np.array([0.0, 1.0])])
+         lo, hi = float(np.min(ys)), float(np.max(ys))
+         span = max(hi - lo, min_span)
+         self.ylim = (lo - span * pad, hi + span * pad)
++        self._notify_view_changed()
+         self.queue_draw()
+ 
+     # ---- мышь
+@@ -124,19 +158,25 @@
+         # At ordinary desktop sizes use 10 dB subdivisions for a spectrum;
+         # the former coarse grid made a 160 dB range show only a few labels.
+         step = _nice_step(yhi - ylo, target=max(8, min(24, int(ph / 24))))
+-        v = math.ceil(ylo / step) * step
+-        while v <= yhi + 1e-9:
++        first_tick = math.ceil(ylo / step - 1e-10)
++        last_tick = math.floor(yhi / step + 1e-10)
++        decimals = max(0, min(6, int(math.ceil(-math.log10(step))) if step < 1 else 0))
++        for tick_index in range(first_tick, last_tick + 1):
++            # Calculate each tick from its integer index; repeated float addition
++            # used to turn the mathematical zero into labels such as 7.5e-16.
++            v = round(tick_index * step, decimals + 2)
++            if abs(v) < max(1e-12, abs(step) * 1e-9):
++                v = 0.0
+             y = ty(v)
+             rgba(0.13)
+             cr.move_to(ml, y); cr.line_to(ml + pw, y); cr.stroke()
+             rgba(0.75)
+-            lab = f"{v:g}"
++            lab = "0" if v == 0.0 else (f"{v:.{decimals}f}" if decimals else f"{v:.0f}")
+             ext = cr.text_extents(lab)
+             cr.move_to(ml - 6 - ext.x_advance, y + fs * 0.35); cr.show_text(lab)
+             if self.right_y_axis:
+                 cr.move_to(ml + pw + 9.0, y + fs * 0.35)
+                 cr.show_text(lab)
+-            v += step
+         if self.xlog:
+             xs = []
+             d = 10 ** math.floor(math.log10(self.xlim[0]))
+@@ -217,6 +257,16 @@
+                 px, py = self._tx(x[i], ml, pw), ty(float(np.clip(y[i], ylo - 1e4, yhi + 1e4)))
+                 (cr.move_to if i == 0 else cr.line_to)(px, py)
+             cr.stroke()
++            if t.get("marker"):
++                # Filled markers keep sparse measurements (e.g. three crosstalk
++                # frequencies) visible instead of relying on a thin connecting line.
++                cr.set_dash([])
++                cr.set_source_rgba(*t["color"], 1.0)
++                for xv, yv in zip(x, y):
++                    px = self._tx(float(xv), ml, pw)
++                    py = ty(float(np.clip(yv, ylo - 1e4, yhi + 1e4)))
++                    cr.arc(px, py, 5.8, 0, 2 * math.pi)
++                    cr.fill()
+         cr.restore()
+         cr.set_dash([])
+ 
+@@ -248,7 +298,10 @@
+             parts = [f"{xv:.4g} {unit}"]
+             for t in self.traces:
+                 if t["x"].size > 1 and t["x"][0] <= xv <= t["x"][-1] and t["label"]:
+-                    parts.append(f"{t['label']} {float(np.interp(xv, t['x'], t['y'])):.1f}")
++                    value = float(np.interp(xv, t['x'], t['y']))
++                    if abs(value) < 1e-9:
++                        value = 0.0
++                    parts.append(f"{t['label']} {value:.1f}")
+             rgba(0.95)
+             cr.move_to(ml + 8, mt + ph - 8); cr.show_text("   ".join(parts))
+ 
+Only in /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench: preferences.py
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/selftest.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/selftest.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/selftest.py	2026-11-04 21:42:40.404743435 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/selftest.py	2026-11-05 14:19:48.000000000 +0300
+@@ -3,19 +3,21 @@
+ 
+ import math
+ import time
++import hashlib
+ import tempfile
+ import json
+ from pathlib import Path
+ import numpy as np
+ 
+-from . import dsp, gainmatch, scans, looptest, passport, steady
++from . import dsp, gainmatch, scans, looptest, passport, steady, store, preferences
+ from . import pcm as pcm_mod
+ from . import io_health as io_health_mod
+ from .pcm import to_pcm
+-from .backend import SimBackend, SimChannel, AltSet
++from .backend import SimBackend, SimChannel, AltSet, usb_profile_identity
+ from . import backend as backend_module
+ from .calib import Calibration
+-from .measure import Rig, sweep, noise_response, noise_transfer_capture
++from .measure import (Rig, sweep, noise_response, noise_transfer_capture,
++                      build_response_calibration, apply_response_calibration)
+ from .vinyl import analyze_3150_stability, analyze_vta_sum, analyze_frequency_response, analyze_phase, analyze_crosstalk
+ 
+ 
+@@ -90,6 +92,61 @@
+     check("Sweep inverse-RIAA через SimBackend", dev < 0.45,
+           f"максимальное отклонение={dev:.3f} dB; критерий <0.45 dB")
+ 
++    # Per-card full-band response calibration: the loop profile contains separate
++    # L/R magnitude and phase curves. Applying it must remove the soundcard curve
++    # while retaining the synthetic DUT response.
++    fcal = np.geomspace(20.0, 20000.0, 256)
++    log_ratio = np.log10(fcal / 1000.0)
++    card_l, card_r = 0.35 * log_ratio, -0.22 * log_ratio
++    dut_l, dut_r = 0.12 * log_ratio, -0.08 * log_ratio
++    ph_l, ph_r = 8.0 * log_ratio, -5.0 * log_ratio
++    dut_ph_l, dut_ph_r = 0.6 * log_ratio, -0.4 * log_ratio
++    loop_result = {"kind": "sweep", "mode": "flat", "fs": fs, "f_lo": 20.0, "f_hi": 20000.0,
++                   "warnings": [], "ch": {
++                       "L": {"freq": fcal, "fr_db": np.zeros_like(fcal), "fr_norm_db": card_l, "phase_deg": ph_l},
++                       "R": {"freq": fcal, "fr_db": np.zeros_like(fcal), "fr_norm_db": card_r, "phase_deg": ph_r}}}
++    fr_profile = build_response_calibration(loop_result, "sim-card", "mixer-A", fs=fs)
++    no_loop = {"kind": "sweep", "mode": "flat", "fs": fs, "f_lo": 20.0, "f_hi": 20000.0,
++               "warnings": [], "ch": {}}
++    for ch in ("L", "R"):
++        no_loop["ch"][ch] = {"freq": fcal, "fr_db": np.full_like(fcal, -90.0),
++                             "fr_norm_db": np.zeros_like(fcal), "phase_deg": np.zeros_like(fcal)}
++    try:
++        build_response_calibration(no_loop, "sim-card", "mixer-A", fs=fs)
++        rejected_no_loop = False
++    except (ValueError, RuntimeError):
++        rejected_no_loop = True
++    check("Soundcard response calibration refuses an open/no-signal loopback",
++          rejected_no_loop, "no loop signal at 1 kHz must not become a saved correction")
++    measured_fr = {"kind": "sweep", "fs": fs, "iec": False, "warnings": [], "ch": {}}
++    for channel, card_curve, dut_curve, card_phase in (("L", card_l, dut_l, ph_l), ("R", card_r, dut_r, ph_r)):
++        measured_fr["ch"][channel] = {"freq": fcal.copy(),
++                                      "fr_norm_db": card_curve + dut_curve,
++                                      "phase_deg": card_phase + (dut_ph_l if channel == "L" else dut_ph_r),
++                                      "riaa_curve_db": dsp.riaa_playback_db(fcal)}
++    apply_response_calibration(measured_fr, fr_profile)
++    cal_fr_err = max(float(np.max(np.abs(measured_fr["ch"][ch]["fr_norm_db"] - dut)))
++                     for ch, dut in (("L", dut_l), ("R", dut_r)))
++    cal_phase_err = max(float(np.max(np.abs(measured_fr["ch"][ch]["phase_deg"] - (dut_ph_l if ch == "L" else dut_ph_r))))
++                        for ch in ("L", "R"))
++    check("Soundcard FR calibration removes separate L/R loop curves but preserves DUT response",
++          cal_fr_err < 1e-9 and cal_phase_err < 0.005 and measured_fr["response_calibration"]["applied"],
++          f"max FR error={cal_fr_err:.2e} dB; phase residual={cal_phase_err:.2e} deg; saved Fs={fr_profile['fs']}")
++
++    # Device profiles must remain isolated across card selection and serialization.
++    cal_profiles = Calibration()
++    cal_profiles.activate_profile("usb:aaa:port=1-1:pcm0", "hw:2,0")
++    cal_profiles["out_fs_vrms"] = [2.0, 2.1]
++    cal_profiles["frequency_response_profiles"] = {"192000": {"device_key": "card-A"}}
++    cal_profiles.activate_profile("usb:bbb:port=1-2:pcm0", "hw:3,0")
++    cal_profiles["out_fs_vrms"] = [1.0, 1.1]
++    cal_profiles.activate_profile("usb:aaa:port=1-1:pcm0", "hw:2,0")
++    restored_cal = Calibration(cal_profiles.serialize())
++    check("Per-device calibration profiles survive switching and serialization",
++          restored_cal["out_fs_vrms"] == [2.0, 2.1]
++          and "192000" in restored_cal["frequency_response_profiles"],
++          f"active card A DAC fullscale={restored_cal['out_fs_vrms']}; response profiles={list(restored_cal['frequency_response_profiles'])}")
++
+     nr = noise_response(rig, seconds=4, kind="pink", level_dbfs=-42, f_lo=30, f_hi=16000)
+     ndev = max(float(np.nanmax(np.abs(nr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))
+     coh = min(float(np.nanmin(nr["ch"][c]["coherence"])) for c in ("L", "R"))
+@@ -281,6 +338,113 @@
+           f"ΔG={st['filt']:.4f} dB (истина {truth:.4f}); после tare={st2['delta']:+.4f}; "
+           f"повторный tare={st3['delta']:+.4f}; после сброса={st4['delta']:+.4f}")
+ 
++    # Two-step Gain Match: first characterize L/R measurement-chain imbalance,
++    # then subtract it from the DUT result. No voltage calibration is required
++    # for relative L/R gain matching.
++    loop_backend = SimBackend(
++        SimChannel(gain=0.97, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
++        SimChannel(gain=1.03, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130), seed=17)
++    rig_loop = Rig(loop_backend, Calibration(), fs=48000, blocks=2, settle=0.15)
++    rig_loop.open()
++    # Add a deterministic frequency-dependent L-path response to the analyzer:
++    # this emulates unequal DAC/ADC response that must be measured separately at
++    # each frequency, not removed with one global zero/tare value.
++    interface_freq_error = {100.0: -0.25, 1000.0: 0.10, 10000.0: 0.35}
++    def inject_interface_frequency_error(rig):
++        original = rig._tone_an
++        def wrapped(win, ch, k, nharm=9, coherent_line_floors=None):
++            result = original(win, ch, k, nharm=nharm, coherent_line_floors=coherent_line_floors)
++            if int(ch) == 0:
++                f_meas = round(float(rig.f_of(k)), 6)
++                result["level_dbfs"] += interface_freq_error.get(f_meas, 0.0)
++            return result
++        rig._tone_an = wrapped
++    inject_interface_frequency_error(rig_loop)
++    loop_series = gainmatch.measure_series(rig_loop, level_dbfs=-24.0, repeats=3, purpose="loopback")
++    loop_reference = gainmatch.build_loopback_reference(loop_series)
++    interface_delta = 20.0 * math.log10(0.97 / 1.03)
++    expected_offsets = [interface_delta + interface_freq_error[f] for f in gainmatch.SERIES_FREQUENCIES]
++    check("Gain Match step 1: loopback reference records frequency-dependent interface L/R offset",
++          len(loop_reference["rows"]) == 3
++          and all(row["valid"] for row in loop_reference["rows"])
++          and all(abs(row["delta_adc_db"] - expected) < 0.03
++                  for row, expected in zip(loop_reference["rows"], expected_offsets)),
++          f"reference={[round(row['delta_adc_db'], 4) for row in loop_reference['rows']]} dB; "
++          f"expected={ [round(x, 4) for x in expected_offsets] }")
++
++    # The DUT is 1.5x left and 1.0x right, on top of the same asymmetric
++    # measurement interface (0.97x / 1.03x). Subtraction must recover 20log10(1.5).
++    dut_backend = SimBackend(
++        SimChannel(gain=0.97 * 1.5, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
++        SimChannel(gain=1.03 * 1.0, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130), seed=19)
++    rig_dut = Rig(dut_backend, Calibration(), fs=48000, blocks=2, settle=0.15)
++    rig_dut.open()
++    inject_interface_frequency_error(rig_dut)
++    series_gm = gainmatch.measure_series(rig_dut, level_dbfs=-24.0, repeats=3,
++                                         metadata={"dut": "synthetic 1.5x / 1.0x"},
++                                         purpose="dut", reference=loop_reference)
++    expected_gm = 20.0 * math.log10(1.5)
++    deltas_gm = [row["delta_gain_db"] for row in series_gm["rows"]]
++    check("Gain Match step 2: loopback correction removes interface imbalance",
++          len(series_gm["rows"]) == 3 and series_gm["loopback_corrected"]
++          and all(row["valid"] and row["repeat_stable"] for row in series_gm["rows"])
++          and all(abs(value - expected_gm) < 0.04 for value in deltas_gm),
++          f"corrected ΔG={['%.4f' % v for v in deltas_gm]} dB; DUT truth={expected_gm:.4f} dB; "
++          f"uncorrected interface offset={interface_delta:.4f} dB")
++
++    # The second step must not silently report raw ADC L/R as DUT gain.
++    missing_ref_rejected = False
++    try:
++        gainmatch.measure_series(rig_dut, level_dbfs=-24.0, repeats=1, purpose="dut", reference=None)
++    except ValueError as exc:
++        missing_ref_rejected = "эталона петли" in str(exc)
++    check("Gain Match: DUT measurement is blocked without loopback reference", missing_ref_rejected,
++          "нет эталона rejected" if missing_ref_rejected else "missing reference was accepted")
++
++    wrong_level_rejected = False
++    try:
++        gainmatch.measure_series(rig_dut, level_dbfs=-23.0, repeats=1,
++                                 purpose="dut", reference=loop_reference)
++    except ValueError as exc:
++        wrong_level_rejected = "уровень генератора" in str(exc)
++    check("Gain Match: mismatched generator level invalidates reference", wrong_level_rejected,
++          "wrong level rejected" if wrong_level_rejected else "wrong level was accepted")
++
++    mixer_reference = dict(loop_reference, mixer_fingerprint="baseline-mixer")
++    original_fingerprint = gainmatch.mixer_fingerprint_from_hw
++    gainmatch.mixer_fingerprint_from_hw = lambda _hw: "changed-mixer"
++    mixer_change_rejected = False
++    try:
++        gainmatch.measure_series(rig_dut, level_dbfs=-24.0, repeats=1,
++                                 purpose="dut", reference=mixer_reference)
++    except ValueError as exc:
++        mixer_change_rejected = "микшера" in str(exc)
++    finally:
++        gainmatch.mixer_fingerprint_from_hw = original_fingerprint
++    check("Gain Match: changed ALSA mixer invalidates loopback reference", mixer_change_rejected,
++          "mixer change rejected" if mixer_change_rejected else "mixer change was accepted")
++
++    with tempfile.TemporaryDirectory(prefix="valvebench-gain-series-") as tmp_gain:
++        ref_path = store.save_gain_reference(loop_reference, tmp_gain)
++        loaded_ref = store.load_gain_reference("sim", 48000, -24.0,
++                                               gainmatch.SERIES_FREQUENCIES, tmp_gain)
++        gain_json, gain_csv = store.save_gain_series(series_gm, tmp_gain)
++        saved_gain = json.loads(Path(gain_json).read_text(encoding="utf-8"))
++        csv_lines = Path(gain_csv).read_text(encoding="utf-8").splitlines()
++        check("Gain Match: loopback reference and DUT result persist in JSON/CSV",
++              Path(ref_path).exists() and loaded_ref is not None
++              and len(saved_gain["rows"]) == 3 and len(csv_lines) == 4
++              and saved_gain["metadata"].get("dut") == "synthetic 1.5x / 1.0x"
++              and "corrected_delta_gain_L_minus_R_db" in csv_lines[0],
++              f"reference={'loaded' if loaded_ref else 'missing'}; JSON rows={len(saved_gain['rows'])}; "
++              f"CSV columns={len(csv_lines[0].split(','))}")
++
++    human = gainmatch.text_series(series_gm, tolerance_db=0.20)
++    check("Gain Match: user report contains corrected verdict, not raw dBFS table",
++          "ΔG L−R" in human and "КАНАЛЫ НЕ СОГЛАСОВАНЫ" in human
++          and "dBFS" not in human,
++          human.splitlines()[-2] if len(human.splitlines()) > 1 else human)
++
+     # --- 0.1.6: наклоны гармоник, периодичность тона, валидность серии
+     lv = np.array([-6.0, -12.0, -18.0, -24.0, -30.0])
+     sl3 = scans.classify_slope(3, lv, -108.0 + 3.0 * (lv + 6.0), [True] * 5)
+@@ -751,6 +915,54 @@
+     check("P1: onset симметричен для раннего/позднего старта; граница поиска и отсутствие тона дают None",
+           ok_all, " | ".join(det))
+ 
++    # UI preference migration is one-time: update only old defaults, preserve user choices.
++    h = lambda title: "pref_" + hashlib.sha1(str(title).encode("utf-8")).hexdigest()[:12]
++    old_ui = {
++        "resp/" + h("Показывать"): 0,
++        "resp/" + h("Генератор"): 0,
++        "resp/" + h("Уровень @1 кГц, dBFS"): -20.0,
++        "imd/" + h("Пик суммы, dBFS"): -12.0,
++        "noise_response/" + h("График"): 0,
++        "live/" + h("Уровень генератора, dBFS"): -20.0,
++        "thd/" + h("Уровень генератора, dBFS"): -12.0,
++        "live/" + h("Уровень теста, dBFS"): -30.0,
++        "noise_response/" + h("Цифровой RMS-уровень, dBFS"): -42.0,
++        "spectrum/pref_spectrum_fft": 0,
++    }
++    # Fix the helper to use the same hashlib function in a clean independent expression.
++    old_ui = {k: v for k, v in old_ui.items()}
++    # USB calibration identity survives port changes when VID:PID is unique,
++    # but remains disambiguated by port for identical serial-less cards.
++    usb_a = usb_profile_identity("0b05", "180c", "", "1-1", 1, 0)
++    usb_b = usb_profile_identity("0B05", "180C", "", "1-2", 1, 0)
++    usb_dup_a = usb_profile_identity("0b05", "180c", "", "1-1", 2, 0)
++    usb_dup_b = usb_profile_identity("0b05", "180c", "", "1-2", 2, 0)
++    check("Per-card calibration identity survives moving a unique USB card to another port",
++          usb_a == usb_b and usb_dup_a != usb_dup_b,
++          f"unique={usb_a == usb_b}; duplicate ports distinct={usb_dup_a != usb_dup_b}")
++
++    migrated_ui = preferences.migrate_0_1_16_defaults(old_ui)
++    migrated_again = preferences.migrate_0_1_16_defaults(migrated_ui)
++    check("UI migration updates RIAA/low-level defaults once and preserves user choices",
++          migrated_ui["resp/" + h("Показывать")] == 1
++          and migrated_ui["noise_response/" + h("График")] == 1
++          and migrated_ui["live/" + h("Уровень генератора, dBFS")] == -6
++          and migrated_ui["thd/" + h("Уровень генератора, dBFS")] == -12.0
++          and migrated_ui["live/" + h("Уровень теста, dBFS")] == -12
++          and migrated_ui["noise_response/" + h("Желаемый RMS-уровень шума, dBFS")] == -12.0
++          and migrated_ui["resp/" + h("Тестовый сигнал")] == 0
++          and migrated_ui["resp/" + h("Уровень генератора @1 кГц, dBFS")] == -6.0
++          and migrated_ui["imd/" + h("Пиковый уровень суммы двух тонов, dBFS")] == -6.0
++          and migrated_ui["spectrum/pref_spectrum_fft"] == 5
++          and migrated_again == migrated_ui,
++          "старые значения по умолчанию исправлены; выбранные значения и повторный запуск миграции не изменяют настройки")
++    user_ui = {"resp/" + h("Показывать"): 3, "live/" + h("Уровень генератора, dBFS"): -9.5}
++    migrated_user = preferences.migrate_0_1_16_defaults(user_ui)
++    check("UI migration does not overwrite non-default user selections",
++          migrated_user["resp/" + h("Показывать")] == 3
++          and migrated_user["live/" + h("Уровень генератора, dBFS")] == -9.5,
++          f"RIAA view={migrated_user['resp/' + h('Показывать')]}; generator={migrated_user['live/' + h('Уровень генератора, dBFS')]} dBFS")
++
+     passed = sum(q["ok"] for q in checks)
+     return {"passed": passed, "total": len(checks), "checks": checks}
+ 
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/store.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/store.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/store.py	2026-11-01 10:39:56.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/store.py	2026-11-05 09:39:03.000000000 +0300
+@@ -43,3 +43,92 @@
+         w.writerow(["freq_hz", "thd_L_pct", "thd_R_pct"])
+         for i in range(len(tf)):
+             w.writerow([f"{tf[i]:.3f}", f"{res['ch']['L']['thd_pct'][i]:.6f}", f"{res['ch']['R']['thd_pct'][i]:.6f}"])
++
++
++
++def save_gain_series(res, directory=None):
++    """Save a Gain Match frequency series under the current project directory.
++
++    Unlike the generic legacy save_json() default, this deliberately avoids
++    the home directory: default output is ./measurements/gain-match/.
++    Returns (json_path, csv_path).
++    """
++    directory = directory or os.path.join(os.getcwd(), "measurements", "gain-match")
++    os.makedirs(directory, exist_ok=True)
++    stamp = time.strftime("%Y%m%d-%H%M%S")
++    stem = f"gain-match-{stamp}"
++    suffix = 1
++    while os.path.exists(os.path.join(directory, stem + ".json")):
++        stem = f"gain-match-{stamp}-{suffix:02d}"
++        suffix += 1
++    json_path = os.path.join(directory, stem + ".json")
++    csv_path = os.path.join(directory, stem + ".csv")
++
++    payload = to_jsonable(res)
++    payload["saved"] = time.strftime("%Y-%m-%d %H:%M:%S")
++    tmp_json = json_path + ".tmp"
++    with open(tmp_json, "w", encoding="utf-8") as fh:
++        json.dump(payload, fh, ensure_ascii=False, indent=2)
++        fh.write("\n")
++    os.replace(tmp_json, json_path)
++
++    with open(csv_path, "w", newline="", encoding="utf-8") as fh:
++        writer = csv.writer(fh)
++        writer.writerow([
++            "frequency_hz", "delta_adc_L_minus_R_db", "loopback_correction_db",
++            "corrected_delta_gain_L_minus_R_db", "repeat_spread_db", "SNR_L_db",
++            "SNR_R_db", "valid", "repeat_stable",
++        ])
++        for row in res.get("rows", []):
++            left, right = row["channels"]["L"], row["channels"]["R"]
++            writer.writerow([
++                f"{row['frequency_hz']:.6f}", f"{row['delta_adc_db']:.6f}",
++                "" if row["loopback_correction_db"] is None else f"{row['loopback_correction_db']:.6f}",
++                "" if row["delta_gain_db"] is None else f"{row['delta_gain_db']:.6f}",
++                f"{row['delta_output_spread_db']:.6f}", f"{left['snr_db']:.2f}",
++                f"{right['snr_db']:.2f}", int(row["valid"]), int(row["repeat_stable"]),
++            ])
++    return json_path, csv_path
++
++
++def save_gain_reference(reference, directory=None):
++    """Persist the per-device loopback correction in the project directory."""
++    directory = directory or os.path.join(os.getcwd(), "measurements", "gain-match")
++    os.makedirs(directory, exist_ok=True)
++    import re
++    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(reference.get("device_key", "device"))).strip("_.") or "device"
++    level_tag = f"{float(reference['generator_level_dbfs']):.1f}".replace("-", "m").replace(".", "p")
++    path = os.path.join(directory,
++                        f"loopback-reference-{slug}-{int(reference['fs'])}Hz-{level_tag}dBFS.json")
++    tmp = path + ".tmp"
++    with open(tmp, "w", encoding="utf-8") as fh:
++        json.dump(to_jsonable(reference), fh, ensure_ascii=False, indent=2)
++        fh.write("\n")
++    os.replace(tmp, path)
++    return path
++
++
++def load_gain_reference(device_key, fs, level_dbfs, frequencies, directory=None):
++    """Load only a reference whose device, sample rate, level and tones all match."""
++    directory = directory or os.path.join(os.getcwd(), "measurements", "gain-match")
++    import glob
++    paths = sorted(glob.glob(os.path.join(directory, "loopback-reference-*.json")),
++                   key=os.path.getmtime, reverse=True)
++    wanted = {round(float(f), 6) for f in frequencies}
++    for path in paths:
++        try:
++            with open(path, encoding="utf-8") as fh:
++                ref = json.load(fh)
++            if ref.get("kind") != "gain_match_loopback_reference":
++                continue
++            if ref.get("device_key") != device_key or int(ref.get("fs", -1)) != int(fs):
++                continue
++            if abs(float(ref.get("generator_level_dbfs", 999.0)) - float(level_dbfs)) > 1e-6:
++                continue
++            got = {round(float(f), 6) for f in ref.get("frequencies_hz", [])}
++            if got != wanted or not all(row.get("valid") for row in ref.get("rows", [])):
++                continue
++            return ref
++        except (OSError, ValueError, TypeError, KeyError):
++            continue
++    return None
+diff -ru '--exclude=__pycache__' /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/ui.py /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/ui.py
+--- /opt/MyApps/Adudio/for_z/ValveBench-0.1.12-p1/valvebench/ui.py	2026-11-02 15:47:57.000000000 +0300
++++ /opt/MyApps/Adudio/for_z/ValveBench-0.1.18-generator-controls/valvebench/ui.py	2026-11-05 21:56:44.347722208 +0300
+@@ -5,6 +5,7 @@
+ import sys
+ import threading
+ import time
++import hashlib
+ 
+ import numpy as np
+ import gi
+@@ -13,10 +14,12 @@
+ gi.require_version("Adw", "1")
+ from gi.repository import Adw, GLib, Gtk  # noqa: E402
+ 
+-from . import calib, dsp, measure as m, signals, store, vinyl  # noqa: E402
++from . import calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
++from . import gainmatch  # noqa: E402
+ from .gainmatch import GainTracker  # noqa: E402
+ from .gainview import GainDeltaView  # noqa: E402
+-from .backend import AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates  # noqa: E402
++from .backend import (AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates,
++                      stable_device_identity)  # noqa: E402
+ from .plot import Plot  # noqa: E402
+ 
+ RATES = [44100, 48000, 88200, 96000, 176400, 192000]
+@@ -25,8 +28,13 @@
+ # ----------------------------------------------------------------------- виджеты
+ 
+ 
++def _pref_widget_name(title):
++    return "pref_" + hashlib.sha1(str(title).encode("utf-8")).hexdigest()[:12]
++
++
+ def spin(title, lo, hi, step, val, digits=1, subtitle=None):
+     r = Adw.SpinRow.new_with_range(lo, hi, step)
++    r.set_name(_pref_widget_name(title))
+     r.set_title(title)
+     r.set_digits(digits)
+     r.set_value(val)
+@@ -37,6 +45,7 @@
+ 
+ def combo(title, items, sel=0, subtitle=None):
+     r = Adw.ComboRow(title=title)
++    r.set_name(_pref_widget_name(title))
+     r.set_model(Gtk.StringList.new(list(items)))
+     r.set_selected(sel)
+     if subtitle:
+@@ -60,6 +69,47 @@
+     return b
+ 
+ 
++def _spectrum_ylim(traces, top=0.0):
++    """Choose a readable spectrum floor from the actual curve and card noise floor."""
++    arrays = []
++    for trace in traces:
++        values = np.asarray(trace.get("y", []), dtype=float)
++        values = values[np.isfinite(values)]
++        if values.size:
++            arrays.append(values)
++    if not arrays:
++        return -160.0, float(top)
++    values = np.concatenate(arrays)
++    low = float(np.nanpercentile(values, 5.0)) - 10.0
++    # Avoid both a useless fixed −140 dB limit and an absurdly tall plot
++    # when a single isolated bin sits near numerical zero.
++    low = min(-80.0, max(-240.0, low))
++    return low, float(top)
++
++
++def _noise_floor_trace(profile, channel, fs, nfft, average=1.0, line_bins=True):
++    """Convert a saved per-card ADC noise-density profile to the graph's units.
++
++    The same measured density is shared by Spectrum/THD/IMD. Line-bin views add
++    the analysis-window ENBW; an averaged time waveform (IMD) reduces random
++    noise power by the number of independent blocks.
++    """
++    if not isinstance(profile, dict):
++        return None
++    pf = np.asarray(profile.get("frequency_hz", []), dtype=float)
++    pd = np.asarray(profile.get("channels", {}).get(channel, {}).get("density_dbfs_sqrt_hz", []), dtype=float)
++    if pf.size < 2 or pd.size != pf.size:
++        return None
++    y = pd.copy()
++    if line_bins:
++        w = dsp.bh(int(nfft))
++        enbw = float(fs) * float(np.sum(w * w)) / max(float(np.sum(w) ** 2), 1e-30)
++        enbw = enbw / max(1.0, float(average))
++        y += 10.0 * np.log10(max(enbw, 1e-30))
++    return {"x": pf, "y": y, "label": f"Шум АЦП {channel}",
++            "color": "ref", "dash": True, "width": 1.2}
++
++
+ def textview():
+     tv = Gtk.TextView(editable=False, cursor_visible=False, monospace=True,
+                       left_margin=10, top_margin=8, bottom_margin=8)
+@@ -69,29 +119,155 @@
+     return tv.get_buffer(), sw
+ 
+ 
++def vertical_page_scroller(child):
++    """Make the complete contents of a page vertically reachable on short screens.
++
++    Keep the vertical scrollbar non-overlayed so it remains visible when the
++    page is taller than the window. Horizontal scrolling is intentionally off:
++    controls should wrap/reflow rather than create a second navigation axis.
++    """
++    scroller = Gtk.ScrolledWindow()
++    scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
++    scroller.set_overlay_scrolling(False)
++    scroller.set_kinetic_scrolling(True)
++    scroller.set_hexpand(True)
++    scroller.set_vexpand(True)
++    scroller.set_child(child)
++    return scroller
++
++
+ class Page(Gtk.Box):
+-    """Слева параметры, справа график и отчёт."""
++    """Общая измерительная страница с постоянным статусом и управлением масштабом."""
+ 
+     def __init__(self, win, *param_widgets, plot=None):
+-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=14,
+-                         margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
++        # The page itself stays the Stack child (so status/job routing and
++        # page identity remain unchanged); its entire two-column body scrolls.
++        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+         self.win = win
++        self._job_button_states = None
++        content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14,
++                          margin_top=12, margin_bottom=12,
++                          margin_start=12, margin_end=12)
+         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+         left.set_size_request(330, -1)
+         for w in param_widgets:
+             left.append(w)
+-        sc = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER)
+-        sc.set_child(left)
+-        sc.set_size_request(350, -1)
+-        self.append(sc)
++        content.append(left)
++
+         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+         right.set_hexpand(True)
++        status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
++        status_bar.add_css_class("card")
++        status_bar.set_margin_bottom(3)
++        self.job_spinner = Gtk.Spinner()
++        self.job_status = Gtk.Label(
++            label="ГОТОВО К ИЗМЕРЕНИЮ · выбери параметры и нажми кнопку слева",
++            xalign=0, wrap=True)
++        self.job_status.add_css_class("title-4")
++        self.job_status.set_hexpand(True)
++        status_bar.append(self.job_spinner)
++        status_bar.append(self.job_status)
++        right.append(status_bar)
++
+         self.plot = plot
+         if plot is not None:
+             right.append(plot)
++            scale_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
++            scale_bar.set_margin_top(2)
++            scale_bar.set_margin_bottom(4)
++            scale_bar.append(Gtk.Label(label="Масштаб Y:", xalign=0))
++            scale_bar.append(Gtk.Label(label="от", xalign=0))
++            self.y_min = Gtk.SpinButton.new_with_range(-300.0, 100.0, 0.1)
++            self.y_min.set_name("plot_y_min")
++            self.y_min.set_digits(2)
++            self.y_min.set_size_request(86, -1)
++            self.y_min.set_value(float(plot.ylim[0]))
++            scale_bar.append(self.y_min)
++            scale_bar.append(Gtk.Label(label="до", xalign=0))
++            self.y_max = Gtk.SpinButton.new_with_range(-300.0, 100.0, 0.1)
++            self.y_max.set_name("plot_y_max")
++            self.y_max.set_digits(2)
++            self.y_max.set_size_request(86, -1)
++            self.y_max.set_value(float(plot.ylim[1]))
++            scale_bar.append(self.y_max)
++            scale_bar.append(button("Применить", self.apply_plot_scale))
++            scale_bar.append(button("Авто", self.auto_plot_scale))
++            self.plot_scale_hint = Gtk.Label(label="", xalign=0)
++            self.plot_scale_hint.add_css_class("dim-label")
++            scale_bar.append(self.plot_scale_hint)
++            scale_bar.set_hexpand(True)
++            right.append(scale_bar)
++            plot.set_view_changed_callback(self._sync_plot_scale)
++        else:
++            self.y_min = self.y_max = self.plot_scale_hint = None
++
+         self.buf, sw = textview()
+         right.append(sw)
+-        self.append(right)
++        content.append(right)
++        self.page_scroller = vertical_page_scroller(content)
++        self.append(self.page_scroller)
++
++    def _sync_plot_scale(self, ylim):
++        if self.y_min is None:
++            return
++        self.y_min.set_value(float(ylim[0]))
++        self.y_max.set_value(float(ylim[1]))
++        if self.plot.manual_ylim is None:
++            self.plot_scale_hint.set_text("авто")
++        else:
++            self.plot_scale_hint.set_text("ручной масштаб")
++
++    def apply_plot_scale(self):
++        if self.plot is None:
++            return
++        lo, hi = self.y_min.get_value(), self.y_max.get_value()
++        try:
++            self.plot.set_manual_ylim(lo, hi)
++            self.plot_scale_hint.set_text(f"Ручной диапазон {lo:g}…{hi:g}")
++            self.win.persist_plot_scale(self)
++        except ValueError as exc:
++            self.plot_scale_hint.set_text(str(exc))
++
++    def auto_plot_scale(self):
++        if self.plot is None:
++            return
++        self.plot.clear_manual_ylim()
++        self.plot_scale_hint.set_text("Автомасштаб")
++        self.win.clear_plot_scale_preference(self)
++
++    @staticmethod
++    def _walk_widgets(root):
++        child = root.get_first_child()
++        while child is not None:
++            yield child
++            yield from Page._walk_widgets(child)
++            child = child.get_next_sibling()
++
++    def set_job_busy(self, busy):
++        if busy:
++            if self._job_button_states is None:
++                self._job_button_states = [(w, w.get_sensitive()) for w in self._walk_widgets(self)
++                                           if isinstance(w, Gtk.Button)]
++                for widget, _state in self._job_button_states:
++                    widget.set_sensitive(False)
++        elif self._job_button_states is not None:
++            for widget, was_sensitive in self._job_button_states:
++                widget.set_sensitive(was_sensitive)
++            self._job_button_states = None
++
++    def set_job_status(self, state, message, elapsed=None):
++        if state == "running":
++            self.job_spinner.start()
++            self.job_status.set_text(f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}")
++        else:
++            self.job_spinner.stop()
++            if state == "success":
++                suffix = f" · {elapsed:.1f} с" if elapsed is not None else ""
++                self.job_status.set_text(f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже")
++            elif state == "error":
++                self.job_status.set_text(f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}")
++            else:
++                self.job_status.set_text(message)
+ 
+     def say(self, txt):
+         self.buf.set_text(txt)
+@@ -181,11 +357,13 @@
+     """Главный стенд: генераторные настройки и два крупных вертикальных метра L/R."""
+ 
+     def __init__(self, win):
+-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=16,
+-                         margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
++        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+         self.win = win
++        content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16,
++                          margin_top=12, margin_bottom=12,
++                          margin_start=12, margin_end=12)
+         self.f = spin("Частота, Гц", 5, 40000, 1, 1000, 0)
+-        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -20, 1)
++        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -6, 1)
+         self.route = combo("Канал генератора", ["L + R", "Только L", "Только R"], 0)
+         self.vlabel = Gtk.Label(xalign=0, wrap=True)
+         self.vlabel.add_css_class("dim-label")
+@@ -208,12 +386,58 @@
+         self.last_generator_settings = None
+         self.tracker = GainTracker()
+         self.delta_view = GainDeltaView()
+-        self.tol = spin("Допуск ΔG, дБ", 0.01, 2.0, 0.01, 0.10, 2, "зелёная зона индикатора")
++        self.tol = spin("Допуск разницы L/R, дБ", 0.01, 2.0, 0.01, 0.20, 2, "для итогового заключения Gain Match")
+         self._delta_error_shown = False
+ 
++        # Двухшаговый Gain Match: сначала измеряется собственная L/R-ошибка
++        # петли звуковой карты, затем она вычитается из измерения DUT.
++        self.series_level = spin("Уровень теста, dBFS", -80.0, -0.5, 0.5, -12.0, 1,
++                                 "Один и тот же уровень для петли и усилителя")
++        self.series_repeats = spin("Повторов на частоту", 1, 5, 1, 3, 0,
++                                   "Три частоты измеряются вперемешку")
++        self.series_dut = Adw.EntryRow(title="Устройство / модель")
++        self.series_dut.set_name(_pref_widget_name("Устройство / модель"))
++        self.series_tubes = Adw.EntryRow(title="Лампы / позиции")
++        self.series_tubes.set_name(_pref_widget_name("Лампы / позиции"))
++        self.series_notes = Adw.EntryRow(title="Примечание")
++        self.series_notes.set_name(_pref_widget_name("Примечание"))
++        self.series_reference = None
++        self.last_series = None
++        self._job_button_states = None
++        self.series_job_spinner = Gtk.Spinner()
++        self.series_job_status = Gtk.Label(label="ГОТОВО К ИЗМЕРЕНИЮ", xalign=0, wrap=True)
++        self.series_job_status.add_css_class("title-4")
++        self.series_job_status.set_hexpand(True)
++        self.series_result_label = Gtk.Label(
++            label="Сначала измерь петлю звуковой карты. Без этого результат усилителя не рассчитывается.",
++            xalign=0, yalign=0, wrap=True, selectable=True)
++        self.series_result_label.set_hexpand(True)
++        self.series_result_label.set_margin_top(8)
++        self.series_result_label.set_margin_bottom(8)
++        self.series_result_label.add_css_class("title-4")
++        self.series_reference_label = Gtk.Label(label="Эталон петли: не создан", xalign=0, wrap=True)
++        self.series_reference_label.add_css_class("dim-label")
++        self.series_loop_btn = button("1. ПРОВЕРИТЬ КАРТУ  ·  L→L, R→R", self.measure_loopback, True)
++        self.series_dut_btn = button("2. ИЗМЕРИТЬ УСИЛИТЕЛЬ", self.measure_dut_series, True)
++        self.series_dut_btn.set_sensitive(False)
++
+         controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+         controls.set_size_request(310, -1)
+-        controls.append(group("Генератор — параметры", self.f, self.lv, self.route, self.tol))
++        # 0.1.18: блок генератора возвращён на страницу — виджеты self.f/self.lv/self.route
++        # создавались и управляли движком, но не были добавлены в раскладку (осиротевшие).
++        controls.append(group("Генератор", self.f, self.lv, self.route))
++        controls.append(group("Параметры Gain Match", self.series_level, self.series_repeats, self.tol))
++        controls.append(self.series_loop_btn)
++        controls.append(self.series_reference_label)
++        controls.append(self.series_dut_btn)
++        controls.append(group("Что проверяем", self.series_dut, self.series_tubes, self.series_notes))
++        controls.append(Gtk.Label(
++            label="Шаг 1: соединить выходы карты напрямую со входами (L→L, R→R). "
++                  "Шаг 2: вместо петли подключить усилитель. Между шагами не менять "
++                  "громкость карты, уровень теста и аттенюаторы. Поправка компенсирует "
++                  "карту, но не несовпадение внешних L/R кабелей и делителей. После "
++                  "переподключения карты или изменения микшера повторить шаг 1.",
++            xalign=0, wrap=True))
+         # Единственная кнопка генератора находится на главном измерительном экране.
+         # Это тот же ToggleButton, состояние которого управляет аудиодвижком.
+         self.gen_action = self.win.generator_btn
+@@ -222,7 +446,7 @@
+         self.gen_action.add_css_class("suggested-action")
+         controls.append(self.gen_action)
+         hint = Gtk.Label(
+-            label="Порядок работы: 1) включи «АУДИО ВКЛ» в верхней панели; "
++            label="Порядок работы: 1) открой ЦАП/АЦП в верхней панели; "
+                   "2) нажми эту кнопку. Повторное нажатие выключает сигнал, но оставляет АЦП включённым.",
+             xalign=0, wrap=True)
+         hint.add_css_class("dim-label")
+@@ -240,9 +464,11 @@
+                   "не успел обслужить буфер, возможны пропуски/разрывы.",
+             xalign=0, wrap=True))
+         controls.append(Gtk.Label(
+-            label="Напряжения и усиление появятся после раздельной калибровки L/R. Для входа MM необходим "
+-                  "внешний аттенюатор и корректное сопротивление источника.", xalign=0, wrap=True))
+-        self.append(controls)
++            label="Баланс усиления L/R измеряется в двух шагах выше и не требует вольтметра. "
++                  "Абсолютные Uin, Uout и G каждого канала требуют калибровки напряжения. "
++                  "Для входа MM необходим внешний аттенюатор и корректное сопротивление источника.",
++            xalign=0, wrap=True))
++        content.append(controls)
+ 
+         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+         right.set_hexpand(True)
+@@ -255,6 +481,17 @@
+         header.append(self.clock_label)
+         right.append(header)
+         right.append(self.delta_view)
++        series_status = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
++        series_status.add_css_class("card")
++        series_status.append(self.series_job_spinner)
++        series_status.append(self.series_job_status)
++        right.append(series_status)
++        series_scroller = Gtk.ScrolledWindow()
++        series_scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
++        series_scroller.set_min_content_height(150)
++        series_scroller.set_max_content_height(220)
++        series_scroller.set_child(self.series_result_label)
++        right.append(series_scroller)
+ 
+         meters = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=26)
+         meters.set_vexpand(True)
+@@ -276,11 +513,133 @@
+                          xalign=0, wrap=True)
+         note.add_css_class("dim-label")
+         right.append(note)
+-        self.append(right)
++        content.append(right)
++        self.page_scroller = vertical_page_scroller(content)
++        self.append(self.page_scroller)
+ 
+         for w in (self.f, self.lv):
+             w.connect("notify::value", lambda *_: self.apply())
+         self.route.connect("notify::selected", lambda *_: self.apply())
++        self.series_level.connect("notify::value", lambda *_: self.refresh_gain_reference())
++        self.refresh_gain_reference()
++
++    def set_job_busy(self, busy):
++        if busy:
++            if self._job_button_states is None:
++                self._job_button_states = [(w, w.get_sensitive()) for w in Page._walk_widgets(self)
++                                           if isinstance(w, Gtk.Button)]
++                for widget, _state in self._job_button_states:
++                    widget.set_sensitive(False)
++        elif self._job_button_states is not None:
++            for widget, was_sensitive in self._job_button_states:
++                widget.set_sensitive(was_sensitive)
++            self._job_button_states = None
++
++    def set_job_status(self, state, message, elapsed=None):
++        if state == "running":
++            self.series_job_spinner.start()
++            self.series_job_status.set_text(f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}")
++        else:
++            self.series_job_spinner.stop()
++            if state == "success":
++                suffix = f" · {elapsed:.1f} с" if elapsed is not None else ""
++                self.series_job_status.set_text(f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже")
++            elif state == "error":
++                self.series_job_status.set_text(f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}")
++            else:
++                self.series_job_status.set_text(message)
++
++    def refresh_gain_reference(self):
++        """Invalidate the in-session reference when card, rate or drive level changes.
++
++        A saved file is kept for traceability, but never silently reused after app
++        restart: USB mixer defaults can change on reconnect.
++        """
++        hw = self.win.cards[self.win.dev.get_selected()][0]
++        key = gainmatch.device_key_from_hw(hw)
++        level = float(self.series_level.get_value())
++        ref = self.series_reference
++        matches = bool(ref and ref.get("device_key") == key
++                       and int(ref.get("fs", -1)) == int(self.win.rig_fs())
++                       and abs(float(ref.get("generator_level_dbfs", 999.0)) - level) < 1e-6)
++        if not matches:
++            self.series_reference = None
++            self.series_reference_label.set_text("Сначала проверь измерительную карту (шаг 1)")
++            self.series_dut_btn.set_sensitive(False)
++        else:
++            self.series_reference_label.set_text(
++                f"КОРРЕКЦИЯ КАРТЫ ГОТОВА · {ref['fs']} Гц · можно подключать усилитель")
++            self.series_dut_btn.set_sensitive(True)
++
++    def _series_metadata(self):
++        return {key: value for key, value in {
++            "dut": self.series_dut.get_text().strip(),
++            "tubes": self.series_tubes.get_text().strip(),
++            "notes": self.series_notes.get_text().strip(),
++        }.items() if value}
++
++    def measure_loopback(self):
++        """Step 1: characterize the soundcard's L/R loop imbalance per frequency."""
++        self.series_reference = None
++        self.series_dut_btn.set_sensitive(False)
++        self.series_reference_label.set_text("Эталон петли: измеряю…")
++        level = float(self.series_level.get_value())
++        repeats = int(self.series_repeats.get_value())
++
++        def job(rig):
++            return gainmatch.measure_series(rig, level_dbfs=level, repeats=repeats, purpose="loopback")
++
++        def done(result):
++            try:
++                reference = gainmatch.build_loopback_reference(result)
++                path = store.save_gain_reference(reference)
++            except (ValueError, OSError):
++                self.series_reference = None
++                self.series_dut_btn.set_sensitive(False)
++                self.refresh_gain_reference()
++                raise
++            self.series_reference = reference
++            self.series_dut_btn.set_sensitive(True)
++            self.series_reference_label.set_text(
++                f"КОРРЕКЦИЯ КАРТЫ ГОТОВА · {reference['fs']} Гц · можно подключать усилитель")
++            valid_rows = sum(1 for row in result.get("rows", [])
++                             if row.get("valid") and row.get("repeat_stable"))
++            self.series_result_label.set_text(
++                "Проверка измерительной карты завершена.\n"
++                f"Надёжные частотные точки: {valid_rows} из {len(result.get('rows', []))}.\n"
++                "Карта сохранена как эталон. Теперь вместо петли подключи проверяемый усилитель "
++                "и нажми «2. ИЗМЕРИТЬ УСИЛИТЕЛЬ».")
++            self.win.toast("Карта проверена. Можно переходить к измерению усилителя.")
++
++        self.win.run_job(job, done, "Шаг 1/2: измеряю собственную разницу каналов карты…")
++
++    def measure_dut_series(self):
++        """Step 2: measure DUT and subtract the stored per-frequency loopback error."""
++        level = float(self.series_level.get_value())
++        repeats = int(self.series_repeats.get_value())
++        reference = self.series_reference
++        if reference is None:
++            self.refresh_gain_reference()
++            reference = self.series_reference
++        if reference is None:
++            self.win.toast("Сначала измерь прямую петлю звуковой карты — шаг 1")
++            return
++        metadata = self._series_metadata()
++
++        def job(rig):
++            return gainmatch.measure_series(rig, level_dbfs=level, repeats=repeats,
++                                            metadata=metadata, purpose="dut", reference=reference)
++
++        def done(result):
++            self.last_series = result
++            self.series_result_label.set_text(gainmatch.text_series(result, self.tol.get_value()))
++            try:
++                json_path, csv_path = store.save_gain_series(result)
++                self.win.toast(f"Gain Match сохранён: {json_path} · CSV: {csv_path}")
++            except OSError as exc:
++                self.win.toast(f"Измерено, но не удалось сохранить результат: {exc}")
++
++        self.win.run_job(job, done, "Шаг 2/2: измеряю усилитель и компенсирую карту…")
+ 
+     def reset_holds(self):
+         self.meter_l.reset_holds()
+@@ -453,24 +812,30 @@
+     FFT_SIZES = [8192, 16384, 32768, 65536, 131072, 262144]
+ 
+     def __init__(self, win):
+-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=8,
+-                         margin_top=10, margin_bottom=10, margin_start=12, margin_end=12)
++        super().__init__(orientation=Gtk.Orientation.VERTICAL)
++        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8,
++                          margin_top=10, margin_bottom=10,
++                          margin_start=12, margin_end=12)
+         self.win = win
+         self.fft = Gtk.DropDown.new_from_strings([
+             "8k · самый быстрый отклик",
+             "16k · быстро",
+             "32k · среднее разрешение",
+-            "64k · повышенное разрешение",
++            "64k · среднее разрешение",
+             "128k · высокое разрешение",
+-            "256k · максимальное разрешение"])
+-        self.fft.set_selected(0)
++            "256k · максимальное разрешение (рекомендуется)"])
++        self.fft.set_name("pref_spectrum_fft")
++        self.fft.set_selected(5)
+         self.mode = Gtk.DropDown.new_from_strings([
+             "Амплитуда линий · dBFS/bin", "Плотность шума · dBFS/√Гц"])
+         # PSD view is the most useful default for seeing the continuous noise floor.
++        self.mode.set_name("pref_spectrum_mode")
+         self.mode.set_selected(1)
+         self.floor = Gtk.DropDown.new_from_strings(["−120", "−140", "−160", "−180", "−200"])
+-        self.floor.set_selected(2)
++        self.floor.set_name("pref_spectrum_floor")
++        self.floor.set_selected(3)
+         self.top = Gtk.DropDown.new_from_strings(["0", "−20", "−40", "−60", "−80"])
++        self.top.set_name("pref_spectrum_top")
+         self.top.set_selected(0)
+         self.band = Gtk.DropDown.new_from_strings([
+             "20 Гц – 20 кГц",
+@@ -478,8 +843,10 @@
+             "10 Гц – Fs/2 (весь спектр до Найквиста)",
+         ])
+         # В основном режиме показываем весь доступный положительный спектр.
++        self.band.set_name("pref_spectrum_band")
+         self.band.set_selected(2)
+         self.avg_mode = Gtk.DropDown.new_from_strings(["Без усреднения", "Быстрое", "Сглаженное"])
++        self.avg_mode.set_name("pref_spectrum_avg")
+         self.avg_mode.set_selected(1)
+         self.state = Gtk.Label(label="Аудиопоток выключен", xalign=0)
+         self.state.add_css_class("dim-label")
+@@ -504,9 +871,9 @@
+             widget.set_hexpand(True)
+             col.append(widget)
+             toolbar.append(col)
+-        self.append(toolbar)
+-        self.append(self.plot)
+-        self.append(self.state)
++        content.append(toolbar)
++        content.append(self.plot)
++        content.append(self.state)
+         help_label = Gtk.Label(
+             label="Амплитуда линий: dBFS/bin, уровень синусоидальной составляющей в каждом бине. "
+                   "Плотность шума: dBFS/√Гц, позволяет сравнивать шумовую полку при разном FFT. "
+@@ -515,7 +882,9 @@
+                   "Выше слышимой полосы АЧХ аналогового тракта может быть не нормирована.",
+             xalign=0, wrap=True)
+         help_label.add_css_class("dim-label")
+-        self.append(help_label)
++        content.append(help_label)
++        self.page_scroller = vertical_page_scroller(content)
++        self.append(self.page_scroller)
+         for w in (self.fft, self.mode, self.floor, self.top, self.band, self.avg_mode):
+             w.connect("notify::selected", lambda *_: self.reset_average())
+ 
+@@ -604,6 +973,14 @@
+                            xlabel="Частота, Гц", ylabel=ylabel)
+         if self.plot.ylim[0] >= self.plot.ylim[1]:
+             self.plot.set_view(ylim=(-160, 0))
++        floor_profile = self.win.get_noise_floor_profile(fs)
++        if floor_profile is not None:
++            for ch in ("L", "R"):
++                floor_trace = _noise_floor_trace(floor_profile, ch, fs, n, average=1.0,
++                                                 line_bins=self.mode.get_selected() == 0)
++                if floor_trace is not None:
++                    # Keep the saved profile's native frequency grid; Plot handles interpolation at cursor.
++                    traces.append(floor_trace)
+         self.plot.set_traces(traces)
+         w = dsp.bh(n)
+         df = fs / n
+@@ -614,7 +991,8 @@
+         xruns = status.get("xruns")
+         xrun_text = "XRUN: счётчик недоступен" if xruns is None else f"XRUN: {xruns}"
+         mode_name = "линейчатый спектр" if self.mode.get_selected() == 0 else "спектральная плотность шума"
+-        self.state.set_text(f"{source} · {mode_name} · полоса {band_name} · N={n:,} · "
++        floor_state = "пол АЦП: есть" if floor_profile is not None else "пол АЦП: не калиброван"
++        self.state.set_text(f"{source} · {mode_name} · {floor_state} · полоса {band_name} · N={n:,} · "
+                             f"Δf={df:.3f} Гц · ENBW={enbw:.2f} Гц · "
+                             f"окно {n/fs:.3f} с · обновление ≥{refresh_ms} мс · {xrun_text} · "
+                             f"ADC frames={status.get('capture_frames', 0):,}")
+@@ -624,16 +1002,20 @@
+ class ThdPage(Page):
+     def __init__(self, win):
+         self.f = spin("Частота, Гц", 10, 40000, 1, 997, 0)
+-        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -20, 1)
++        self.lv = spin("Уровень генератора, dBFS", -100, -0.5, 0.5, -6, 1)
+         self.route = combo("Канал", ["L+R", "L", "R"], 0)
+         self.lvls = Adw.EntryRow(title="Уровни для THD(уровень), dBFS")
++        self.lvls.set_name(_pref_widget_name("Уровни для THD(уровень), dBFS"))
+         self.lvls.set_text("-6, -12, -18, -24, -36, -48")
+         plot = Plot(True, "Гц", "dBFS")
+-        plot.set_view((10, 40000), (-140, 0))
+-        super().__init__(win, group("Тон", self.f, self.lv, self.route),
+-                         button("Измерить THD", self.go, True),
+-                         group("THD от уровня", self.lvls),
+-                         button("Снять THD(уровень)", self.go_level),
++        plot.set_view((10, 40000), (-180, 0))
++        self.result_headline = Gtk.Label(label="Задай частоту и уровень. Будет подан синус на выбранный канал(ы); измеряются THD, THD+N, гармоники и фон.", xalign=0, wrap=True)
++        self.result_headline.add_css_class("title-4")
++        super().__init__(win, group("Тестовый синус", self.f, self.lv, self.route),
++                         button("ИЗМЕРИТЬ THD / THD+N", self.go, True),
++                         self.result_headline,
++                         group("Серия THD при разных уровнях", self.lvls),
++                         button("ИЗМЕРИТЬ THD ПО СПИСКУ УРОВНЕЙ", self.go_level),
+                          plot=plot)
+ 
+     def go(self):
+@@ -642,11 +1024,30 @@
+ 
+     def done(self, res):
+         self.win.last = res
+-        self.say(m.text_thd(res))
+         self.plot.xlog = True
+-        self.plot.set_view((10, 40000), (-140, 0), ylabel="dBFS (линия, бин 1 Гц)")
+-        self.plot.set_traces([{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
+-                              for c, r in res["ch"].items()])
++        traces = [{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
++                  for c, r in res["ch"].items()]
++        floor_profile = self.win.get_noise_floor_profile(self.win.rig_fs(), fresh=True)
++        rows = []
++        for channel, r in res["ch"].items():
++            thd_text = "ниже порога" if r.get("thd_bound") else f"{r['thd_pct']:.4f}%"
++            rows.append(f"{channel}: THD {thd_text} · THD+N {r['thdn_pct']:.4f}%")
++        self.result_headline.set_text("ИЗМЕРЕНО · " + "   |   ".join(rows))
++        if floor_profile is None:
++            self.say(m.text_thd(res) + "\n\nПол АЦП не откалиброван для этой карты/Fs или настройки микшера изменились. "
++                     "Пунктирная линия появится после измерения шума в Setup.")
++        else:
++            self.say(m.text_thd(res))
++        if floor_profile is not None:
++            n = int(res["ch"][next(iter(res["ch"]))].get("n", self.win.rig_fs()))
++            for ch in ("L", "R"):
++                floor_trace = _noise_floor_trace(floor_profile, ch, self.win.rig_fs(), n, average=1.0, line_bins=True)
++                if floor_trace is not None:
++                    traces.append(floor_trace)
++        ylo, yhi = _spectrum_ylim(traces, top=0.0)
++        self.plot.xlog = True
++        self.plot.set_view((10, 40000), (ylo, yhi), ylabel="dBFS/bin · текущая полоса разрешения")
++        self.plot.set_traces(traces)
+ 
+     def go_level(self):
+         try:
+@@ -677,18 +1078,28 @@
+         self.lo = spin("От, Гц", 5, 1000, 1, 20, 0)
+         self.hi = spin("До, Гц", 1000, 40000, 100, 20000, 0)
+         self.dur = spin("Длительность свипа, с", 3, 30, 1, 8, 0)
+-        self.lv = spin("Уровень @1 кГц, dBFS", -90, -1, 1, -20, 1)
+-        self.mode = combo("Генератор", ["inverse-RIAA", "плоский"], 0,
+-                          "inverse-RIAA: на выходе корректора ровная линия")
+-        self.iec = combo("Эталон", ["RIAA", "RIAA + IEC"], 0)
+-        self.view = combo("Показывать", self.VIEWS, 0)
++        self.lv = spin("Уровень генератора @1 кГц, dBFS", -60, -0.5, 0.5, -6, 1,
++                       "Обычная АЧХ начинается с −6 dBFS. В режиме inverse-RIAA высокие частоты предыскажаются и могут автоматически ослабляться по пику.")
++        self.mode = combo("Тестовый сигнал", ["Плоский свип · обычная АЧХ", "Inverse-RIAA · фонокорректор"], 0,
++                          "Плоский свип — общий режим по умолчанию. Inverse-RIAA выбирай вручную для проверки фонокорректора по стандартной RIAA-кривой.")
++        self.iec = combo("Эталон (необязательно)", ["Не сравнивать с RIAA", "RIAA · стандарт", "RIAA + IEC · срез НЧ"], 0,
++                         "По умолчанию RIAA не применяется. Выбери её только если проверяешь фонокорректор и хочешь оценить отклонение от этой коррекции.")
++        self.view = combo("Показывать", self.VIEWS, 1)
+         self.res = None
+         self.ref = None
+-        plot = Plot(True, "Гц", "дБ")
++        plot = Plot(True, "Гц", "Отклонение от RIAA, дБ")
++        plot.set_view((20, 20000), (-0.5, 0.5))
+         super().__init__(win, group("Свип (по Фарине)", self.lo, self.hi, self.dur, self.lv, self.mode, self.iec),
+                          button("Измерить", self.go, True), group("Вид", self.view),
+                          self._buttons(), plot=plot)
+-        self.view.connect("notify::selected", lambda *_: self.draw())
++        self.view.connect("notify::selected", self.on_view_changed)
++        self.iec.connect("notify::selected", self.on_view_changed)
++
++    def on_view_changed(self, *_):
++        # Y ranges have different units in deviation / THD / phase views.
++        # Do not carry a manually entered dB range into degrees or percent.
++        self.plot.clear_manual_ylim()
++        self.draw()
+ 
+     def _buttons(self):
+         box = Gtk.Box(spacing=8)
+@@ -698,10 +1109,23 @@
+         return box
+ 
+     def go(self):
++        mode = ("flat", "riaa")[self.mode.get_selected()]
++        target = self.iec.get_selected()
++        if mode == "riaa" and target == 0:
++            self.say("Inverse-RIAA требует явно выбранного эталона: RIAA или RIAA + IEC.")
++            return
+         a = dict(f_lo=self.lo.get_value(), f_hi=self.hi.get_value(), dur=self.dur.get_value(),
+-                 level_1k_dbfs=self.lv.get_value(), mode=("riaa", "flat")[self.mode.get_selected()],
+-                 iec=self.iec.get_selected() == 1)
+-        self.win.run_job(lambda rig: m.sweep(rig, **a), self.done)
++                 level_1k_dbfs=self.lv.get_value(), mode=mode,
++                 iec=(target == 2))
++        profile, profile_note = self.win.get_response_calibration(self.win.rig_fs())
++        self.win.run_job(lambda rig: m.sweep(rig, response_calibration=profile, **a),
++                         lambda result: self.done_with_calibration(result, profile_note),
++                         "АЧХ: измеряю свип и проверяю профиль карты…")
++
++    def done_with_calibration(self, res, profile_note):
++        if profile_note:
++            res["calibration_note"] = profile_note
++        self.done(res)
+ 
+     def done(self, res):
+         self.res = self.win.last = res
+@@ -725,6 +1149,10 @@
+ 
+     def draw(self):
+         v = self.view.get_selected()
++        if v == 0 and self.iec.get_selected() == 0:
++            self.plot.set_traces([])
++            self.say("Для отклонения выбери эталон RIAA или RIAA + IEC. Обычная АЧХ доступна без эталона.")
++            return
+         key, ylabel, xk = [("riaa_dev_db", "дБ", "freq"), ("fr_norm_db", "дБ", "freq"),
+                            ("thd_db", "дБ", "thd_freq"), ("thd_pct", "%", "thd_freq"),
+                            ("phase_deg", "°", "freq")][v]
+@@ -737,19 +1165,25 @@
+                                "color": "ref" if tag else c, "dash": bool(tag), "width": 1.4})
+         if not traces:
+             return
++        if v == 0:
++            traces.append({"x": [self.lo.get_value(), self.hi.get_value()], "y": [0.0, 0.0],
++                           "label": "0 дБ · норма", "color": "ref", "dash": True, "width": 1.0})
+         f_lo = (self.res or self.ref)["f_lo"]
+         f_hi = (self.res or self.ref)["f_hi"]
+         self.plot.set_view((f_lo, f_hi), ylabel=ylabel)
+         self.plot.set_traces(traces)
+         if v == 0:
+-            self.plot.set_view(ylim=(-3, 3))
+-            ys = np.concatenate([t["y"] for t in self.plot.traces])
+-            if ys.size and np.max(np.abs(ys)) > 3:
+-                self.plot.autoscale_y()
++            # For a phono preamp, the useful question is normally a small
++            # deviation around the RIAA target, not a broad ±3 dB overview.
++            self.plot.set_view(ylim=(-0.5, 0.5))
++        elif v == 1:
++            self.plot.set_view(ylim=(-0.5, 0.5))
++        elif v == 2:
++            self.plot.autoscale_y(min_span=10.0)
+         elif v == 3:
+-            self.plot.autoscale_y(min_span=0.001)
++            self.plot.autoscale_y(min_span=0.01)
+         else:
+-            self.plot.autoscale_y()
++            self.plot.set_view(ylim=(-180.0, 180.0))
+ 
+ 
+ class ImdPage(Page):
+@@ -758,9 +1192,9 @@
+         self.f1 = spin("f1, Гц", 5, 40000, 10, 19000, 0)
+         self.f2 = spin("f2, Гц", 5, 40000, 10, 20000, 0)
+         self.mode = combo("Соотношение", ["1:1 (CCIF)", "4:1 (SMPTE/DIN)"], 0)
+-        self.lv = spin("Пик суммы, dBFS", -100, -0.5, 0.5, -12, 1)
++        self.lv = spin("Пиковый уровень суммы двух тонов, dBFS", -100, -0.5, 0.5, -6, 1)
+         plot = Plot(True, "Гц", "dBFS (линия)")
+-        plot.set_view((10, 48000), (-140, 0))
++        plot.set_view((10, 48000), (-180, 0))
+         super().__init__(win, group("Два тона", self.preset, self.f1, self.f2, self.mode, self.lv),
+                          button("Измерить IMD", self.go, True), plot=plot)
+         self.preset.connect("notify::selected", lambda *_: self.pick())
+@@ -778,19 +1212,43 @@
+ 
+     def done(self, res):
+         self.win.last = res
+-        self.say(m.text_imd(res))
+-        self.plot.set_traces([{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
+-                              for c, r in res["ch"].items()])
++        traces = [{"x": r["freq"][1:], "y": r["spec_db"][1:], "label": c, "color": c, "width": 1.0}
++                  for c, r in res["ch"].items()]
++        floor_profile = self.win.get_noise_floor_profile(self.win.rig_fs(), fresh=True)
++        if floor_profile is None:
++            self.say(m.text_imd(res) + "\n\nПол АЦП не измерен/не совпадает с настройками карты. "
++                     "Для пунктирной кривой измерь его на странице «Калибровка / Setup».")
++        else:
++            self.say(m.text_imd(res) + "\n\nПунктир — собственный шум АЦП этой карты, пересчитанный в полосу разрешения усреднённого спектра IMD.")
++        if floor_profile is not None:
++            n = int(getattr(self.win.rig, "n", self.win.rig_fs()))
++            blocks = max(1, int(getattr(self.win.rig, "blocks", 1)))
++            for ch in ("L", "R"):
++                floor_trace = _noise_floor_trace(floor_profile, ch, self.win.rig_fs(), n,
++                                                 average=blocks, line_bins=True)
++                if floor_trace is not None:
++                    floor_trace["label"] += f" · ENBW/{blocks}"
++                    traces.append(floor_trace)
++        ylo, yhi = _spectrum_ylim(traces, top=0.0)
++        self.plot.xlog = True
++        self.plot.set_view((10, min(0.45 * self.win.rig_fs(), 48000)), (ylo, yhi),
++                           ylabel="dBFS/bin · текущая полоса разрешения")
++        self.plot.set_traces(traces)
+ 
+ 
+ class NoisePage(Page):
+     def __init__(self, win):
+         self.sec = spin("Длительность, с", 2, 60, 1, 8, 0, "вход корректора закорочен или нагружен источником")
+-        plot = Plot(True, "Гц", "dBFS/sqrt(Гц)")
+-        plot.set_view((10, 48000), (-160, -60))
+-        super().__init__(win, group("Шум", self.sec), button("Измерить шум", self.go, True),
+-                         group("Каналы", Adw.ActionRow(title="Проникновение L↔R: 100 Гц, 1 кГц, 10 кГц")),
+-                         button("Измерить проникновение", self.go_x), plot=plot)
++        plot = Plot(True, "Гц", "dBFS/√Гц")
++        plot.set_view((50, 20000), (-150, 0))
++        self.xtalk_summary = Gtk.Label(label="Проникновение каналов ещё не измерено. Измеряются L→R и R→L на 100 Гц, 1 кГц и 10 кГц.",
++                                       xalign=0, wrap=True)
++        self.xtalk_summary.add_css_class("title-4")
++        super().__init__(win, group("Собственный шум входов", self.sec),
++                         button("ИЗМЕРИТЬ ШУМ АЦП", self.go, True),
++                         group("Проникновение между каналами", Adw.ActionRow(title="Тест: 100 Гц · 1 кГц · 10 кГц")),
++                         button("ИЗМЕРИТЬ ПРОНИКНОВЕНИЕ L↔R", self.go_x),
++                         self.xtalk_summary, plot=plot)
+ 
+     def go(self):
+         s = self.sec.get_value()
+@@ -798,12 +1256,40 @@
+ 
+     def done(self, res):
+         self.win.last = res
++        self.plot.clear_manual_ylim()
++        self.plot.xlog = True
++        self.plot.set_view((20, min(20000, 0.45 * self.win.rig_fs())), (-180, -60),
++                           xlabel="Частота, Гц", ylabel="Плотность шума, dBFS/√Гц")
+         self.say(m.text_noise(res))
+-        self.plot.set_traces([{"x": r["freq"][1:], "y": r["dens_dbfs"][1:], "label": c, "color": c, "width": 1.2}
+-                              for c, r in res["ch"].items()])
++        traces = [{"x": r["freq"][1:], "y": r["dens_dbfs"][1:], "label": c, "color": c, "width": 1.2}
++                  for c, r in res["ch"].items()]
++        ylo, yhi = _spectrum_ylim(traces, top=-60.0)
++        self.plot.set_view(ylim=(ylo, yhi))
++        self.plot.set_traces(traces)
+ 
+     def go_x(self):
+-        self.win.run_job(lambda rig: m.crosstalk(rig), lambda r: self.say(m.text_crosstalk(r)))
++        def done(result):
++            self.win.last = result
++            self.say(m.text_crosstalk(result))
++            self.xtalk_summary.set_text("РЕЗУЛЬТАТ ПРОНИКНОВЕНИЯ · " + "   |   ".join(
++                f"{row['f']:.0f} Гц: L→R {row['L→R']:.1f} дБ / R→L {row['R→L']:.1f} дБ"
++                for row in result["rows"]))
++            freqs = [row["f"] for row in result["rows"]]
++            self.plot.xlog = True
++            self.plot.clear_manual_ylim()
++            values = [float(row[key]) for row in result["rows"] for key in ("L→R", "R→L")]
++            y_min, y_max = min(values), max(values)
++            span = max(6.0, y_max - y_min)
++            self.plot.set_view((min(freqs) * 0.8, max(freqs) * 1.25),
++                               (y_min - 0.18 * span, y_max + 0.18 * span),
++                               xlabel="Частота, Гц", ylabel="Проникновение относительно основного канала, дБ")
++            self.plot.set_traces([
++                {"x": freqs, "y": [row["L→R"] for row in result["rows"]],
++                 "label": "L → R", "color": "L", "width": 2.6, "marker": True},
++                {"x": freqs, "y": [row["R→L"] for row in result["rows"]],
++                 "label": "R → L", "color": "R", "width": 2.6, "marker": True},
++            ])
++        self.win.run_job(lambda rig: m.crosstalk(rig), done, "измеряю проникновение между каналами")
+ 
+ 
+ class NoiseResponsePage(Page):
+@@ -815,16 +1301,18 @@
+         self.sec = spin("Длительность измерения, с", 4, 60, 1, 8, 0,
+                         "Одноразовый прогон; Live использует окно 4–8 с")
+         self.kind = combo("Тестовый сигнал", ["Розовый шум", "Белый шум", "Шум inverse-RIAA"], 0)
+-        self.level = spin("Цифровой RMS-уровень, dBFS", -80, -12, 1, -42, 0,
+-                          "Пиковый запас автоматически ограничивается до -3 dBFS")
++        self.level = spin("Желаемый RMS-уровень шума, dBFS", -60, -3, 1, -12, 0,
++                          "Это RMS, а не пик синуса. Если случайный шум превышает −3 dBFS peak, программа уменьшит его и отдельно покажет фактический RMS.")
+         self.lo = spin("Нижняя частота, Гц", 10, 1000, 1, 20, 0)
+         self.hi = spin("Верхняя частота, Гц", 1000, 40000, 100, 20000, 0)
+-        self.iec = combo("Эталон коррекции", ["RIAA", "RIAA + IEC"], 0)
+-        self.view = combo("График", self.VIEWS, 0)
+-        self.plot = Plot(True, "Частота, Гц", "Отклонение, дБ")
++        self.iec = combo("Сравнение с коррекцией", ["Без эталона", "RIAA", "RIAA + IEC"], 0,
++                         "По умолчанию показывается обычная АЧХ L/R. RIAA/IEC — дополнительные режимы, выбираются вручную.")
++        self.view = combo("График", self.VIEWS, 1)
++        self.plot = Plot(True, "Частота, Гц", "Отклонение от RIAA, дБ")
++        self.plot.set_view((20, 20000), (-0.5, 0.5))
+         self.live_toggle = Gtk.ToggleButton.new_with_label("Живая АЧХ")
+         self.live_toggle.add_css_class("suggested-action")
+-        self.live_hint = Gtk.Label(label="Live подаёт непрерывный периодический шум через ЦАП и обновляет H1 по входу АЦП.",
++        self.live_hint = Gtk.Label(label="Live подаёт непрерывный шум через ЦАП и обновляет H1 по входу АЦП.",
+                                    xalign=0, wrap=True)
+         self.live_hint.add_css_class("dim-label")
+         live_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+@@ -840,7 +1328,7 @@
+                                           "В результат входят ЦАП, аттенюатор, DUT и АЦП; без петлевого профиля "
+                                           "это относительное измерение."), xalign=0, wrap=True),
+                          plot=self.plot)
+-        self.view.connect("notify::selected", lambda *_: self.draw())
++        self.view.connect("notify::selected", self.on_view_changed)
+         self.live_toggle.connect("toggled", self.on_live_toggle)
+         self.res = None
+         self.live_period = None
+@@ -849,6 +1337,11 @@
+         self.live_busy = False
+         self.live_sequence = 0
+ 
++    def on_view_changed(self, *_):
++        # Units change between dB and coherence; restore that view's useful default.
++        self.plot.clear_manual_ylim()
++        self.draw()
++
+     def _settings(self):
+         if self.hi.get_value() <= self.lo.get_value():
+             raise ValueError("Верхняя частота должна быть выше нижней")
+@@ -856,7 +1349,10 @@
+         if self.hi.get_value() >= 0.45 * fs:
+             raise ValueError(f"Верхняя частота должна быть ниже 0.45·Fs ({0.45 * fs:.0f} Гц)")
+         kind = ("pink", "white", "riaa")[self.kind.get_selected()]
+-        iec = self.iec.get_selected() == 1
++        reference = self.iec.get_selected()
++        iec = reference == 2
++        if kind == "riaa" and reference == 0:
++            raise ValueError("Для шума inverse-RIAA выбери эталон RIAA или RIAA + IEC. Для обычной АЧХ оставь розовый/белый шум.")
+         preemph = (lambda f: 10.0 ** (-dsp.riaa_playback_db(np.maximum(f, 1.0), iec) / 20.0)) if kind == "riaa" else None
+         return fs, kind, iec, preemph
+ 
+@@ -871,10 +1367,19 @@
+             return
+         args = (self.sec.get_value(), kind, self.level.get_value(), self.lo.get_value(),
+                 self.hi.get_value(), iec)
+-        self.win.run_job(lambda rig: m.noise_response(rig, *args), self.done, "Шумовая АЧХ…")
++        profile, profile_note = self.win.get_response_calibration(self.win.rig_fs())
++        self.win.run_job(lambda rig: m.noise_response(rig, *args, response_calibration=profile),
++                         lambda result: self.done_with_calibration(result, profile_note), "Шумовая АЧХ…")
++
++    def done_with_calibration(self, res, profile_note):
++        if profile_note:
++            res["calibration_note"] = profile_note
++        res["has_riaa_reference"] = self.iec.get_selected() in (1, 2)
++        self.done(res)
+ 
+     def done(self, res):
+         self.res = res
++        res["display_view"] = self.view.get_selected()
+         self.win.last = res
+         self.say(m.text_noise_response(res))
+         self.draw()
+@@ -884,12 +1389,20 @@
+             return
+         traces = []
+         key = ("riaa_dev_db", "fr_norm_db", "coherence")[self.view.get_selected()]
+-        self.plot.set_view((self.lo.get_value(), self.hi.get_value()),
+-                           ((0, 1.05) if key == "coherence" else (-40, 40) if key == "fr_norm_db" else (-6, 6)),
++        if key == "riaa_dev_db" and not self.res.get("has_riaa_reference", False):
++            self.plot.set_traces([])
++            self.say("Отклонение от RIAA не выбрано: оставь обычную нормированную АЧХ или выбери RIAA/IEC в поле «Сравнение с коррекцией» и повтори измерение.")
++            return
++        default_ylim = ((0, 1.05) if key == "coherence" else
++                        (-0.5, 0.5) if key == "fr_norm_db" else (-0.5, 0.5))
++        self.plot.set_view((self.lo.get_value(), self.hi.get_value()), default_ylim,
+                            ylabel="Когерентность" if key == "coherence" else "дБ")
+         for ch in ("L", "R"):
+             r = self.res["ch"][ch]
+             traces.append({"x": r["freq"], "y": r[key], "label": ch, "color": ch, "width": 1.5})
++        if key == "riaa_dev_db":
++            traces.append({"x": [self.lo.get_value(), self.hi.get_value()], "y": [0.0, 0.0],
++                           "label": "0 дБ · норма", "color": "ref", "dash": True, "width": 1.0})
+         self.plot.set_traces(traces)
+ 
+     def on_live_toggle(self, btn):
+@@ -956,12 +1469,17 @@
+         source = self.live_period.copy()
+         fs = self.win.rig_fs()
+         lo, hi = float(self.lo.get_value()), float(self.hi.get_value())
+-        iec = self.iec.get_selected() == 1
++        iec = self.iec.get_selected() == 2
+         sequence = self.live_sequence
++        response_profile, response_note = self.win.get_response_calibration(fs)
+ 
+         def work():
+             try:
+                 result = m.noise_transfer_capture(source, rec, fs, lo, hi, iec)
++                if response_profile is not None:
++                    m.apply_response_calibration(result, response_profile)
++                elif response_note:
++                    result.setdefault("warnings", []).append(response_note)
+                 err = None
+             except Exception as exc:  # noqa: BLE001
+                 result, err = None, exc
+@@ -1046,7 +1564,10 @@
+             return
+         test = ("3150", "phase", "xtalk-L", "xtalk-R", "sum", "skating", "resonance", "response")[self.test.get_selected()]
+         start_s, duration_s = self.start.get_value(), self.duration.get_value()
+-        self.win.status.set_text("Анализ записи TACET…")
++        self._vinyl_started = time.monotonic()
++        self.set_job_busy(True)
++        self.set_job_status("running", "читаю WAV и выполняю анализ")
++        self.win.status.set_text("Анализ TACET…")
+         self.win.spinner.start()
+ 
+         def work():
+@@ -1080,11 +1601,17 @@
+ 
+     def _finish(self, result, err):
+         self.win.spinner.stop()
+-        self.win.status.set_text("")
++        elapsed = time.monotonic() - getattr(self, "_vinyl_started", time.monotonic())
+         if err is not None:
++            self.win.status.set_text("Ошибка анализа")
+             self.say(f"Ошибка анализа WAV:\n{type(err).__name__}: {err}")
++            self.set_job_status("error", f"{type(err).__name__}: {err}")
++            self.set_job_busy(False)
+             return False
++        self.win.status.set_text(f"Готово · {elapsed:.1f} с")
+         self.say(vinyl.text_result(result))
++        self.set_job_status("success", "", elapsed)
++        self.set_job_busy(False)
+         if result["kind"] not in ("wow_flutter_unweighted", "arm_resonance", "skating_300", "frequency_response"):
+             self.plot.set_traces([])
+         if result["kind"] == "frequency_response":
+@@ -1118,7 +1645,10 @@
+ 
+ 
+ class SetupPage(Page):
++    """Per-device voltage, frequency-response and ADC noise calibration."""
++
+     def __init__(self, win):
++        self.win = win
+         c = win.cal
+         self.mains = combo("Частота сети", ["50 Гц", "60 Гц"], 0 if c["mains"] == 50 else 1)
+         self.band = spin("Верхняя граница THD/шума, Гц", 5000, 40000, 1000, c["band_hi"], 0)
+@@ -1131,13 +1661,101 @@
+         self.meter_l = spin("Мультиметр: выход DAC L, мВ RMS", 0, 20000, 0.1, 0, 1,
+                             "Подать 1 кГц −6 dBFS, измерять непосредственно на выходе DAC")
+         self.meter_r = spin("Мультиметр: выход DAC R, мВ RMS", 0, 20000, 0.1, 0, 1)
+-        super().__init__(win, group("Измерительные параметры", self.mains, self.band, self.att),
+-                         group("Калибровка ЦАП (независимо L/R)", self.out_l, self.out_r),
+-                         group("Калибровка АЦП (независимо L/R)", self.in_l, self.in_r),
++        self.auto_response = Adw.SwitchRow(title="Автоматически применять калибровку АЧХ/фазы этой карты",
++                                          subtitle="Отдельный профиль для каждой физической карты и Fs. Выключи, чтобы видеть тракт без поправки.")
++        self.auto_response.set_active(bool(c.get("auto_apply_response", True)))
++        self.auto_noise = Adw.SwitchRow(title="Автоматически показывать шумовой пол этой карты",
++                                       subtitle="Профиль привязан к физической карте, Fs и состоянию микшера.")
++        self.auto_noise.set_active(bool(c.get("auto_show_noise_floor", True)))
++        self.card_status = Gtk.Label(label="", xalign=0, wrap=True)
++        self.card_status.add_css_class("title-4")
++        self.fr_status = Adw.ActionRow(title="Калибровка АЧХ карты")
++        self.noise_status = Adw.ActionRow(title="Шумовой пол АЦП")
++        self.fr_status.set_subtitle("Для текущей карты и частоты калибровка ещё не выполнена")
++        self.noise_status.set_subtitle("Для текущей карты и частоты измерение ещё не выполнено")
++        info = Gtk.Label(
++            label=("АЧХ/ФАЗА ИЗМЕРИТЕЛЬНОЙ КАРТЫ. Соедини ЦАП L→АЦП L и ЦАП R→АЦП R напрямую. "
++                   "Нажми кнопку калибровки один раз для каждой физической карты и каждой нужной частоты дискретизации. "
++                   "Профили сохраняются в ~/.config/valvebench/config.json отдельно по устойчивому ID карты и Fs; "
++                   "при выборе этой карты калибровка подхватывается автоматически, даже если номер hw изменился. "
++                   "Коррекция выравнивает частотный отклик и фазу ЦАП+АЦП по каждому каналу, но не калибрует абсолютные вольты. "
++                   "Если изменятся уровни/маршрутизация микшера, профиль будет отклонён до повторной калибровки.\n\n"
++                   "ШУМОВОЙ ПОЛ АЦП. Перед измерением отключи DUT и замкни входы АЦП либо подключи эквивалентное сопротивление источника. "
++                   "Профиль также сохраняется отдельно для карты и Fs. Он показывается пунктиром в Спектре, THD и IMD; "
++                   "это один и тот же измеренный спектральный шум, пересчитанный под разрешение конкретного графика. "
++                   "Он не вычитается из результата и не заменяет шум проверяемого устройства."),
++            xalign=0, wrap=True)
++        info.add_css_class("dim-label")
++        super().__init__(win,
++                         group("Измерительные параметры", self.mains, self.band, self.att),
++                         group("Калибровка ЦАП (для абсолютного напряжения)", self.out_l, self.out_r),
++                         group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r),
+                          group("Показания мультиметра при −6 dBFS", self.meter_l, self.meter_r),
+                          button("Применить показания мультиметра к DAC L/R", self.cal_out),
+                          button("Калибровать ADC L/R по петле DAC→ADC", self.cal_in),
++                         group("Автоматическая коррекция и отображение", self.auto_response, self.auto_noise),
++                         self.card_status, info, self.fr_status,
++                         button("1. КАЛИБРОВАТЬ АЧХ ЗВУКОВОЙ КАРТЫ · ПРЯМАЯ ПЕТЛЯ", self.calibrate_response, True),
++                         self.noise_status,
++                         button("2. ИЗМЕРИТЬ ШУМОВОЙ ПОЛ АЦП", self.calibrate_noise),
++                         Gtk.Label(label=("Проверка тактов сравнивает фактическую частоту тестового тона в записи АЦП "
++                                          "с частотой, которую выдаёт ЦАП. Это проверка расхождения частот дискретизации, "
++                                          "а не синхронизации часов компьютера."), xalign=0, wrap=True),
++                         button("ПРОВЕРИТЬ СОВПАДЕНИЕ ЧАСТОТ ЦАП И АЦП", self.check_clock),
+                          button("Сохранить настройки", self.apply))
++        self.auto_response.connect("notify::active", self.on_auto_changed)
++        self.auto_noise.connect("notify::active", self.on_auto_changed)
++        self.refresh_from_calibration()
++
++    def on_auto_changed(self, *_):
++        self.win.cal["auto_apply_response"] = self.auto_response.get_active()
++        self.win.cal["auto_show_noise_floor"] = self.auto_noise.get_active()
++        calib.save(self.win.cal)
++
++    def refresh_from_calibration(self):
++        c = self.win.cal
++        self.mains.set_selected(0 if c["mains"] == 50 else 1)
++        self.band.set_value(float(c["band_hi"]))
++        self.att.set_value(float(c["att_db"]))
++        self.out_l.set_value(float(c["out_fs_vrms"][0] or 0))
++        self.out_r.set_value(float(c["out_fs_vrms"][1] or 0))
++        self.in_l.set_value(float(c["in_fs_vrms"][0] or 0))
++        self.in_r.set_value(float(c["in_fs_vrms"][1] or 0))
++        self.auto_response.set_active(bool(c.get("auto_apply_response", True)))
++        self.auto_noise.set_active(bool(c.get("auto_show_noise_floor", True)))
++        fs = self.win.rig_fs()
++        hw, label = self.win.cards[self.win.dev.get_selected()]
++        self.card_status.set_text(f"ТЕКУЩАЯ КАРТА: {label}\nПрофиль: {stable_device_identity(hw)} · Fs {fs/1000:g} кГц")
++        fr = c.get("frequency_response_profiles", {}).get(str(fs))
++        nf = c.get("noise_floor_profiles", {}).get(str(fs))
++        current_fp = None
++        if hw != "sim" and (fr or nf):
++            current_fp = gainmatch.mixer_fingerprint_from_hw(hw)
++
++        def profile_state(profile, auto_enabled):
++            if not profile:
++                return "калибровка не выполнена"
++            if profile.get("device_key") != stable_device_identity(hw) or int(profile.get("fs", -1)) != int(fs):
++                return "профиль принадлежит другой карте или частоте"
++            expected = profile.get("mixer_fingerprint")
++            if hw != "sim" and (not expected or current_fp is None or current_fp != expected):
++                return "настройки микшера изменились — нужна повторная калибровка"
++            if not auto_enabled:
++                return "профиль сохранён, автоматическое применение выключено"
++            return "профиль активен · будет применён автоматически"
++
++        if fr:
++            self.fr_status.set_subtitle(
++                f"{fr.get('f_lo', 0):.0f}–{fr.get('f_hi', 0):.0f} Гц · {fr.get('created', 'дата не указана')} · "
++                + profile_state(fr, self.auto_response.get_active()))
++        else:
++            self.fr_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет профиля")
++        if nf:
++            self.noise_status.set_subtitle(
++                f"{nf.get('created', 'дата не указана')} · "
++                + profile_state(nf, self.auto_noise.get_active()))
++        else:
++            self.noise_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет измерения")
+ 
+     def apply(self):
+         c = self.win.cal
+@@ -1146,8 +1764,87 @@
+         c["att_db"] = self.att.get_value()
+         c["out_fs_vrms"] = [self.out_l.get_value() or None, self.out_r.get_value() or None]
+         c["in_fs_vrms"] = [self.in_l.get_value() or None, self.in_r.get_value() or None]
++        c["auto_apply_response"] = self.auto_response.get_active()
++        c["auto_show_noise_floor"] = self.auto_noise.get_active()
+         calib.save(c)
+-        self.win.toast("Настройки сохранены")
++        self.win.toast("Настройки и калибровки сохранены")
++
++    def calibrate_response(self):
++        dev = self.win.cards[self.win.dev.get_selected()][0]
++        key = stable_device_identity(dev)
++        fs = self.win.rig_fs()
++        hw = dev
++        before_fp = gainmatch.mixer_fingerprint_from_hw(hw)
++        self.fr_status.set_subtitle("Выполняется плоский свип по прямой петле…")
++
++        def job(rig):
++            if getattr(rig.be, "hw", "sim") != hw:
++                raise m.MeasureError("выбранная звуковая карта изменилась; выбери её снова")
++            res = m.sweep(rig, f_lo=20.0, f_hi=min(20000.0, 0.40 * rig.fs), dur=12.0,
++                          level_1k_dbfs=-12.0, mode="flat", iec=False)
++            after_fp = gainmatch.mixer_fingerprint_from_hw(hw)
++            if hw != "sim" and (before_fp is None or after_fp is None):
++                raise m.MeasureError("не удалось прочитать состояние ALSA-микшера; профиль не сохранён")
++            if before_fp and after_fp != before_fp:
++                raise m.MeasureError("настройки микшера изменились во время калибровки; профиль не сохранён")
++            profile = m.build_response_calibration(res, key, after_fp, fs=rig.fs)
++            profile["mixer_fingerprint"] = after_fp
++            return profile
++
++        def done(profile):
++            self.win.cal["frequency_response_profiles"][str(fs)] = profile
++            self.win._mixer_fingerprint_cache.clear()
++            calib.save(self.win.cal)
++            self.refresh_from_calibration()
++            self.say("КАЛИБРОВКА АЧХ/ФАЗЫ СОХРАНЕНА ДЛЯ ЭТОЙ КАРТЫ И ЧАСТОТЫ. "
++                     "Теперь можно подключить проверяемое устройство. При включённой автокоррекции "
++                     "измерение будет очищено от собственного частотного отклика ЦАП/АЦП отдельно для L и R.")
++            self.win.toast("Профиль АЧХ карты сохранён")
++
++        self.win.run_job(job, done, "калибрую АЧХ/фазу карты по плоской петле L→L, R→R")
++
++    def calibrate_noise(self):
++        dev = self.win.cards[self.win.dev.get_selected()][0]
++        key = stable_device_identity(dev)
++        fs = self.win.rig_fs()
++        before_fp = gainmatch.mixer_fingerprint_from_hw(dev)
++        self.noise_status.set_subtitle("Записываю 12 секунд тишины с входами, нагруженными на землю/сопротивление…")
++
++        def job(rig):
++            res = m.noise(rig, seconds=12.0)
++            after_fp = gainmatch.mixer_fingerprint_from_hw(dev)
++            if dev != "sim" and (before_fp is None or after_fp is None):
++                raise m.MeasureError("не удалось прочитать состояние ALSA-микшера; шумовой профиль не сохранён")
++            if before_fp and after_fp != before_fp:
++                raise m.MeasureError("микшер изменился во время записи; шумовой профиль не сохранён")
++            if any("ПЕРЕГРУЗКА" in str(w).upper() for w in res.get("warnings", [])):
++                raise m.MeasureError("АЦП перегружен во время измерения шума; профиль не сохранён")
++            profile = {
++                "kind": "adc_noise_floor", "schema": 1, "device_key": key,
++                "fs": int(rig.fs), "created": time.strftime("%Y-%m-%d %H:%M:%S"),
++                "mixer_fingerprint": after_fp,
++                "frequency_hz": np.asarray(res["ch"]["L"]["freq"], dtype=float).tolist(),
++                "channels": {ch: {"density_dbfs_sqrt_hz": np.asarray(res["ch"][ch]["dens_dbfs"], dtype=float).tolist()}
++                             for ch in ("L", "R")},
++            }
++            return profile, res
++
++        def done(result):
++            profile, measured = result
++            self.win.cal["noise_floor_profiles"][str(fs)] = profile
++            self.win._mixer_fingerprint_cache.clear()
++            calib.save(self.win.cal)
++            self.refresh_from_calibration()
++            self.say("ШУМОВОЙ ПОЛ АЦП СОХРАНЁН ДЛЯ ЭТОЙ КАРТЫ И ЧАСТОТЫ. Он будет показан пунктиром "
++                     "в Спектре, THD и IMD. Это одна и та же плотность шума; высота линии в dBFS/bin "
++                     "зависит от полосы разрешения FFT.\n\n" + m.text_noise(measured))
++            self.win.toast("Шумовой профиль карты сохранён")
++
++        self.win.run_job(job, done, "измеряю шумовой пол АЦП (входы должны быть нагружены)")
++
++    def check_clock(self):
++        self.win.run_job(m.clock_check, lambda result: self.say(m.text_clock(result)),
++                         "проверяю согласование тактов ЦАП и АЦП")
+ 
+     def cal_out(self):
+         ml, mr = self.meter_l.get_value(), self.meter_r.get_value()
+@@ -1176,7 +1873,7 @@
+             self.in_l.set_value(self.win.cal["in_fs_vrms"][0])
+             self.in_r.set_value(self.win.cal["in_fs_vrms"][1])
+             self.apply()
+-        self.win.run_job(job, done, "Калибровка ADC по петле…")
++        self.win.run_job(job, done, "калибровка ADC по петле…")
+ 
+ 
+ # --------------------------------------------------------------------------- окно
+@@ -1186,6 +1883,12 @@
+     def __init__(self, app):
+         super().__init__(application=app, title="ValveBench", default_width=1320, default_height=760)
+         self.cal = calib.load()
++        self.ui_prefs = preferences.load()
++        migrated_prefs = preferences.migrate_0_1_16_defaults(self.ui_prefs)
++        if migrated_prefs != self.ui_prefs:
++            self.ui_prefs = migrated_prefs
++            preferences.save(self.ui_prefs)
++        self._mixer_fingerprint_cache = {}
+         self.be = None
+         self.rig = None
+         self.busy = False
+@@ -1197,14 +1900,18 @@
+         header = Adw.HeaderBar()
+         self.dev = Gtk.DropDown.new_from_strings([n for _, n in self.cards])
+         saved_device = self.cal["device"]
+-        sel = next((i for i, (d, _) in enumerate(self.cards) if d == saved_device), 0)
+-        if self.cards[sel][0] != saved_device:
+-            self.cal["device"] = "sim"
++        saved_key = self.cal.get("device_key", "")
++        card_keys = [stable_device_identity(hw) for hw, _label in self.cards]
++        sel = next((i for i, key in enumerate(card_keys) if saved_key and key == saved_key), -1)
++        if sel < 0:
++            sel = next((i for i, (d, _) in enumerate(self.cards) if d == saved_device), 0)
++        selected_hw = self.cards[sel][0]
++        if selected_hw == "sim" and saved_device != "sim":
+             self.invalid_saved_device = saved_device
+         else:
+             self.invalid_saved_device = None
+         self.dev.set_selected(sel)
+-        selected_hw = self.cards[sel][0]
++        self.cal.activate_profile(stable_device_identity(selected_hw), selected_hw)
+         self.rate_values = self._rates_for_device(selected_hw)
+         self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in self.rate_values])
+         preferred_rate = int(self.cal["fs"])
+@@ -1213,7 +1920,8 @@
+         self.rate.set_selected(rate_sel)
+         self.cal["fs"] = self.rate_values[rate_sel]
+         self._updating_rate = False
+-        self.live_btn = Gtk.ToggleButton(label="АУДИО ВЫКЛ")
++        self.live_btn = Gtk.ToggleButton(label="АУДИОПОТОК: ОТКРЫТЬ")
++        self.live_btn.set_tooltip_text("Открыть непрерывный поток звука: АЦП начинает захват входа, ЦАП остаётся в тишине до включения генератора. Сигнал измерения подаётся отдельной кнопкой генератора.")
+         self.live_btn.add_css_class("pill")
+         self.live_btn.connect("toggled", self.on_live)
+         self.generator_btn = Gtk.ToggleButton(label="▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+@@ -1227,7 +1935,6 @@
+         header.pack_start(self.dev)
+         header.pack_start(self.rate)
+         header.pack_start(self.live_btn)
+-        header.pack_start(button("Такт", self.check_clock))
+         header.pack_end(self.spinner)
+         header.pack_end(self.status)
+         self.dev.connect("notify::selected", self.on_device_changed)
+@@ -1237,6 +1944,7 @@
+         self.live = LivePage(self)
+         self.spectrum = SpectrumPage(self)
+         self.noise_response_page = NoiseResponsePage(self)
++        self.setup = SetupPage(self)
+         pages = (
+             ("live", "Gain Match / Уровень", self.live),
+             ("spectrum", "Спектр (большой экран)", self.spectrum),
+@@ -1246,16 +1954,21 @@
+             ("imd", "IMD", ImdPage(self)),
+             ("noise", "Шум / Crosstalk", NoisePage(self)),
+             ("vinyl", "TACET / Vinyl Test", VinylPage(self)),
+-            ("setup", "Калибровка / Setup", SetupPage(self)),
++            ("setup", "Калибровка / Setup", self.setup),
+         )
++        self.page_map = {name: page for name, _title, page in pages}
+         for name, title, page in pages:
+             self.stack.add_titled(page, name, title)
++        self._restore_and_bind_preferences()
+         side = Gtk.StackSidebar(stack=self.stack)
+         side.set_size_request(200, -1)
+         body = Gtk.Box()
++        body.set_hexpand(True)
++        body.set_vexpand(True)
+         body.append(side)
+         body.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+         self.stack.set_hexpand(True)
++        self.stack.set_vexpand(True)
+         self.stack.connect("notify::visible-child", self.on_page_changed)
+         body.append(self.stack)
+         self.toasts.set_child(body)
+@@ -1267,6 +1980,198 @@
+         if self.invalid_saved_device:
+             self.toast(f"Сохранённое устройство {self.invalid_saved_device} не найдено. Выбран симулятор; выбери нужную карту вверху.")
+ 
++    @staticmethod
++    def _widget_tree(root):
++        child = root.get_first_child()
++        while child is not None:
++            yield child
++            yield from Window._widget_tree(child)
++            child = child.get_next_sibling()
++
++    def _device_scope(self):
++        """Preference scope for card-dependent display ranges, not ALSA card numbers."""
++        dev = self.cards[self.dev.get_selected()][0]
++        return f"{stable_device_identity(dev)}@{int(self.rig_fs())}"
++
++    def _device_pref_key(self, page_key, name):
++        return f"{page_key}/device/{self._device_scope()}/{name}"
++
++    def _restore_and_bind_preferences(self):
++        """Restore named settings; Y ranges and FFT floor/top are per card and Fs."""
++        for page_key, page in self.page_map.items():
++            if page_key == "setup":  # physical calibration fields live in the per-card profile
++                continue
++            for widget in self._widget_tree(page):
++                name = widget.get_name() if hasattr(widget, "get_name") else ""
++                if not name or not (name.startswith("pref_") or name in ("plot_y_min", "plot_y_max")):
++                    continue
++                card_scoped = (page_key == "spectrum" and name in
++                               ("pref_spectrum_floor", "pref_spectrum_top"))
++                key = self._device_pref_key(page_key, name) if card_scoped else f"{page_key}/{name}"
++                legacy_key = f"{page_key}/{name}"
++                if key in self.ui_prefs:
++                    value = self.ui_prefs[key]
++                elif card_scoped and legacy_key in self.ui_prefs:
++                    value = self.ui_prefs[legacy_key]
++                    self.ui_prefs[key] = value
++                else:
++                    value = None
++                if value is not None:
++                    try:
++                        if isinstance(widget, Adw.SpinRow):
++                            widget.set_value(float(value))
++                        elif isinstance(widget, Adw.ComboRow):
++                            count = widget.get_model().get_n_items()
++                            if 0 <= int(value) < count:
++                                widget.set_selected(int(value))
++                        elif isinstance(widget, Adw.EntryRow):
++                            widget.set_text(str(value))
++                        elif isinstance(widget, Gtk.DropDown):
++                            count = widget.get_model().get_n_items()
++                            if 0 <= int(value) < count:
++                                widget.set_selected(int(value))
++                        elif isinstance(widget, Gtk.SpinButton):
++                            widget.set_value(float(value))
++                    except (TypeError, ValueError, AttributeError):
++                        pass
++                if card_scoped and isinstance(widget, Gtk.DropDown):
++                    widget.connect("notify::selected",
++                                   lambda w, _p, pk=page_key, nm=name:
++                                   self._store_pref(self._device_pref_key(pk, nm), w.get_selected()))
++                elif isinstance(widget, Adw.SpinRow):
++                    widget.connect("notify::value", lambda w, _p, k=key: self._store_pref(k, w.get_value()))
++                elif isinstance(widget, (Adw.ComboRow, Gtk.DropDown)):
++                    widget.connect("notify::selected", lambda w, _p, k=key: self._store_pref(k, w.get_selected()))
++                elif isinstance(widget, Adw.EntryRow):
++                    widget.connect("notify::text", lambda w, _p, k=key: self._store_pref(k, w.get_text()))
++                elif isinstance(widget, Gtk.SpinButton):
++                    widget.connect("value-changed", lambda w, k=key: self._store_pref(k, w.get_value()))
++            # Migrate an old global plot range to the currently selected card once.
++            if isinstance(page, Page) and page.plot is not None:
++                scale_key = self._device_pref_key(page_key, "plot_scale")
++                scale = self.ui_prefs.get(scale_key)
++                if scale is None:
++                    scale = self.ui_prefs.get(f"{page_key}/plot_scale")
++                    if isinstance(scale, dict):
++                        self.ui_prefs[scale_key] = scale
++                if isinstance(scale, dict):
++                    view = page.view.get_selected() if hasattr(page, "view") else None
++                    if scale.get("view") == view:
++                        try:
++                            page.plot.set_manual_ylim(float(scale["min"]), float(scale["max"]))
++                        except (KeyError, TypeError, ValueError):
++                            pass
++        preferences.save(self.ui_prefs)
++
++    def restore_device_scoped_preferences(self):
++        """Load per-card graph ranges and FFT dB bounds after card/Fs changes."""
++        scope = self._device_scope()
++        for page_key, page in self.page_map.items():
++            if page_key == "spectrum":
++                for control_name, widget in (("pref_spectrum_floor", self.spectrum.floor),
++                                             ("pref_spectrum_top", self.spectrum.top)):
++                    key = f"spectrum/device/{scope}/{control_name}"
++                    value = self.ui_prefs.get(key)
++                    if value is not None:
++                        try:
++                            if 0 <= int(value) < widget.get_model().get_n_items():
++                                widget.set_selected(int(value))
++                        except (TypeError, ValueError):
++                            pass
++            if isinstance(page, Page) and page.plot is not None:
++                page.plot.manual_ylim = None
++                scale = self.ui_prefs.get(f"{page_key}/device/{scope}/plot_scale")
++                view = page.view.get_selected() if hasattr(page, "view") else None
++                if isinstance(scale, dict) and scale.get("view") == view:
++                    try:
++                        page.plot.set_manual_ylim(float(scale["min"]), float(scale["max"]))
++                    except (KeyError, TypeError, ValueError):
++                        pass
++                else:
++                    page._sync_plot_scale(page.plot.ylim)
++
++    def _store_pref(self, key, value):
++        self.ui_prefs[key] = value
++        try:
++            preferences.save(self.ui_prefs)
++        except OSError as exc:
++            self.toast(f"Не удалось сохранить настройку интерфейса: {exc}")
++
++    def persist_plot_scale(self, page):
++        page_key = next((name for name, obj in self.page_map.items() if obj is page), None)
++        if page_key is None or page.plot is None:
++            return
++        view = page.view.get_selected() if hasattr(page, "view") else None
++        self.ui_prefs[self._device_pref_key(page_key, "plot_scale")] = {
++            "view": view, "min": float(page.plot.ylim[0]), "max": float(page.plot.ylim[1])}
++        try:
++            preferences.save(self.ui_prefs)
++        except OSError as exc:
++            self.toast(f"Не удалось сохранить масштаб: {exc}")
++
++    def clear_plot_scale_preference(self, page):
++        page_key = next((name for name, obj in self.page_map.items() if obj is page), None)
++        if page_key:
++            self.ui_prefs.pop(self._device_pref_key(page_key, "plot_scale"), None)
++            preferences.save(self.ui_prefs)
++
++    def _cached_mixer_fingerprint(self, dev):
++        # Live FFT asks for a noise-floor overlay several times per second.
++        # Do not spawn `amixer` on every frame; re-check at most every 3 seconds.
++        now = time.monotonic()
++        key = str(dev)
++        cached = self._mixer_fingerprint_cache.get(key)
++        if cached and now - cached[0] < 3.0:
++            return cached[1]
++        fingerprint = gainmatch.mixer_fingerprint_from_hw(dev)
++        self._mixer_fingerprint_cache[key] = (now, fingerprint)
++        return fingerprint
++
++    def get_response_calibration(self, fs):
++        """Return a valid per-card/per-rate response profile or a human-readable reason."""
++        if not bool(self.cal.get("auto_apply_response", True)):
++            return None, "АЧХ показана без коррекции измерительной карты (автоприменение отключено)."
++        dev = self.cards[self.dev.get_selected()][0]
++        key = stable_device_identity(dev)
++        profile = self.cal.get("frequency_response_profiles", {}).get(str(int(fs)))
++        if not isinstance(profile, dict):
++            return None, f"Для этой карты и {int(fs)} Гц нет калибровки АЧХ; показан сырой тракт."
++        if profile.get("device_key") != key or int(profile.get("fs", -1)) != int(fs):
++            return None, "Профиль АЧХ принадлежит другой карте/частоте и не применён."
++        expected = profile.get("mixer_fingerprint")
++        if dev != "sim" and not expected:
++            return None, "У профиля нет снимка ALSA-микшера; он не применён. Повтори калибровку."
++        if expected:
++            # A one-shot response measurement must never use a 3-second stale
++            # mixer snapshot: ALSA volume/source may have changed just before go().
++            actual = gainmatch.mixer_fingerprint_from_hw(dev)
++            self._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), actual)
++            if actual is None or actual != expected:
++                return None, "Настройки микшера изменились после калибровки; АЧХ показана без старой поправки. Повтори калибровку петли."
++        return profile, f"АЧХ скорректирована по калибровке {profile.get('created', '')} этой карты."
++
++    def get_noise_floor_profile(self, fs, fresh=False):
++        """Return measured card noise density only when physical card/mixer/Fs match."""
++        if not bool(self.cal.get("auto_show_noise_floor", True)):
++            return None
++        dev = self.cards[self.dev.get_selected()][0]
++        key = stable_device_identity(dev)
++        profile = self.cal.get("noise_floor_profiles", {}).get(str(int(fs)))
++        if not isinstance(profile, dict) or profile.get("kind") != "adc_noise_floor":
++            return None
++        if profile.get("device_key") != key or int(profile.get("fs", -1)) != int(fs):
++            return None
++        expected = profile.get("mixer_fingerprint")
++        if dev != "sim" and not expected:
++            return None
++        if expected:
++            actual = (gainmatch.mixer_fingerprint_from_hw(dev) if fresh
++                      else self._cached_mixer_fingerprint(dev))
++            self._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), actual)
++            if actual is None or actual != expected:
++                return None
++        return profile
++
+     def _rates_for_device(self, dev):
+         if dev == "sim":
+             return list(RATES)
+@@ -1277,8 +2182,9 @@
+         return available or list(RATES)
+ 
+     def on_device_changed(self, *_):
++        self._mixer_fingerprint_cache.clear()
+         dev, _label = self.cards[self.dev.get_selected()]
+-        self.cal["device"] = dev
++        self.cal.activate_profile(stable_device_identity(dev), dev)
+         old_rate = int(self.cal.get("fs", 96000))
+         self.rate_values = self._rates_for_device(dev)
+         new_index = (self.rate_values.index(old_rate) if old_rate in self.rate_values
+@@ -1290,13 +2196,26 @@
+         self.cal["fs"] = self.rate_values[new_index]
+         self.reset_rig()
+         calib.save(self.cal)
++        if hasattr(self, "live"):
++            self.live.refresh_gain_reference()
++        if hasattr(self, "setup"):
++            self.setup.refresh_from_calibration()
++        if hasattr(self, "page_map"):
++            self.restore_device_scoped_preferences()
+ 
+     def on_rate_changed(self, *_):
+         if getattr(self, "_updating_rate", False):
+             return
+         self.reset_rig()
++        self._mixer_fingerprint_cache.clear()
+         self.cal["fs"] = self.rig_fs()
+         calib.save(self.cal)
++        if hasattr(self, "live"):
++            self.live.refresh_gain_reference()
++        if hasattr(self, "setup"):
++            self.setup.refresh_from_calibration()
++        if hasattr(self, "page_map"):
++            self.restore_device_scoped_preferences()
+ 
+     def on_page_changed(self, *_):
+         page = self.stack.get_visible_child()
+@@ -1343,7 +2262,7 @@
+         active = btn.get_active()
+         if active and not self.live_on:
+             btn.set_active(False)
+-            self.toast("Сначала включи «АУДИО ВКЛ»: это открывает физические ЦАП и АЦП.")
++            self.toast("Сначала нажми «АУДИОПОТОК: ОТКРЫТЬ». Это запускает захват АЦП и подготавливает ЦАП; тестовый сигнал пока не подаётся.")
+             return
+         btn.set_label("ГЕНЕРАТОР: ВКЛ" if active else "ГЕНЕРАТОР: ВЫКЛ")
+         if active:
+@@ -1366,7 +2285,7 @@
+             self.live_btn.set_active(False)
+             return
+         self.live_on = True
+-        self.live_btn.set_label("АУДИО ВКЛ")
++        self.live_btn.set_label("АУДИОПОТОК: ЗАКРЫТЬ")
+         self.live_btn.add_css_class("suggested-action")
+         self.generator_btn.set_sensitive(True)
+         self.generator_btn.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+@@ -1387,7 +2306,7 @@
+         if self.be is not None:
+             self.be.live_stop()
+         self.live_on = False
+-        self.live_btn.set_label("АУДИО ВЫКЛ")
++        self.live_btn.set_label("АУДИОПОТОК: ОТКРЫТЬ")
+         self.live_btn.remove_css_class("suggested-action")
+         self.spectrum.reset_average()
+         if self.spectrum.timer is not None:
+@@ -1398,34 +2317,67 @@
+ 
+     # ---- фоновые задачи
+     def run_job(self, fn, done, msg="Измерение…"):
++        # Keep the status on the page that launched the measurement. It remains
++        # visible after completion; a disappearing header spinner was ambiguous.
++        page = self.stack.get_visible_child()
+         if self.busy:
+-            self.toast("Подожди окончания текущего измерения")
++            self.toast("Другое измерение ещё выполняется")
++            if hasattr(page, "set_job_status"):
++                page.set_job_status("error", "другое измерение ещё выполняется")
+             return
+         resume = self.live_on
+         if resume:
+             self.stop_live()
++        if hasattr(page, "set_job_status"):
++            page.set_job_status("running", "открываю аудиоустройство")
++        if hasattr(page, "set_job_busy"):
++            page.set_job_busy(True)
+         try:
+             rig = self.get_rig()  # GTK/device selections are read on the UI thread.
+         except Exception as exc:  # noqa: BLE001
+             self.toast(f"Не удалось открыть аудиоустройство: {exc}")
++            self.status.set_text("Ошибка устройства")
++            if hasattr(page, "set_job_busy"):
++                page.set_job_busy(False)
++            if hasattr(page, "set_job_status"):
++                page.set_job_status("error", f"не удалось открыть устройство: {exc}")
+             if resume:
+                 self.live_btn.set_active(True)
+             return
+         self.busy = True
+-        self.status.set_text(msg)
++        started = time.monotonic()
++        self.status.set_text("Измерение…")
+         self.spinner.start()
++        if hasattr(page, "set_job_status"):
++            page.set_job_status("running", msg)
+ 
+         def finish(res, err):
++            elapsed = time.monotonic() - started
+             self.busy = False
+             self.spinner.stop()
+-            self.status.set_text("")
++            # Restore previous button states before the result callback: a
++            # successful callback may enable the next workflow step (e.g. DUT
++            # measurement after loopback calibration).
++            if hasattr(page, "set_job_busy"):
++                page.set_job_busy(False)
++            if err is None:
++                try:
++                    done(res)
++                except Exception as exc:  # noqa: BLE001
++                    err = exc
+             if err is not None:
+-                self.toast(f"Ошибка: {err}")
+-                page = self.stack.get_visible_child()
++                self.toast(f"Ошибка измерения: {err}")
++                self.status.set_text("Ошибка измерения")
+                 if hasattr(page, "say"):
+-                    page.say(f"Ошибка измерения:\n{err}")
++                    page.say(f"Измерение не выполнено:\n{type(err).__name__}: {err}")
++                elif hasattr(page, "series_result_label"):
++                    page.series_result_label.set_text(f"Измерение не выполнено:\n{type(err).__name__}: {err}")
++                if hasattr(page, "set_job_status"):
++                    page.set_job_status("error", f"{type(err).__name__}: {err}")
+             else:
+-                done(res)
++                self.status.set_text(f"Готово · {elapsed:.1f} с")
++                if hasattr(page, "set_job_status"):
++                    page.set_job_status("success", "", elapsed)
+             if resume:
+                 self.live_btn.set_active(True)
+             return False
+@@ -1441,8 +2393,8 @@
+         threading.Thread(target=work, daemon=True).start()
+ 
+     def check_clock(self):
+-        self.run_job(m.clock_check, lambda r: (self.stack.set_visible_child_name("setup"),
+-                                               self.stack.get_visible_child().say(m.text_clock(r))), "Проверка такта…")
++        self.run_job(m.clock_check, lambda r: self.stack.get_visible_child().say(m.text_clock(r)),
++                     "проверяю согласование тактов ЦАП и АЦП")
+ 
+     def toast(self, text):
+         self.toasts.add_toast(Adw.Toast.new(text))
+@@ -1450,6 +2402,7 @@
+     def on_close(self, *_):
+         self.stop_live()
+         calib.save(self.cal)
++        preferences.save(self.ui_prefs)
+         return False
+ 
+ 
