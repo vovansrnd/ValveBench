@@ -279,9 +279,15 @@ class MeterStrip(Gtk.Box):
         self.append(title)
         self.meters = LevelMeters()
         self.append(self.meters)
-        self.health = Gtk.Label(label="Поток: закрыт", xalign=0.5, wrap=True, justify=Gtk.Justification.CENTER)
+        self.health = Gtk.Label(label="Поток: закрыт", xalign=0.5, wrap=False,
+                                justify=Gtk.Justification.CENTER)
         self.health.add_css_class("caption")
+        # Status text may change from a short OK to a long XRUN explanation.
+        # It must not resize the permanent meter column; full detail is a tooltip.
+        self.health.set_width_chars(22)
         self.health.set_max_width_chars(22)
+        self.health.set_single_line_mode(True)
+        self.health.set_ellipsize(3)  # Pango.EllipsizeMode.END
         self.append(self.health)
         self._health_level = None
         reset = Gtk.Button(label="Сброс Peak / CLIP")
@@ -297,6 +303,7 @@ class MeterStrip(Gtk.Box):
             self.health.add_css_class(self.LEVELS[level])
         self._health_level = level
         self.health.set_text(text)
+        self.health.set_tooltip_text(text)
 
 
 # ------------------------------------------------------------------ панель анализа (как в REW)

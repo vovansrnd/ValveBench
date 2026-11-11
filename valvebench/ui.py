@@ -176,9 +176,12 @@ class Page(Gtk.Box):
         self.job_spinner = Gtk.Spinner()
         self.job_status = Gtk.Label(
             label="ГОТОВО К ИЗМЕРЕНИЮ · выбери параметры и нажми кнопку слева",
-            xalign=0, wrap=True)
+            xalign=0, wrap=False)
         self.job_status.add_css_class("title-4")
         self.job_status.set_hexpand(True)
+        self.job_status.set_single_line_mode(True)
+        self.job_status.set_ellipsize(3)  # Pango.EllipsizeMode.END
+        self.job_status.set_max_width_chars(84)
         status_bar.append(self.job_spinner)
         status_bar.append(self.job_status)
         right.append(status_bar)
@@ -285,16 +288,18 @@ class Page(Gtk.Box):
     def set_job_status(self, state, message, elapsed=None):
         if state == "running":
             self.job_spinner.start()
-            self.job_status.set_text(f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}")
+            text = f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}"
         else:
             self.job_spinner.stop()
             if state == "success":
                 suffix = f" · {elapsed:.1f} с" if elapsed is not None else ""
-                self.job_status.set_text(f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже")
+                text = f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже"
             elif state == "error":
-                self.job_status.set_text(f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}")
+                text = f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}"
             else:
-                self.job_status.set_text(message)
+                text = str(message)
+        self.job_status.set_text(text)
+        self.job_status.set_tooltip_text(text)
 
     def say(self, txt):
         self.buf.set_text(txt)
@@ -796,9 +801,12 @@ class LivePage(Gtk.Box):
         self.last_series = None
         self._job_button_states = None
         self.series_job_spinner = Gtk.Spinner()
-        self.series_job_status = Gtk.Label(label="ГОТОВО К ИЗМЕРЕНИЮ", xalign=0, wrap=True)
+        self.series_job_status = Gtk.Label(label="ГОТОВО К ИЗМЕРЕНИЮ", xalign=0, wrap=False)
         self.series_job_status.add_css_class("title-4")
         self.series_job_status.set_hexpand(True)
+        self.series_job_status.set_single_line_mode(True)
+        self.series_job_status.set_ellipsize(3)
+        self.series_job_status.set_max_width_chars(84)
         self.series_result_label = Gtk.Label(
             label="Сначала измерь петлю звуковой карты. Без этого результат усилителя не рассчитывается.",
             xalign=0, yalign=0, wrap=True, selectable=True)
@@ -947,16 +955,18 @@ class LivePage(Gtk.Box):
     def set_job_status(self, state, message, elapsed=None):
         if state == "running":
             self.series_job_spinner.start()
-            self.series_job_status.set_text(f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}")
+            text = f"ИЗМЕРЕНИЕ ВЫПОЛНЯЕТСЯ · {message}"
         else:
             self.series_job_spinner.stop()
             if state == "success":
                 suffix = f" · {elapsed:.1f} с" if elapsed is not None else ""
-                self.series_job_status.set_text(f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже")
+                text = f"ИЗМЕРЕНИЕ ЗАВЕРШЕНО{suffix} · результат ниже"
             elif state == "error":
-                self.series_job_status.set_text(f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}")
+                text = f"ИЗМЕРЕНИЕ НЕ ВЫПОЛНЕНО · {message}"
             else:
-                self.series_job_status.set_text(message)
+                text = str(message)
+        self.series_job_status.set_text(text)
+        self.series_job_status.set_tooltip_text(text)
 
     def refresh_gain_reference(self):
         """Invalidate the in-session reference when card, rate or drive level changes.
@@ -1224,12 +1234,12 @@ class LivePage(Gtk.Box):
                 self.win.toast(f"Индикатор ΔG отключён: {type(exc).__name__}: {exc}")
 
     def sync_generator_button(self, active, enabled):
+        # HeaderBar geometry must not depend on status: keep text and CSS metrics fixed.
+        # Gtk.ToggleButton already exposes its active state to the theme.
         self.gen_action.set_sensitive(bool(enabled))
-        self.gen_action.set_label("ГЕН ●" if active else "ГЕН")
-        if active:
-            self.gen_action.add_css_class("suggested-action")
-        else:
-            self.gen_action.remove_css_class("suggested-action")
+        self.gen_action.set_tooltip_text(
+            "Генератор включён · нажми для выключения" if active
+            else "Генератор выключен · нажми для подачи сигнала")
 
     def generator_active(self):
         return bool(self.win.generator_btn.get_active())
@@ -3081,7 +3091,7 @@ class VinylPage(Page):
         self._vinyl_started = time.monotonic()
         self.set_job_busy(True)
         self.set_job_status("running", "читаю WAV и выполняю анализ")
-        self.win.status.set_text("Анализ TACET…")
+        self.win.set_header_status("Анализ TACET…")
         self.win.spinner.start()
 
         def work():
@@ -3117,12 +3127,12 @@ class VinylPage(Page):
         self.win.spinner.stop()
         elapsed = time.monotonic() - getattr(self, "_vinyl_started", time.monotonic())
         if err is not None:
-            self.win.status.set_text("Ошибка анализа")
+            self.win.set_header_status("Ошибка анализа")
             self.say(f"Ошибка анализа WAV:\n{type(err).__name__}: {err}")
             self.set_job_status("error", f"{type(err).__name__}: {err}")
             self.set_job_busy(False)
             return False
-        self.win.status.set_text(f"Готово · {elapsed:.1f} с")
+        self.win.set_header_status(f"Готово · {elapsed:.1f} с")
         self.say(vinyl.text_result(result))
         self.set_job_status("success", "", elapsed)
         self.set_job_busy(False)
@@ -3477,9 +3487,15 @@ class Window(Adw.ApplicationWindow):
         self.generator_btn.set_tooltip_text(
             "Включить тестовый сигнал на выходах ЦАП. Сначала включи аудиопоток и проверь соединение/уровень.")
         self.generator_btn.connect("toggled", self.on_generator_toggle)
-        self.status = Gtk.Label(label="", xalign=1)
-        self.status.set_width_chars(12)
-        self.status.set_max_width_chars(18)
+        self.status = Gtk.Label(label="", xalign=1, wrap=False)
+        # A variable-width status label can steal space from HeaderBar children
+        # when an error message replaces the short success text. Give it one
+        # fixed slot; the full text remains available as a tooltip.
+        self.status.set_size_request(104, -1)
+        self.status.set_width_chars(13)
+        self.status.set_max_width_chars(13)
+        self.status.set_single_line_mode(True)
+        self.status.set_ellipsize(3)  # Pango.EllipsizeMode.END
         self.status.set_hexpand(False)
         self.spinner = Gtk.Spinner()
         # Portable DUT-session export: the device ID is entered explicitly so
@@ -3921,6 +3937,11 @@ class Window(Adw.ApplicationWindow):
         self.be = self.rig = None
         self.cal["fs"] = self.rig_fs()
 
+    def set_header_status(self, message):
+        text = str(message)
+        self.status.set_text(text)
+        self.status.set_tooltip_text(text)
+
     def get_rig(self):
         if self.rig is None:
             self.be = self.make_backend()
@@ -3981,10 +4002,9 @@ class Window(Adw.ApplicationWindow):
         self.live_on = True
         self.strip.meters.reset_holds()
         self.analysis.warm_up()
-        self.live_btn.set_label("АЦП ●")
-        self.live_btn.add_css_class("suggested-action")
+        # Keep labels and CSS metrics invariant while toggling. The native
+        # ToggleButton checked state indicates activity without resizing.
         self.generator_btn.set_sensitive(True)
-        self.generator_btn.set_label("ГЕН")
         self.generator_btn.set_active(False)
         self.live.sync_generator_button(False, True)
         self.live.start()
@@ -3998,7 +4018,6 @@ class Window(Adw.ApplicationWindow):
         if self.generator_btn.get_active():
             self.generator_btn.set_active(False)
         self.generator_btn.set_sensitive(False)
-        self.generator_btn.set_label("ГЕН")
         self.live.sync_generator_button(False, False)
         self.live.stop()
         if self.be is not None:
@@ -4006,8 +4025,7 @@ class Window(Adw.ApplicationWindow):
         self.strip.meters.set_stale("аудиопоток закрыт")
         self.strip.set_health(None, "Поток: закрыт")
         self.live_on = False
-        self.live_btn.set_label("АЦП")
-        self.live_btn.remove_css_class("suggested-action")
+        # Label stays "АЦП"; only ToggleButton's active state changes.
         self.spectrum.reset_average()
         if self.spectrum.timer is not None:
             GLib.source_remove(self.spectrum.timer)
@@ -4043,7 +4061,7 @@ class Window(Adw.ApplicationWindow):
             rig = self.get_rig()  # GTK/device selections are read on the UI thread.
         except Exception as exc:  # noqa: BLE001
             self.toast(f"Не удалось открыть аудиоустройство: {exc}")
-            self.status.set_text("Ошибка устройства")
+            self.set_header_status("Ошибка устройства")
             if hasattr(page, "set_job_busy"):
                 page.set_job_busy(False)
             if hasattr(page, "set_job_status"):
@@ -4054,7 +4072,7 @@ class Window(Adw.ApplicationWindow):
         measurement_context = self._measurement_context(rig)
         self.busy = True
         started = time.monotonic()
-        self.status.set_text("Измерение…")
+        self.set_header_status("Измерение…")
         self.spinner.start()
         if hasattr(page, "set_job_status"):
             page.set_job_status("running", msg)
@@ -4081,7 +4099,7 @@ class Window(Adw.ApplicationWindow):
                     except Exception:
                         pass
                 self.toast(f"Ошибка измерения: {err}")
-                self.status.set_text("Ошибка измерения")
+                self.set_header_status("Ошибка измерения")
                 if hasattr(page, "say"):
                     page.say(f"Измерение не выполнено:\n{type(err).__name__}: {err}")
                 elif hasattr(page, "series_result_label"):
@@ -4089,7 +4107,7 @@ class Window(Adw.ApplicationWindow):
                 if hasattr(page, "set_job_status"):
                     page.set_job_status("error", f"{type(err).__name__}: {err}")
             else:
-                self.status.set_text(f"Готово · {elapsed:.1f} с")
+                self.set_header_status(f"Готово · {elapsed:.1f} с")
                 if hasattr(page, "set_job_status"):
                     page.set_job_status("success", "", elapsed)
             if resume:

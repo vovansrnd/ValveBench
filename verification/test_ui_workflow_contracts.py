@@ -82,6 +82,27 @@ check("clip CSS class changes only when state changes",
 check("health banner is updated only when displayed state changes",
       "signature != getattr(self, \"_last_health_display\", None)" in refresh_health)
 
+# Header geometry is invariant across status changes and active/inactive states.
+check("header status has one fixed width and truncates long text",
+      "self.status.set_width_chars(13)" in win_init
+      and "self.status.set_max_width_chars(13)" in win_init
+      and "self.status.set_ellipsize(3)" in win_init)
+sync_gen = method_text("LivePage", "sync_generator_button")
+check("generator button keeps constant label/style while toggling",
+      "set_label" not in sync_gen and "add_css_class" not in sync_gen
+      and "remove_css_class" not in sync_gen)
+start_live = method_text("Window", "start_live")
+stop_live = method_text("Window", "stop_live")
+check("ADC button keeps constant label/style while toggling",
+      "live_btn.set_label" not in start_live + stop_live
+      and "live_btn.add_css_class" not in start_live + stop_live
+      and "live_btn.remove_css_class" not in start_live + stop_live)
+widgets_source = (ROOT / "valvebench" / "widgets.py").read_text(encoding="utf-8")
+check("persistent health label is single-line, bounded and tooltip-backed",
+      "self.health.set_single_line_mode(True)" in widgets_source
+      and "self.health.set_ellipsize(3)" in widgets_source
+      and "self.health.set_tooltip_text(text)" in widgets_source)
+
 failed = 0
 for name, ok, detail in checks:
     print(f"{'PASS' if ok else 'FAIL'}  {name}" + (f" — {detail}" if detail else ""))
