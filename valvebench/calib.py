@@ -1,4 +1,4 @@
-"""Независимая калибровка ЦАП/АЦП, сохранённая отдельно для каждой физической карты."""
+"""Калибровка измерительного тракта, раздельно по ЦАП→АЦП и физическим входам."""
 from __future__ import annotations
 
 import json
@@ -8,8 +8,10 @@ import os
 PATH = os.path.expanduser("~/.config/valvebench/config.json")
 
 DEFAULTS = {
-    "device": "sim",
+    "device": "sim",  # legacy single-endpoint CLI alias (ADC endpoint)
     "device_key": "sim",
+    "dac_device": "sim",
+    "adc_device": "sim",
     "fs": 96000,
     "in_map": [0, 1],
     "out_map": [0, 1],
@@ -63,6 +65,15 @@ class Calibration:
                 if key == "out_fs_vrms" and isinstance(value, (int, float)):
                     value = [float(value), float(value)]
                 self.d[key] = _copy_value(value)
+        # Migration from pre-split configs: the old `device` selected one
+        # full-duplex card for both directions. DEFAULTS already contains
+        # dac_device/adc_device="sim", so fallback must use key presence in
+        # the source JSON, not truthiness of the merged defaults.
+        legacy_device = str(data.get("device", self.d.get("device", "sim")) or "sim")
+        if "dac_device" not in data:
+            self.d["dac_device"] = legacy_device
+        if "adc_device" not in data:
+            self.d["adc_device"] = legacy_device
         self._profiles = _copy_value(data.get("device_profiles", {}))
         self._active_profile_key = str(data.get("active_device_key") or self.d.get("device_key") or "sim")
         for key in ("out_fs_vrms", "in_fs_vrms"):

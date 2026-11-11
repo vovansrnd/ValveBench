@@ -705,15 +705,94 @@ def device_key_from_hw(hw):
         return f"alsa:{card_id}:pcm{pcm}"
 
 
+def backend_device_key(backend):
+    """Stable identity for the complete DAC→ADC route.
+
+    Legacy full-duplex backends keep their old single-device identity. Split
+    ALSA endpoints use the same pair-key algorithm as the GTK calibration
+    profiles; never pass the textual ``hw:OUT|hw:IN`` composite to a parser
+    expecting one ALSA endpoint.
+    """
+    hw_out = getattr(backend, "hw_out", None)
+    hw_in = getattr(backend, "hw_in", None)
+    if hw_out is None and hw_in is None:
+        return device_key_from_hw(getattr(backend, "hw", "sim"))
+    if hw_out is None:
+        hw_out = getattr(backend, "hw", "sim")
+    if hw_in is None:
+        hw_in = getattr(backend, "hw", "sim")
+    out_key = device_key_from_hw(hw_out)
+    in_key = device_key_from_hw(hw_in)
+    if out_key == in_key:
+        return out_key
+    digest = hashlib.sha256((out_key + "\0" + in_key).encode("utf-8")).hexdigest()[:24]
+    return f"pair:{digest}"
+
+
+def backend_mixer_fingerprint(backend):
+    """Snapshot playback and capture mixer controls independently.
+
+    A split route is only fingerprinted when both physical snapshots are
+    available. Returning None is safer than creating a reference that cannot
+    later detect a mixer change on one side.
+    """
+    hw_out = getattr(backend, "hw_out", None)
+    hw_in = getattr(backend, "hw_in", None)
+    if hw_out is None and hw_in is None:
+        return mixer_fingerprint_from_hw(getattr(backend, "hw", None))
+    if hw_out is None:
+        hw_out = getattr(backend, "hw", "sim")
+    if hw_in is None:
+        hw_in = getattr(backend, "hw", "sim")
+    if str(hw_out) == str(hw_in):
+        return mixer_fingerprint_from_hw(hw_out)
+    out_fp = None if str(hw_out) == "sim" else mixer_fingerprint_from_hw(hw_out)
+    in_fp = None if str(hw_in) == "sim" else mixer_fingerprint_from_hw(hw_in)
+    if (str(hw_out) != "sim" and out_fp is None) or (str(hw_in) != "sim" and in_fp is None):
+        return None
+    return {"dac": out_fp, "adc": in_fp}
+
+
 def _device_description(backend):
+    hw_out = getattr(backend, "hw_out", None)
+    hw_in = getattr(backend, "hw_in", None)
+    if hw_out is not None or hw_in is not None:
+        if hw_out == hw_in:
+            return str(hw_in or getattr(backend, "hw", "sim"))
+        return f"{hw_out or '?'} → {hw_in or '?'}"
     hw = getattr(backend, "hw", None)
     if hw:
         return str(hw)
     return getattr(backend, "name", type(backend).__name__)
 
 
+def _mixer_only_blocks(contents_text):
+    """Keep only iface=MIXER control blocks of ``amixer contents``.
+
+    PCM-iface elements (например, Capture/Playback Channel Map) меняются
+    в зависимости от того, открыт ли PCM прямо сейчас (0,0 → 3,4 на E-MU
+    0404 USB), и не являются настройками микшера. Включать их в отпечаток —
+    делать каждый эталон невалидным между открытиями устройства
+    (найдено аппаратной приёмкой 0.1.21-dev4).
+    """
+    blocks, current = [], None
+    for line in contents_text.splitlines():
+        if line.startswith("numid="):
+            if current:
+                blocks.append(current)
+            current = [line]
+        elif current is not None:
+            current.append(line)
+    if current:
+        blocks.append(current)
+    keep = [b for b in blocks if ",iface=MIXER," in b[0]]
+    return "\n".join("\n".join(b) for b in keep)
+
+
 def mixer_fingerprint_from_hw(hw):
-    """Hash ALSA controls so a loopback reference cannot survive mixer changes."""
+    """Hash ALSA mixer controls so a loopback reference cannot survive
+    mixer changes. Только iface=MIXER: PCM-элементы летучи (см.
+    _mixer_only_blocks)."""
     match = re.fullmatch(r"hw:(\d+)(?:,\d+)?", str(hw or ""))
     if not match:
         return None
@@ -725,7 +804,7 @@ def mixer_fingerprint_from_hw(hw):
         return None
     if proc.returncode != 0 or not proc.stdout:
         return None
-    return hashlib.sha256(proc.stdout).hexdigest()
+    return hashlib.sha256(_mixer_only_blocks(proc.stdout.decode("utf-8", "replace")).encode("utf-8")).hexdigest()
 
 
 def riaa_level_adjust_db(f, iec=False):
@@ -749,14 +828,14 @@ def validate_loopback_reference(rig, reference, level_dbfs, frequencies=SERIES_F
     if not isinstance(reference, dict) or reference.get("kind") != "gain_match_loopback_reference":
         raise ValueError("нет эталона петли карты: сначала выполни шаг 1")
     backend = rig.be
-    key = device_key_from_hw(getattr(backend, "hw", "sim"))
+    key = backend_device_key(backend)
     if reference.get("device_key") != key:
         raise ValueError("эталон петли создан для другой звуковой карты; повтори шаг 1")
     if int(reference.get("repeats", 0)) < MIN_REPEATS_FOR_REFERENCE:
         raise ValueError("эталон петли создан без подтверждённой повторяемости; повтори шаг 1")
     expected_mixer = reference.get("mixer_fingerprint")
     if expected_mixer:
-        current_mixer = mixer_fingerprint_from_hw(getattr(backend, "hw", None))
+        current_mixer = backend_mixer_fingerprint(backend)
         if current_mixer is None:
             raise ValueError("не удалось проверить настройки ALSA-микшера; повтори шаг 1")
         if current_mixer != expected_mixer:
@@ -874,9 +953,8 @@ def measure_series(rig, frequencies=SERIES_FREQUENCIES, level_dbfs=-30.0, repeat
         generator_levels = {round(f, 6): level_dbfs for f in freqs}
 
     backend = rig.be
-    hw = getattr(backend, "hw", "sim")
-    device_key = device_key_from_hw(hw)
-    mixer_fingerprint = mixer_fingerprint_from_hw(hw)
+    device_key = backend_device_key(backend)
+    mixer_fingerprint = backend_mixer_fingerprint(backend)
 
     refs = None
     if purpose == "dut":

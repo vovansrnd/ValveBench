@@ -1,0 +1,30 @@
+{
+ "phase": "phase1",
+ "results": [
+  {
+   "name": "§2.1a миграция старого config в GUI: DAC=ADC=hw:2,0, не SIM",
+   "ok": true,
+   "detail": "dac=hw:2,0 adc=hw:2,0 pair_key=usb:041e:3f04:serial=E-MU-72-3F04-07D90513-0"
+  },
+  {
+   "name": "§2.1b ЦАП и АЦП выбираются независимо",
+   "ok": true,
+   "detail": "dac=hw:3,0 adc=hw:2,0"
+  },
+  {
+   "name": "§2.4 разделённая пара: новый pair-key",
+   "ok": true,
+   "detail": "new=pair:1463f820ef7c0977a1519e3f old=usb:041e:3f04:serial=E-MU-72-3F04-07D90513-0"
+  },
+  {
+   "name": "§2.4 профиль новой пары без наследования калибровки",
+   "ok": true,
+   "detail": "out_fs_vrms новой пары = [None, None] (маркер был [1.234, 2.345])"
+  },
+  {
+   "name": "§2.3 частоты пары = пересечение объявленных (192k есть, 384k нет)",
+   "ok": true,
+   "detail": "rate_values=[44100, 48000, 88200, 96000, 176400, 192000]"
+  }
+ ]
+}

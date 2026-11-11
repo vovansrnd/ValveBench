@@ -1,80 +1,85 @@
-# Agent handoff — ValveBench next development session (based on 0.1.21-dev3)
+# Agent task — first hardware acceptance of ValveBench 0.1.21-dev4
 
-## Current baseline
+## Rules
 
-Use `ValveBench-0.1.21-dev3` supplied with this task. It is based on accepted `0.1.21-dev2` and includes the status/header layout stabilization patch. Do not start from old 0.1.20 or 0.1.21-dev1 sources.
+- Work from the supplied **0.1.21-dev4** source tree, not an older archive.
+- Do not modify or overwrite `/opt/MyApps/Adudio/ValveBench` (installed copy).
+- Do not open test windows on the user's actual desktop beyond the normal manually launched app. Automated GUI tests must use isolated Xvfb + D-Bus + a private `XDG_RUNTIME_DIR` and `GDK_BACKEND=x11`.
+- Do not change system mixer controls, sample-rate settings or saved user calibration silently. Record before/after state.
+- Do not force a sample rate that is not advertised by both selected endpoints. Do not bypass a failed clock preflight.
+- Keep command outputs, logs and results inside the dev project tree, under `measurements/validation-dev4/`.
 
-## P0 — prove/fix HeaderBar and status layout jitter
+## 1. Enumerate hardware
 
-The user reports rapid layout jumps when carrier/stream-drop/XRUN diagnostics produce longer status text. The likely source-level causes found in dev2:
+Run:
 
-- `Window.status` allowed 12..18 characters (`set_width_chars(12)`, `set_max_width_chars(18)`) while its contents vary (`Измерение…`, `Ошибка измерения`, `Готово · …`).
-- `Window.start_live/stop_live` changed ADC label (`АЦП` vs `АЦП ●`) and toggled `suggested-action` on the same fixed-size header button.
-- `LivePage.sync_generator_button` changed GEN label (`ГЕН` vs `ГЕН ●`) and toggled `suggested-action`, whose theme padding/border may alter intrinsic size.
-- `MeterStrip.health` allowed wrapped text of variable height and variable text length; `refresh_health` emits dynamic event explanations.
+```bash
+./run.sh cli cards
+./run.sh cli devices
+```
 
-Dev3 changes these to fixed labels/style, bounded one-line status, ellipsis and tooltips. Verify in actual GTK4/libadwaita on the user's Wayland desktop. Test repeated conditions while running live capture:
-1. steady carrier / stable stream;
-2. deliberate generator mute / carrier loss;
-3. short ADC overrun / DAC underrun or simulated XRUN;
-4. device disconnect/reconnect;
-5. rapid alternating health states.
+Record the exact current ALSA playback endpoint for D10 and capture endpoint for E-MU. USB `card:N` numbers can change after reconnect; do not hard-code an old number without re-enumerating.
 
-Record a desktop video/screenshot and compare window/header/control allocations. Do not resize the buttons larger. Header control positions and content minimum width must remain stable. If the user still sees jumps, instrument GTK allocations (`notify::width`, `notify::height`, size-allocate/layout snapshots where supported) for HeaderBar, status label, `dev`, `rate`, `live_btn`, `generator_btn`, meter health label and ToastOverlay. Do not guess at toast as cause: ToastOverlay is an overlay; prove which widget allocation changes. Avoid global pkill and never allow test UI to escape to the user's desktop.
+Record for both endpoints:
+- card ID/name, PCM device number;
+- advertised Playback/Capture rates, formats and channels from `stream0`;
+- `hw_params` while each stream is active, if it can be captured without disrupting the user's session.
 
-## P1 — separate DAC and ADC selection (major architecture task)
+## 2. GUI checks
 
-Current implementation is duplex-only:
-- `Window.__init__`: `self.cards = [sim] + list_duplex_devices()`, a single `self.dev`, a single `self.rate`.
-- `backend.list_pcm_devices()` already enumerates separate PCM directions; `list_duplex_devices()` intersects playback/capture and therefore hides separate devices.
-- `AlsaCli.__init__(hw=...)` holds a single `self.hw`; `_cmd()` always uses it for both aplay and arecord.
-- `Rig.fs` is one shared rate used for playback generation and ADC capture/analysis.
-- Calibration and mixer identity currently scope both sides to one combined device.
+Launch the dev4 tree manually. Confirm:
 
-Implement two explicit endpoint selectors:
-- DAC/playback device + PCM and sample rate;
-- ADC/capture device + PCM and sample rate.
+1. DAC dropdown selects D10; ADC dropdown selects E-MU independently.
+2. Both selections survive app restart.
+3. Fs choices are only common advertised rates. Do not expect 384 kHz to appear if ADC max is 192 kHz.
+4. Switching either endpoint changes pair profile and does not inherit the old pair's voltage/FR/noise calibration.
+5. Reverting to the original same-device pair restores its prior profile.
+6. The compact HeaderBar selectors keep constant size/labels while stream warnings, XRUN and reconnect messages appear. Check allocation/layout during repeated XRUN or carrier interruption. Do not “fix” movement by enlarging controls.
+7. No unrelated copy is activated when starting another dev tree.
 
-Extend backend to `hw_out` and `hw_in` with backward-compatible `hw` alias during migration. `_cmd(aplay)` must use output PCM; `_cmd(arecord)` input PCM. Separate formats, channel counts and channel maps. Persist stable physical identity and ALSA PCM for each side; never persist volatile card numbers as identity. Use exact supported rates from the selected endpoint; do not silently fall back to a wrong rate. Device hotplug must invalidate/re-resolve profiles.
+## 3. Conservative direct-loopback validation
 
-Critical clock-domain distinction:
-- Generator/scope-only mode must support e.g. DAC at 384 kHz and ADC at 192 kHz, each with its own true timebase. Do not label DAC buffer points with ADC Fs or vice versa.
-- The existing measurement suite assumes one `Rig.fs` and coherent shared rate. Do NOT simply change `Rig.fs` to one side's rate and proceed. For driven measurements, initially require a common supported sample rate and a successful DAC↔ADC clock check; clearly show/record the measured ppm. If separate clocks remain, either implement validated asynchronous sample-rate/timebase correction or reject precision measurements with a clear reason. Never pretend independent USB clocks are synchronized.
-- Scope capture uses ADC's rate. Generated preview uses DAC's rate. For waveform frequency/phase comparison, estimate source frequency from capture or apply calibrated clock ratio; do not compare arrays by sample index without alignment.
+First make a known-safe direct cable loop from D10 output L/R to E-MU input L/R using the user's already understood connection/attenuation. Do not insert the phono preamp or Anti-RIAA for this check. If the safe input level/connection is uncertain, stop and ask the user before applying signal.
 
-Test with simulated endpoint pairs and mocks, plus two real USB devices when available. Verify no regression for current same-card E-MU duplex configuration.
+Set `DAC` and `ADC` in GUI to D10/E-MU. Then run (substitute actual endpoints):
 
-## P2 — raw waveform snapshot/export
+```bash
+./run.sh cli devices
+./run.sh cli --dac hw:DAC_CARD,PCM --adc hw:ADC_CARD,PCM --rate 192000 clock
+./run.sh cli --dac hw:DAC_CARD,PCM --adc hw:ADC_CARD,PCM --rate 192000 loopback --levels=-30,-40 --repeats 3 --silence-seconds 0 --report measurements/validation-dev4/direct-loopback.txt
+```
 
-Add a `СОХРАНИТЬ ОСЦИЛЛОГРАММУ` action on Generator/Scope page. Capture a stable ADC window (not an interpolated graph trace) and write a portable ZIP with raw CSV samples, optional generated DAC reference samples, metadata JSON and manifest SHA-256. The required fields and analysis ideas are in `docs/SQUARE-WAVE-MEASUREMENT.md`.
+If 192 kHz is not in the pair intersection, select a rate actually supported by both. The clock check uses a deliberately low 1 kHz, −72 dBFS tone. It should not be changed to a high level to “make it pass”.
 
-Do not export only pixels, rounded display values or decimated plot data as the measurement source. Any display decimation must be separate from the raw capture array. Preserve L and R, exact Fs, sample count, device stable IDs, generator level/frequency/waveform, trigger position, DAC/ADC settings, calibration IDs, routing, Anti-RIAA presence and any XRUN/sample-gap intervals. Do not call a capture valid if it crossed a transport event.
+Do not add the DUT until direct loopback is detected, levels are safe, and relative clock error is reported. If clock test says tone not found, investigate level, route and endpoint selection; do not interpret that as clock accuracy.
 
-## P3 — multi-device comparison matrix (RMAA-inspired, not a clone)
+## 4. Measurement paths and compatibility
 
-Add Library/Measurements view to import exported DUT session ZIP/JSON packages and compare selected devices in a metric matrix:
-- columns = DUT identifiers (e.g. 590, 591, 592);
-- rows = Gain L/R and ΔG, response deviation, THD, THD+N, noise A/C and ASD, IMD products, crosstalk, optional transient metrics;
-- each row has a chart action.
+- Verify one low-level THD command over the split route, for example 997 Hz at −30 dBFS, after direct loopback validation.
+- Verify a flat sweep and one noise capture.
+- Verify Gain Match loopback reference creation and reuse with the same endpoint pair.
+- Change only the ADC mixer and confirm that the reference is rejected when the mixer fingerprints are available. If fingerprints are unavailable, the report must say so clearly.
+- Run `passport --quick`; confirm JSON records both `dac_device` and `adc_device`, independent PCM formats and sample rate.
+- Test old config migration: an old config with only `device=hw:C,D` must reopen as DAC=ADC=that same endpoint, never as SIM.
+- Test CLI legacy `--dev hw:C,D` and new `--dac ... --adc ...` paths.
 
-Chart semantics:
-- one DUT selected: show L and R separately;
-- multiple DUTs selected: show one stereo summary per DUT (compute mean channel response in linear amplitude/power space, not by naively averaging dB), plus optional L/R spread/band.
-- Preserve exact per-DUT numeric results in table cells; never replace them with a chart-only summary.
-- Validate test comparability before overlay: sample rates, generator levels/frequencies, RIAA/IEC profile, input load, Anti-RIAA, DAC/ADC identities, calibration profiles, mixer settings and software/schema versions. Mark mismatch and prevent misleading overlays or require an explicit acknowledgement.
-- Keep original source packages immutable. Imports must not overwrite or silently merge records with the same DUT ID. Give every session a globally unique ID and retain measurement timestamps.
+## 5. Deliverables
 
-## P4 — square-wave method and evaluation
+Save inside `measurements/validation-dev4/`:
+- `cards.txt`, `devices.txt`;
+- clock check text + JSON if available;
+- direct loopback report and CSV;
+- one THD result, one sweep result, one noise result;
+- GUI observations, actual PCM params and screenshots if useful;
+- exact command lines and any errors.
 
-Read `docs/SQUARE-WAVE-MEASUREMENT.md`. Initial standard visual check: 1 kHz band-limited square, conservative peak level (start -20 dBFS for source loopback, lower as needed after measured DUT gain), save matching loopback and DUT captures through the same cables/ADC settings. Through physical Anti-RIAA the square spectrum is shaped before the DUT; document this, and don't expect a square if Anti-RIAA isn't present. 100 Hz is a secondary LF check; 10 kHz is not a good general-purpose 20 kHz-band transient test.
+Report separately:
+- software behavior verified;
+- actual hardware path verified;
+- actual clock ppm measured;
+- visual layout checked;
+- not checked / inconclusive items.
 
-The current `make_generator_signal()` uses a finite Fourier series, capped at 99 harmonics and <0.45 Fs. That is an anti-aliased band-limited square, not an ideal edge. Evaluate whether configurable harmonic ceiling / band limit is worthwhile only with the DAC/ADC bandwidth and filters documented.
+## 6. Do not implement these in the hardware-acceptance pass
 
-## Constraints and hygiene
-
-- No changes to user's installed copy `/opt/MyApps/Adudio/ValveBench` without explicit permission.
-- No UI tests on the real desktop unless user explicitly agrees. Use isolated Xvfb, private DBus and private XDG_RUNTIME_DIR for automation.
-- Do not use global `pkill`; address only child PIDs/process groups created by the test.
-- Do not claim a physical/audio test passed without hardware.
-- Retain all valid data when one batch subtest fails. Avoid overwriting previous DUT sessions.
-- Update changelog, tests and a report. Separate source-level tests from GTK GUI acceptance and real-hardware acceptance.
+Do not add independent DAC/ADC sample rates, resampling, clock discipline or comparison matrix yet. The current precision DSP uses one common Fs. After the split route passes hardware acceptance, the next development stage can add raw ADC waveform export and import/compare DUT passports in a matrix (one DUT per column, metric per row, chart action per metric).

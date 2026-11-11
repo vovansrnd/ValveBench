@@ -9,16 +9,87 @@ from pathlib import Path
 
 from . import calib, measure as m, store, vinyl
 from .backend import (AlsaCli, SimBackend, SimChannel, list_cards, parse_stream,
-                      list_pcm_devices, list_duplex_devices, supported_duplex_rates, supported_pcm_rates)
+                      list_pcm_devices, list_duplex_devices, supported_duplex_rates,
+                      supported_pcm_rates, common_pcm_rates)
 from .selftest import run_selftest, format_selftest
 from .looptest import run_loopback_report
 from . import scans, passport, steady, glitch_test
 from .measure import Rig
 
 
+def selected_audio_pair(args, cal):
+    """Resolve playback/capture endpoints; --dev remains a legacy both-sides override."""
+    if getattr(args, "dev", None):
+        dac_hw = adc_hw = str(args.dev)
+    else:
+        legacy = str(cal.get("device", "sim"))
+        dac_hw = str(getattr(args, "dac", None) or cal.get("dac_device") or legacy)
+        adc_hw = str(getattr(args, "adc", None) or cal.get("adc_device") or legacy)
+    if (dac_hw == "sim") != (adc_hw == "sim"):
+        raise ValueError("Симулятор должен быть выбран одновременно для ЦАП и АЦП")
+    return dac_hw, adc_hw
+
+
+def make_alsa_backend(args, cal):
+    dac_hw, adc_hw = selected_audio_pair(args, cal)
+    return AlsaCli(hw_out=dac_hw, hw_in=adc_hw,
+                   in_map=cal["in_map"], out_map=cal["out_map"])
+
+
+def validate_pair_rate(dac_hw, adc_hw, fs):
+    """Reject a requested exact-measurement Fs outside the advertised pair intersection."""
+    if dac_hw == adc_hw == "sim":
+        return
+    rates = common_pcm_rates(dac_hw, adc_hw)
+    if not rates:
+        raise ValueError(f"У ЦАП {dac_hw} и АЦП {adc_hw} нет общей объявленной частоты дискретизации")
+    if int(fs) not in rates:
+        raise ValueError(f"{int(fs)} Гц не входит в общие режимы ЦАП/АЦП; доступно: "
+                         + ", ".join(str(v) for v in rates))
+
+
+def split_clock_preflight(rig, dac_hw, adc_hw):
+    """Check independent physical clocks before a coherent measurement; do not correct drift."""
+    if str(dac_hw) == str(adc_hw):
+        return None
+    result = None
+    # Штатный уровень −72 dBFS рассчитан на тракты с фонокорректором. На прямых
+    # кабельных линиях с высоким полом (напр. D10→E-MU: −77.4 dBFS, приёмка
+    # 0.1.21-dev4) тон −72 dBFS ложится НИЖЕ пола и onset невозможен —
+    # ворота когерентности в принципе не могут работать на этом уровне.
+    # Тогда preflight поднимает уровень до −30 dBFS (далеко от перегрузки,
+    # АЦП ≈ −43 dBFS) и честно помечает это в предупреждениях; ворота
+    # >100 ppm не зависят от уровня.
+    last_err = None
+    for level, note in ((-72.0, None), (-30.0, "preflight: уровень поднят до -30 dBFS — "
+                        "шумовой пол линии выше штатного -72 dBFS")):
+        try:
+            result = m.clock_check(rig, level_dbfs=level)
+        except m.MeasureError as exc:
+            # «тон не найден» → попробовать следующий уровень; прочие ошибки — наверх
+            if "не найден" not in str(exc):
+                raise
+            last_err = exc
+            result = {"ok": False, "ch": {}, "warnings": [note] if note else [],
+                      "test_level_dbfs": level, "kind": "clock",
+                      "retry_pending": True}
+            continue
+        if note and result is not None:
+            result.setdefault("warnings", []).append(note)
+        break
+    if result is None or result.get("retry_pending"):
+        raise m.MeasureError("Такты ЦАП и АЦП не согласованы для точного измерения. "
+                             + (m.text_clock(result) if result else "тон не найден"))
+    if not result.get("ok", False):
+        raise m.MeasureError("Такты ЦАП и АЦП не согласованы для точного измерения. "
+                             + m.text_clock(result))
+    return result
+
+
 def make_rig(a):
     cal = calib.load()
     if a.sim:
+        dac_hw = adc_hw = "sim"
         be = SimBackend(
             SimChannel(gain=0.65, a2=5e-4, a3=3e-3, riaa=True, noise_dbfs=-105,
                        hum50_dbfs=-105, hum100_dbfs=-112),
@@ -26,18 +97,29 @@ def make_rig(a):
                        hum50_dbfs=-92, hum100_dbfs=-108),
         )
     else:
-        be = AlsaCli(a.dev or cal["device"], in_map=cal["in_map"], out_map=cal["out_map"])
-    rig = m.Rig(be, cal, fs=a.rate or cal["fs"], blocks=a.blocks)
+        dac_hw, adc_hw = selected_audio_pair(a, cal)
+        be = make_alsa_backend(a, cal)
+    fs = int(a.rate or cal["fs"])
+    validate_pair_rate(dac_hw, adc_hw, fs)
+    rig = m.Rig(be, cal, fs=fs, blocks=a.blocks)
     rig.open()
     for note in be.notes:
         print("! " + note, file=sys.stderr)
+    # A pure ADC noise capture does not depend on DAC/ADC clock coherence.
+    # All generated-tone, sweep and H1 tests on split devices must preflight.
+    if not a.sim and a.cmd not in ("clock", "noise"):
+        result = split_clock_preflight(rig, dac_hw, adc_hw)
+        if result:
+            print(m.text_clock(result), file=sys.stderr)
     return rig
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="valvebench cli", description=__doc__)
     ap.add_argument("--sim", action="store_true", help="виртуальная карта (без железа)")
-    ap.add_argument("--dev", help="ALSA-устройство, например hw:2,0 (номер см. в cards)")
+    ap.add_argument("--dev", help="старый общий ALSA endpoint для ЦАП и АЦП, например hw:2,0")
+    ap.add_argument("--dac", help="ALSA PCM для воспроизведения/ЦАП, например hw:2,0")
+    ap.add_argument("--adc", help="ALSA PCM для записи/АЦП, например hw:3,0")
     ap.add_argument("--rate", type=int, help="частота дискретизации")
     ap.add_argument("--blocks", type=int, default=2, help="число когерентных блоков в измерениях тона")
     ap.add_argument("--save", action="store_true", help="сохранить результат в JSON")
@@ -222,9 +304,12 @@ def main(argv=None):
             return 2
     if a.cmd in ("passport", "watch", "psdcheck"):
         cfg = calib.load()
-        dev = "sim" if a.sim else (a.dev or cfg["device"])
+        dac_hw, adc_hw = ("sim", "sim") if a.sim else selected_audio_pair(a, cfg)
+        dev = "sim" if dac_hw == adc_hw == "sim" else f"{dac_hw}|{adc_hw}"
 
-        def make_rig(fs):
+        clock_checks = []
+        def make_rig_pair(fs):
+            validate_pair_rate(dac_hw, adc_hw, int(fs))
             if a.sim:
                 be = SimBackend(
                     SimChannel(gain=0.65, a2=5e-4, a3=3e-3, riaa=False, noise_dbfs=-105,
@@ -232,10 +317,15 @@ def main(argv=None):
                     SimChannel(gain=0.65, a2=2e-3, a3=1e-3, riaa=False, noise_dbfs=-103))
             else:
                 if dev == "sim":
-                    raise ValueError("Укажи --dev hw:N,0 или добавь --sim")
-                be = AlsaCli(dev, in_map=cfg["in_map"], out_map=cfg["out_map"])
+                    raise ValueError("Укажи --dac/--adc или добавь --sim")
+                be = AlsaCli(hw_out=dac_hw, hw_in=adc_hw,
+                             in_map=cfg["in_map"], out_map=cfg["out_map"])
             rig = Rig(be, cfg, fs=int(fs), blocks=max(a.blocks, 4), settle=0.25)
             rig.open()
+            if not a.sim and a.cmd in ("passport", "watch"):
+                ck = split_clock_preflight(rig, dac_hw, adc_hw)
+                if ck:
+                    clock_checks.append({"fs": int(fs), **ck})
             return rig
         try:
             if a.cmd == "passport":
@@ -249,24 +339,26 @@ def main(argv=None):
                         if dev == "sim":
                             rates = [96000, 192000]
                         else:
-                            advertised = set(supported_duplex_rates(dev))
+                            advertised = set(common_pcm_rates(dac_hw, adc_hw, known))
                             rates = [r for r in (96000, 176400, 192000) if r in advertised]
                     elif rates_arg == "supported":
-                        rates = [r for r in supported_duplex_rates(dev) if r in known]
+                        rates = [r for r in common_pcm_rates(dac_hw, adc_hw, known) if r in known]
                     else:
                         rates = [int(v.strip()) for v in a.rates.split(",") if v.strip()]
-                        unsupported = [r for r in rates if dev != "sim" and supported_duplex_rates(dev)
-                                       and r not in supported_duplex_rates(dev)]
+                        advertised = set(common_pcm_rates(dac_hw, adc_hw, known)) if dev != "sim" else set(known)
+                        unsupported = [r for r in rates if r not in advertised]
                         if unsupported:
-                            raise ValueError(f"Устройство {dev} не объявляет частоты {unsupported}; доступно {supported_duplex_rates(dev)}")
+                            raise ValueError(f"Пара ЦАП/АЦП {dev} не объявляет общие частоты {unsupported}; доступно {sorted(advertised)}")
                     if not rates:
                         raise ValueError(f"Не удалось определить подходящие частоты для {dev}; задай --rates явно после ./run.sh cli cards")
                     levels, repeats, silence_s = (-1.0, -12.0), 3, 8.0
                 label = a.label or time.strftime("%Y%m%d-%H%M%S")
                 metadata = {"in_map": list(cfg["in_map"]), "out_map": list(cfg["out_map"]),
                             "blocks": max(a.blocks, 4), "device": dev}
-                p = passport.run_passport(make_rig, rates, label, levels=levels, repeats=repeats,
+                p = passport.run_passport(make_rig_pair, rates, label, levels=levels, repeats=repeats,
                                           silence_s=silence_s, metadata=metadata)
+                if clock_checks:
+                    p.setdefault("metadata", {})["split_clock_checks"] = clock_checks
                 report = passport.text_passport(p)
                 out = Path(a.out or f"passport-{label}.json")
                 out.parent.mkdir(parents=True, exist_ok=True)
@@ -278,7 +370,7 @@ def main(argv=None):
                                                                allow_mismatch=a.allow_device_mismatch)
                     print("\n" + ctext)
             elif a.cmd == "watch":
-                rig = make_rig(a.rate or cfg["fs"])
+                rig = make_rig_pair(a.rate or cfg["fs"])
                 base = None
                 if a.baseline:
                     bp = passport.load(a.baseline)["rates"].get(str(rig.fs))
@@ -289,7 +381,7 @@ def main(argv=None):
                 print("Негармонический остаток = всё, кроме тона и обнаруженных гармоник. Ctrl+C — выход.")
                 passport.watch_loop(rig, count=a.count, baseline=base)
             else:
-                psd_result = passport.psd_check(make_rig(a.rate or cfg["fs"]))
+                psd_result = passport.psd_check(make_rig_pair(a.rate or cfg["fs"]))
                 print("PSD_CHECK_COMPLETE")
             return 0
         except KeyboardInterrupt:
@@ -301,7 +393,9 @@ def main(argv=None):
     if a.cmd == "loopback":
         try:
             levels = [float(v.strip()) for v in a.levels.split(",") if v.strip()]
-            dev = a.dev or calib.load()["device"]
+            cfg = calib.load()
+            dac_hw, adc_hw = ("sim", "sim") if a.sim else selected_audio_pair(a, cfg)
+            dev = "sim" if dac_hw == adc_hw == "sim" else f"{dac_hw}|{adc_hw}"
             if a.sim:
                 be = SimBackend(
                     SimChannel(gain=0.65, a2=5e-4, a3=3e-3, riaa=False, noise_dbfs=-105,
@@ -311,10 +405,14 @@ def main(argv=None):
                 )
             else:
                 if dev == "sim":
-                    ap.error("для аппаратной loopback укажи --dev hw:N,0; либо добавь --sim для виртуального теста")
-                be = AlsaCli(dev, in_map=calib.load()["in_map"], out_map=calib.load()["out_map"])
-            rig = Rig(be, calib.load(), fs=a.rate or calib.load()["fs"], blocks=a.blocks, settle=0.25)
+                    ap.error("для аппаратной loopback укажи --dac/--adc; либо добавь --sim")
+                be = AlsaCli(hw_out=dac_hw, hw_in=adc_hw,
+                             in_map=cfg["in_map"], out_map=cfg["out_map"])
+            validate_pair_rate(dac_hw, adc_hw, a.rate or cfg["fs"])
+            rig = Rig(be, cfg, fs=a.rate or cfg["fs"], blocks=a.blocks, settle=0.25)
             rig.open()
+            if not a.sim:
+                split_clock_preflight(rig, dac_hw, adc_hw)
             report = run_loopback_report(rig, frequency=a.f, levels=levels, repeats=a.repeats,
                                          silence_seconds=a.silence_seconds, csv_path=a.csv)
             print(report)
@@ -329,16 +427,22 @@ def main(argv=None):
             return 2
     if a.cmd in ("levelscan", "freqscan"):
         try:
-            dev = a.dev or calib.load()["device"]
+            cfg = calib.load()
+            dac_hw, adc_hw = ("sim", "sim") if a.sim else selected_audio_pair(a, cfg)
+            dev = "sim" if dac_hw == adc_hw == "sim" else f"{dac_hw}|{adc_hw}"
             if a.sim:
                 be = SimBackend(SimChannel(gain=0.65, a2=5e-4, a3=3e-3, noise_dbfs=-105, quant_bits=19),
                                 SimChannel(gain=0.65, a2=2e-3, a3=1e-3, noise_dbfs=-103, quant_bits=19))
             else:
                 if dev == "sim":
-                    ap.error("укажи --dev hw:N,0 или добавь --sim")
-                be = AlsaCli(dev, in_map=calib.load()["in_map"], out_map=calib.load()["out_map"])
-            rig = Rig(be, calib.load(), fs=a.rate or calib.load()["fs"], blocks=a.blocks, settle=0.25)
+                    ap.error("укажи --dac/--adc или добавь --sim")
+                be = AlsaCli(hw_out=dac_hw, hw_in=adc_hw,
+                             in_map=cfg["in_map"], out_map=cfg["out_map"])
+            validate_pair_rate(dac_hw, adc_hw, a.rate or cfg["fs"])
+            rig = Rig(be, cfg, fs=a.rate or cfg["fs"], blocks=a.blocks, settle=0.25)
             rig.open()
+            if not a.sim:
+                split_clock_preflight(rig, dac_hw, adc_hw)
             if a.cmd == "levelscan":
                 res = scans.run_level_scan(rig, a.f, [float(v) for v in a.levels.split(",") if v.strip()])
                 report = scans.text_level_scan(res)
@@ -383,7 +487,9 @@ def main(argv=None):
         raise SystemExit("selftest is available as top-level command: ./valvebench selftest")
     if a.cmd == "record":
         cal = calib.load()
-        be = AlsaCli(a.dev or cal["device"], in_map=cal["in_map"], out_map=cal["out_map"])
+        _dac_hw, adc_hw = selected_audio_pair(a, cal)
+        be = AlsaCli(hw_out=adc_hw, hw_in=adc_hw,
+                     in_map=cal["in_map"], out_map=cal["out_map"])
         be.open(a.rate or cal["fs"])
         x = be.record(a.seconds)
         vinyl.write_wav(a.wav, be.fs, x)

@@ -3,10 +3,11 @@
 Почему aplay/arecord, а не PortAudio-дуплекс
 --------------------------------------------
 Захват и воспроизведение — два независимых ALSA-потока (два процесса), без
-snd_pcm_link. USB-карты с implicit feedback (E-MU, многие UAC2) в связанном
-дуплексе ведут себя нестабильно, а раздельные потоки проверены годами.
-Расхождение стартов не важно: измерения построены так, что им не нужна
-привязка по времени (когерентные тоны, свип с деконволюцией).
+snd_pcm_link. Воспроизведение и запись могут идти через разные PCM endpoints.
+Абсолютное смещение старта находится по записанному сигналу, но независимые
+аппаратные тактовые генераторы могут иметь относительный дрейф. Поэтому точные
+измерения на разных устройствах выполняют низкоуровневую clock-проверку и
+отказываются продолжать при расхождении более 100 ppm; дрейф не исправляется.
 
 Здесь же — SimBackend: виртуальная карта с виртуальным усилителем для
 отладки без железа и для тестов.
@@ -142,6 +143,35 @@ def supported_pcm_rates(hw, direction):
     streams = parse_stream(int(m.group(1)))
     rates = {rate for alt in streams[direction] if alt.channels >= 2 for rate in alt.rates}
     return tuple(sorted(rates))
+
+
+def common_pcm_rates(hw_out, hw_in, candidates=(44100, 48000, 88200, 96000, 176400, 192000)):
+    """Common measurement rates for separate DAC/ADC endpoints.
+
+    The measurement Rig has one timebase, so only rates advertised by both
+    physical directions are returned. If one driver omits stream0 data, the
+    known side constrains the candidates and the exact PCM open is authoritative.
+    If neither side publishes capabilities, candidates are returned for probing.
+    """
+    is_sim_out, is_sim_in = str(hw_out) == "sim", str(hw_in) == "sim"
+    if is_sim_out and is_sim_in:
+        return tuple(int(r) for r in candidates)
+    if is_sim_out != is_sim_in:
+        # The virtual rig is full-duplex; a half-simulated signal path would
+        # not represent the selected physical route.
+        return ()
+    out_rates = (set(supported_pcm_rates(hw_out, "Playback"))
+                 if str(hw_out) != "sim" else set(int(r) for r in candidates))
+    in_rates = (set(supported_pcm_rates(hw_in, "Capture"))
+                if str(hw_in) != "sim" else set(int(r) for r in candidates))
+    allowed = set(int(r) for r in candidates)
+    if out_rates and in_rates:
+        return tuple(sorted((out_rates & in_rates) & allowed))
+    if out_rates:
+        return tuple(sorted(out_rates & allowed))
+    if in_rates:
+        return tuple(sorted(in_rates & allowed))
+    return tuple(int(r) for r in candidates)
 
 
 def supported_duplex_rates(hw):
@@ -389,10 +419,21 @@ class AlsaCli(Backend):
 
     name = "alsa"
 
-    def __init__(self, hw="hw:0,0", in_map=(0, 1), out_map=(0, 1), buffer_ms=100):
-        self.hw = hw
-        m = re.match(r"hw:(\d+)", hw)
-        self.card = int(m.group(1)) if m else None
+    def __init__(self, hw="hw:0,0", in_map=(0, 1), out_map=(0, 1), buffer_ms=100,
+                 hw_out=None, hw_in=None):
+        # Backward-compatible single-endpoint alias plus independently selected
+        # playback (DAC) and capture (ADC) endpoints. Measurement Rig still
+        # requires one common sample rate; separate clock domains are checked
+        # by the measurement workflow and are not assumed synchronized.
+        self.hw_out = str(hw_out if hw_out is not None else hw)
+        self.hw_in = str(hw_in if hw_in is not None else hw)
+        self.hw = self.hw_in if self.hw_in == self.hw_out else f"{self.hw_out}|{self.hw_in}"
+        mo = re.match(r"hw:(\d+)", self.hw_out)
+        mi = re.match(r"hw:(\d+)", self.hw_in)
+        self.card_out = int(mo.group(1)) if mo else None
+        self.card_in = int(mi.group(1)) if mi else None
+        # Legacy attribute used by older diagnostics; it describes capture.
+        self.card = self.card_in
         self.in_map, self.out_map = tuple(in_map), tuple(out_map)
         self.buffer_ms = buffer_ms
         self.fmt_in = self.fmt_out = "S24_3LE"
@@ -440,14 +481,32 @@ class AlsaCli(Backend):
     def open(self, fs):
         self.fs = int(fs)
         self.notes = []
-        if self.card is not None:
-            st = parse_stream(self.card)
-            ci, co = choose_format(st["Capture"], self.fs), choose_format(st["Playback"], self.fs)
-            if ci is None or co is None:
-                self.notes.append(f"карта не заявляет {self.fs} Гц с ≥2 каналами "
-                                  f"(/proc/asound/card{self.card}/stream0) — пробую 2 канала, S24_3LE")
+        # The ring is a fixed-duration history buffer. It was previously
+        # allocated in __init__ against Backend.fs (48 kHz), so at 192 kHz
+        # it silently retained only one quarter of the intended 12 seconds.
+        self._ring_capacity = int(12.0 * self.fs)
+        self._ring = np.zeros((self._ring_capacity, 2), dtype=np.float64)
+        self._ring_pos = 0
+        self._ring_count = 0
+        self._ring_total = 0
+        if self.card_in is not None:
+            streams_in = parse_stream(self.card_in)
+            ci = choose_format(streams_in["Capture"], self.fs)
+            if ci is None:
+                self.notes.append(
+                    f"ADC {self.hw_in} не заявляет {self.fs} Гц с ≥2 каналами "
+                    f"(/proc/asound/card{self.card_in}/stream0) — пробую 2 канала, S24_3LE")
             else:
-                (self.fmt_in, self.ch_in), (self.fmt_out, self.ch_out) = ci, co
+                self.fmt_in, self.ch_in = ci
+        if self.card_out is not None:
+            streams_out = parse_stream(self.card_out)
+            co = choose_format(streams_out["Playback"], self.fs)
+            if co is None:
+                self.notes.append(
+                    f"DAC {self.hw_out} не заявляет {self.fs} Гц с ≥2 каналами "
+                    f"(/proc/asound/card{self.card_out}/stream0) — пробую 2 канала, S24_3LE")
+            else:
+                self.fmt_out, self.ch_out = co
         if max(self.in_map) >= self.ch_in or max(self.out_map) >= self.ch_out:
             raise BackendError(f"карта открывается как {self.ch_in} вх / {self.ch_out} вых, "
                                f"а выбраны каналы {self.in_map}/{self.out_map}")
@@ -457,7 +516,8 @@ class AlsaCli(Backend):
         c = [tool]
         if quiet:
             c.append("-q")
-        c += ["-D", self.hw, "-t", "raw", "-f", fmt, "-r", str(self.fs), "-c", str(ch)]
+        endpoint = self.hw_in if direction == "c" else self.hw_out
+        c += ["-D", endpoint, "-t", "raw", "-f", fmt, "-r", str(self.fs), "-c", str(ch)]
         if direction == "p":
             c += [f"--buffer-time={int(buffer_ms if buffer_ms is not None else self.buffer_ms) * 1000}"]
         elif buffer_ms is not None:
@@ -884,6 +944,7 @@ class AlsaCli(Backend):
             "gap_max_ms": self._live_gap_max_s * 1e3,
             "buffers_ms": self._live_buffers_used, "pipe_bytes": self._pipe_sizes,
             "details": self.live_error or "ALSA stderr checked for underrun/overrun messages",
+            "dac_device": self.hw_out, "adc_device": self.hw_in,
         }
         self._live_last_status = status
         return status

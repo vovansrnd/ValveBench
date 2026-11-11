@@ -1,0 +1,6 @@
+card 3: DX1 — USB-Audio - DX1
+  Playback format=DSD_U32_BE channels=2 rates=44100,48000,88200,96000,176400,192000,352800,384000
+  Playback format=S32_LE channels=2 rates=44100,48000,88200,96000,176400,192000,352800,384000
+
+Дуплексные PCM endpoints (можно использовать как --dev / --play-dev / --rec-dev):
+  hw:0,0 — PCH — HDA-Intel - HDA Intel PCH, PCM 0 · проверка частот при открытии кГц

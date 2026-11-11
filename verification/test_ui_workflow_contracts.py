@@ -62,12 +62,35 @@ check("generator preview is cached when parameters do not change",
 # Compact header and automatic mute before measurement pages.
 win_init = method_text("Window", "__init__")
 page_changed = method_text("Window", "on_page_changed")
-check("compact device selector and dedicated top-bar ADC/GEN controls",
-      "set_size_request(164, -1)" in win_init and 'ToggleButton(label="АЦП")' in win_init
-      and 'ToggleButton(label="ГЕН")' in win_init)
+check("independent DAC/ADC selectors and dedicated top-bar ADC/GEN controls",
+      "self.dac_dev = Gtk.DropDown" in win_init and "self.adc_dev = Gtk.DropDown" in win_init
+      and 'ToggleButton(label="АЦП")' in win_init and 'ToggleButton(label="ГЕН")' in win_init
+      and "header.pack_start(self.dac_dev)" in win_init
+      and "header.pack_start(self.adc_dev)" in win_init)
 check("generator is disabled on pages other than Live/Generator",
       "page not in (self.live, self.generator_page)" in page_changed
       and "self.generator_btn.set_active(False)" in page_changed)
+
+
+# Separate endpoints must be wired all the way to ALSA commands and calibration provenance.
+backend_source = (ROOT / "valvebench" / "backend.py").read_text(encoding="utf-8")
+make_backend = method_text("Window", "make_backend")
+context_method = method_text("Window", "_measurement_context")
+run_job = method_text("Window", "run_job")
+check("backend routes aplay and arecord to separate hw endpoints",
+      "self.hw_out" in backend_source and "self.hw_in" in backend_source
+      and "endpoint = self.hw_in if direction == \"c\" else self.hw_out" in backend_source)
+check("measurement rate choices use the intersection of both PCM directions",
+      "common_pcm_rates(dac_hw, adc_hw, RATES)" in method_text("Window", "_rates_for_pair"))
+check("backend construction passes selected DAC and ADC separately",
+      "AlsaCli(hw_out=dac_hw, hw_in=adc_hw" in make_backend)
+check("saved measurement passport records both endpoint identities",
+      '"dac_device": dac_hw' in context_method and '"adc_device": adc_hw' in context_method
+      and '"device_pair_key": pair_key' in context_method)
+check("split-clock precision jobs require a clock preflight",
+      "if clock_sensitive and dac_hw != adc_hw" in run_job
+      and "m.clock_check(rig, level_dbfs=-72.0)" in run_job
+      and 'not clock.get("ok", False)' in run_job)
 
 # Avoid layout churn and needless Cairo redraw requests.
 live_tick = method_text("LivePage", "tick")

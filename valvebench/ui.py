@@ -21,7 +21,7 @@ from .identity import application_id as _resolved_application_id  # noqa: E402
 from . import gainmatch  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
-from .backend import (AlsaCli, SimBackend, SimChannel, list_duplex_devices, supported_duplex_rates,
+from .backend import (AlsaCli, SimBackend, SimChannel, common_pcm_rates, list_pcm_devices,
                       stable_device_identity)  # noqa: E402
 from .plot import Plot  # noqa: E402
 from . import livemetrics as lm  # noqa: E402
@@ -597,7 +597,8 @@ class MeasurementBatchPage(Page):
         if "noise" in selected:
             seconds = self._parameters["noise"]["seconds"]
             self.win.run_job(lambda rig: m.noise(rig, seconds), self._noise_done,
-                             "Пакет 1/{} · измерение собственного шума".format(len(self._selected_order)))
+                             "Пакет 1/{} · измерение собственного шума".format(len(self._selected_order)),
+                             clock_sensitive=False)
         else:
             self.run_driven_tests()
 
@@ -622,8 +623,7 @@ class MeasurementBatchPage(Page):
     def run_driven_tests(self):
         if self._context:
             expected = self._context.get("device", {}).get("stable_id")
-            current_hw = self.win.cards[self.win.dev.get_selected()][0]
-            current_id = stable_device_identity(current_hw)
+            current_id = self.win.audio_pair_key()
             expected_fs = int(self._context.get("audio_io", {}).get("sample_rate_hz", 0) or 0)
             if (expected and current_id != expected) or (expected_fs and int(self.win.rig_fs()) != expected_fs):
                 self.continue_button.set_visible(True)
@@ -641,9 +641,10 @@ class MeasurementBatchPage(Page):
 
         def job(rig):
             expected_mixer = ((self._context or {}).get("audio_io") or {}).get("alsa_mixer_fingerprint")
-            hw = str(getattr(rig.be, "hw", "") or "")
-            if expected_mixer and hw and hw != "sim":
-                actual_mixer = gainmatch.mixer_fingerprint_from_hw(hw)
+            dac_hw = str(getattr(rig.be, "hw_out", getattr(rig.be, "hw", "sim")))
+            adc_hw = str(getattr(rig.be, "hw_in", getattr(rig.be, "hw", "sim")))
+            if expected_mixer:
+                actual_mixer = Window._mixer_fingerprint_for_pair(dac_hw, adc_hw)
                 if actual_mixer != expected_mixer:
                     raise m.MeasureError(
                         "Микшер изменился после измерения шума. Верни прежние уровни/маршрутизацию "
@@ -974,8 +975,8 @@ class LivePage(Gtk.Box):
         A saved file is kept for traceability, but never silently reused after app
         restart: USB mixer defaults can change on reconnect.
         """
-        hw = self.win.cards[self.win.dev.get_selected()][0]
-        key = gainmatch.device_key_from_hw(hw)
+        hw = self.win.selected_adc_hw()
+        key = self.win.audio_pair_key()
         level = float(self.series_level.get_value())
         _, freqs = self.series_frequencies()
         riaa = self.series_riaa.get_active()
@@ -1083,9 +1084,11 @@ class LivePage(Gtk.Box):
         """Условия для контекстного TARE (0.1.19): частота, уровень, Fs, маршрут,
         устройство, микшер, калибровка. Собирается при каждом apply()."""
         try:
-            hw = self.win.cards[self.win.dev.get_selected()][0]
+            hw = self.win.selected_adc_hw()
+            pair_key = self.win.audio_pair_key()
         except Exception:
             hw = "sim"
+            pair_key = "sim"
         cal = self.win.cal
         cal_sig = repr([cal.get("out_fs_vrms"), cal.get("in_fs_vrms"),
                         cal.get("att_db"), cal.get("adc_att_db", 0.0),
@@ -1094,8 +1097,8 @@ class LivePage(Gtk.Box):
         # прямые вызовы из обработчиков регуляторов недопустимы
         ctx = {
             "fs": int(self.win.rig_fs()),
-            "device_key": gainmatch.device_key_from_hw(hw),
-            "mixer_hash": self.win._cached_mixer_fingerprint(hw),
+            "device_key": pair_key,
+            "mixer_hash": self.win._pair_mixer_fingerprint(fresh=False),
             "cal_sig": cal_sig,
         }
         if self.last_generator_settings is not None:
@@ -2090,24 +2093,21 @@ class PeakHoldPage(Gtk.Box):
         w = self.win
         dev = ""
         try:
-            dev = w.cards[w.dev.get_selected()][0]
+            dev = w.selected_adc_hw()
         except Exception:  # noqa: BLE001
             pass
         key = ""
         try:
-            key = str(stable_device_identity(dev)) if dev else ""
+            key = str(w.audio_pair_key()) if dev else ""
         except Exception:  # noqa: BLE001
             key = str(dev)
         mix = ""
         try:
-            if dev and dev != "sim":
-                # Live frame processing uses a 3-second cache to avoid
-                # spawning amixer repeatedly. Saving a curve is a boundary
-                # where stale context is unsafe, so force a fresh fingerprint.
-                fp = (gainmatch.mixer_fingerprint_from_hw(dev) if fresh_mixer
-                      else w._cached_mixer_fingerprint(dev))
-                if fresh_mixer:
-                    w._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), fp)
+            dac_hw = w.selected_dac_hw()
+            adc_hw = w.selected_adc_hw()
+            if dac_hw != "sim" or adc_hw != "sim":
+                fp = (w._pair_mixer_fingerprint(fresh=True) if fresh_mixer
+                      else w._pair_mixer_fingerprint(fresh=False))
                 mix = hashlib.sha1(repr(fp).encode("utf-8")).hexdigest()[:10] if fp is not None else ""
         except Exception:  # noqa: BLE001
             mix = ""
@@ -2766,7 +2766,7 @@ class NoisePage(Page):
 
     def go(self):
         s = self.sec.get_value()
-        self.win.run_job(lambda rig: m.noise(rig, s), self.done)
+        self.win.run_job(lambda rig: m.noise(rig, s), self.done, clock_sensitive=False)
 
     def done(self, res):
         self.win.last = res
@@ -3187,31 +3187,31 @@ class SetupPage(Page):
         self.meter_l = spin("Мультиметр: выход DAC L, мВ RMS", 0, 20000, 0.1, 0, 1,
                             "Подать 1 кГц −6 dBFS, измерять непосредственно на выходе DAC")
         self.meter_r = spin("Мультиметр: выход DAC R, мВ RMS", 0, 20000, 0.1, 0, 1)
-        self.auto_response = Adw.SwitchRow(title="Автоматически применять калибровку АЧХ/фазы этой карты",
-                                          subtitle="Отдельный профиль для каждой физической карты и Fs. Выключи, чтобы видеть тракт без поправки.")
+        self.auto_response = Adw.SwitchRow(title="Автоматически применять калибровку АЧХ/фазы этой пары ЦАП→АЦП",
+                                          subtitle="Отдельный профиль для конкретной пары устройств и Fs. Выключи, чтобы видеть тракт без поправки.")
         self.auto_response.set_active(bool(c.get("auto_apply_response", True)))
-        self.auto_noise = Adw.SwitchRow(title="Автоматически показывать шумовой пол этой карты",
-                                       subtitle="Профиль привязан к физической карте, Fs и состоянию микшера.")
+        self.auto_noise = Adw.SwitchRow(title="Автоматически показывать шумовой пол АЦП",
+                                       subtitle="Профиль привязан к выбранному входу АЦП, Fs и состоянию его микшера.")
         self.auto_noise.set_active(bool(c.get("auto_show_noise_floor", True)))
         self.card_status = Gtk.Label(label="", xalign=0, wrap=True)
         self.card_status.add_css_class("title-4")
-        self.fr_status = Adw.ActionRow(title="Калибровка АЧХ карты")
+        self.fr_status = Adw.ActionRow(title="Калибровка АЧХ пары ЦАП→АЦП")
         self.noise_status = Adw.ActionRow(title="Шумовой пол АЦП")
-        self.fr_status.set_subtitle("Для текущей карты и частоты калибровка ещё не выполнена")
-        self.noise_status.set_subtitle("Для текущей карты и частоты измерение ещё не выполнено")
+        self.fr_status.set_subtitle("Для текущей пары ЦАП→АЦП и частоты калибровка ещё не выполнена")
+        self.noise_status.set_subtitle("Для текущего входа АЦП и частоты измерение ещё не выполнено")
         info = Gtk.Label(
-            label=("АЧХ/ФАЗА ИЗМЕРИТЕЛЬНОЙ КАРТЫ. Соедини ЦАП L→АЦП L и ЦАП R→АЦП R напрямую. "
-                   "Нажми кнопку калибровки один раз для каждой физической карты и каждой нужной частоты дискретизации. "
-                   "Профили сохраняются в ~/.config/valvebench/config.json отдельно по устойчивому ID карты и Fs; "
-                   "при выборе этой карты калибровка подхватывается автоматически, даже если номер hw изменился. "
+            label=("АЧХ/ФАЗА ПОЛНОЙ ПЕТЛИ ЦАП→АЦП. Соедини ЦАП L→АЦП L и ЦАП R→АЦП R напрямую. "
+                   "Нажми кнопку калибровки для каждой пары устройств и каждой нужной общей частоты дискретизации. "
+                   "Профили сохраняются в ~/.config/valvebench/config.json отдельно по устойчивому ID пары и Fs; "
+                   "при выборе этой пары калибровка подхватывается автоматически, даже если номера hw изменились. "
                    "Коррекция выравнивает частотный отклик и фазу ЦАП+АЦП по каждому каналу, но не калибрует абсолютные вольты. "
                    "Если PAD DUT→ADC задан выше, он должен физически стоять в обоих каналах петли; используй те же кабели и положение переключателей, что и при DUT. "
                    "Если изменится PAD или уровни/маршрутизация микшера, старый профиль АЧХ не будет применяться.\n\n"
-                   "УРОВЕНЬ АЦП. Для E-MU 0404 USB используй 1/4-дюймовый Hi-Z/Line вход, 0 dB/Unity (не XLR Mic), +48 V выключи, Soft Limit выключи. "
-                   "При максимуме +12 dBV цель −12…−6 dBFS для синуса соответствует примерно 1…2 V RMS на входном разъёме. "
-                   "Для другой карты ориентируйся на её собственный max input level и не переноси эти вольты автоматически. "
-                   "ШУМОВОЙ ПОЛ АЦП. Перед измерением отключи DUT и замкни входы АЦП либо подключи эквивалентное сопротивление источника. "
-                   "Профиль также сохраняется отдельно для карты и Fs. Он показывается пунктиром в Спектре, THD и IMD; "
+                   "УРОВЕНЬ АЦП. Выбери линейный вход и зафиксируй аппаратный gain, отключи Soft Limit/автоматическую регулировку и phantom power. "
+                   "Не считай паспортное входное сопротивление всего разъёма гарантией импеданса на звуковых частотах: входная цепь может содержать разделительный конденсатор и резисторы. "
+                   "Максимально допустимый уровень и реальный входной импеданс проверяй для конкретного аналогового режима и своей карты. "
+                   "ШУМОВОЙ ПОЛ АЦП. Перед измерением отключи DUT и замкни входы АЦП либо подключи эквивалент сопротивления источника. "
+                   "Профиль шума привязан к входу АЦП и Fs. Он показывается пунктиром в Спектре, THD и IMD; "
                    "это один и тот же измеренный спектральный шум, пересчитанный под разрешение конкретного графика. "
                    "Он не вычитается из результата и не заменяет шум проверяемого устройства."),
             xalign=0, wrap=True)
@@ -3222,14 +3222,14 @@ class SetupPage(Page):
                          group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r,
                                Gtk.Label(label="Калибровку ADC по петле выполняй с тем же физическим PAD DUT→ADC в обоих каналах. После изменения делителя/входного режима повтори ADC-калибровку и калибровку АЧХ карты.", xalign=0, wrap=True)),
                          group("Показания мультиметра при −6 dBFS", self.meter_l, self.meter_r),
-                         button("Применить показания мультиметра к DAC L/R", self.cal_out),
-                         button("Калибровать ADC L/R по петле DAC→ADC", self.cal_in),
+                         button("Применить показания мультиметра к ЦАП L/R", self.cal_out),
+                         button("Калибровать АЦП L/R по петле ЦАП→АЦП", self.cal_in),
                          group("Автоматическая коррекция и отображение", self.auto_response, self.auto_noise),
                          self.card_status, info, self.fr_status,
-                         button("1. КАЛИБРОВАТЬ АЧХ ЗВУКОВОЙ КАРТЫ · ПРЯМАЯ ПЕТЛЯ", self.calibrate_response, True),
+                         button("1. КАЛИБРОВАТЬ АЧХ ПАРЫ ЦАП→АЦП · ПРЯМАЯ ПЕТЛЯ", self.calibrate_response, True),
                          self.noise_status,
                          button("2. ИЗМЕРИТЬ ШУМОВОЙ ПОЛ АЦП", self.calibrate_noise),
-                         Gtk.Label(label=("Проверка тактов сравнивает фактическую частоту тестового тона в записи АЦП "
+                         Gtk.Label(label=("Проверка тактов подаёт короткий синус 1 кГц на −72 dBFS и сравнивает частоту в записи АЦП "
                                           "с частотой, которую выдаёт ЦАП. Это проверка расхождения частот дискретизации, "
                                           "а не синхронизации часов компьютера."), xalign=0, wrap=True),
                          button("ПРОВЕРИТЬ СОВПАДЕНИЕ ЧАСТОТ ЦАП И АЦП", self.check_clock),
@@ -3256,21 +3256,27 @@ class SetupPage(Page):
         self.auto_response.set_active(bool(c.get("auto_apply_response", True)))
         self.auto_noise.set_active(bool(c.get("auto_show_noise_floor", True)))
         fs = self.win.rig_fs()
-        hw, label = self.win.cards[self.win.dev.get_selected()]
-        self.card_status.set_text(f"ТЕКУЩАЯ КАРТА: {label}\nПрофиль: {stable_device_identity(hw)} · Fs {fs/1000:g} кГц")
+        dac_hw, adc_hw = self.win.selected_dac_hw(), self.win.selected_adc_hw()
+        dac_label = self.win.dac_devices[self.win.dac_dev.get_selected()][1]
+        adc_label = self.win.adc_devices[self.win.adc_dev.get_selected()][1]
+        pair_key = self.win.audio_pair_key()
+        adc_key = stable_device_identity(adc_hw)
+        self.card_status.set_text(
+            f"ЦАП: {dac_label}\nАЦП: {adc_label}\nПрофиль пары: {pair_key} · Fs {fs/1000:g} кГц")
         fr = c.get("frequency_response_profiles", {}).get(str(fs))
         nf = c.get("noise_floor_profiles", {}).get(str(fs))
-        current_fp = None
-        if hw != "sim" and (fr or nf):
-            current_fp = gainmatch.mixer_fingerprint_from_hw(hw)
+        current_fr_fp = self.win._pair_mixer_fingerprint(fresh=True) if fr else None
+        current_nf_fp = (gainmatch.mixer_fingerprint_from_hw(adc_hw)
+                         if nf and adc_hw != "sim" else None)
 
-        def profile_state(profile, auto_enabled, response=False):
+        def profile_state(profile, auto_enabled, expected_key, current_fp, physical, response=False):
             if not profile:
                 return "калибровка не выполнена"
-            if profile.get("device_key") != stable_device_identity(hw) or int(profile.get("fs", -1)) != int(fs):
-                return "профиль принадлежит другой карте или частоте"
+            if profile.get("device_key") != expected_key or int(profile.get("fs", -1)) != int(fs):
+                return ("профиль принадлежит другой паре ЦАП/АЦП или частоте" if response
+                        else "профиль принадлежит другому входу АЦП или частоте")
             expected = profile.get("mixer_fingerprint")
-            if hw != "sim" and (not expected or current_fp is None or current_fp != expected):
+            if physical and (not expected or current_fp is None or current_fp != expected):
                 return "настройки микшера изменились — нужна повторная калибровка"
             if response and not calib.response_profile_pad_matches(profile, c.get("adc_att_db", 0.0)):
                 return "изменился PAD DUT→ADC — нужна повторная калибровка петли"
@@ -3281,15 +3287,17 @@ class SetupPage(Page):
         if fr:
             self.fr_status.set_subtitle(
                 f"{fr.get('f_lo', 0):.0f}–{fr.get('f_hi', 0):.0f} Гц · {fr.get('created', 'дата не указана')} · "
-                + profile_state(fr, self.auto_response.get_active(), response=True))
+                + profile_state(fr, self.auto_response.get_active(), pair_key, current_fr_fp,
+                                dac_hw != "sim" or adc_hw != "sim", response=True))
         else:
-            self.fr_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет профиля")
+            self.fr_status.set_subtitle(f"Для текущей пары и {fs/1000:g} кГц ещё нет профиля")
         if nf:
             self.noise_status.set_subtitle(
                 f"{nf.get('created', 'дата не указана')} · "
-                + profile_state(nf, self.auto_noise.get_active()))
+                + profile_state(nf, self.auto_noise.get_active(), adc_key, current_nf_fp,
+                                adc_hw != "sim"))
         else:
-            self.noise_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет измерения")
+            self.noise_status.set_subtitle(f"Для текущего АЦП и {fs/1000:g} кГц ещё нет измерения")
 
     def apply(self):
         c = self.win.cal
@@ -3305,24 +3313,24 @@ class SetupPage(Page):
         self.win.toast("Настройки и калибровки сохранены")
 
     def calibrate_response(self):
-        dev = self.win.cards[self.win.dev.get_selected()][0]
-        key = stable_device_identity(dev)
+        dac_hw, adc_hw = self.win.selected_dac_hw(), self.win.selected_adc_hw()
+        key = self.win.audio_pair_key()
         fs = self.win.rig_fs()
         pad_db = float(self.win.cal.get("adc_att_db", 0.0) or 0.0)
-        hw = dev
-        before_fp = gainmatch.mixer_fingerprint_from_hw(hw)
-        self.fr_status.set_subtitle("Выполняется плоский свип по прямой петле…")
+        before_fp = self.win._pair_mixer_fingerprint(fresh=True)
+        self.fr_status.set_subtitle("Выполняется плоский свип по петле выбранных ЦАП→АЦП…")
 
         def job(rig):
-            if getattr(rig.be, "hw", "sim") != hw:
-                raise m.MeasureError("выбранная звуковая карта изменилась; выбери её снова")
+            if (getattr(rig.be, "hw_out", getattr(rig.be, "hw", "sim")) != dac_hw or
+                    getattr(rig.be, "hw_in", getattr(rig.be, "hw", "sim")) != adc_hw):
+                raise m.MeasureError("выбранная пара ЦАП/АЦП изменилась; выбери её снова")
             res = m.sweep(rig, f_lo=20.0, f_hi=min(20000.0, 0.40 * rig.fs), dur=12.0,
                           level_1k_dbfs=-12.0, mode="flat", iec=False)
-            after_fp = gainmatch.mixer_fingerprint_from_hw(hw)
-            if hw != "sim" and (before_fp is None or after_fp is None):
-                raise m.MeasureError("не удалось прочитать состояние ALSA-микшера; профиль не сохранён")
-            if before_fp and after_fp != before_fp:
-                raise m.MeasureError("настройки микшера изменились во время калибровки; профиль не сохранён")
+            after_fp = self.win._pair_mixer_fingerprint(fresh=True, dac_hw=dac_hw, adc_hw=adc_hw)
+            if (dac_hw != "sim" or adc_hw != "sim") and (before_fp is None or after_fp is None):
+                raise m.MeasureError("не удалось прочитать состояние микшеров ЦАП/АЦП; профиль не сохранён")
+            if before_fp != after_fp:
+                raise m.MeasureError("настройки микшеров изменились во время калибровки; профиль не сохранён")
             profile = m.build_response_calibration(res, key, after_fp, fs=rig.fs)
             profile["mixer_fingerprint"] = after_fp
             profile["adc_att_db"] = pad_db
@@ -3336,7 +3344,7 @@ class SetupPage(Page):
             self.win._mixer_fingerprint_cache.clear()
             calib.save(self.win.cal)
             self.refresh_from_calibration()
-            self.say("КАЛИБРОВКА АЧХ/ФАЗЫ СОХРАНЕНА ДЛЯ ЭТОЙ КАРТЫ И ЧАСТОТЫ. "
+            self.say("КАЛИБРОВКА АЧХ/ФАЗЫ СОХРАНЕНА ДЛЯ ЭТОЙ ПАРЫ ЦАП→АЦП И ЧАСТОТЫ. "
                      "Теперь можно подключить проверяемое устройство. При включённой автокоррекции "
                      "измерение будет очищено от собственного частотного отклика ЦАП/АЦП отдельно для L и R.")
             self.win.toast("Профиль АЧХ карты сохранён")
@@ -3344,15 +3352,15 @@ class SetupPage(Page):
         self.win.run_job(job, done, "калибрую АЧХ/фазу карты по плоской петле L→L, R→R")
 
     def calibrate_noise(self):
-        dev = self.win.cards[self.win.dev.get_selected()][0]
+        dev = self.win.selected_adc_hw()
         key = stable_device_identity(dev)
         fs = self.win.rig_fs()
-        before_fp = gainmatch.mixer_fingerprint_from_hw(dev)
+        before_fp = gainmatch.mixer_fingerprint_from_hw(dev) if dev != "sim" else None
         self.noise_status.set_subtitle("Записываю 12 секунд тишины с входами, нагруженными на землю/сопротивление…")
 
         def job(rig):
             res = m.noise(rig, seconds=12.0)
-            after_fp = gainmatch.mixer_fingerprint_from_hw(dev)
+            after_fp = gainmatch.mixer_fingerprint_from_hw(dev) if dev != "sim" else None
             if dev != "sim" and (before_fp is None or after_fp is None):
                 raise m.MeasureError("не удалось прочитать состояние ALSA-микшера; шумовой профиль не сохранён")
             if before_fp and after_fp != before_fp:
@@ -3380,11 +3388,12 @@ class SetupPage(Page):
                      "зависит от полосы разрешения FFT.\n\n" + m.text_noise(measured))
             self.win.toast("Шумовой профиль карты сохранён")
 
-        self.win.run_job(job, done, "измеряю шумовой пол АЦП (входы должны быть нагружены)")
+        self.win.run_job(job, done, "измеряю шумовой пол АЦП (входы должны быть нагружены)",
+                         clock_sensitive=False)
 
     def check_clock(self):
         self.win.run_job(m.clock_check, lambda result: self.say(m.text_clock(result)),
-                         "проверяю согласование тактов ЦАП и АЦП")
+                         "проверяю согласование тактов ЦАП и АЦП", clock_sensitive=False)
 
     def cal_out(self):
         ml, mr = self.meter_l.get_value(), self.meter_r.get_value()
@@ -3434,7 +3443,13 @@ class Window(Adw.ApplicationWindow):
         self.busy = False
         self.live_on = False
         self.last = None
-        self.cards = [("sim", "Симулятор (демо без карты)")] + list_duplex_devices()
+        pcm_devices = list_pcm_devices()
+        sim_entry = ("sim", "Симулятор (демо без карты)")
+        self.dac_devices = [sim_entry] + list(pcm_devices.get("Playback", []))
+        self.adc_devices = [sim_entry] + list(pcm_devices.get("Capture", []))
+        # Compatibility aliases for page code that historically referred to
+        # the measurement input endpoint as `dev`/`cards`.
+        self.cards = self.adc_devices
         self.toasts = Adw.ToastOverlay()
         # 0.1.20: постоянная полоса уровней, заметки о состоянии потока от страниц и фоновый
         # расчёт спектра вне процесса GUI
@@ -3443,35 +3458,64 @@ class Window(Adw.ApplicationWindow):
         self.analysis = AnalysisWorker()
 
         header = Adw.HeaderBar()
-        # The selector is intentionally compact: the full ALSA name remains in
-        # the tooltip and in Setup. Long hardware strings must not dominate the
-        # HeaderBar on wide/HiDPI screens.
-        display_names = [(n if len(n) <= 21 else n[:18] + "…") for _, n in self.cards]
-        self.dev = Gtk.DropDown.new_from_strings(display_names)
-        self.dev.set_size_request(164, -1)
-        self.dev.set_hexpand(False)
-        self.dev.set_tooltip_text("Устройство ЦАП/АЦП; полный список доступен по нажатию")
-        saved_device = self.cal["device"]
-        saved_key = self.cal.get("device_key", "")
-        card_keys = [stable_device_identity(hw) for hw, _label in self.cards]
-        sel = next((i for i, key in enumerate(card_keys) if saved_key and key == saved_key), -1)
-        if sel < 0:
-            sel = next((i for i, (d, _) in enumerate(self.cards) if d == saved_device), 0)
-        selected_hw = self.cards[sel][0]
-        if selected_hw == "sim" and saved_device != "sim":
-            self.invalid_saved_device = saved_device
-        else:
-            self.invalid_saved_device = None
-        self.dev.set_selected(sel)
-        self.cal.activate_profile(stable_device_identity(selected_hw), selected_hw)
-        self.rate_values = self._rates_for_device(selected_hw)
+        # DAC and ADC are independent ALSA PCM endpoints. Precision measurement
+        # still uses one common Fs selected from the intersection of both sides;
+        # separate clock rates are reserved for a later scope-only mode.
+        display_dac = [(n if len(n) <= 19 else n[:16] + "…") for _, n in self.dac_devices]
+        display_adc = [(n if len(n) <= 19 else n[:16] + "…") for _, n in self.adc_devices]
+        self.dac_dev = Gtk.DropDown.new_from_strings(display_dac)
+        self.adc_dev = Gtk.DropDown.new_from_strings(display_adc)
+        for selector in (self.dac_dev, self.adc_dev):
+            selector.set_size_request(136, -1)
+            selector.set_hexpand(False)
+
+        legacy_device = str(self.cal.get("device", "sim"))
+        saved_dac = str(self.cal.get("dac_device") or legacy_device)
+        saved_adc = str(self.cal.get("adc_device") or legacy_device)
+        def _index_for(items, device):
+            return next((i for i, (hw, _label) in enumerate(items) if hw == device), 0)
+        dac_sel = _index_for(self.dac_devices, saved_dac)
+        adc_sel = _index_for(self.adc_devices, saved_adc)
+        self.invalid_saved_devices = []
+        if dac_sel == 0 and saved_dac != "sim":
+            self.invalid_saved_devices.append(f"ЦАП {saved_dac}")
+        if adc_sel == 0 and saved_adc != "sim":
+            self.invalid_saved_devices.append(f"АЦП {saved_adc}")
+        self.dac_dev.set_selected(dac_sel)
+        self.adc_dev.set_selected(adc_sel)
+        self.dev = self.adc_dev  # legacy page API: selected capture endpoint
+        self._endpoint_update_guard = False
+
+        selected_dac = self.dac_devices[dac_sel][0]
+        selected_adc = self.adc_devices[adc_sel][0]
+        if (selected_dac == "sim") != (selected_adc == "sim"):
+            # Simulation is a paired virtual device, never half of a physical rig.
+            self.dac_dev.set_selected(0)
+            self.adc_dev.set_selected(0)
+            selected_dac = selected_adc = "sim"
+        self.cal["dac_device"] = selected_dac
+        self.cal["adc_device"] = selected_adc
+        pair_key = self._profile_key_for_pair(selected_dac, selected_adc)
+        profile_hw = selected_dac if selected_dac == selected_adc else f"{selected_dac}|{selected_adc}"
+        self.cal.activate_profile(pair_key, profile_hw)
+        # Keep the legacy CLI field as the ADC endpoint; the GUI backend uses
+        # explicit dac_device/adc_device below.
+        self.cal["device"] = selected_adc
+        self.cal["dac_device"] = selected_dac
+        self.cal["adc_device"] = selected_adc
+
+        self.rate_values = self._rates_for_pair(selected_dac, selected_adc)
+        self._rate_pair_error = not bool(self.rate_values)
+        if not self.rate_values:
+            self.rate_values = [int(self.cal.get("fs", 96000) or 96000)]
         self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in self.rate_values])
         self.rate.set_size_request(84, -1)
         self.rate.set_hexpand(False)
-        preferred_rate = int(self.cal["fs"])
+        preferred_rate = int(self.cal.get("fs", 96000))
         rate_sel = (self.rate_values.index(preferred_rate) if preferred_rate in self.rate_values
                     else min(range(len(self.rate_values)), key=lambda i: abs(self.rate_values[i] - preferred_rate)))
         self.rate.set_selected(rate_sel)
+        self.rate.set_sensitive(not self._rate_pair_error)
         self.cal["fs"] = self.rate_values[rate_sel]
         self._updating_rate = False
         self.live_btn = Gtk.ToggleButton(label="АЦП")
@@ -3518,14 +3562,19 @@ class Window(Adw.ApplicationWindow):
         self.export_measurement_btn.set_sensitive(False)
         self.export_measurement_btn.connect("clicked", self.save_last_measurement)
         self.measurement_device_id.connect("changed", self._update_export_button)
-        header.pack_start(self.dev)
+        header.pack_start(Gtk.Label(label="ЦАП"))
+        header.pack_start(self.dac_dev)
+        header.pack_start(Gtk.Label(label="АЦП"))
+        header.pack_start(self.adc_dev)
         header.pack_start(self.rate)
         header.pack_start(self.live_btn)
         header.pack_start(self.generator_btn)
         header.pack_end(self.spinner)
         header.pack_end(self.status)
-        self.dev.set_tooltip_text(f"{self.cards[sel][1]} · {self.cards[sel][0]}")
-        self.dev.connect("notify::selected", self.on_device_changed)
+        self.dac_dev.set_tooltip_text(f"Выход ЦАП: {self.dac_devices[dac_sel][1]} · {selected_dac}")
+        self.adc_dev.set_tooltip_text(f"Вход АЦП: {self.adc_devices[adc_sel][1]} · {selected_adc}")
+        self.dac_dev.connect("notify::selected", self.on_endpoint_changed)
+        self.adc_dev.connect("notify::selected", self.on_endpoint_changed)
         self.rate.connect("notify::selected", self.on_rate_changed)
 
         self.stack = Gtk.Stack()
@@ -3580,8 +3629,11 @@ class Window(Adw.ApplicationWindow):
         tv.set_content(self.toasts)
         self.set_content(tv)
         self.connect("close-request", self.on_close)
-        if self.invalid_saved_device:
-            self.toast(f"Сохранённое устройство {self.invalid_saved_device} не найдено. Выбран симулятор; выбери нужную карту вверху.")
+        if self.invalid_saved_devices:
+            missing = ", ".join(self.invalid_saved_devices)
+            self.toast(f"Сохранённые устройства не найдены: {missing}. Проверь выбор ЦАП и АЦП вверху.")
+        if self._rate_pair_error:
+            self.toast("У выбранных ЦАП и АЦП не обнаружено общей частоты для точных измерений.")
 
     @staticmethod
     def _widget_tree(root):
@@ -3591,10 +3643,54 @@ class Window(Adw.ApplicationWindow):
             yield from Window._widget_tree(child)
             child = child.get_next_sibling()
 
+    def selected_dac_hw(self):
+        index = self.dac_dev.get_selected()
+        return self.dac_devices[index][0] if 0 <= index < len(self.dac_devices) else "sim"
+
+    def selected_adc_hw(self):
+        index = self.adc_dev.get_selected()
+        return self.adc_devices[index][0] if 0 <= index < len(self.adc_devices) else "sim"
+
+    @staticmethod
+    def _profile_key_for_pair(dac_hw, adc_hw):
+        dac_id = stable_device_identity(dac_hw)
+        adc_id = stable_device_identity(adc_hw)
+        if dac_id == adc_id:
+            # Preserve existing calibration profiles for the legacy same-card rig.
+            return dac_id
+        digest = hashlib.sha256((dac_id + "\0" + adc_id).encode("utf-8")).hexdigest()[:24]
+        return f"pair:{digest}"
+
+    def audio_pair_key(self):
+        return self._profile_key_for_pair(self.selected_dac_hw(), self.selected_adc_hw())
+
+    @staticmethod
+    def _mixer_fingerprint_for_pair(dac_hw, adc_hw):
+        if dac_hw == "sim" and adc_hw == "sim":
+            return None
+        def read(hw):
+            return None if hw == "sim" else gainmatch.mixer_fingerprint_from_hw(hw)
+        dac_fp, adc_fp = read(dac_hw), read(adc_hw)
+        if (dac_hw != "sim" and dac_fp is None) or (adc_hw != "sim" and adc_fp is None):
+            return None
+        if dac_hw == adc_hw:
+            return dac_fp
+        return {"dac": dac_fp, "adc": adc_fp}
+
+    def _pair_mixer_fingerprint(self, fresh=False, dac_hw=None, adc_hw=None):
+        dac_hw = self.selected_dac_hw() if dac_hw is None else dac_hw
+        adc_hw = self.selected_adc_hw() if adc_hw is None else adc_hw
+        if fresh:
+            return self._mixer_fingerprint_for_pair(dac_hw, adc_hw)
+        if dac_hw == "sim" and adc_hw == "sim":
+            return None
+        dac_fp = None if dac_hw == "sim" else self._cached_mixer_fingerprint(dac_hw)
+        adc_fp = None if adc_hw == "sim" else self._cached_mixer_fingerprint(adc_hw)
+        return dac_fp if dac_hw == adc_hw else {"dac": dac_fp, "adc": adc_fp}
+
     def _device_scope(self):
-        """Preference scope for card-dependent display ranges, not ALSA card numbers."""
-        dev = self.cards[self.dev.get_selected()][0]
-        return f"{stable_device_identity(dev)}@{int(self.rig_fs())}"
+        """Preference scope follows the complete playback/capture route."""
+        return f"{self.audio_pair_key()}@{int(self.rig_fs())}"
 
     def _device_pref_key(self, page_key, name):
         return f"{page_key}/device/{self._device_scope()}/{name}"
@@ -3738,8 +3834,8 @@ class Window(Adw.ApplicationWindow):
         """Return a valid per-card/per-rate response profile or a human-readable reason."""
         if not bool(self.cal.get("auto_apply_response", True)):
             return None, "АЧХ показана без коррекции измерительной карты (автоприменение отключено)."
-        dev = self.cards[self.dev.get_selected()][0]
-        key = stable_device_identity(dev)
+        dev = self.selected_adc_hw()
+        key = self.audio_pair_key()
         profile = self.cal.get("frequency_response_profiles", {}).get(str(int(fs)))
         if not isinstance(profile, dict):
             return None, f"Для этой карты и {int(fs)} Гц нет калибровки АЧХ; показан сырой тракт."
@@ -3754,22 +3850,21 @@ class Window(Adw.ApplicationWindow):
                 detail = "(ошибка значения PAD в профиле/настройках)"
             return None, f"Профиль АЧХ не соответствует PAD DUT→ADC {detail}; повтори калибровку петли."
         expected = profile.get("mixer_fingerprint")
-        if dev != "sim" and not expected:
-            return None, "У профиля нет снимка ALSA-микшера; он не применён. Повтори калибровку."
+        if (self.selected_dac_hw() != "sim" or dev != "sim") and not expected:
+            return None, "У профиля нет снимков микшеров ЦАП/АЦП; он не применён. Повтори калибровку петли."
         if expected:
-            # A one-shot response measurement must never use a 3-second stale
-            # mixer snapshot: ALSA volume/source may have changed just before go().
-            actual = gainmatch.mixer_fingerprint_from_hw(dev)
-            self._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), actual)
+            # Response correction belongs to the complete DAC→ADC loop, not to
+            # either endpoint in isolation. Refresh both fingerprints here.
+            actual = self._pair_mixer_fingerprint(fresh=True)
             if actual is None or actual != expected:
-                return None, "Настройки микшера изменились после калибровки; АЧХ показана без старой поправки. Повтори калибровку петли."
+                return None, "Настройки микшера ЦАП/АЦП изменились после калибровки; АЧХ показана без старой поправки. Повтори калибровку петли."
         return profile, f"АЧХ скорректирована по калибровке {profile.get('created', '')} этой карты."
 
     def get_noise_floor_profile(self, fs, fresh=False):
         """Return measured card noise density only when physical card/mixer/Fs match."""
         if not bool(self.cal.get("auto_show_noise_floor", True)):
             return None
-        dev = self.cards[self.dev.get_selected()][0]
+        dev = self.selected_adc_hw()
         key = stable_device_identity(dev)
         profile = self.cal.get("noise_floor_profiles", {}).get(str(int(fs)))
         if not isinstance(profile, dict) or profile.get("kind") != "adc_noise_floor":
@@ -3787,31 +3882,54 @@ class Window(Adw.ApplicationWindow):
                 return None
         return profile
 
-    def _rates_for_device(self, dev):
-        if dev == "sim":
-            return list(RATES)
-        advertised = supported_duplex_rates(dev)
-        available = [r for r in RATES if r in advertised]
-        # Some USB drivers do not expose stream0 reliably. Keep the explicit
-        # selector usable; the selected PCM is probed by ALSA when opened.
-        return available or list(RATES)
+    def _rates_for_pair(self, dac_hw, adc_hw):
+        return list(common_pcm_rates(dac_hw, adc_hw, RATES))
 
-    def on_device_changed(self, *_):
+    def on_endpoint_changed(self, *_):
+        if self._endpoint_update_guard:
+            return
+        self._endpoint_update_guard = True
+        try:
+            dac_hw = self.selected_dac_hw()
+            adc_hw = self.selected_adc_hw()
+            # The virtual simulator is a complete pair, not a physical half-duplex endpoint.
+            if dac_hw == "sim" and adc_hw != "sim":
+                self.adc_dev.set_selected(0)
+                adc_hw = "sim"
+            elif adc_hw == "sim" and dac_hw != "sim":
+                self.dac_dev.set_selected(0)
+                dac_hw = "sim"
+        finally:
+            self._endpoint_update_guard = False
+
         self._mixer_fingerprint_cache.clear()
-        dev, label = self.cards[self.dev.get_selected()]
-        self.dev.set_tooltip_text(f"{label} · {dev}")
-        self.cal.activate_profile(stable_device_identity(dev), dev)
+        di, ai = self.dac_dev.get_selected(), self.adc_dev.get_selected()
+        self.dac_dev.set_tooltip_text(f"Выход ЦАП: {self.dac_devices[di][1]} · {dac_hw}")
+        self.adc_dev.set_tooltip_text(f"Вход АЦП: {self.adc_devices[ai][1]} · {adc_hw}")
+        pair_key = self._profile_key_for_pair(dac_hw, adc_hw)
+        profile_hw = dac_hw if dac_hw == adc_hw else f"{dac_hw}|{adc_hw}"
+        self.cal.activate_profile(pair_key, profile_hw)
+        self.cal["device"] = adc_hw  # legacy CLI alias; GUI uses the explicit pair
+        self.cal["dac_device"] = dac_hw
+        self.cal["adc_device"] = adc_hw
+
         old_rate = int(self.cal.get("fs", 96000))
-        self.rate_values = self._rates_for_device(dev)
+        self.rate_values = self._rates_for_pair(dac_hw, adc_hw)
+        self._rate_pair_error = not bool(self.rate_values)
+        if not self.rate_values:
+            self.rate_values = [old_rate]
         new_index = (self.rate_values.index(old_rate) if old_rate in self.rate_values
                      else min(range(len(self.rate_values)), key=lambda i: abs(self.rate_values[i] - old_rate)))
         self._updating_rate = True
         self.rate.set_model(Gtk.StringList.new([f"{r / 1000:g} кГц" for r in self.rate_values]))
         self.rate.set_selected(new_index)
+        self.rate.set_sensitive(not self._rate_pair_error)
         self._updating_rate = False
         self.cal["fs"] = self.rate_values[new_index]
         self.reset_rig()
         calib.save(self.cal)
+        if self._rate_pair_error:
+            self.toast("У выбранных ЦАП и АЦП нет общей заявленной частоты. Точные измерения недоступны.")
         if hasattr(self, "live"):
             self.live.refresh_gain_reference()
         if hasattr(self, "setup"):
@@ -3820,6 +3938,10 @@ class Window(Adw.ApplicationWindow):
             self.restore_device_scoped_preferences()
         if hasattr(self, "peakhold"):
             self.peakhold.on_context_changed()
+
+    # Backward-compatible callback name used by older UI tests.
+    def on_device_changed(self, *_):
+        self.on_endpoint_changed(*_)
 
     def on_rate_changed(self, *_):
         if getattr(self, "_updating_rate", False):
@@ -3854,11 +3976,13 @@ class Window(Adw.ApplicationWindow):
         self.export_measurement_btn.set_sensitive(valid_result and valid_id)
 
     def _measurement_context(self, rig):
-        """Freeze card/calibration identity at measurement start, not export time."""
+        """Freeze both physical endpoints and calibration identity at measurement start."""
         from . import identity as build_identity
-        index = self.dev.get_selected()
-        hw, label = self.cards[index] if 0 <= index < len(self.cards) else ("?", "Unknown")
-        be = rig.be
+        dac_hw, adc_hw = self.selected_dac_hw(), self.selected_adc_hw()
+        dac_i, adc_i = self.dac_dev.get_selected(), self.adc_dev.get_selected()
+        dac_label = self.dac_devices[dac_i][1]
+        adc_label = self.adc_devices[adc_i][1]
+        pair_key = self._profile_key_for_pair(dac_hw, adc_hw)
         calibration = {
             "in_map": self.cal.get("in_map"), "out_map": self.cal.get("out_map"),
             "out_fs_vrms": self.cal.get("out_fs_vrms"),
@@ -3867,6 +3991,7 @@ class Window(Adw.ApplicationWindow):
             "dut_to_adc_pad_db": self.cal.get("adc_att_db", 0.0),
             "mains_hz": self.cal.get("mains"), "analysis_band_hi_hz": self.cal.get("band_hi"),
         }
+        be = rig.be
         return {
             "software": {"name": "ValveBench", "version": __version__,
                          "build_profile": build_identity.build_profile()},
@@ -3875,17 +4000,25 @@ class Window(Adw.ApplicationWindow):
                 "device_id_entered_at_measurement_start": self.measurement_device_id.get_text().strip() or None,
                 "note_entered_at_measurement_start": self.measurement_note.get_text().strip(),
             },
-            "device": {"alsa_pcm": hw, "display_name": label,
-                       "stable_id": stable_device_identity(hw)},
+            # Keep legacy `alsa_pcm` as the ADC endpoint, but state both sides explicitly.
+            "device": {"alsa_pcm": adc_hw, "display_name": adc_label,
+                       "stable_id": pair_key,
+                       "dac_alsa_pcm": dac_hw, "dac_display_name": dac_label,
+                       "dac_stable_id": stable_device_identity(dac_hw),
+                       "adc_stable_id": stable_device_identity(adc_hw)},
             "audio_io": {
                 "backend": getattr(be, "name", type(be).__name__),
                 "device": getattr(be, "hw", getattr(be, "name", "?")),
+                "dac_device": dac_hw, "adc_device": adc_hw,
+                "dac_stable_id": stable_device_identity(dac_hw),
+                "adc_stable_id": stable_device_identity(adc_hw),
+                "device_pair_key": pair_key,
                 "sample_rate_hz": int(rig.fs), "blocks": int(rig.blocks),
                 "capture_format": getattr(be, "fmt_in", None),
                 "playback_format": getattr(be, "fmt_out", None),
                 "capture_channels": getattr(be, "ch_in", None),
                 "playback_channels": getattr(be, "ch_out", None),
-                # Read on the worker before the test starts; never block GTK on `amixer`.
+                # Read by the worker, not by GTK; includes both mixers for a split rig.
                 "alsa_mixer_fingerprint": None,
             },
             "calibration": calibration,
@@ -3923,14 +4056,21 @@ class Window(Adw.ApplicationWindow):
         return self.rate_values[self.rate.get_selected()]
 
     def make_backend(self):
-        dev = self.cards[self.dev.get_selected()][0]
-        if dev == "sim":
+        dac_hw, adc_hw = self.selected_dac_hw(), self.selected_adc_hw()
+        if self._rate_pair_error:
+            raise m.MeasureError("у выбранных ЦАП и АЦП нет общей заявленной частоты дискретизации")
+        if dac_hw == "sim" and adc_hw == "sim":
             return SimBackend(SimChannel(gain=0.65, a2=5e-4, a3=3e-3, riaa=True, noise_dbfs=-105,
                                          hum50_dbfs=-105, hum100_dbfs=-112),
                               SimChannel(gain=0.65, a2=2e-3, a3=1e-3, riaa=True, noise_dbfs=-103,
                                          hum50_dbfs=-92, hum100_dbfs=-108))
-        self.cal["device"] = dev
-        return AlsaCli(dev, in_map=self.cal["in_map"], out_map=self.cal["out_map"])
+        if dac_hw == "sim" or adc_hw == "sim":
+            raise m.MeasureError("симулятор должен быть выбран одновременно для ЦАП и АЦП")
+        self.cal["device"] = adc_hw
+        self.cal["dac_device"] = dac_hw
+        self.cal["adc_device"] = adc_hw
+        return AlsaCli(hw_out=dac_hw, hw_in=adc_hw,
+                       in_map=self.cal["in_map"], out_map=self.cal["out_map"])
 
     def reset_rig(self):
         self.stop_live()
@@ -4037,7 +4177,7 @@ class Window(Adw.ApplicationWindow):
             self.live_btn.set_active(False)
 
     # ---- фоновые задачи
-    def run_job(self, fn, done, msg="Измерение…"):
+    def run_job(self, fn, done, msg="Измерение…", clock_sensitive=True):
         # Keep the status on the page that launched the measurement. It remains
         # visible after completion; a disappearing header spinner was ambiguous.
         page = self.stack.get_visible_child()
@@ -4116,10 +4256,17 @@ class Window(Adw.ApplicationWindow):
 
         def work():
             try:
-                measured_hw = str(measurement_context.get("device", {}).get("alsa_pcm", ""))
-                if measured_hw and measured_hw != "sim":
-                    measurement_context["audio_io"]["alsa_mixer_fingerprint"] = \
-                        gainmatch.mixer_fingerprint_from_hw(measured_hw)
+                dac_hw = str(measurement_context.get("audio_io", {}).get("dac_device", "sim"))
+                adc_hw = str(measurement_context.get("audio_io", {}).get("adc_device", "sim"))
+                measurement_context["audio_io"]["alsa_mixer_fingerprint"] = \
+                    Window._mixer_fingerprint_for_pair(dac_hw, adc_hw)
+                if clock_sensitive and dac_hw != adc_hw:
+                    clock = m.clock_check(rig, level_dbfs=-72.0)
+                    measurement_context["audio_io"]["clock_check"] = clock
+                    if not clock.get("ok", False):
+                        raise m.MeasureError(
+                            "Такты выбранных ЦАП и АЦП не согласованы для точного измерения. "
+                            + m.text_clock(clock))
                 res = fn(rig)
                 if isinstance(res, dict):
                     res.setdefault("_valvebench_context", measurement_context)
@@ -4132,7 +4279,7 @@ class Window(Adw.ApplicationWindow):
 
     def check_clock(self):
         self.run_job(m.clock_check, lambda r: self.stack.get_visible_child().say(m.text_clock(r)),
-                     "проверяю согласование тактов ЦАП и АЦП")
+                     "проверяю согласование тактов ЦАП и АЦП", clock_sensitive=False)
 
     def toast(self, text):
         self.toasts.add_toast(Adw.Toast.new(text))

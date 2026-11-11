@@ -1,0 +1,6 @@
+после load: dac = hw:2,0  adc = hw:2,0  (в файле был только device=hw:2,0)
+на диске после save: dac = hw:2,0  adc = hw:2,0  device = hw:2,0
+повторный load: dac/adc = hw:2,0 / hw:2,0
+PASS миграция на load: DAC=ADC=hw:2,0, не SIM
+PASS save закрепил dac_device/adc_device на диске
+PASS повторный load устойчив
