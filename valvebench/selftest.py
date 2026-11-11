@@ -15,7 +15,7 @@ from . import io_health as io_health_mod
 from .pcm import to_pcm
 from .backend import SimBackend, SimChannel, AltSet, usb_profile_identity
 from . import backend as backend_module
-from .calib import Calibration
+from .calib import Calibration, response_profile_pad_matches
 from .measure import (Rig, sweep, noise_response, noise_transfer_capture,
                       build_response_calibration, apply_response_calibration)
 from .vinyl import analyze_3150_stability, analyze_vta_sum, analyze_frequency_response, analyze_phase, analyze_crosstalk
@@ -26,6 +26,70 @@ def run_selftest():
 
     def check(name, ok, detail):
         checks.append({"name": name, "ok": bool(ok), "detail": str(detail)})
+
+    # Device passport output must follow the application tree rather than cwd:
+    # desktop launchers often inherit an unrelated working directory.
+    expected_measurement_root = Path(__file__).resolve().parent.parent / "measurements" / "devices"
+    check("DUT passport default path is relative to the active application, not CWD",
+          Path(store.device_measurements_root()) == expected_measurement_root,
+          f"root={store.device_measurements_root()}; expected={expected_measurement_root}")
+
+    # Device passport export: immutable, portable JSON + tabular curves, with
+    # path-safe device IDs, strict JSON numbers, checksums and no overwrite.
+    export_sample = {
+        "kind": "sweep", "fs": 96000, "f_lo": 20.0, "f_hi": 20000.0,
+        "ch": {
+            "L": {"freq": [20.0, 1000.0, 20000.0], "fr_norm_db": [0.2, None, -0.3],
+                  "thd_freq": [100.0, 1000.0], "thd_pct": [0.01, 0.02]},
+            "R": {"freq": [20.0, 1000.0, 20000.0], "fr_norm_db": [0.1, 0.0, -0.2]},
+        },
+        "warnings": [], "nonfinite_probe": float("nan"),
+    }
+    with tempfile.TemporaryDirectory(prefix="vb-device-export-") as td:
+        export_path = Path(store.save_device_measurement(
+            export_sample, "590", note="6Н2П V1/V2", context={"audio_io": {"sample_rate_hz": 96000}},
+            directory=td))
+        export_path2 = Path(store.save_device_measurement(export_sample, "590", directory=td))
+        try:
+            store.save_device_measurement(export_sample, "../outside", directory=td)
+            id_rejected = False
+        except ValueError:
+            id_rejected = True
+        session = json.loads((export_path / "session.json").read_text(encoding="utf-8"))
+        manifest = json.loads((export_path / "MANIFEST.json").read_text(encoding="utf-8"))
+        curve_rows = (export_path / "curves.csv").read_text(encoding="utf-8").splitlines()
+        curve_count = len(curve_rows) - 1
+        checksums_ok = all(
+            hashlib.sha256((export_path / name).read_bytes()).hexdigest() == meta["sha256"]
+            and (export_path / name).stat().st_size == meta["size_bytes"]
+            for name, meta in manifest["files"].items())
+        export_ok = (session["format"] == "valvebench-device-measurement"
+                     and session["device_id"] == "590"
+                     and session["note"] == "6Н2П V1/V2"
+                     and session["measurement_context"]["audio_io"]["sample_rate_hz"] == 96000
+                     and session["result"]["nonfinite_probe"] is None
+                     and export_path != export_path2 and checksums_ok and curve_count == 8
+                     and id_rejected)
+        check("DUT passport export: JSON, context, CSV curves, checksums, unique paths and safe ID",
+              export_ok,
+              f"session={export_path.name}; CSV rows={curve_count}; checksums={checksums_ok}; unsafe ID rejected={id_rejected}")
+        missing_values_preserved = any(row.endswith(",fr_norm_db,") for row in curve_rows)
+        outside = Path(td) / "external-target"
+        outside.mkdir()
+        devices_root = Path(td) / "symlink-test"
+        devices_root.mkdir()
+        try:
+            (devices_root / "591").symlink_to(outside, target_is_directory=True)
+            try:
+                store.save_device_measurement(export_sample, "591", directory=str(devices_root))
+                symlink_rejected = False
+            except ValueError:
+                symlink_rejected = True
+        except (OSError, NotImplementedError):
+            symlink_rejected = True  # platform cannot create this test symlink
+        check("DUT passport export: CSV keeps missing curve samples blank; symlink escape rejected",
+              missing_values_preserved and symlink_rejected,
+              f"missing curve sample exported as blank={missing_values_preserved}; symlink rejected={symlink_rejected}")
 
     # Точная синусоида с известной H2=-60 dBc.
     fs, n, f0 = 48000, 48000, 1000.0
@@ -91,6 +155,18 @@ def run_selftest():
     dev = max(float(np.nanmax(np.abs(sr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))
     check("Sweep inverse-RIAA через SimBackend", dev < 0.45,
           f"максимальное отклонение={dev:.3f} dB; критерий <0.45 dB")
+    with tempfile.TemporaryDirectory(prefix="vb-real-sweep-export-") as td:
+        exported = Path(store.save_device_measurement(
+            sr, "SIM-DUT", note="simulated sweep integration", directory=td))
+        exported_doc = json.loads((exported / "session.json").read_text(encoding="utf-8"))
+        exported_curves = (exported / "curves.csv").read_text(encoding="utf-8")
+        integration_ok = (exported_doc["result"]["kind"] == "sweep"
+                          and len(exported_doc["result"]["ch"]["L"]["freq"]) > 100
+                          and "fr_norm_db" in exported_curves and "thd_pct" in exported_curves
+                          and "thd_freq" in exported_curves and len(exported_curves.splitlines()) > 500)
+        check("DUT passport export: full SimBackend sweep result retains FR and THD curves",
+              integration_ok,
+              f"frequency points={len(exported_doc['result']['ch']['L']['freq'])}; CSV lines={len(exported_curves.splitlines())}")
 
     # Per-card full-band response calibration: the loop profile contains separate
     # L/R magnitude and phase curves. Applying it must remove the soundcard curve
@@ -137,6 +213,7 @@ def run_selftest():
     cal_profiles = Calibration()
     cal_profiles.activate_profile("usb:aaa:port=1-1:pcm0", "hw:2,0")
     cal_profiles["out_fs_vrms"] = [2.0, 2.1]
+    cal_profiles["adc_att_db"] = -20.1
     cal_profiles["frequency_response_profiles"] = {"192000": {"device_key": "card-A"}}
     cal_profiles.activate_profile("usb:bbb:port=1-2:pcm0", "hw:3,0")
     cal_profiles["out_fs_vrms"] = [1.0, 1.1]
@@ -144,8 +221,32 @@ def run_selftest():
     restored_cal = Calibration(cal_profiles.serialize())
     check("Per-device calibration profiles survive switching and serialization",
           restored_cal["out_fs_vrms"] == [2.0, 2.1]
+          and restored_cal.get("adc_att_db") == -20.1
           and "192000" in restored_cal["frequency_response_profiles"],
-          f"active card A DAC fullscale={restored_cal['out_fs_vrms']}; response profiles={list(restored_cal['frequency_response_profiles'])}")
+          f"active card A DAC fullscale={restored_cal['out_fs_vrms']}; ADC pad={restored_cal.get('adc_att_db')}; "
+          f"response profiles={list(restored_cal['frequency_response_profiles'])}")
+
+    pad_off = Calibration({"in_fs_vrms": [1.0, 1.0]})
+    pad_on = Calibration({"in_fs_vrms": [1.0, 1.0], "adc_att_db": -20.1})
+    adc_raw = pad_off.in_v(-20.1, 0)
+    dut_referred = pad_on.in_v(-20.1, 0)
+    check("ADC PAD correction refers measured voltage back to DUT output",
+          abs(adc_raw - 0.0988) < 0.001 and abs(dut_referred - 1.0) < 0.01,
+          f"ADC connector={adc_raw:.4f} V; DUT-side corrected={dut_referred:.4f} V at -20.1 dBFS")
+    pad_loop = Calibration({"out_fs_vrms": [1.0, 1.0], "adc_att_db": -20.1})
+    pad_loop.set_in_from_loop(-20.1, -40.2, 0)
+    loop_fullscale = pad_loop["in_fs_vrms"][0]
+    loop_voltage = pad_loop.in_v(-40.2, 0)
+    check("ADC loopback calibration accounts for PAD and restores DUT-side volts",
+          abs(loop_fullscale - 1.0) < 0.02 and abs(loop_voltage - 10 ** (-20.1 / 20)) < 0.002,
+          f"stored ADC connector fullscale={loop_fullscale:.4f} V; referred DUT output={loop_voltage:.4f} V")
+    pad_profile_ok = (response_profile_pad_matches({"adc_att_db": -20.17}, -20.17)
+                      and response_profile_pad_matches({}, 0.0)
+                      and not response_profile_pad_matches({"adc_att_db": -20.17}, 0.0)
+                      and not response_profile_pad_matches({"adc_att_db": "invalid"}, -20.17))
+    check("Response calibration is rejected when ADC PAD configuration changes",
+          pad_profile_ok,
+          "legacy 0 dB profile remains valid at 0 dB; −20.17 dB pad mismatch is rejected")
 
     nr = noise_response(rig, seconds=4, kind="pink", level_dbfs=-42, f_lo=30, f_hi=16000)
     ndev = max(float(np.nanmax(np.abs(nr["ch"][c]["riaa_dev_db"]))) for c in ("L", "R"))

@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "files": {
+    "session.json": {
+      "size_bytes": 1788379,
+      "sha256": "34e7875c54a24c5fdb97f4ff20b56f314d4dfa000b437867ce4089b33a34c4c2"
+    },
+    "metrics.csv": {
+      "size_bytes": 2045,
+      "sha256": "0eb5eba77e31b2f8ac2beb95d60a4bcbace0d5c5c614edb40e04c6fbf20b9898"
+    },
+    "curves.csv": {
+      "size_bytes": 1981672,
+      "sha256": "5b0ee4c6febefe1b2a6a3d94c30f4371b0c4afce99c3cb850cf33c25346407fa"
+    },
+    "README.txt": {
+      "size_bytes": 457,
+      "sha256": "170db1b049e53082290fe3df909503eaa28b6e07dd83854f04a776cab05f515b"
+    }
+  }
+}

@@ -16,7 +16,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
-from . import calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
+from . import __version__, calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
 from .identity import application_id as _resolved_application_id  # noqa: E402
 from . import gainmatch  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
@@ -634,6 +634,7 @@ class LivePage(Gtk.Box):
 
         def done(result):
             self.last_series = result
+            self.win.last = result
             self.series_result_label.set_text(gainmatch.text_series(result, self.tol.get_value()))
             try:
                 json_path, csv_path = store.save_gain_series(result)
@@ -655,7 +656,8 @@ class LivePage(Gtk.Box):
             hw = "sim"
         cal = self.win.cal
         cal_sig = repr([cal.get("out_fs_vrms"), cal.get("in_fs_vrms"),
-                        cal.get("att_db"), cal.get("in_map"), cal.get("out_map")])
+                        cal.get("att_db"), cal.get("adc_att_db", 0.0),
+                        cal.get("in_map"), cal.get("out_map")])
         # amixer — внешняя команда: TTL-кеш Window (не чаще раза в 3 с),
         # прямые вызовы из обработчиков регуляторов недопустимы
         ctx = {
@@ -2370,6 +2372,7 @@ class NoiseResponsePage(Page):
         self.live_timer = None
         self.live_busy = False
         self.live_sequence = 0
+        self.live_measurement_context = None
 
     def on_view_changed(self, *_):
         # Units change between dB and coherence; restore that view's useful default.
@@ -2472,6 +2475,12 @@ class NoiseResponsePage(Page):
             return
         self.live_period = x
         self.live_info = info
+        self.win.last = None
+        self.win._update_export_button()
+        try:
+            self.live_measurement_context = self.win._measurement_context(self.win.rig)
+        except Exception:
+            self.live_measurement_context = {}
         self.live_sequence += 1
         self.win.be.live_set_loop(np.column_stack((x, x)))
         self.live_busy = False
@@ -2531,7 +2540,10 @@ class NoiseResponsePage(Page):
             self.live_hint.set_text(f"LIVE · ожидаю устойчивые данные: {err}")
             return False
         self.res = result
+        if isinstance(result, dict) and self.live_measurement_context is not None:
+            result.setdefault("_valvebench_context", self.live_measurement_context)
         self.win.last = result
+        self.win._update_export_button()
         self.draw()
         l, r = result["ch"]["L"], result["ch"]["R"]
         self.live_hint.set_text(
@@ -2686,8 +2698,10 @@ class SetupPage(Page):
         c = win.cal
         self.mains = combo("Частота сети", ["50 Гц", "60 Гц"], 0 if c["mains"] == 50 else 1)
         self.band = spin("Верхняя граница THD/шума, Гц", 5000, 40000, 1000, c["band_hi"], 0)
-        self.att = spin("Внешний аттенюатор ЦАП → вход DUT, дБ", -90, 0, 1, c["att_db"], 1,
-                        "Укажи потери всего внешнего делителя/аттенюатора, например 1:100 = −40 дБ")
+        self.att = spin("Аттенюатор ЦАП → вход DUT, дБ", -90, 0, 1, c["att_db"], 1,
+                        "Потери перед проверяемым устройством, например inverse-RIAA/входной делитель")
+        self.adc_att = spin("PAD DUT → вход АЦП, дБ", -60, 0, 0.1, c.get("adc_att_db", 0.0), 1,
+                            "Это значение только описывает физически установленный PAD; программа не переключает резисторы. Без PAD = 0 дБ. Для E-MU 1 МОм: 91 кОм последовательно + 10 кОм на землю ≈ −20.16 дБ")
         self.out_l = spin("ЦАП L: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][0] or 0, 3)
         self.out_r = spin("ЦАП R: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][1] or 0, 3)
         self.in_l = spin("АЦП L: В RMS при 0 dBFS", 0, 50, 0.01, c["in_fs_vrms"][0] or 0, 3)
@@ -2713,7 +2727,11 @@ class SetupPage(Page):
                    "Профили сохраняются в ~/.config/valvebench/config.json отдельно по устойчивому ID карты и Fs; "
                    "при выборе этой карты калибровка подхватывается автоматически, даже если номер hw изменился. "
                    "Коррекция выравнивает частотный отклик и фазу ЦАП+АЦП по каждому каналу, но не калибрует абсолютные вольты. "
-                   "Если изменятся уровни/маршрутизация микшера, профиль будет отклонён до повторной калибровки.\n\n"
+                   "Если PAD DUT→ADC задан выше, он должен физически стоять в обоих каналах петли; используй те же кабели и положение переключателей, что и при DUT. "
+                   "Если изменится PAD или уровни/маршрутизация микшера, старый профиль АЧХ не будет применяться.\n\n"
+                   "УРОВЕНЬ АЦП. Для E-MU 0404 USB используй 1/4-дюймовый Hi-Z/Line вход, 0 dB/Unity (не XLR Mic), +48 V выключи, Soft Limit выключи. "
+                   "При максимуме +12 dBV цель −12…−6 dBFS для синуса соответствует примерно 1…2 V RMS на входном разъёме. "
+                   "Для другой карты ориентируйся на её собственный max input level и не переноси эти вольты автоматически. "
                    "ШУМОВОЙ ПОЛ АЦП. Перед измерением отключи DUT и замкни входы АЦП либо подключи эквивалентное сопротивление источника. "
                    "Профиль также сохраняется отдельно для карты и Fs. Он показывается пунктиром в Спектре, THD и IMD; "
                    "это один и тот же измеренный спектральный шум, пересчитанный под разрешение конкретного графика. "
@@ -2721,9 +2739,10 @@ class SetupPage(Page):
             xalign=0, wrap=True)
         info.add_css_class("dim-label")
         super().__init__(win,
-                         group("Измерительные параметры", self.mains, self.band, self.att),
+                         group("Измерительные параметры", self.mains, self.band, self.att, self.adc_att),
                          group("Калибровка ЦАП (для абсолютного напряжения)", self.out_l, self.out_r),
-                         group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r),
+                         group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r,
+                               Gtk.Label(label="Калибровку ADC по петле выполняй с тем же физическим PAD DUT→ADC в обоих каналах. После изменения делителя/входного режима повтори ADC-калибровку и калибровку АЧХ карты.", xalign=0, wrap=True)),
                          group("Показания мультиметра при −6 dBFS", self.meter_l, self.meter_r),
                          button("Применить показания мультиметра к DAC L/R", self.cal_out),
                          button("Калибровать ADC L/R по петле DAC→ADC", self.cal_in),
@@ -2751,6 +2770,7 @@ class SetupPage(Page):
         self.mains.set_selected(0 if c["mains"] == 50 else 1)
         self.band.set_value(float(c["band_hi"]))
         self.att.set_value(float(c["att_db"]))
+        self.adc_att.set_value(float(c.get("adc_att_db", 0.0)))
         self.out_l.set_value(float(c["out_fs_vrms"][0] or 0))
         self.out_r.set_value(float(c["out_fs_vrms"][1] or 0))
         self.in_l.set_value(float(c["in_fs_vrms"][0] or 0))
@@ -2766,7 +2786,7 @@ class SetupPage(Page):
         if hw != "sim" and (fr or nf):
             current_fp = gainmatch.mixer_fingerprint_from_hw(hw)
 
-        def profile_state(profile, auto_enabled):
+        def profile_state(profile, auto_enabled, response=False):
             if not profile:
                 return "калибровка не выполнена"
             if profile.get("device_key") != stable_device_identity(hw) or int(profile.get("fs", -1)) != int(fs):
@@ -2774,6 +2794,8 @@ class SetupPage(Page):
             expected = profile.get("mixer_fingerprint")
             if hw != "sim" and (not expected or current_fp is None or current_fp != expected):
                 return "настройки микшера изменились — нужна повторная калибровка"
+            if response and not calib.response_profile_pad_matches(profile, c.get("adc_att_db", 0.0)):
+                return "изменился PAD DUT→ADC — нужна повторная калибровка петли"
             if not auto_enabled:
                 return "профиль сохранён, автоматическое применение выключено"
             return "профиль активен · будет применён автоматически"
@@ -2781,7 +2803,7 @@ class SetupPage(Page):
         if fr:
             self.fr_status.set_subtitle(
                 f"{fr.get('f_lo', 0):.0f}–{fr.get('f_hi', 0):.0f} Гц · {fr.get('created', 'дата не указана')} · "
-                + profile_state(fr, self.auto_response.get_active()))
+                + profile_state(fr, self.auto_response.get_active(), response=True))
         else:
             self.fr_status.set_subtitle(f"Для {fs/1000:g} кГц ещё нет профиля")
         if nf:
@@ -2796,6 +2818,7 @@ class SetupPage(Page):
         c["mains"] = 50.0 if self.mains.get_selected() == 0 else 60.0
         c["band_hi"] = self.band.get_value()
         c["att_db"] = self.att.get_value()
+        c["adc_att_db"] = self.adc_att.get_value()
         c["out_fs_vrms"] = [self.out_l.get_value() or None, self.out_r.get_value() or None]
         c["in_fs_vrms"] = [self.in_l.get_value() or None, self.in_r.get_value() or None]
         c["auto_apply_response"] = self.auto_response.get_active()
@@ -2807,6 +2830,7 @@ class SetupPage(Page):
         dev = self.win.cards[self.win.dev.get_selected()][0]
         key = stable_device_identity(dev)
         fs = self.win.rig_fs()
+        pad_db = float(self.win.cal.get("adc_att_db", 0.0) or 0.0)
         hw = dev
         before_fp = gainmatch.mixer_fingerprint_from_hw(hw)
         self.fr_status.set_subtitle("Выполняется плоский свип по прямой петле…")
@@ -2823,9 +2847,13 @@ class SetupPage(Page):
                 raise m.MeasureError("настройки микшера изменились во время калибровки; профиль не сохранён")
             profile = m.build_response_calibration(res, key, after_fp, fs=rig.fs)
             profile["mixer_fingerprint"] = after_fp
+            profile["adc_att_db"] = pad_db
             return profile
 
         def done(profile):
+            current_pad = float(self.win.cal.get("adc_att_db", 0.0) or 0.0)
+            if abs(current_pad - pad_db) > 0.01:
+                raise m.MeasureError("PAD DUT→ADC изменился во время калибровки; профиль не сохранён")
             self.win.cal["frequency_response_profiles"][str(fs)] = profile
             self.win._mixer_fingerprint_cache.clear()
             calib.save(self.win.cal)
@@ -2971,9 +2999,32 @@ class Window(Adw.ApplicationWindow):
         self.generator_btn.connect("toggled", self.on_generator_toggle)
         self.status = Gtk.Label(label="", xalign=1)
         self.spinner = Gtk.Spinner()
+        # Portable DUT-session export: the device ID is entered explicitly so
+        # records from different customer units never get mixed together.
+        self.measurement_device_id = Gtk.Entry()
+        self.measurement_device_id.set_placeholder_text("№ аппарата")
+        self.measurement_device_id.set_max_length(64)
+        self.measurement_device_id.set_width_chars(9)
+        self.measurement_device_id.set_tooltip_text(
+            "Идентификатор проверяемого аппарата, например 590 или 591")
+        self.measurement_note = Gtk.Entry()
+        self.measurement_note.set_placeholder_text("лампы / заметка")
+        self.measurement_note.set_max_length(160)
+        self.measurement_note.set_width_chars(14)
+        self.measurement_note.set_tooltip_text(
+            "Необязательная заметка: типы ламп, позиции, состояние и условия измерения")
+        self.export_measurement_btn = Gtk.Button(label="СОХРАНИТЬ ЗАМЕР")
+        self.export_measurement_btn.set_tooltip_text(
+            "Сохранить последний результат как переносимый паспорт аппарата в ./measurements/devices/")
+        self.export_measurement_btn.set_sensitive(False)
+        self.export_measurement_btn.connect("clicked", self.save_last_measurement)
+        self.measurement_device_id.connect("changed", self._update_export_button)
         header.pack_start(self.dev)
         header.pack_start(self.rate)
         header.pack_start(self.live_btn)
+        header.pack_start(self.measurement_device_id)
+        header.pack_start(self.measurement_note)
+        header.pack_start(self.export_measurement_btn)
         header.pack_end(self.spinner)
         header.pack_end(self.status)
         self.dev.connect("notify::selected", self.on_device_changed)
@@ -3185,6 +3236,14 @@ class Window(Adw.ApplicationWindow):
             return None, f"Для этой карты и {int(fs)} Гц нет калибровки АЧХ; показан сырой тракт."
         if profile.get("device_key") != key or int(profile.get("fs", -1)) != int(fs):
             return None, "Профиль АЧХ принадлежит другой карте/частоте и не применён."
+        if not calib.response_profile_pad_matches(profile, self.cal.get("adc_att_db", 0.0)):
+            try:
+                expected_pad = float(profile.get("adc_att_db", 0.0) or 0.0)
+                actual_pad = float(self.cal.get("adc_att_db", 0.0) or 0.0)
+                detail = f"({expected_pad:.2f} дБ; сейчас {actual_pad:.2f} дБ)"
+            except (TypeError, ValueError):
+                detail = "(ошибка значения PAD в профиле/настройках)"
+            return None, f"Профиль АЧХ не соответствует PAD DUT→ADC {detail}; повтори калибровку петли."
         expected = profile.get("mixer_fingerprint")
         if dev != "sim" and not expected:
             return None, "У профиля нет снимка ALSA-микшера; он не применён. Повтори калибровку."
@@ -3274,6 +3333,72 @@ class Window(Adw.ApplicationWindow):
             self.noise_response_page.live_toggle.set_active(False)
         self.spectrum.set_visible(page is self.spectrum)
         self.peakhold.set_visible(page is self.peakhold)
+
+    # ---- portable DUT measurement export
+    def _update_export_button(self, *_):
+        valid_result = isinstance(self.last, dict) and bool(self.last)
+        valid_id = bool(self.measurement_device_id.get_text().strip())
+        self.export_measurement_btn.set_sensitive(valid_result and valid_id)
+
+    def _measurement_context(self, rig):
+        """Freeze card/calibration identity at measurement start, not export time."""
+        from . import identity as build_identity
+        index = self.dev.get_selected()
+        hw, label = self.cards[index] if 0 <= index < len(self.cards) else ("?", "Unknown")
+        be = rig.be
+        calibration = {
+            "in_map": self.cal.get("in_map"), "out_map": self.cal.get("out_map"),
+            "out_fs_vrms": self.cal.get("out_fs_vrms"),
+            "in_fs_vrms": self.cal.get("in_fs_vrms"),
+            "dac_to_dut_attenuation_db": self.cal.get("att_db"),
+            "dut_to_adc_pad_db": self.cal.get("adc_att_db", 0.0),
+            "mains_hz": self.cal.get("mains"), "analysis_band_hi_hz": self.cal.get("band_hi"),
+        }
+        return {
+            "software": {"name": "ValveBench", "version": __version__,
+                         "build_profile": build_identity.build_profile()},
+            "captured_at_local": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "dut": {
+                "device_id_entered_at_measurement_start": self.measurement_device_id.get_text().strip() or None,
+                "note_entered_at_measurement_start": self.measurement_note.get_text().strip(),
+            },
+            "device": {"alsa_pcm": hw, "display_name": label,
+                       "stable_id": stable_device_identity(hw)},
+            "audio_io": {
+                "backend": getattr(be, "name", type(be).__name__),
+                "device": getattr(be, "hw", getattr(be, "name", "?")),
+                "sample_rate_hz": int(rig.fs), "blocks": int(rig.blocks),
+                "capture_format": getattr(be, "fmt_in", None),
+                "playback_format": getattr(be, "fmt_out", None),
+                "capture_channels": getattr(be, "ch_in", None),
+                "playback_channels": getattr(be, "ch_out", None),
+                # Read on the worker before the test starts; never block GTK on `amixer`.
+                "alsa_mixer_fingerprint": None,
+            },
+            "calibration": calibration,
+        }
+
+    def save_last_measurement(self, *_):
+        if not isinstance(self.last, dict) or not self.last:
+            self.toast("Пока нет завершённого результата измерения")
+            return
+        device_id = self.measurement_device_id.get_text().strip()
+        if not device_id:
+            self.toast("Укажи номер аппарата, например 590")
+            return
+        try:
+            context = self.last.get("_valvebench_context", {})
+            dut_context = context.get("dut", {}) if isinstance(context, dict) else {}
+            measured_id = str(dut_context.get("device_id_entered_at_measurement_start") or "").strip()
+            if measured_id and measured_id != device_id:
+                self.toast(f"ID был {measured_id} во время измерения. Верни его или повтори тест с ID {device_id}.")
+                return
+            path = store.save_device_measurement(
+                self.last, device_id, note=self.measurement_note.get_text(), context=context)
+        except (OSError, TypeError, ValueError) as exc:
+            self.toast(f"Не удалось сохранить паспорт: {exc}")
+            return
+        self.toast(f"Замер аппарата {device_id} сохранён: {path}")
 
     # ---- стенд
     def rig_fs(self):
@@ -3403,6 +3528,10 @@ class Window(Adw.ApplicationWindow):
             if hasattr(page, "set_job_status"):
                 page.set_job_status("error", "другое измерение ещё выполняется")
             return
+        # A failed/new non-DUT task must not leave the previous result exportable
+        # under a newly typed device number.
+        self.last = None
+        self._update_export_button()
         resume = self.live_on
         if resume:
             self.stop_live()
@@ -3422,6 +3551,7 @@ class Window(Adw.ApplicationWindow):
             if resume:
                 self.live_btn.set_active(True)
             return
+        measurement_context = self._measurement_context(rig)
         self.busy = True
         started = time.monotonic()
         self.status.set_text("Измерение…")
@@ -3441,6 +3571,7 @@ class Window(Adw.ApplicationWindow):
             if err is None:
                 try:
                     done(res)
+                    self._update_export_button()
                 except Exception as exc:  # noqa: BLE001
                     err = exc
             if err is not None:
@@ -3462,7 +3593,13 @@ class Window(Adw.ApplicationWindow):
 
         def work():
             try:
+                measured_hw = str(measurement_context.get("device", {}).get("alsa_pcm", ""))
+                if measured_hw and measured_hw != "sim":
+                    measurement_context["audio_io"]["alsa_mixer_fingerprint"] = \
+                        gainmatch.mixer_fingerprint_from_hw(measured_hw)
                 res = fn(rig)
+                if isinstance(res, dict):
+                    res.setdefault("_valvebench_context", measurement_context)
             except Exception as e:  # noqa: BLE001
                 GLib.idle_add(finish, None, e)
                 return
