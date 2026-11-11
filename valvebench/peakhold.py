@@ -194,8 +194,10 @@ class PeakHoldAccumulator:
         self.own = np.full((2, nb), np.nan)            # режим tone: пик собственного уровня канала
         self.drv_level = np.full(nb, np.nan)           # пик уровня ведущего канала
         self.drv_idx = np.full(nb, -1, dtype=int)
-        self.num = np.zeros(nb, dtype=complex)
-        self.den = np.zeros(nb)
+        # Transfer estimates are directional: L->R and R->L must never be
+        # averaged together when the dominant channel changes during a sweep.
+        self.num = np.zeros((2, nb), dtype=complex)
+        self.den = np.zeros((2, nb))
         self.count = np.zeros(nb, dtype=int)           # кадров тона в ячейке
         self.frames = 0
         self.tone_frames = 0
@@ -227,8 +229,8 @@ class PeakHoldAccumulator:
             self.drv_level[i] = lvl[d]
             self.drv_idx[i] = d
         if tone.get("num") is not None and tone.get("den"):
-            self.num[i] += tone["num"]
-            self.den[i] += tone["den"]
+            self.num[d, i] += tone["num"]
+            self.den[d, i] += tone["den"]
         self.count[i] += 1
         self.tone_frames += 1
         self.last_tone = tone["f"]
@@ -236,14 +238,15 @@ class PeakHoldAccumulator:
     def tone_hold(self):
         """(2, nb) dBFS: ведущий канал — пик; чужой — когерентная утечка (не больше собственного пика)."""
         out = self.own.copy()
-        have = self.den > 0
-        for i in np.flatnonzero(have & np.isfinite(self.drv_level)):
+        for i in np.flatnonzero(np.isfinite(self.drv_level)):
             d = int(self.drv_idx[i])
             if d < 0:
                 continue
             out[d, i] = self.drv_level[i]
-            leak = self.drv_level[i] + 20.0 * math.log10(max(abs(self.num[i]) / self.den[i], 1e-12))
-            out[1 - d, i] = min(self.own[1 - d, i], leak)
+            if self.den[d, i] > 0:
+                leak = self.drv_level[i] + 20.0 * math.log10(
+                    max(abs(self.num[d, i]) / self.den[d, i], 1e-12))
+                out[1 - d, i] = min(self.own[1 - d, i], leak)
         return out
 
     def coverage(self):
@@ -252,9 +255,10 @@ class PeakHoldAccumulator:
 
     def snapshot(self, name, color, mode, fs, card="", mixer="", corr_db=None, corr_note=""):
         levels = self.tone_hold() if mode == "tone" else self.bands.copy()
+        driven = self.drv_idx.copy() if mode == "tone" else None
         return Overlay(name=name, color=tuple(color), mode=mode, per_octave=self.per_octave,
                        fmin=self.fmin, fmax=self.fmax, fs=float(fs), centers=self.centers.copy(),
-                       levels=levels, card=card, mixer=mixer,
+                       levels=levels, card=card, mixer=mixer, driven=driven,
                        corr_db=None if corr_db is None else np.array(corr_db, dtype=float),
                        corr_note=corr_note)
 
@@ -286,34 +290,72 @@ def correction_curve(profile, centers):
     return out if ok else None
 
 
-def split_driven(levels):
-    """(индекс ведущего канала, переходное затухание other−driven, дБ) по уровням (2, nb) с NaN."""
+def split_driven(levels, driven=None):
+    """(глобальный ведущий канал, other−driven по полосам) для уровней (2, nb).
+
+    Для tone Peak Hold направление сохраняется по каждой полосе: при пересечении АЧХ
+    ведущий канал может меняться с частотой. Для старых кривых и RTA без такого
+    метаданного сохраняется прежняя оценка по медиане всей кривой.
+    """
     both = np.isfinite(levels[0]) & np.isfinite(levels[1])
     if not both.any():
         return 0, np.full(levels.shape[1], np.nan)
     med = [float(np.median(levels[c][both])) for c in (0, 1)]
-    d = 0 if med[0] >= med[1] else 1
-    return d, levels[1 - d] - levels[d]
+    global_d = 0 if med[0] >= med[1] else 1
+    if driven is None:
+        return global_d, levels[1 - global_d] - levels[global_d]
+    direction = np.asarray(driven, dtype=int).reshape(-1)
+    if direction.size != levels.shape[1]:
+        return global_d, levels[1 - global_d] - levels[global_d]
+    valid = both & ((direction == 0) | (direction == 1))
+    idx = np.flatnonzero(valid)
+    xt = np.full(levels.shape[1], np.nan)
+    if idx.size:
+        xt[idx] = levels[1 - direction[idx], idx] - levels[direction[idx], idx]
+    return global_d, xt
 
 
-def relative_levels(centers, levels, ref_hz=1000.0, leak_db=10.0):
+def reference_level(centers, row, ref_hz=1000.0):
+    """Estimate one row's level at ref_hz by interpolation in log-frequency.
+
+    If the reference lies outside the finite data range, return None: normalizing
+    a partial sweep to an unrelated nearest band would falsely claim a 1 kHz reference.
+    """
+    valid = np.isfinite(row) & np.isfinite(centers) & (centers > 0)
+    if not valid.any():
+        return None
+    f = np.asarray(centers[valid], dtype=float)
+    y = np.asarray(row[valid], dtype=float)
+    order = np.argsort(f)
+    f, y = f[order], y[order]
+    xref = math.log(float(ref_hz))
+    xf = np.log(f)
+    if xf[0] <= xref <= xf[-1]:
+        if f.size == 1:
+            return float(y[0]) if math.isclose(float(f[0]), float(ref_hz), rel_tol=1e-9) else None
+        return float(np.interp(xref, xf, y))
+    return None
+
+
+def relative_levels(centers, levels, ref_hz=1000.0, leak_db=10.0, driven=None):
     """Нормировка на уровень в полосе вокруг ref_hz.
 
-    Оба канала ведущие (стерео-свип): каждый на свой ноль. Один канал — утечка (медианы каналов
-    различаются больше leak_db): общий ноль по ведущему, чтобы переходное затухание осталось
-    видимым отступом (L = 0 дБ, R = −25 дБ), а не «выровнялось» к нулю."""
-    i = int(np.argmin(np.abs(np.log(centers / ref_hz))))
-
-    def ref_of(row):
-        if np.isfinite(row[i]):
-            return float(row[i])
-        nb = row[max(0, i - 1): i + 2]
-        nb = nb[np.isfinite(nb)]
-        return float(np.mean(nb)) if nb.size else None
+    Оба канала ведущие (стерео-свип): каждый на свой ноль. Один канал — утечка: общий ноль
+    по ведущему, чтобы переходное затухание осталось видимым отступом (L = 0 дБ, R = −25 дБ).
+    Если tone-свип хранит направление по полосам и оно меняется с частотой, это два ведущих
+    канала/пересечение АЧХ, а не один глобальный ведущий с утечкой.
+    """
     d, _xt = split_driven(levels)
     both = np.isfinite(levels[0]) & np.isfinite(levels[1])
-    leak = bool(both.any()) and abs(float(np.median(levels[0][both]) - np.median(levels[1][both]))) > leak_db
-    refs = [ref_of(levels[0]), ref_of(levels[1])]
+    directional = False
+    if driven is not None:
+        direction = np.asarray(driven, dtype=int).reshape(-1)
+        if direction.size == levels.shape[1]:
+            dirs = np.unique(direction[both & ((direction == 0) | (direction == 1))])
+            directional = dirs.size > 1
+    leak = (not directional and bool(both.any())
+            and abs(float(np.median(levels[0][both]) - np.median(levels[1][both]))) > leak_db)
+    refs = [reference_level(centers, levels[0], ref_hz), reference_level(centers, levels[1], ref_hz)]
     if leak and refs[d] is not None:
         refs = [refs[d], refs[d]]
     out = levels.copy()
@@ -341,6 +383,7 @@ class Overlay:
     mixer: str = ""                    # короткий отпечаток настроек ALSA-микшера
     corr_db: object = None             # (2, nb) поправка петли карты на момент записи или None
     corr_note: str = ""
+    driven: object = None              # (nb,) ведущий канал каждой полосы для tone Peak Hold; -1 — нет данных
 
     def to_json(self):
         return {"name": self.name, "color": list(self.color), "mode": self.mode,
@@ -350,6 +393,7 @@ class Overlay:
                            for row in self.levels],
                 "visible": self.visible, "created": self.created,
                 "card": self.card, "mixer": self.mixer, "corr_note": self.corr_note,
+                "driven": None if self.driven is None else [int(v) for v in np.asarray(self.driven)],
                 "corr_db": None if self.corr_db is None else
                 [[round(float(v), 3) for v in row] for row in np.asarray(self.corr_db)]}
 
@@ -362,7 +406,8 @@ class Overlay:
                        levels=lv, visible=bool(d.get("visible", True)), created=str(d.get("created", "")),
                        card=str(d.get("card", "")), mixer=str(d.get("mixer", "")),
                        corr_db=(None if d.get("corr_db") is None else np.array(d["corr_db"], dtype=float)),
-                       corr_note=str(d.get("corr_note", "")))
+                       corr_note=str(d.get("corr_note", "")),
+                       driven=(None if d.get("driven") is None else np.asarray(d["driven"], dtype=int)))
 
 
 def overlays_to_json(overlays):
@@ -391,12 +436,20 @@ def overlays_csv(overlays, normalize=False, corrected=False):
     data = [overlays[0].centers]
     for o in overlays:
         applied = bool(corrected and o.corr_db is not None)
-        meta.append(f"# {o.name}: card={o.card or '?'} fs={o.fs:.0f} mixer={o.mixer or '?'} mode={o.mode} "
-                    f"1/{o.per_octave}oct created={o.created} correction={'applied' if applied else 'raw'}"
-                    + (f" ({o.corr_note})" if o.corr_note else ""))
         base = o.levels - np.asarray(o.corr_db) if applied else o.levels
-        lv = relative_levels(o.centers, base) if normalize else base
-        d, xt = split_driven(o.levels)
+        norm_rows = [c for c in (0, 1) if np.isfinite(base[c]).any()]
+        norm_ok = bool(norm_rows) and all(reference_level(o.centers, base[c], 1000.0) is not None
+                                          for c in norm_rows)
+        norm_note = ("1kHz" if norm_ok else "requested-but-unavailable-no-1kHz-data") if normalize else "raw"
+        meta.append(f"# {o.name}: card={o.card or '?'} fs={o.fs:.0f} mixer={o.mixer or '?'} mode={o.mode} "
+                    f"1/{o.per_octave}oct created={o.created} correction={'applied' if applied else 'raw'} "
+                    f"normalization={norm_note}"
+                    + (f" ({o.corr_note})" if o.corr_note else ""))
+        lv = relative_levels(o.centers, base, driven=o.driven if o.mode == "tone" else None) if normalize else base
+        # The L/R columns and transfer curve must describe the same signal:
+        # when corrected export is requested, calculate cross-talk from the
+        # corrected levels too, not from the original raw pair.
+        d, xt = split_driven(base, o.driven if o.mode == "tone" else None)
         for c, ch in enumerate("LR"):
             cols.append(f"{o.name} {ch}")
             data.append(_resample(o, lv[c], overlays[0].centers))

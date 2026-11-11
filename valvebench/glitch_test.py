@@ -33,7 +33,7 @@ from .pcm import StreamPcmReader, stream_to_float32_wav, to_pcm
 
 GUARD_S = 0.5            # отступ от краёв устойчивого участка (fade, переходные процессы)
 BLOCK_S = 2.7            # размер блока анализа
-BLOCK_OVERLAP_S = 0.1    # перекрытие блоков; событие относится к блоку, в который попало его время
+BLOCK_OVERLAP_S = 0.1    # перекрытие блоков для устойчивого обнаружения событий на границах
 CLUSTER_GAP_S = 1.0      # события ближе этого интервала считаются одной группой
 
 
@@ -94,13 +94,24 @@ class _FileSource:
 def scan_range(src, a_frame, b_frame, fs, f0, driven, t0, block_s=BLOCK_S, overlap_s=BLOCK_OVERLAP_S):
     """События на участке [a_frame, b_frame) источника: список словарей с временем t0 + t.
 
-    Читается и анализируется по одному блоку с перекрытием, поэтому память не зависит от длины
-    записи (пик ≈ несколько десятков МБ). f0 — частота ведущего тона (None — тишина); driven —
-    (L, R) ведомые каналы. Событие принадлежит блоку, в который попало его время."""
+    PCM читается и анализируется по одному блоку, а не целиком. Для поиска длинных провалов
+    сохраняется только огибающая несущей с шагом 1 мс (порядка 20 МиБ на 10 минут для двух
+    ведомых каналов, плюс временные массивы), а не исходный float64-поток (около 1.7 ГиБ).
+    f0 — частота ведущего тона (None — тишина); driven —
+    (L, R) ведомые каналы. Точечные события закрепляются за непересекающимся ядром блока;
+    dropout восстанавливается по непрерывной огибающей, а длительные фрагменты объединяются."""
     B = int(round(block_s * fs))
     ov = int(round(overlap_s * fs))
     n = b_frame - a_frame
     out = []
+    # The generic frame detector uses a per-window median to decide whether a
+    # carrier exists. A dropout occupying most of one 2.7 s window can make
+    # that median collapse, hiding the recovery edge. For this controlled
+    # steady-tone test we keep a reference from the first stable block and
+    # assemble a continuous 1 ms envelope track across owned block intervals.
+    carrier_ref = [None, None]
+    carrier_times = [[], []]
+    carrier_envs = [[], []]
     for s in range(0, n, B):
         a, b = max(0, s - ov), min(n, s + B + ov)
         if b - a < int(0.3 * fs):
@@ -109,28 +120,125 @@ def scan_range(src, a_frame, b_frame, fs, f0, driven, t0, block_s=BLOCK_S, overl
         res = lm.frame_integrity(x, fs, f0, driven, hf_lo=40000.0)
         off = a / fs
         lo, hi = s / fs, min(n, s + B) / fs
-        for ci in res:
-            def keep(t_rel):
+        for c, ci in enumerate(res):
+            if f0 is not None and driven[c]:
+                # Normally reuse the exact track computed by frame_integrity.
+                # Only a window whose median was swallowed by a long dropout
+                # needs a separate envelope pass; that is the exceptional case.
+                if ci.carrier_t is not None and ci.carrier_env is not None:
+                    et, env = ci.carrier_t, ci.carrier_env
+                else:
+                    et, env, _win = lm.carrier_track(x[:, c], fs, f0, step_s=0.001)
+                gt = off + et
+                owned = (gt >= lo) & (gt < hi)
+                if owned.any():
+                    tv, ev = gt[owned], np.asarray(env[owned], dtype=float)
+                    if carrier_ref[c] is None:
+                        # The test tone is steady after the guard interval. The
+                        # median of the first stable block is a robust reference;
+                        # a later good block can establish it if the run begins
+                        # with a complete interruption.
+                        ref = float(np.median(ev)) if ev.size else 0.0
+                        if ref >= 10.0 ** (-70.0 / 20.0):
+                            carrier_ref[c] = ref
+                    carrier_times[c].append(tv)
+                    carrier_envs[c].append(ev)
+            def keep_point(t_rel):
                 return lo <= off + t_rel < hi
-            for e in ci.dropouts:
-                if keep(e["start_s"]):
-                    out.append({"time_s": t0 + off + e["start_s"], "adc": ci.name, "class": "dropout",
-                                "level_dbfs": e["depth_db"], "error_lsb24": "", "duration_ms": e["dur_s"] * 1e3, "sign": 0})
+            def keep_span(start_s, dur_s):
+                # Use the interval midpoint for ownership. A neighboring
+                # overlapped window may contain a longer fragment, which is
+                # merged below into the full duration.
+                return keep_point(start_s + 0.5 * max(0.0, dur_s))
             for e in ci.phase_jumps:
-                if keep(e["t_s"]):
+                if keep_point(e["t_s"]):
                     out.append({"time_s": t0 + off + e["t_s"], "adc": ci.name, "class": "phase_jump",
                                 "level_dbfs": "", "error_lsb24": "", "duration_ms": "", "sign": 0,
                                 "jump_deg": e["jump_deg"]})
             for e in ci.glitches:
-                if keep(e["t_s"]):
+                if keep_point(e["t_s"]):
                     out.append({"time_s": t0 + off + e["t_s"], "adc": ci.name, "class": e["kind"],
                                 "level_dbfs": e["amp_dbfs"], "error_lsb24": e["amp"] * 2 ** 23,
                                 "duration_ms": e["width"] / fs * 1e3, "sign": e.get("sign", 0)})
             for e in ci.bursts:
-                if keep(e["start_s"]):
+                if keep_span(e["start_s"], e["dur_s"]):
                     out.append({"time_s": t0 + off + e["start_s"], "adc": ci.name, "class": "burst",
                                 "level_dbfs": "", "error_lsb24": "", "duration_ms": e["dur_s"] * 1e3, "sign": 0})
-    return out
+    # Reconstruct carrier dropouts from the continuous envelope, using the
+    # reference established before a long event. This detects intervals longer
+    # than a single analysis block and yields edges rather than block-sized
+    # overestimates.
+    env_step = 0.001
+    min_s = float(getattr(lm, "DROPOUT_MIN_S", 0.002))
+    threshold = 10.0 ** (-abs(float(getattr(lm, "DROPOUT_DEPTH_DB", 3.0))) / 20.0)
+    for c in (0, 1):
+        if not driven[c]:
+            continue
+        if carrier_ref[c] is None or not carrier_times[c]:
+            # Do not report "zero dropouts" when no reference carrier was
+            # captured at all. This is an invalid/unverifiable test segment,
+            # not evidence that the stream was continuous.
+            out.append({"time_s": t0, "adc": "LR"[c], "class": "carrier_unverified",
+                        "level_dbfs": "", "error_lsb24": "", "duration_ms": n / fs * 1e3, "sign": 0})
+            continue
+        tt = np.concatenate(carrier_times[c])
+        ee = np.concatenate(carrier_envs[c])
+        order = np.argsort(tt)
+        tt, ee = tt[order], ee[order]
+        # Core ownership intervals should be disjoint. Remove any duplicate
+        # grid points defensively in case rounding differs by one sample.
+        if tt.size > 1:
+            unique = np.r_[True, np.diff(tt) > 0.5 * env_step]
+            tt, ee = tt[unique], ee[unique]
+        ratio = np.maximum(ee, 1e-12) / float(carrier_ref[c])
+        db = np.maximum(20.0 * np.log10(ratio), -120.0)
+        bad = db < -abs(float(getattr(lm, "DROPOUT_DEPTH_DB", 3.0)))
+        idx = np.flatnonzero(bad)
+        if not idx.size:
+            continue
+        runs = []
+        a0 = p0 = int(idx[0])
+        for ix in idx[1:]:
+            ix = int(ix)
+            if ix > p0 + 1:
+                if (p0 - a0 + 1) * env_step >= min_s:
+                    runs.append((a0, p0))
+                a0 = ix
+            p0 = ix
+        if (p0 - a0 + 1) * env_step >= min_s:
+            runs.append((a0, p0))
+        for a0, b0 in runs:
+            out.append({"time_s": t0 + max(0.0, float(tt[a0]) - env_step / 2.0),
+                        "adc": "LR"[c], "class": "dropout", "level_dbfs": float(np.min(db[a0:b0 + 1])),
+                        "error_lsb24": "", "duration_ms": (b0 - a0 + 1) * env_step * 1e3, "sign": 0})
+    # A long event can be clipped at both ends of consecutive analysis
+    # windows. Merge overlapping fragments with the same ADC and class.
+    merged = []
+    for e in sorted(out, key=lambda v: (v["adc"], v["class"], v["time_s"])):
+        if e["class"] not in ("dropout", "burst") or not isinstance(e.get("duration_ms"), (int, float)):
+            merged.append(dict(e))
+            continue
+        cur = dict(e)
+        start = float(cur["time_s"])
+        end = start + max(0.0, float(cur["duration_ms"])) / 1000.0
+        if merged:
+            prev = merged[-1]
+            same = prev.get("adc") == cur.get("adc") and prev.get("class") == cur.get("class")
+            if same and prev["class"] in ("dropout", "burst"):
+                pstart = float(prev["time_s"])
+                pend = pstart + max(0.0, float(prev.get("duration_ms") or 0.0)) / 1000.0
+                if start <= pend + 2.0 / fs:
+                    new_start, new_end = min(start, pstart), max(end, pend)
+                    prev["time_s"] = new_start
+                    prev["duration_ms"] = (new_end - new_start) * 1000.0
+                    if cur["class"] == "dropout":
+                        vals = [v for v in (prev.get("level_dbfs"), cur.get("level_dbfs"))
+                                if isinstance(v, (int, float))]
+                        if vals:
+                            prev["level_dbfs"] = min(vals)
+                    continue
+        merged.append(cur)
+    return sorted(merged, key=lambda v: v["time_s"])
 
 
 def scan_segment(x, fs, f0, driven, t0, block_s=BLOCK_S, overlap_s=BLOCK_OVERLAP_S):
@@ -158,13 +266,13 @@ def run_glitch_test(play_dev: str, rec_dev: str, fs: int = 192000, channel: str 
     total_s = _write_program(play_file, play.fmt, fs, tone_hz, tone_level_dbfs, channel, seconds, idle_s, fade_s)
     lead = 1.0
     cap_s = total_s + lead + 2.0
-    io = steady._capture_and_play(play_file, cap_file, play, capture, fs, cap_s, lead_seconds=lead)
-    # Файл НЕ читается целиком: 10 минут при 192 кГц и S24_3LE — это 659 МиБ файла и 1.7 ГиБ float64.
-    src = _FileSource(cap_file, capture.fmt, capture.channels)
-    xr = _read_xruns(io)
     try:
+        io = steady._capture_and_play(play_file, cap_file, play, capture, fs, cap_s, lead_seconds=lead)
+        # Файл НЕ читается целиком: 10 минут при 192 кГц и S24_3LE — это 659 МиБ файла и 1.7 ГиБ float64.
+        src = _FileSource(cap_file, capture.fmt, capture.channels)
+        xr = _read_xruns(io)
         return analyse_recording(src, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_s, fade_s, lead,
-                                 total_s, xr, outdir, play_dev, rec_dev, play.fmt, capture.fmt, False, print_fn,
+                                 total_s, xr, outdir, play_dev, rec_dev, play.fmt, capture.fmt, keep_wav, print_fn,
                                  raw_path=cap_file if keep_wav else None, raw_fmt=capture.fmt,
                                  raw_channels=capture.channels)
     finally:
@@ -231,10 +339,12 @@ def analyse_recording(raw, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_
         idle = [e for e in idle_events if e["adc"] == ch]
         gl = [e for e in ev if e["class"] in ("single_sample", "short")]
         st = [e for e in ev if e["class"] == "dropout"]
+        carrier_unverified = any(e["class"] == "carrier_unverified" for e in ev)
         pj = [e for e in ev if e["class"] == "phase_jump"]
         bu = [e for e in ev if e["class"] == "burst"]
         idle_gl = [e for e in idle if e["class"] in ("single_sample", "short")]
         a = {"dropouts": [{"time_s": e["time_s"], "duration_ms": e["duration_ms"], "depth_db": e["level_dbfs"]} for e in st],
+             "carrier_reference": "missing" if carrier_unverified else ("present" if channel != "none" else "not_applicable"),
              "phase_jumps": [{"time_s": e["time_s"], "jump_deg": e.get("jump_deg")} for e in pj],
              "bursts": len(bu), "glitches": len(gl), "glitches_per_minute": len(gl) / minutes,
              "single_sample": sum(1 for e in gl if e["class"] == "single_sample"),
@@ -248,6 +358,8 @@ def analyse_recording(raw, fs, channel, tone_level_dbfs, seconds, tone_hz, idle_
         line = f"ADC {ch}: "
         if skip_drop:
             line += "провалы несущей не ищутся (канал не ведомый); "
+        elif carrier_unverified:
+            line += "несущая не обнаружена на контрольном участке — проверка провалов недостоверна; "
         else:
             line += f"провалов несущей {len(st)}"
             if st:

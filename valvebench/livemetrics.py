@@ -337,13 +337,13 @@ def tone_present(x, fs, f0, min_dbfs=-70.0, demod=None):
 
 
 def detect_carrier_dropouts(x, fs, f0, depth_db=DROPOUT_DEPTH_DB, min_s=DROPOUT_MIN_S,
-                            step_s=0.001, demod=None):
+                            step_s=0.001, demod=None, track=None):
     """Провалы амплитуды несущей: [{'start_s','dur_s','depth_db'}].
 
     Применять ТОЛЬКО к каналу, в который реально подан тон (см. tone_present): на тихом
     канале шум порождал бы ложные «остановки несущей». Потеря отсчётов БЕЗ обнуления
     амплитуду не меняет — её ловит detect_phase_jumps."""
-    t, env, _win = carrier_track(x, fs, f0, step_s=step_s, demod=demod)
+    t, env, _win = track if track is not None else carrier_track(x, fs, f0, step_s=step_s, demod=demod)
     if env.size < 8:
         return []
     ref = float(np.median(env))
@@ -538,6 +538,10 @@ class ChannelIntegrity:
     bursts: list = field(default_factory=list)
     hf_bursts: list = field(default_factory=list)
     note: str = ""
+    # Reuse the already computed envelope in block-oriented tools instead of
+    # running a second demodulator over the same capture window.
+    carrier_t: object = None
+    carrier_env: object = None
 
     @property
     def fatal(self):
@@ -564,7 +568,9 @@ def frame_integrity(x, fs, f0=None, driven=(False, False), hf_lo=40000.0, names=
         if driven[c] and f0 and not is_driven:
             ci.note = "несущей на канале нет (проверка провалов пропущена)"
         if is_driven:
-            ci.dropouts = detect_carrier_dropouts(seg, fs, f0, demod=dm)
+            track = carrier_track(seg, fs, f0, step_s=0.001, demod=dm)
+            ci.carrier_t, ci.carrier_env = track[0], track[1]
+            ci.dropouts = detect_carrier_dropouts(seg, fs, f0, demod=dm, track=track)
             ci.phase_jumps = detect_phase_jumps(seg, fs, f0, demod=dm)
             if ci.phase_jumps:
                 # Скачок фазы около 180° гасит среднее по окну демодулятора и выглядит как

@@ -1569,13 +1569,20 @@ class PeakHoldPage(Gtk.Box):
     def _on_resolution(self):
         self.acc = ph.PeakHoldAccumulator(self._per_octave())
         self.last_res = None
+        self._rate = None
+        self._tone_hist = None
+        self._lf_limit = 0.0
+        # The correction array is indexed by the current band grid. Rebuild it
+        # whenever that grid changes; otherwise corrected mode subtracts arrays
+        # with different shapes on the next redraw.
+        self._refresh_correction()
         self._redraw()
 
     def mode_key(self):
         return "tone" if self.mode.get_selected() == 0 else "bands"
 
     # ---- измерительный контекст и поправка карты
-    def _context(self):
+    def _context(self, fresh_mixer=False):
         """(устойчивый идентификатор карты, Fs, короткий отпечаток микшера) — накопление принадлежит одному контексту."""
         w = self.win
         dev = ""
@@ -1591,7 +1598,13 @@ class PeakHoldPage(Gtk.Box):
         mix = ""
         try:
             if dev and dev != "sim":
-                fp = w._cached_mixer_fingerprint(dev)
+                # Live frame processing uses a 3-second cache to avoid
+                # spawning amixer repeatedly. Saving a curve is a boundary
+                # where stale context is unsafe, so force a fresh fingerprint.
+                fp = (gainmatch.mixer_fingerprint_from_hw(dev) if fresh_mixer
+                      else w._cached_mixer_fingerprint(dev))
+                if fresh_mixer:
+                    w._mixer_fingerprint_cache[str(dev)] = (time.monotonic(), fp)
                 mix = hashlib.sha1(repr(fp).encode("utf-8")).hexdigest()[:10] if fp is not None else ""
         except Exception:  # noqa: BLE001
             mix = ""
@@ -1610,7 +1623,7 @@ class PeakHoldPage(Gtk.Box):
 
     def _refresh_correction(self):
         """Профиль АЧХ петли карты для текущей карты/Fs (спрашивает ALSA-микшер — только по событию, не по кадру)."""
-        self._corr = None
+        new_corr = None
         profile, note = None, "профиль не запрашивался"
         try:
             profile, note = self.win.get_response_calibration(self.win.rig_fs())
@@ -1618,7 +1631,12 @@ class PeakHoldPage(Gtk.Box):
             note = f"поправка недоступна: {type(exc).__name__}"
         self._profile_note = note
         if profile:
-            self._corr = ph.correction_curve(profile, self.acc.centers)
+            new_corr = ph.correction_curve(profile, self.acc.centers)
+        self._corr = new_corr
+        # The accumulator stores raw input levels. A refreshed calibration can
+        # safely be applied retrospectively to those raw levels as long as the
+        # physical measurement context (card/Fs/mixer) is unchanged; that
+        # context is checked independently in _apply() and again before Save.
         if self.corr_mode.get_selected() == 0:
             txt = "Показана сырая запись." + (" Профиль карты есть: он будет записан в метаданные кривых." if self._corr is not None else "")
         elif self._corr is not None:
@@ -1662,8 +1680,24 @@ class PeakHoldPage(Gtk.Box):
 
     def on_save(self, *_):
         key = self.mode_key()
-        card, fs_ctx, mixer = self.ctx or self._context()
-        self._refresh_correction()          # профиль запрашивается заново: микшер мог измениться
+        # The periodic Live path intentionally caches mixer state. Saving is
+        # different: refresh it and reject the curve if any frames were
+        # collected under a now-different hardware context.
+        fresh_ctx = self._context(fresh_mixer=True)
+        if self.ctx is not None and fresh_ctx != self.ctx:
+            self.acc.reset()
+            self.last_res = None
+            self._rate = None
+            self._tone_hist = None
+            self.rejected = 0
+            self.ctx = fresh_ctx
+            self._refresh_correction()
+            self._redraw()
+            self.win.toast("Кривая не сохранена: изменились карта / частота / настройки микшера. Повтори свип.")
+            return
+        self.ctx = fresh_ctx
+        self._refresh_correction()          # fetch calibration against a fresh mixer snapshot
+        card, fs_ctx, mixer = fresh_ctx
         ov = self.acc.snapshot(self.name_entry.get_text().strip() or f"Кривая {len(self.overlays) + 1}",
                                self._next_color(), key, fs_ctx, card=card, mixer=mixer,
                                corr_db=self._corr, corr_note=self._profile_note if self._corr is not None else "")
@@ -1857,9 +1891,11 @@ class PeakHoldPage(Gtk.Box):
         if smear > 0.25:
             notes.append(f"свип быстрый для окна {n / fs:.1f} с: тон проходит {smear:.2f} окт за окно — уровень "
                          f"занижается, возьмите окно короче")
-        odd = [o.name for o in self.overlays if o.visible and (o.card, int(round(o.fs))) != (self.ctx[0], self.ctx[1])]
+        odd = [o.name for o in self.overlays if o.visible
+               and (o.card, int(round(o.fs)), o.mixer) != self.ctx]
         if odd:
-            notes.append("кривые «" + "», «".join(odd[:3]) + "» получены на другой карте/частоте — сравнение условное")
+            notes.append("кривые «" + "», «".join(odd[:3])
+                         + "» получены на другой карте/частоте/настройке микшера — сравнение условное")
         self._set_banner("info" if notes else None, "; ".join(notes))
         self._redraw()
         cov, tot = self.acc.coverage()
@@ -1887,13 +1923,13 @@ class PeakHoldPage(Gtk.Box):
         for ov in self.overlays:
             if ov.visible:
                 traces += self._overlay_traces(ov, norm, view)
-        d, xt = ph.split_driven(cur)
-        shown = ph.relative_levels(centers, cur) if norm else cur
+        d, xt = ph.split_driven(cur, self.acc.drv_idx if self.mode_key() == "tone" else None)
+        shown = ph.relative_levels(centers, cur, driven=self.acc.drv_idx if self.mode_key() == "tone" else None) if norm else cur
         self._shift = 0.0
         if norm:
-            i1k = int(np.argmin(np.abs(np.log(centers / 1000.0))))
-            if np.isfinite(cur[d, i1k]):
-                self._shift = float(cur[d, i1k])
+            ref = ph.reference_level(centers, cur[d], 1000.0)
+            if ref is not None:
+                self._shift = float(ref)
         if np.isfinite(cur).any():
             if view == 2:
                 traces.append({"x": centers, "y": xt, "label": "Сейчас: переходное затухание",
@@ -1904,10 +1940,15 @@ class PeakHoldPage(Gtk.Box):
                                    "color": "LR"[c], "width": 2.4})
         self.plot.xlog = True
         if view == 2:
-            ylabel = "Переходное затухание, дБ (чужой - ведущий)"
+            ylabel = "Переходное затухание, дБ (чужой - ведущий по полосам)"
         else:
-            ylabel = ("Относительная АЧХ тракта воспроизведения, дБ (0 на 1 кГц)" if norm
-                      else "Уровень на входе АЦП, dBFS")
+            if norm:
+                missing_ref = any(ph.reference_level(centers, cur[c], 1000.0) is None for c in (0, 1)
+                                  if np.isfinite(cur[c]).any())
+                ylabel = ("Относительная АЧХ тракта воспроизведения, дБ (0 на 1 кГц)"
+                          + (" · без нормировки: нет данных в области 1 кГц" if missing_ref else ""))
+            else:
+                ylabel = "Уровень на входе АЦП, dBFS"
         finite = [t["y"][np.isfinite(t["y"])] for t in traces]
         finite = [f for f in finite if f.size]
         span = (None, 10.0, 30.0, 60.0, 100.0)[self.span.get_selected()]
@@ -1925,8 +1966,11 @@ class PeakHoldPage(Gtk.Box):
 
     def _overlay_traces(self, ov, norm, view):
         base, suffix = self._ov_levels(ov)
-        lv = ph.relative_levels(ov.centers, base) if norm else base
-        d, xt = ph.split_driven(base)
+        lv = ph.relative_levels(ov.centers, base, driven=ov.driven if ov.mode == "tone" else None) if norm else base
+        if norm and any(ph.reference_level(ov.centers, base[c], 1000.0) is None
+                        for c in (0, 1) if np.isfinite(base[c]).any()):
+            suffix += " [нет опорной 1 кГц; без нормировки]"
+        d, xt = ph.split_driven(base, ov.driven if ov.mode == "tone" else None)
         if view == 2:
             return [{"x": ov.centers, "y": xt, "label": f"{ov.name} (перекр.){suffix}", "color": ov.color, "width": 1.6}]
         out = []

@@ -70,9 +70,12 @@ cov, tot = acc.coverage()
 check("охват свипа: ≥95% ячеек", cov >= 0.95 * tot, f"{cov}/{tot}")
 rel = ph.relative_levels(c, tone)
 i1k = int(np.argmin(np.abs(np.log(c / 1000.0))))
-check("нормировка: ведущий канал на 1 кГц — 0 дБ, слабый (утечка) сохраняет отступ от ведущего",
-      abs(rel[0][i1k]) < 0.01 and abs(rel[1][i1k] - (tone[1][i1k] - tone[0][i1k])) < 0.01 and rel[1][i1k] < -30,
-      f"L {rel[0][i1k]:+.3f}, R {rel[1][i1k]:+.1f} дБ")
+ref_l = ph.reference_level(c, rel[0], 1000.0)
+ref_r = ph.reference_level(c, rel[1], 1000.0)
+raw_delta = ph.reference_level(c, tone[1], 1000.0) - ph.reference_level(c, tone[0], 1000.0)
+check("нормировка: интерполированная ведущая кривая проходит через 0 дБ ровно на 1 кГц; слабый канал сохраняет отступ",
+      abs(ref_l) < 0.01 and abs(ref_r - raw_delta) < 0.01 and ref_r < -30,
+      f"L@1k {ref_l:+.3f}, R@1k {ref_r:+.1f} дБ; ближайшая полоса {rel[0][i1k]:+.3f} дБ")
 st = np.array([[-20.0, -21.0], [-21.0, -22.0]]).T.copy(); st = np.vstack([[-20.0, -21.0, -22.0], [-20.5, -21.5, -22.5]])
 rs = ph.relative_levels(np.array([900.0, 1000.0, 1100.0]), st)
 check("стерео-свип (оба ведущие): каждый канал на свой ноль", abs(rs[0][1]) < 1e-9 and abs(rs[1][1]) < 1e-9)

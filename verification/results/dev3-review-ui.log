@@ -1,0 +1,58 @@
+PASS  clean frame is drawn: two traces, R in front
+PASS  PSD mode uses power-mean decimation
+PASS  THD card and harmonic markers are produced: 2 markers
+PASS  L-R strip shows the 2nd harmonic dip (R has +15 dB H2)
+PASS  per-channel H2 readings differ as built (-86 vs -71 dBc): ['-86.0 0.0050%', '-71.0 0.0282%']
+PASS  front=L puts L last (drawn on top)
+PASS  L hidden -> only R drawn
+PASS  frame with carrier dropout is rejected
+PASS  rejected frame did not touch the averages
+PASS  health note posted as 'bad': Кадр спектра отброшен: L: провал несущей 88 мс
+PASS  banner shows the event: ⚠ Кадр с событием: L: провал несущей 88 мс
+PASS  show-bad: drawn in red, not averaged
+PASS  backend XRUN inside the window rejects a data-clean frame: ⚠ Кадр с событием: XRUN АЦП (потеря отсчётов) ≥85 мс
+PASS  old XRUN outside the window does not reject
+PASS  split view: L on the main plot, R on the second plot, markers per channel
+PASS  card off: no overlay and no markers
+PASS  peak-envelope switch selects 'both' decimation
+PASS  line-amplitude mode keeps max decimation so single tones stay visible
+PASS  event log: one 1-sample glitch seen in two overlapping frames is written once, as single_sample on L with sign/amplitude: wall_time,stream_time_s,channel,kind,value1,value2,sign,fs | 2026-11-09 12:09:15,12.8088,L,single_sample,1 отсч.,-54.1 dBFS,1,192000
+PASS  stale-size result is dropped
+PASS  health ok when clean
+PASS  health bad with recent XRUN: XRUN АЦП (потеря отсчётов) ≥85 мс · 2 с назад
+PASS  health bad on transport problem
+PASS  merge_health prefers the more severe
+
+24 проверок пройдено
+PASS  clean stream: ΔG validated and sent to the strip: (0.014000000000000163, 'validated')
+PASS  strip delta matches the built-in 0.014 dB: +0.0140
+PASS  RMS numbers reach the strip: [-6.020599917298481, -6.034599917298481]
+PASS  no hidden exception in _update_delta: []
+PASS  XRUN in the 0.6 s window blocks ΔG and clears the strip delta: Событие потока: XRUN АЦП (потеря отсчётов) ≥85 мс — ΔG заблокирована
+PASS  DAC underrun blocks ΔG until the suspect interval has left the 0.6 s window: blocked 24 of 60 ticks (~1.8 s)
+PASS  ΔG recovers afterwards
+PASS  stale capture: strip shows stale, no delta
+PASS  generator off: no validated delta lingers: (None, 'none')
+
+33 проверок пройдено
+PASS  PeakHoldPage builds under the stub; default = tone tracking, 1/12 octave
+PASS  sweep fills the cells it passed through (200 Hz-12 kHz = ~72 of 120 cells): 66/120
+PASS  current curves are drawn for L and R: ['Сейчас L', 'Сейчас R']
+PASS  save creates an overlay with a palette colour and writes it to disk
+PASS  reset clears the live hold but keeps saved curves
+PASS  after reset only the saved overlay is drawn (L solid, R dashed)
+PASS  crosstalk view: separation ≈ -45 dB (|error| < 2 dB): -45.0 dB
+PASS  saved curves are restored on the next start
+PASS  CSV export writes a file
+PASS  delete removes the curve and updates the file
+PASS  frame with a stream event is not accumulated
+
+44 проверок пройдено
+PASS  смена карты посреди накопления: накопление сброшено, предупреждение показано, в новое попал только свежий кадр
+PASS  on_context_changed (смена карты/Fs в окне) очищает несохранённое накопление, сохранённые кривые остаются
+PASS  сохранённая кривая несёт карту и Fs измерения: card='alsa:card2:pcm0' fs=96000
+PASS  кривая другой карты помечена в баннере как условно сопоставимая: кривые «A» получены на другой карте/частоте/настройке микшера — сравнение условное
+PASS  поправка карты вычитается из показа ровно по профилю (петля ЦАП→АЦП, нормирована на 1 кГц): 64 ячеек, макс поправка 2.30 дБ
+PASS  кривая, сохранённая без профиля, при показе «с поправкой» подписана [сырая]
+
+50 проверок пройдено
