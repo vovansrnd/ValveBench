@@ -54,3 +54,77 @@ def make_test_noise(fs: int, seconds: float, kind: str = "pink", rms_dbfs: float
         "peak_limited": scale_limited, "f_lo": float(f_lo), "f_hi": float(min(f_hi, 0.45 * fs)),
     }
     return x.astype(np.float64), info
+
+
+def make_generator_signal(fs: int, waveform: str = "sine", frequency_hz: float = 1000.0,
+                          level_dbfs: float = -6.0, seconds: float = 1.0,
+                          noise_low_hz: float = 20.0, noise_high_hz: float = 20000.0,
+                          seed: int = 12345):
+    """Build a loopable two-purpose generator buffer and truthful level metadata.
+
+    Periodic waveforms use a Nyquist-limited Fourier series (up to 99 harmonics)
+    and are peak-normalized to the requested dBFS. Noise level is RMS dBFS and
+    follows make_test_noise()'s -3 dBFS peak safety limit.
+    """
+    fs = int(fs)
+    seconds = float(seconds)
+    frequency_hz = float(frequency_hz)
+    level_dbfs = float(level_dbfs)
+    if fs < 8000 or not math.isfinite(seconds) or seconds <= 0:
+        raise ValueError("нужна положительная длительность и Fs не ниже 8 кГц")
+    if not math.isfinite(level_dbfs) or not -120.0 <= level_dbfs <= 0.0:
+        raise ValueError("уровень генератора должен быть от -120 до 0 dBFS")
+    n = max(4096, int(round(fs * seconds)))
+    if waveform in ("white", "pink"):
+        x, info = make_test_noise(fs, n / fs, kind=waveform, rms_dbfs=level_dbfs,
+                                  f_lo=noise_low_hz, f_hi=noise_high_hz, seed=seed)
+        info.update({"waveform": waveform, "frequency_hz": None,
+                     "level_definition": "rms_dbfs"})
+        return x, info
+
+    if waveform not in ("sine", "triangle", "square", "sawtooth"):
+        raise ValueError(f"неизвестная форма сигнала: {waveform}")
+    if not math.isfinite(frequency_hz) or frequency_hz <= 0.0 or frequency_hz >= 0.45 * fs:
+        raise ValueError(f"частота должна быть в пределах 0…{0.45 * fs:.0f} Гц")
+
+    t = np.arange(n, dtype=np.float64) / fs
+    phase = 2.0 * np.pi * frequency_hz * t
+    if waveform == "sine":
+        x = np.sin(phase)
+    else:
+        # Keep the spectrum below Nyquist. The cap avoids expensive loops for
+        # very low frequencies while preserving the visible shape well.
+        hmax = min(99, int((0.45 * fs) // frequency_hz))
+        if hmax < 1:
+            raise ValueError("частота слишком высока для этой формы сигнала")
+        x = np.zeros(n, dtype=np.float64)
+        if waveform in ("square", "triangle"):
+            harmonics = range(1, hmax + 1, 2)
+        else:
+            harmonics = range(1, hmax + 1)
+        for h in harmonics:
+            if waveform == "square":
+                coefficient = 1.0 / h
+            elif waveform == "triangle":
+                coefficient = ((-1.0) ** ((h - 1) // 2)) / (h * h)
+            else:  # sawtooth
+                coefficient = ((-1.0) ** (h + 1)) / h
+            x += coefficient * np.sin(h * phase)
+        peak = float(np.max(np.abs(x)))
+        if peak <= 0 or not math.isfinite(peak):
+            raise ValueError("не удалось сформировать периодический сигнал")
+        x /= peak
+
+    peak_target = 10.0 ** (level_dbfs / 20.0)
+    x *= peak_target
+    peak = float(np.max(np.abs(x)))
+    rms = float(np.sqrt(np.mean(x * x)))
+    info = {
+        "waveform": waveform, "fs": fs, "seconds": n / fs,
+        "frequency_hz": frequency_hz, "requested_level_dbfs": level_dbfs,
+        "level_definition": "peak_dbfs", "peak_dbfs": 20.0 * math.log10(max(peak, 1e-30)),
+        "rms_dbfs": 20.0 * math.log10(max(rms * math.sqrt(2.0), 1e-30)),
+        "harmonics_generated": 1 if waveform == "sine" else hmax,
+        "band_limit_hz": 0.45 * fs,
+    }
+    return x.astype(np.float64), info

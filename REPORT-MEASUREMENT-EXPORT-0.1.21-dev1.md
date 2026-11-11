@@ -36,3 +36,7 @@ This development build adds a first portable DUT measurement export workflow, ex
 ## Safety / scope
 
 The existing installed copy at `/opt/MyApps/Adudio/ValveBench` was not modified. No test GUI was opened on the user's Wayland desktop. This archive is a development build, not an instruction to replace the installed copy without backup.
+
+## Post-release recount (2026-11-10)
+
+The current dev1 source tree's selftest runner reports **106/106 PASS** (not 103/103 as stated in the initial draft above). This recount was repeated while preparing dev2. The historical 103 figure is retained above only to show what the first report recorded; use the post-release recount and dev2 QA report for the verified total.

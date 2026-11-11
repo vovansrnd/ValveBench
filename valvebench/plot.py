@@ -86,16 +86,29 @@ class Plot(Gtk.DrawingArea):
         self.autoscale_y()
 
     def set_view(self, xlim=None, ylim=None, xlabel=None, ylabel=None):
+        changed = False
+        y_changed = False
         if xlim:
-            self.xlim = (float(xlim[0]), float(xlim[1]))
+            value = (float(xlim[0]), float(xlim[1]))
+            if value != self.xlim:
+                self.xlim = value
+                changed = True
         if ylim and self.manual_ylim is None:
-            self.ylim = (float(ylim[0]), float(ylim[1]))
-            self._notify_view_changed()
-        if xlabel is not None:
+            value = (float(ylim[0]), float(ylim[1]))
+            if value != self.ylim:
+                self.ylim = value
+                changed = True
+                y_changed = True
+        if xlabel is not None and xlabel != self.xlabel:
             self.xlabel = xlabel
-        if ylabel is not None:
+            changed = True
+        if ylabel is not None and ylabel != self.ylabel:
             self.ylabel = ylabel
-        self.queue_draw()
+            changed = True
+        if y_changed:
+            self._notify_view_changed()
+        if changed:
+            self.queue_draw()
 
     def set_traces(self, traces):
         """traces: [{'x','y','label','color':(r,g,b)|'L'|'R'|'ref','dash':bool,'width'}]"""

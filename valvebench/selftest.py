@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import numpy as np
 
-from . import dsp, gainmatch, scans, looptest, passport, steady, store, preferences
+from . import dsp, gainmatch, scans, looptest, passport, steady, store, preferences, signals
 from . import pcm as pcm_mod
 from . import io_health as io_health_mod
 from .pcm import to_pcm
@@ -90,6 +90,60 @@ def run_selftest():
         check("DUT passport export: CSV keeps missing curve samples blank; symlink escape rejected",
               missing_values_preserved and symlink_rejected,
               f"missing curve sample exported as blank={missing_values_preserved}; symlink rejected={symlink_rejected}")
+
+    # Batch passport must retain several independent measurements in one session.
+    batch_sample = {
+        "kind": "dut_batch", "schema": 1, "state": "complete",
+        "test_order": ["noise", "response", "thd"],
+        "tests": {
+            "noise": {"kind": "noise", "ch": {
+                "L": {"freq": [20.0, 1000.0], "dens_dbfs": [-120.0, -130.0]},
+                "R": {"freq": [20.0, 1000.0], "dens_dbfs": [-121.0, -131.0]}}},
+            "response": export_sample,
+            "thd": {"kind": "thd", "ch": {"L": {"freq": [997.0], "spec_db": [-6.0]}}},
+        },
+    }
+    with tempfile.TemporaryDirectory(prefix="vb-batch-export-") as td:
+        batch_path = Path(store.save_device_measurement(batch_sample, "592", directory=td))
+        batch_session = json.loads((batch_path / "session.json").read_text(encoding="utf-8"))
+        batch_curves = (batch_path / "curves.csv").read_text(encoding="utf-8")
+        batch_metrics = (batch_path / "metrics.csv").read_text(encoding="utf-8")
+        check("DUT batch passport: noise, response and THD remain together with nested curves",
+              batch_session["result"]["test_order"] == ["noise", "response", "thd"]
+              and set(batch_session["result"]["tests"]) == {"noise", "response", "thd"}
+              and "result.tests.noise.ch.L" in batch_curves
+              and "result.tests.response.ch.L" in batch_curves
+              and "result.tests.thd.ch.L" in batch_curves
+              and "result.tests.response.kind" in batch_metrics,
+              f"tests={list(batch_session['result']['tests'])}; curve rows={len(batch_curves.splitlines()) - 1}")
+
+    # The generator preview and live DAC buffer share the same waveform builder.
+    periodic_ok = True
+    periodic_notes = []
+    for shape in ("sine", "triangle", "square", "sawtooth"):
+        gx, gi = signals.make_generator_signal(48000, shape, 1000.0, -6.0, 0.1)
+        peak_db = float(20.0 * np.log10(max(float(np.max(np.abs(gx))), 1e-30)))
+        shape_ok = (len(gx) == 4800 and np.all(np.isfinite(gx))
+                    and abs(peak_db + 6.0) < 0.03
+                    and gi["level_definition"] == "peak_dbfs")
+        periodic_ok &= shape_ok
+        periodic_notes.append(f"{shape} peak={peak_db:.2f} dBFS")
+    check("Generator periodic waveforms: finite, expected frame count and peak level",
+          periodic_ok, "; ".join(periodic_notes))
+    noise_ok = True
+    noise_notes = []
+    for shape in ("white", "pink"):
+        gx, gi = signals.make_generator_signal(48000, shape, 1000.0, -20.0, 0.2,
+                                               noise_low_hz=30.0, noise_high_hz=16000.0,
+                                               seed=7123)
+        ok = (len(gx) == 9600 and np.all(np.isfinite(gx))
+              and gi["level_definition"] == "rms_dbfs"
+              and gi["peak_dbfs"] <= -3.0 + 1e-9
+              and gi["f_lo"] == 30.0)
+        noise_ok &= ok
+        noise_notes.append(f"{shape} RMS={gi['actual_rms_dbfs']:.2f}, peak={gi['peak_dbfs']:.2f} dBFS")
+    check("Generator noise: white/pink band limits and peak safety ceiling",
+          noise_ok, "; ".join(noise_notes))
 
     # Точная синусоида с известной H2=-60 dBc.
     fs, n, f0 = 48000, 48000, 1000.0

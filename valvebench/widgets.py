@@ -75,28 +75,32 @@ class LevelMeters(Gtk.DrawingArea):
                               "предупредительная граница запаса −3 dBFS (цифровое ограничение — около 0 dBFS).")
 
     # ---- API
-    def set_reading(self, c, rms_db, peak_db, clip=False):
+    def set_reading(self, c, rms_db, peak_db, clip=False, redraw=True):
         self.stale = False
         self.rms[c], self.peak[c] = float(rms_db), float(peak_db)
         self.hold[c] = max(self.hold[c], self.peak[c])
         self.clipped[c] = self.clipped[c] or bool(clip)
-        self.queue_draw()
+        if redraw:
+            self.queue_draw()
 
-    def set_stale(self, text="нет свежих данных АЦП"):
+    def set_stale(self, text="нет свежих данных АЦП", redraw=True):
         self.stale = True
         self.stale_text = text
         self.delta, self.delta_kind = None, "none"
         self.hold = [-120.0, -120.0]
-        self.queue_draw()
+        if redraw:
+            self.queue_draw()
 
-    def set_volts(self, texts):
+    def set_volts(self, texts, redraw=True):
         self.volts = list(texts)
-        self.queue_draw()
+        if redraw:
+            self.queue_draw()
 
-    def set_delta(self, value, kind):
+    def set_delta(self, value, kind, redraw=True):
         self.delta = None if value is None else float(value)
         self.delta_kind = kind if value is not None else "none"
-        self.queue_draw()
+        if redraw:
+            self.queue_draw()
 
     def reset_holds(self):
         self.hold = list(self.peak)

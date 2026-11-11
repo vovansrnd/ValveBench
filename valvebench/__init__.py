@@ -42,4 +42,4 @@ if not _user_blas_vars:
     except Exception:
         pass  # не смогли — работают env-переменные для следующего импорта numpy
 
-__version__ = "0.1.21-dev1"
+__version__ = "0.1.21-dev2"

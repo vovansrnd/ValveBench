@@ -40,6 +40,12 @@ def _pref_widget_name(title):
     return "pref_" + hashlib.sha1(str(title).encode("utf-8")).hexdigest()[:12]
 
 
+def _set_label_text_if_changed(label, value):
+    value = str(value)
+    if label.get_text() != value:
+        label.set_text(value)
+
+
 def spin(title, lo, hi, step, val, digits=1, subtitle=None):
     r = Adw.SpinRow.new_with_range(lo, hi, step)
     r.set_name(_pref_widget_name(title))
@@ -297,6 +303,427 @@ class Page(Gtk.Box):
 # ------------------------------------------------------------------------ страницы
 
 
+class GeneratorPage(Page):
+    """Расширенная панель генератора и простой осциллограф буфера/входа АЦП."""
+
+    WAVEFORMS = ["Синус", "Треугольник", "Меандр", "Пила", "Белый шум", "Розовый шум"]
+    WAVEFORM_KEYS = ["sine", "triangle", "square", "sawtooth", "white", "pink"]
+
+    def __init__(self, win):
+        self.win = win
+        self.waveform = combo("Форма сигнала", self.WAVEFORMS,
+                              self.WAVEFORM_KEYS.index(getattr(win, "generator_waveform", "sine")))
+        self.frequency = spin("Частота, Гц", 5, 40000, 1, win.live.f.get_value(), 0,
+                              "Быстрая настройка также доступна на странице Gain Match")
+        self.level = spin("Уровень, dBFS", -100, -0.5, 0.5, win.live.lv.get_value(), 1)
+        self.route = combo("Выход", ["L + R", "Только L", "Только R"], win.live.route.get_selected())
+        self.noise_lo = spin("Шум: нижняя частота, Гц", 1, 40000, 1,
+                             getattr(win, "generator_noise_low_hz", 20.0), 0)
+        self.noise_hi = spin("Шум: верхняя частота, Гц", 100, 86000, 10,
+                             getattr(win, "generator_noise_high_hz", 20000.0), 0)
+        self.scope_source = combo("Что показывать", ["Буфер генератора · до ЦАП", "Вход АЦП · реальный сигнал"], 0)
+        self.window_ms = spin("Окно осциллографа, мс", 1, 100, 1, 10, 0)
+        self.scope_status = Gtk.Label(label="Расчётный сигнал до ЦАП", xalign=0, wrap=True)
+        self.scope_status.add_css_class("dim-label")
+        self._syncing = False
+        self.timer = None
+        self._last_preview_signature = None
+        self.plot_widget = Plot(False, "Время, мс", "Амплитуда, FS")
+        self.plot_widget.set_view((0, 10), (-1.1, 1.1))
+        scope_group = group("Осциллограф", self.scope_source, self.window_ms)
+        super().__init__(win,
+                         group("Быстрые параметры генератора", self.frequency, self.level, self.route),
+                         group("Форма и спектр", self.waveform, self.noise_lo, self.noise_hi),
+                         scope_group, self.scope_status,
+                         plot=self.plot_widget)
+        # Два набора быстрых регуляторов остаются синхронными в обе стороны.
+        for a, b in ((self.frequency, win.live.f), (self.level, win.live.lv)):
+            a.connect("notify::value", lambda *_args, src=a, dst=b: self._sync_value(src, dst))
+            b.connect("notify::value", lambda *_args, src=b, dst=a: self._sync_value(src, dst))
+        self.route.connect("notify::selected", lambda *_: self._sync_route(self.route, win.live.route))
+        win.live.route.connect("notify::selected", lambda *_: self._sync_route(win.live.route, self.route))
+        self.waveform.connect("notify::selected", self._waveform_changed)
+        self.noise_lo.connect("notify::value", self._noise_changed)
+        self.noise_hi.connect("notify::value", self._noise_changed)
+        self.scope_source.connect("notify::selected", lambda *_: self._scope_source_changed())
+        self.window_ms.connect("notify::value", lambda *_: self.update_scope())
+        self._apply_waveform_controls()
+
+    def _scope_source_changed(self):
+        self._last_preview_signature = None
+        self.update_scope()
+
+    def _sync_value(self, src, dst):
+        if self._syncing:
+            return
+        self._syncing = True
+        try:
+            dst.set_value(src.get_value())
+        finally:
+            self._syncing = False
+        self.update_scope()
+
+    def _sync_route(self, src, dst):
+        if self._syncing:
+            return
+        self._syncing = True
+        try:
+            dst.set_selected(src.get_selected())
+        finally:
+            self._syncing = False
+        self.update_scope()
+
+    def _waveform_changed(self, *_):
+        self.win.generator_waveform = self.WAVEFORM_KEYS[self.waveform.get_selected()]
+        self._apply_waveform_controls()
+        if self.win.generator_btn.get_active():
+            self.win.live.apply()
+        self.update_scope()
+
+    def _noise_changed(self, *_):
+        self.win.generator_noise_low_hz = float(self.noise_lo.get_value())
+        self.win.generator_noise_high_hz = float(self.noise_hi.get_value())
+        self.update_scope()
+        if self.win.generator_btn.get_active():
+            self.win.live.apply()
+
+    def _apply_waveform_controls(self):
+        noise = self.WAVEFORM_KEYS[self.waveform.get_selected()] in ("white", "pink")
+        self.noise_lo.set_sensitive(noise)
+        self.noise_hi.set_sensitive(noise)
+
+    def set_visible(self, visible):
+        if visible and self.timer is None:
+            self.update_scope()
+            self.timer = GLib.timeout_add(200, self._scope_tick)
+        elif not visible and self.timer is not None:
+            GLib.source_remove(self.timer)
+            self.timer = None
+
+    def _scope_tick(self):
+        if self.win.stack.get_visible_child() is not self:
+            self.timer = None
+            return False
+        self.update_scope()
+        return True
+
+    def update_scope(self):
+        if not hasattr(self, "plot_widget"):
+            return
+        fs = int(self.win.rig_fs())
+        window_ms = float(self.window_ms.get_value())
+        n = max(128, int(fs * window_ms / 1000.0))
+        source = self.scope_source.get_selected()
+        if source == 1:
+            be = self.win.be
+            if not self.win.live_on or be is None or not getattr(be, "live_running", False):
+                _set_label_text_if_changed(
+                    self.scope_status, "Вход АЦП не открыт. Нажми компактную кнопку «АЦП» вверху.")
+                if self.plot_widget.traces:
+                    self.plot_widget.set_traces([])
+                return
+            x = np.asarray(be.live_recent(window_ms / 1000.0), dtype=float)
+            if x.ndim != 2 or x.shape[0] < 32:
+                _set_label_text_if_changed(self.scope_status, "Ожидаю свежие отсчёты АЦП…")
+                if self.plot_widget.traces:
+                    self.plot_widget.set_traces([])
+                return
+            if x.shape[0] > 5000:
+                step = max(1, x.shape[0] // 5000)
+                x = x[::step]
+            t_ms = np.arange(len(x), dtype=float) * 1000.0 / fs
+            self.plot_widget.set_view((0, max(window_ms, float(t_ms[-1]))), (-1.05, 1.05),
+                                      xlabel="Время, мс", ylabel="Вход АЦП, FS")
+            self.plot_widget.set_traces([
+                {"x": t_ms, "y": x[:, c], "label": ch, "color": ch, "width": 1.3}
+                for c, ch in enumerate(("L", "R")) if c < x.shape[1]])
+            status = f"Вход АЦП · реальные отсчёты · {fs} Гц · шкала FS"
+            _set_label_text_if_changed(self.scope_status, status)
+            return
+
+        waveform = self.WAVEFORM_KEYS[self.waveform.get_selected()]
+        freq = float(round(self.frequency.get_value()))
+        level = float(self.level.get_value())
+        route = self.route.get_selected()
+        preview_signature = (fs, window_ms, source, waveform, freq, level, route,
+                             float(self.noise_lo.get_value()), float(self.noise_hi.get_value()))
+        if preview_signature == self._last_preview_signature:
+            return
+        self._last_preview_signature = preview_signature
+        try:
+            sig, info = signals.make_generator_signal(
+                fs, waveform=waveform, frequency_hz=freq, level_dbfs=level,
+                seconds=window_ms / 1000.0,
+                noise_low_hz=float(self.noise_lo.get_value()),
+                noise_high_hz=float(self.noise_hi.get_value()))
+        except ValueError as exc:
+            _set_label_text_if_changed(self.scope_status, str(exc))
+            if self.plot_widget.traces:
+                self.plot_widget.set_traces([])
+            return
+        sig = np.asarray(sig[:n], dtype=float)
+        if sig.size > 5000:
+            step = max(1, sig.size // 5000)
+            sig = sig[::step]
+        t_ms = np.arange(len(sig), dtype=float) * 1000.0 / fs
+        traces = []
+        if route in (0, 1):
+            traces.append({"x": t_ms, "y": sig, "label": "L", "color": "L", "width": 1.3})
+        if route in (0, 2):
+            traces.append({"x": t_ms, "y": sig, "label": "R", "color": "R", "width": 1.3})
+        self.plot_widget.set_view((0, max(window_ms, float(t_ms[-1]) if len(t_ms) else window_ms)),
+                                  (-1.05, 1.05), xlabel="Время, мс", ylabel="Буфер ЦАП, FS")
+        self.plot_widget.set_traces(traces)
+        level_label = (f"RMS {info.get('actual_rms_dbfs', info.get('rms_dbfs', 0.0)):.1f} dBFS"
+                       if info.get("level_definition") == "rms_dbfs"
+                       else f"Peak {info.get('peak_dbfs', 0.0):.1f} dBFS")
+        status = f"Буфер до ЦАП · {waveform} · {level_label} · {fs} Гц"
+        _set_label_text_if_changed(self.scope_status, status)
+
+
+class MeasurementBatchPage(Page):
+    """Последовательный DUT-прогон с единым сохраняемым паспортом."""
+
+    def __init__(self, win):
+        self.win = win
+        self.chk_response = Gtk.CheckButton(label="АЧХ / sweep")
+        self.chk_response.set_active(True)
+        self.chk_thd = Gtk.CheckButton(label="THD / THD+N")
+        self.chk_thd.set_active(True)
+        self.chk_noise = Gtk.CheckButton(label="Шум")
+        self.chk_noise.set_active(True)
+        self.chk_imd = Gtk.CheckButton(label="IMD · 19 + 20 кГц")
+        self.chk_imd.set_active(False)
+        checks = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        for w in (self.chk_response, self.chk_thd, self.chk_noise, self.chk_imd):
+            checks.append(w)
+        identity_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        identity_box.append(Gtk.Label(label="Номер проверяемого аппарата", xalign=0))
+        identity_box.append(win.measurement_device_id)
+        identity_box.append(Gtk.Label(label="Лампы / состояние / примечание", xalign=0))
+        identity_box.append(win.measurement_note)
+        self.run_button = button("ВЫПОЛНИТЬ ПАКЕТ ИЗМЕРЕНИЙ", self.run_batch, True)
+        self.continue_button = button("ПОДКЛЮЧИЛ ANTI-RIAA · ПРОДОЛЖИТЬ", self.run_driven_tests)
+        self.continue_button.set_visible(False)
+        self.finish_partial_button = button("ЗАВЕРШИТЬ С ТЕКУЩИМИ РЕЗУЛЬТАТАМИ", self.finish_partial)
+        self.finish_partial_button.set_visible(False)
+        self.save_button = win.export_measurement_btn
+        self.save_button.set_label("СОХРАНИТЬ ВЕСЬ ПАКЕТ")
+        self.save_button.set_sensitive(False)
+        help_text = Gtk.Label(
+            label=("Параметры АЧХ, THD, шума и IMD берутся с одноимённых страниц — сначала "
+                   "выставь там нужные настройки. Шум измеряется первым: вход DUT должен быть "
+                   "нагружен так, как требуется для проверки собственного шума. После шумового "
+                   "теста программа остановится и попросит подключить Anti-RIAA. АЧХ, THD и IMD "
+                   "выполняются последовательно. Всё сохраняется одной сессией аппарата."),
+            xalign=0, wrap=True)
+        help_text.add_css_class("dim-label")
+        test_title = Gtk.Label(label="Что включить в пакет", xalign=0)
+        test_title.add_css_class("heading")
+        identity_title = Gtk.Label(label="Аппарат и заметки", xalign=0)
+        identity_title.add_css_class("heading")
+        super().__init__(win, test_title, checks, identity_title, identity_box,
+                         self.run_button, self.continue_button, self.finish_partial_button,
+                         self.save_button, help_text)
+        self._results = {}
+        self._context = None
+        self._selected_order = []
+        self._parameters = {}
+        self._started = None
+
+    def _snapshot(self):
+        response = self.win.response_page
+        thd = self.win.thd_page
+        noise = self.win.noise_page
+        imd = self.win.imd_page
+        mode = ("flat", "riaa")[response.mode.get_selected()]
+        target = response.iec.get_selected()
+        if self.chk_response.get_active() and mode == "riaa" and target == 0:
+            raise ValueError("Для Inverse-RIAA выбери эталон RIAA или RIAA + IEC")
+        if self.chk_response.get_active():
+            profile, profile_note = self.win.get_response_calibration(self.win.rig_fs())
+        else:
+            profile, profile_note = None, None
+        self._response_profile = profile
+        self._response_profile_note = profile_note
+        return {
+            "response": {
+                "f_lo": float(response.lo.get_value()), "f_hi": float(response.hi.get_value()),
+                "dur": float(response.dur.get_value()),
+                "level_1k_dbfs": float(response.lv.get_value()), "mode": mode,
+                "iec": target == 2, "calibration_note": profile_note,
+            },
+            "thd": {"frequency_hz": float(thd.f.get_value()),
+                    "level_dbfs": float(thd.lv.get_value()),
+                    "route": ("both", "L", "R")[thd.route.get_selected()]},
+            "noise": {"seconds": float(noise.sec.get_value())},
+            "imd": {"f1_hz": float(imd.f1.get_value()), "f2_hz": float(imd.f2.get_value()),
+                    "mode": ("ccif", "smpte")[imd.mode.get_selected()],
+                    "level_dbfs": float(imd.lv.get_value())},
+        }
+
+    def run_batch(self):
+        if self.win.busy:
+            self.win.toast("Другое измерение ещё выполняется")
+            return
+        selected = [key for key, widget in (
+            ("response", self.chk_response), ("thd", self.chk_thd),
+            ("noise", self.chk_noise), ("imd", self.chk_imd)) if widget.get_active()]
+        if not selected:
+            self.win.toast("Выбери хотя бы один тест")
+            return
+        device_id = self.win.measurement_device_id.get_text().strip()
+        if not device_id:
+            self.win.toast("Укажи номер аппарата, например 590")
+            return
+        try:
+            self._parameters = self._snapshot()
+        except (ValueError, TypeError) as exc:
+            self.win.toast(str(exc))
+            return
+        self._selected_order = (["noise"] if "noise" in selected else []) + [
+            key for key in ("response", "thd", "imd") if key in selected]
+        self._results = {}
+        self._context = None
+        self._started = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+        self.continue_button.set_visible(False)
+        self.save_button.set_sensitive(False)
+        self.run_button.set_sensitive(False)
+        if "noise" in selected:
+            seconds = self._parameters["noise"]["seconds"]
+            self.win.run_job(lambda rig: m.noise(rig, seconds), self._noise_done,
+                             "Пакет 1/{} · измерение собственного шума".format(len(self._selected_order)))
+        else:
+            self.run_driven_tests()
+
+    def _noise_done(self, result):
+        self._context = result.get("_valvebench_context")
+        self._results["noise"] = {k: v for k, v in result.items() if k != "_valvebench_context"}
+        driven = [k for k in ("response", "thd", "imd") if k in self._selected_order]
+        if driven:
+            self.continue_button.set_visible(True)
+            self.finish_partial_button.set_visible(True)
+            self.say("Шум записан. Теперь отключи терминирующий резистор/замыкание входа DUT, "
+                     "подключи Anti-RIAA и нажми «ПОДКЛЮЧИЛ ANTI-RIAA · ПРОДОЛЖИТЬ».\n\n"
+                     "Шум уже сохранён в памяти пакета и войдёт в общий паспорт.")
+        else:
+            self.run_button.set_sensitive(True)
+            self._finalize("complete")
+
+    def finish_partial(self):
+        if self._results:
+            self._finalize("partial")
+
+    def run_driven_tests(self):
+        if self._context:
+            expected = self._context.get("device", {}).get("stable_id")
+            current_hw = self.win.cards[self.win.dev.get_selected()][0]
+            current_id = stable_device_identity(current_hw)
+            expected_fs = int(self._context.get("audio_io", {}).get("sample_rate_hz", 0) or 0)
+            if (expected and current_id != expected) or (expected_fs and int(self.win.rig_fs()) != expected_fs):
+                self.continue_button.set_visible(True)
+                self.win.toast("Верни исходную звуковую карту и частоту дискретизации пакета")
+                return
+        self.continue_button.set_visible(False)
+        self.finish_partial_button.set_visible(False)
+        self.run_button.set_sensitive(False)
+        tests = [k for k in ("response", "thd", "imd") if k in self._selected_order and k not in self._results]
+        if not tests:
+            self._finalize("complete")
+            return
+        params = self._parameters
+        profile, profile_note = getattr(self, "_response_profile", None), getattr(self, "_response_profile_note", None)
+
+        def job(rig):
+            expected_mixer = ((self._context or {}).get("audio_io") or {}).get("alsa_mixer_fingerprint")
+            hw = str(getattr(rig.be, "hw", "") or "")
+            if expected_mixer and hw and hw != "sim":
+                actual_mixer = gainmatch.mixer_fingerprint_from_hw(hw)
+                if actual_mixer != expected_mixer:
+                    raise m.MeasureError(
+                        "Микшер изменился после измерения шума. Верни прежние уровни/маршрутизацию "
+                        "и начни пакет заново, иначе результаты будут несопоставимы.")
+            output = {"kind": "dut_batch_driven_phase", "tests": {}, "test_order": []}
+            for index, key in enumerate(tests, 1):
+                GLib.idle_add(self._set_progress, f"Пакет: {key.upper()} · {index}/{len(tests)}")
+                try:
+                    if key == "response":
+                        a = {k: v for k, v in params["response"].items() if k != "calibration_note"}
+                        value = m.sweep(rig, response_calibration=profile, **a)
+                        if profile_note:
+                            value["calibration_note"] = profile_note
+                    elif key == "thd":
+                        a = params["thd"]
+                        value = m.thd_point(rig, a["frequency_hz"], a["level_dbfs"], a["route"])
+                    else:
+                        a = params["imd"]
+                        value = m.imd(rig, a["f1_hz"], a["f2_hz"], a["mode"], a["level_dbfs"])
+                    output["tests"][key] = value
+                    output["test_order"].append(key)
+                except Exception as exc:  # keep successful neighbouring tests
+                    output["tests"][key] = {"status": "error", "error_type": type(exc).__name__,
+                                            "error": str(exc)}
+                    output["test_order"].append(key)
+            return output
+
+        self.win.run_job(job, self._driven_done, "Пакет: выполняю АЧХ, THD и IMD по очереди…")
+
+    def _set_progress(self, text):
+        self.job_status.set_text(text)
+        return False
+
+    def _driven_done(self, phase):
+        if self._context is None:
+            self._context = phase.get("_valvebench_context")
+        for key, value in phase.get("tests", {}).items():
+            self._results[key] = value
+        self._finalize("complete" if all(v.get("kind") for v in self._results.values()) else "partial")
+
+    def on_job_error(self, exc):
+        self.run_button.set_sensitive(True)
+        if self._results:
+            self._finalize("partial")
+        else:
+            self.say(f"Пакет не завершён: {type(exc).__name__}: {exc}")
+
+    def _finalize(self, state):
+        bundle = {
+            "kind": "dut_batch", "schema": 1, "state": state,
+            "started_at_local": self._started,
+            "finished_at_local": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "test_order": [k for k in self._selected_order if k in self._results],
+            "parameters": self._parameters,
+            "tests": self._results,
+        }
+        if self._context:
+            bundle["_valvebench_context"] = self._context
+        self.win.last = bundle
+        self.win._update_export_button()
+        self.save_button.set_sensitive(bool(self.win.export_measurement_btn.get_sensitive()))
+        self.run_button.set_sensitive(True)
+        self.continue_button.set_visible(False)
+        self.finish_partial_button.set_visible(False)
+        lines = [f"ПАКЕТ {state.upper()} · {len(self._results)} тест(а)"]
+        for key in bundle["test_order"]:
+            result = self._results[key]
+            if result.get("status") == "error":
+                lines.append(f"{key.upper()}: ОШИБКА · {result.get('error')}")
+            else:
+                lines.append(f"{key.upper()}: {result.get('kind', 'готово')}")
+                try:
+                    renderer = {"noise": m.text_noise, "response": m.text_sweep,
+                                "thd": m.text_thd, "imd": m.text_imd}.get(key)
+                    if renderer:
+                        lines.append(renderer(result))
+                except Exception:
+                    pass
+        if not self.win.measurement_device_id.get_text().strip():
+            lines.append("Укажи ID аппарата для сохранения всего пакета.")
+        else:
+            lines.append("Все результаты сохраняются одной кнопкой в один паспорт устройства.")
+        self.say("\n\n".join(lines))
+
+
 class LivePage(Gtk.Box):
     """Главный стенд: генераторные настройки и два крупных вертикальных метра L/R."""
 
@@ -324,6 +751,7 @@ class LivePage(Gtk.Box):
         self.xrun_label = Gtk.Label(label="XRUN: —", xalign=0)
         self.clock_label = Gtk.Label(label="RMS · Peak · Hold", xalign=1)
         self.timer = None
+        self._last_status_text = None
         self.last_generator_settings = None
         self._generator_label = ""
         self.tracker = GainTracker()
@@ -389,13 +817,7 @@ class LivePage(Gtk.Box):
         # 0.1.18: блок генератора возвращён на страницу — виджеты self.f/self.lv/self.route
         # создавались и управляли движком, но не были добавлены в раскладку (осиротевшие).
         controls.append(group("Генератор", self.f, self.lv, self.route))
-        # Единственная кнопка генератора находится на главном измерительном экране.
-        # Это тот же ToggleButton, состояние которого управляет аудиодвижком.
-        self.gen_action = self.win.generator_btn
-        self.gen_action.set_size_request(-1, 54)
-        self.gen_action.set_hexpand(True)
-        self.gen_action.add_css_class("suggested-action")
-        controls.append(self.gen_action)
+        self.gen_action = self.win.generator_btn  # компактная кнопка в общей верхней панели
         controls.append(self.vlabel)
         controls.append(group("Параметры Gain Match", self.series_level, self.series_repeats,
                               self.series_profile, self.series_riaa, self.tol))
@@ -700,7 +1122,7 @@ class LivePage(Gtk.Box):
                 # реально поданного генератора. ΔG остаётся численно доступной,
                 # но пользователь не может принять её за чистый результат.
                 message += "\n⚠ СЕТЕВАЯ КОЛЛИЗИЯ: " + warnings[0]
-        self.vlabel.set_text(message)
+        _set_label_text_if_changed(self.vlabel, message)
 
     def _update_delta(self):
         """Обновить ΔG только по свежему, непрерывному аудиопотоку."""
@@ -714,6 +1136,11 @@ class LivePage(Gtk.Box):
             if be is None:
                 self.tracker.reset()
                 self.delta_view.set_state({"valid": False, "msg": "Аудиоустройство не подключено"},
+                                          self.tol.get_value())
+                return
+            if self.generator_active() and getattr(self.win, "generator_waveform", "sine") != "sine":
+                self.tracker.reset()
+                self.delta_view.set_state({"valid": False, "msg": "ΔG доступна только для синуса"},
                                           self.tol.get_value())
                 return
             if not self.generator_active() or self.last_generator_settings is None:
@@ -798,14 +1225,11 @@ class LivePage(Gtk.Box):
 
     def sync_generator_button(self, active, enabled):
         self.gen_action.set_sensitive(bool(enabled))
+        self.gen_action.set_label("ГЕН ●" if active else "ГЕН")
         if active:
-            self.gen_action.set_label("■  ОСТАНОВИТЬ ТЕСТОВЫЙ СИГНАЛ")
-            self.gen_action.remove_css_class("suggested-action")
-            self.gen_action.add_css_class("destructive-action")
-        else:
-            self.gen_action.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
-            self.gen_action.remove_css_class("destructive-action")
             self.gen_action.add_css_class("suggested-action")
+        else:
+            self.gen_action.remove_css_class("suggested-action")
 
     def generator_active(self):
         return bool(self.win.generator_btn.get_active())
@@ -826,26 +1250,41 @@ class LivePage(Gtk.Box):
                     self.win.spectrum.reset_average()
             return
         fs = self.win.rig_fs()
-        freq = float(self.f.get_value())
-        amp = float(dsp.dbfs_to_amp(self.lv.get_value()))
-        # Используем целое число периодов в секунде — буфер зацикливается без фазового скачка.
-        actual_freq = float(round(freq))
-        n = int(fs)
-        idx = np.arange(n, dtype=np.float64)
-        sig = amp * np.sin(2 * np.pi * actual_freq * idx / fs)
+        actual_freq = float(round(self.f.get_value()))
+        waveform = getattr(self.win, "generator_waveform", "sine")
         route = self.route.get_selected()
+        try:
+            sig, info = signals.make_generator_signal(
+                fs, waveform=waveform, frequency_hz=actual_freq,
+                level_dbfs=float(self.lv.get_value()), seconds=1.0,
+                noise_low_hz=float(getattr(self.win, "generator_noise_low_hz", 20.0)),
+                noise_high_hz=float(getattr(self.win, "generator_noise_high_hz", 20000.0)))
+        except ValueError as exc:
+            self.win.toast(f"Генератор: {exc}")
+            self.win.generator_btn.set_active(False)
+            return
+        n = len(sig)
         buf = np.column_stack((sig if route in (0, 1) else np.zeros(n),
                                sig if route in (0, 2) else np.zeros(n)))
         be.live_set_loop(buf)
-        self.last_generator_settings = (actual_freq, float(self.lv.get_value()), int(route))
+        # Gain Match имеет физический смысл только для чистого синуса.
+        self.last_generator_settings = ((actual_freq, float(self.lv.get_value()), int(route))
+                                        if waveform == "sine" else None)
         self._tare_ctx = self._tare_context()   # контекст ПОСЛЕ обновления настроек
         vin_l = self.win.cal.dut_in_v(self.lv.get_value(), 0)
         vin_r = self.win.cal.dut_in_v(self.lv.get_value(), 1)
+        shape_names = {"sine": "синус", "triangle": "треугольник", "square": "меандр",
+                       "sawtooth": "пила", "white": "белый шум", "pink": "розовый шум"}
+        if info.get("level_definition") == "rms_dbfs":
+            level_text = f"RMS {info.get('actual_rms_dbfs', 0.0):.1f} dBFS"
+        else:
+            level_text = f"Peak {info.get('peak_dbfs', 0.0):.1f} dBFS"
         self._generator_label = (
-            f"ПОДАНО: {actual_freq:.0f} Гц · {self.lv.get_value():.1f} dBFS · "
-            f"{'L + R' if route == 0 else 'только L' if route == 1 else 'только R'}"
+            f"ПОДАНО: {shape_names.get(waveform, waveform)} · "
+            + (f"{actual_freq:.0f} Гц · " if waveform not in ("white", "pink") else "")
+            + f"{level_text} · {'L + R' if route == 0 else 'только L' if route == 1 else 'только R'}"
             + (f" · расчёт Uin L {calib.fmt_v(vin_l)} / R {calib.fmt_v(vin_r)} RMS"
-               if vin_l is not None or vin_r is not None else ""))
+               if waveform == "sine" and (vin_l is not None or vin_r is not None) else ""))
         self._refresh_live_frequency_notice()
         if hasattr(self.win, "spectrum"):
             self.win.spectrum.reset_average()
@@ -855,7 +1294,7 @@ class LivePage(Gtk.Box):
         self._last_xruns = None
         self._last_xrun_at = None
         self._fresh_after_event_frames = None
-        self.timer = GLib.timeout_add(75, self.tick)
+        self.timer = GLib.timeout_add(100, self.tick)
         self.apply()
 
     def stop(self):
@@ -885,6 +1324,8 @@ class LivePage(Gtk.Box):
         # отдельно: живой, но зависший arecord может оставить в кольце старые данные.
         status = be.live_status() if hasattr(be, "live_status") else {}
         x = be.live_recent(0.12)
+        show_live_details = (hasattr(self.win, "stack")
+                             and self.win.stack.get_visible_child() is self.win.live)
         min_meter_n = max(1024, int(0.04 * self.win.rig_fs()))
         capture_stale = (status.get("capture_stale") is True
                          or status.get("capture_alive") is False or len(x) < min_meter_n)
@@ -893,11 +1334,14 @@ class LivePage(Gtk.Box):
         volts_txt = [None, None]
         if capture_stale:
             # Не оставляем старый RMS/Peak на экране как будто это текущий сигнал.
-            strip.meters.set_stale("нет свежих отсчётов АЦП")
-            for read, detail in ((self.read_l, self.detail_l), (self.read_r, self.detail_r)):
-                read.set_text("— dBFS RMS")
-                detail.set_text("Нет свежих отсчётов АЦП")
-                clips.append(False)
+            strip.meters.set_stale("нет свежих отсчётов АЦП", redraw=False)
+            if show_live_details:
+                for read, detail in ((self.read_l, self.detail_l), (self.read_r, self.detail_r)):
+                    if read.get_text() != "— dBFS RMS":
+                        read.set_text("— dBFS RMS")
+                    if detail.get_text() != "Нет свежих отсчётов АЦП":
+                        detail.set_text("Нет свежих отсчётов АЦП")
+            clips.extend((False, False))
         else:
             for c, (read, detail) in enumerate(((self.read_l, self.detail_l),
                                                 (self.read_r, self.detail_r))):
@@ -908,70 +1352,95 @@ class LivePage(Gtk.Box):
                 d_peak = float(dsp.db20(peak))
                 d_rms_ch[c] = d_rms
                 clip = peak >= 0.98
-                strip.meters.set_reading(c, d_rms, d_peak, clip)
+                strip.meters.set_reading(c, d_rms, d_peak, clip, redraw=False)
                 clips.append(strip.meters.clipped[c])
                 volts = self.win.cal.in_v(d_rms, c)
                 volts_txt[c] = calib.fmt_v(volts) if volts is not None else None
                 gen_db = float(self.lv.get_value())
                 route = self.route.get_selected()
                 driven = route == 0 or (route == 1 and c == 0) or (route == 2 and c == 1)
-                gain = self.win.cal.gain_db(gen_db, d_rms, c) if self.generator_active() and driven else None
-                detail.set_text(
-                    f"Peak {d_peak:.1f} dBFS · Hold {strip.meters.hold[c]:.1f} dBFS · запас {max(0.0, -d_peak):.1f} dB"
-                    + (f" · Uout {calib.fmt_v(volts)}" if volts is not None else "")
-                    + (f" · G {gain:+.2f} dB" if gain is not None else ""))
-                read.set_text(f"{'LR'[c]}  {d_rms:7.2f} dBFS RMS")
-        strip.meters.set_volts(volts_txt)
+                gain = (self.win.cal.gain_db(gen_db, d_rms, c)
+                        if self.generator_active() and driven and self.last_generator_settings is not None else None)
+                if show_live_details:
+                    new_detail = (
+                        f"Peak {d_peak:.1f} dBFS · Hold {strip.meters.hold[c]:.1f} dBFS · запас {max(0.0, -d_peak):.1f} dB"
+                        + (f" · Uout {calib.fmt_v(volts)}" if volts is not None else "")
+                        + (f" · G {gain:+.2f} dB" if gain is not None else ""))
+                    if detail.get_text() != new_detail:
+                        detail.set_text(new_detail)
+                    new_read = f"{'LR'[c]}  {d_rms:7.2f} dBFS RMS"
+                    if read.get_text() != new_read:
+                        read.set_text(new_read)
+        strip.meters.set_volts(volts_txt, redraw=False)
+        if not show_live_details:
+            # The right-hand meter strip remains live on every page, but all
+            # channel values are painted in one frame rather than several
+            # consecutive queue_draw() requests per audio timer tick.
+            strip.meters.queue_draw()
+            self.win.refresh_health(status)
+            return True
         xrun = status.get("xruns")
         if capture_stale:
-            self.xrun_label.set_text(
-                f"XRUN: {xrun if xrun is not None else 'н/д'} · НЕТ СВЕЖИХ ДАННЫХ АЦП")
+            xrun_text = f"XRUN: {xrun if xrun is not None else 'н/д'} · НЕТ СВЕЖИХ ДАННЫХ АЦП"
         elif xrun is None:
-            self.xrun_label.set_text("XRUN: backend не сообщает счётчик")
+            xrun_text = "XRUN: backend не сообщает счётчик"
         else:
-            self.xrun_label.set_text(
-                f"XRUN: {xrun} · ADC overrun {status.get('capture_xruns', 0)} / "
-                f"DAC underrun {status.get('playback_xruns', 0)} (сообщения ALSA)" +
-                (" · пропуски не зарегистрированы" if xrun == 0 else " · проверь разрывы в сигнале") +
-                (f" · макс. пауза данных {status.get('gap_max_ms', 0):.0f} мс"
-                 if status.get("gap_max_ms") else ""))
+            xrun_text = (f"XRUN: {xrun} · ADC overrun {status.get('capture_xruns', 0)} / "
+                         f"DAC underrun {status.get('playback_xruns', 0)} (сообщения ALSA)" +
+                         (" · пропуски не зарегистрированы" if xrun == 0 else " · проверь разрывы в сигнале") +
+                         (f" · макс. пауза данных {status.get('gap_max_ms', 0):.0f} мс"
+                          if status.get("gap_max_ms") else ""))
+        _set_label_text_if_changed(self.xrun_label, xrun_text)
         if capture_stale:
-            self.clip_label.set_text("ADC CLIP: Н/Д · нет свежего окна для проверки")
-            self.clip_label.remove_css_class("error")
+            clip_text = "ADC CLIP: Н/Д · нет свежего окна для проверки"
+            clip_error = False
         elif any(clips):
-            self.clip_label.set_text("ADC CLIP: ДА · измерение могло быть искажено")
-            self.clip_label.add_css_class("error")
+            clip_text = "ADC CLIP: ДА · измерение могло быть искажено"
+            clip_error = True
         else:
-            self.clip_label.set_text("ADC CLIP: нет · цифрового клиппинга в текущем окне не обнаружено")
-            self.clip_label.remove_css_class("error")
+            clip_text = "ADC CLIP: нет · цифрового клиппинга в текущем окне не обнаружено"
+            clip_error = False
+        has_clip_error = self.clip_label.has_css_class("error")
+        if clip_error != has_clip_error:
+            if clip_error:
+                self.clip_label.add_css_class("error")
+            else:
+                self.clip_label.remove_css_class("error")
+        _set_label_text_if_changed(self.clip_label, clip_text)
         cap_state = ("НЕТ СВЕЖИХ ДАННЫХ" if status.get("capture_stale") else
                      "OK" if status.get("capture_alive", False) else "ОСТАНОВЛЕН")
         play_state = ("НЕТ ПРОДВИЖЕНИЯ" if status.get("playback_stale") else
                       "OK" if status.get("playback_alive", False) else "ОСТАНОВЛЕН")
-        self.status_label.set_text(
-            f"Аудио · Fs={self.win.rig_fs()} Гц · ADC {cap_state} "
-            f"({status.get('capture_frames', 0) / self.win.rig_fs():.1f} с принято) · "
-            f"DAC {play_state} ({status.get('playback_frames', 0) / self.win.rig_fs():.1f} с отправлено)")
+        status_text = f"Аудио · Fs={self.win.rig_fs()} Гц · ADC {cap_state} · DAC {play_state}"
+        if status_text != self._last_status_text:
+            self.status_label.set_text(status_text)
+            self._last_status_text = status_text
         # Единственный источник ΔG — проверенная оценка GainTracker. Раньше рядом печаталась
         # вторая «ΔG» по сырым RMS (с шумом, гармониками и без проверки достоверности) —
         # два разных числа для одной величины.
         self._update_delta()
         st = self._last_delta_state
         if capture_stale or self._delta_blocked:
-            strip.meters.set_delta(None, "none")
-            self.clock_label.set_text("ΔG недостоверна: поток нарушен" if self._delta_blocked
-                                      else "ΔG недостоверна: нет свежих отсчётов АЦП")
+            strip.meters.set_delta(None, "none", redraw=False)
+            clock_text = ("ΔG недостоверна: поток нарушен" if self._delta_blocked
+                          else "ΔG недостоверна: нет свежих отсчётов АЦП")
         elif st and st.get("valid"):
-            strip.meters.set_delta(st["filt"], "validated")
-            self.clock_label.set_text("ΔG проверена: ворота несущей/остатка пройдены")
-        elif (self.generator_active() and self.route.get_selected() == 0
-              and None not in d_rms_ch):
-            strip.meters.set_delta(d_rms_ch[0] - d_rms_ch[1], "raw")
-            self.clock_label.set_text("ΔG не прошла проверку; на полосе — грубая разность RMS")
+            strip.meters.set_delta(st["filt"], "validated", redraw=False)
+            clock_text = "ΔG проверена: ворота несущей/остатка пройдены"
+        elif (self.generator_active() and self.last_generator_settings is not None
+              and self.route.get_selected() == 0 and None not in d_rms_ch):
+            strip.meters.set_delta(d_rms_ch[0] - d_rms_ch[1], "raw", redraw=False)
+            clock_text = "ΔG не прошла проверку; на полосе — грубая разность RMS"
         else:
-            strip.meters.set_delta(None, "none")
-            self.clock_label.set_text("ΔG: подай тест в L + R" if not self.generator_active()
-                                      else "ΔG недоступна: тест подан только в один канал")
+            strip.meters.set_delta(None, "none", redraw=False)
+            clock_text = (
+                "ΔG доступна только для синуса" if self.generator_active()
+                and getattr(self.win, "generator_waveform", "sine") != "sine"
+                else ("ΔG: подай тест в L + R" if not self.generator_active()
+                      else "ΔG недоступна: тест подан только в один канал"))
+        if self.clock_label.get_text() != clock_text:
+            self.clock_label.set_text(clock_text)
+        strip.meters.queue_draw()
         self.win.refresh_health(status)
         return True
 
@@ -2139,7 +2608,6 @@ class ResponsePage(Page):
         box = Gtk.Box(spacing=8)
         box.append(button("Закрепить как эталон", self.pin))
         box.append(button("Сбросить", self.unpin))
-        box.append(button("Сохранить", self.save))
         return box
 
     def go(self):
@@ -2701,7 +3169,7 @@ class SetupPage(Page):
         self.att = spin("Аттенюатор ЦАП → вход DUT, дБ", -90, 0, 1, c["att_db"], 1,
                         "Потери перед проверяемым устройством, например inverse-RIAA/входной делитель")
         self.adc_att = spin("PAD DUT → вход АЦП, дБ", -60, 0, 0.1, c.get("adc_att_db", 0.0), 1,
-                            "Это значение только описывает физически установленный PAD; программа не переключает резисторы. Без PAD = 0 дБ. Для E-MU 1 МОм: 91 кОм последовательно + 10 кОм на землю ≈ −20.16 дБ")
+                            "Только фактически измеренное ослабление установленного адаптера. Не задавай значение по расчёту без проверки реальной нагрузки и источника.")
         self.out_l = spin("ЦАП L: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][0] or 0, 3)
         self.out_r = spin("ЦАП R: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][1] or 0, 3)
         self.in_l = spin("АЦП L: В RMS при 0 dBFS", 0, 50, 0.01, c["in_fs_vrms"][0] or 0, 3)
@@ -2965,7 +3433,14 @@ class Window(Adw.ApplicationWindow):
         self.analysis = AnalysisWorker()
 
         header = Adw.HeaderBar()
-        self.dev = Gtk.DropDown.new_from_strings([n for _, n in self.cards])
+        # The selector is intentionally compact: the full ALSA name remains in
+        # the tooltip and in Setup. Long hardware strings must not dominate the
+        # HeaderBar on wide/HiDPI screens.
+        display_names = [(n if len(n) <= 21 else n[:18] + "…") for _, n in self.cards]
+        self.dev = Gtk.DropDown.new_from_strings(display_names)
+        self.dev.set_size_request(164, -1)
+        self.dev.set_hexpand(False)
+        self.dev.set_tooltip_text("Устройство ЦАП/АЦП; полный список доступен по нажатию")
         saved_device = self.cal["device"]
         saved_key = self.cal.get("device_key", "")
         card_keys = [stable_device_identity(hw) for hw, _label in self.cards]
@@ -2981,23 +3456,31 @@ class Window(Adw.ApplicationWindow):
         self.cal.activate_profile(stable_device_identity(selected_hw), selected_hw)
         self.rate_values = self._rates_for_device(selected_hw)
         self.rate = Gtk.DropDown.new_from_strings([f"{r / 1000:g} кГц" for r in self.rate_values])
+        self.rate.set_size_request(84, -1)
+        self.rate.set_hexpand(False)
         preferred_rate = int(self.cal["fs"])
         rate_sel = (self.rate_values.index(preferred_rate) if preferred_rate in self.rate_values
                     else min(range(len(self.rate_values)), key=lambda i: abs(self.rate_values[i] - preferred_rate)))
         self.rate.set_selected(rate_sel)
         self.cal["fs"] = self.rate_values[rate_sel]
         self._updating_rate = False
-        self.live_btn = Gtk.ToggleButton(label="АУДИОПОТОК: ОТКРЫТЬ")
-        self.live_btn.set_tooltip_text("Открыть непрерывный поток звука: АЦП начинает захват входа, ЦАП остаётся в тишине до включения генератора. Сигнал измерения подаётся отдельной кнопкой генератора.")
+        self.live_btn = Gtk.ToggleButton(label="АЦП")
+        self.live_btn.set_size_request(50, -1)
+        self.live_btn.set_tooltip_text("Открыть/закрыть непрерывный аудиопоток АЦП. ЦАП молчит, пока не включён генератор.")
         self.live_btn.add_css_class("pill")
         self.live_btn.connect("toggled", self.on_live)
-        self.generator_btn = Gtk.ToggleButton(label="▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+        self.generator_btn = Gtk.ToggleButton(label="ГЕН")
+        self.generator_btn.set_size_request(52, -1)
+        self.generator_btn.set_tooltip_text("Включить/выключить сигнал ЦАП. Доступен после открытия потока АЦП.")
         self.generator_btn.add_css_class("pill")
         self.generator_btn.set_sensitive(False)
         self.generator_btn.set_tooltip_text(
             "Включить тестовый сигнал на выходах ЦАП. Сначала включи аудиопоток и проверь соединение/уровень.")
         self.generator_btn.connect("toggled", self.on_generator_toggle)
         self.status = Gtk.Label(label="", xalign=1)
+        self.status.set_width_chars(12)
+        self.status.set_max_width_chars(18)
+        self.status.set_hexpand(False)
         self.spinner = Gtk.Spinner()
         # Portable DUT-session export: the device ID is entered explicitly so
         # records from different customer units never get mixed together.
@@ -3022,29 +3505,39 @@ class Window(Adw.ApplicationWindow):
         header.pack_start(self.dev)
         header.pack_start(self.rate)
         header.pack_start(self.live_btn)
-        header.pack_start(self.measurement_device_id)
-        header.pack_start(self.measurement_note)
-        header.pack_start(self.export_measurement_btn)
+        header.pack_start(self.generator_btn)
         header.pack_end(self.spinner)
         header.pack_end(self.status)
+        self.dev.set_tooltip_text(f"{self.cards[sel][1]} · {self.cards[sel][0]}")
         self.dev.connect("notify::selected", self.on_device_changed)
         self.rate.connect("notify::selected", self.on_rate_changed)
 
         self.stack = Gtk.Stack()
+        self.generator_waveform = "sine"
+        self.generator_noise_low_hz = 20.0
+        self.generator_noise_high_hz = 20000.0
         self.live = LivePage(self)
+        self.generator_page = GeneratorPage(self)
+        self.thd_page = ThdPage(self)
+        self.response_page = ResponsePage(self)
+        self.imd_page = ImdPage(self)
+        self.noise_page = NoisePage(self)
         self.spectrum = SpectrumPage(self)
         self.noise_response_page = NoiseResponsePage(self)
         self.peakhold = PeakHoldPage(self)
         self.setup = SetupPage(self)
+        self.batch_page = MeasurementBatchPage(self)
         pages = (
             ("live", "Gain Match / Уровень", self.live),
+            ("batch", "Пакетный замер DUT", self.batch_page),
+            ("generator", "Генератор / Осциллограф", self.generator_page),
             ("spectrum", "Спектр (большой экран)", self.spectrum),
-            ("thd", "THD / THD+N", ThdPage(self)),
-            ("resp", "АЧХ / RIAA / Sweep", ResponsePage(self)),
+            ("thd", "THD / THD+N", self.thd_page),
+            ("resp", "АЧХ / RIAA / Sweep", self.response_page),
             ("peakhold", "АЧХ по пластинке (Peak Hold)", self.peakhold),
             ("noise_response", "АЧХ шумом / H1", self.noise_response_page),
-            ("imd", "IMD", ImdPage(self)),
-            ("noise", "Шум / Crosstalk", NoisePage(self)),
+            ("imd", "IMD", self.imd_page),
+            ("noise", "Шум / Crosstalk", self.noise_page),
             ("vinyl", "TACET / Vinyl Test", VinylPage(self)),
             ("setup", "Калибровка / Setup", self.setup),
         )
@@ -3289,7 +3782,8 @@ class Window(Adw.ApplicationWindow):
 
     def on_device_changed(self, *_):
         self._mixer_fingerprint_cache.clear()
-        dev, _label = self.cards[self.dev.get_selected()]
+        dev, label = self.cards[self.dev.get_selected()]
+        self.dev.set_tooltip_text(f"{label} · {dev}")
         self.cal.activate_profile(stable_device_identity(dev), dev)
         old_rate = int(self.cal.get("fs", 96000))
         self.rate_values = self._rates_for_device(dev)
@@ -3333,6 +3827,9 @@ class Window(Adw.ApplicationWindow):
             self.noise_response_page.live_toggle.set_active(False)
         self.spectrum.set_visible(page is self.spectrum)
         self.peakhold.set_visible(page is self.peakhold)
+        self.generator_page.set_visible(page is self.generator_page)
+        if page not in (self.live, self.generator_page) and self.generator_btn.get_active():
+            self.generator_btn.set_active(False)
 
     # ---- portable DUT measurement export
     def _update_export_button(self, *_):
@@ -3393,8 +3890,13 @@ class Window(Adw.ApplicationWindow):
             if measured_id and measured_id != device_id:
                 self.toast(f"ID был {measured_id} во время измерения. Верни его или повтори тест с ID {device_id}.")
                 return
+            # Keep the note paired with the same DUT identity snapshot as the
+            # measurement. Editing the entry after a run must not silently
+            # rewrite the provenance of already captured data.
+            captured_note = dut_context.get("note_entered_at_measurement_start")
+            note = captured_note if captured_note is not None else self.measurement_note.get_text()
             path = store.save_device_measurement(
-                self.last, device_id, note=self.measurement_note.get_text(), context=context)
+                self.last, device_id, note=note, context=context)
         except (OSError, TypeError, ValueError) as exc:
             self.toast(f"Не удалось сохранить паспорт: {exc}")
             return
@@ -3441,11 +3943,6 @@ class Window(Adw.ApplicationWindow):
             btn.set_active(False)
             self.toast("Сначала нажми «АУДИОПОТОК: ОТКРЫТЬ». Это запускает захват АЦП и подготавливает ЦАП; тестовый сигнал пока не подаётся.")
             return
-        btn.set_label("ГЕНЕРАТОР: ВКЛ" if active else "ГЕНЕРАТОР: ВЫКЛ")
-        if active:
-            btn.add_css_class("suggested-action")
-        else:
-            btn.remove_css_class("suggested-action")
         self.live.sync_generator_button(active, self.live_on)
         self.live.apply()
         self.spectrum.reset_average()
@@ -3465,7 +3962,10 @@ class Window(Adw.ApplicationWindow):
                 del self._health_notes[key]
                 continue
             level, text = lm.merge_health((level, text), (lv, tx))
-        self.strip.set_health(level, text)
+        signature = (level, text)
+        if signature != getattr(self, "_last_health_display", None):
+            self.strip.set_health(level, text)
+            self._last_health_display = signature
 
     def start_live(self):
         if self.busy:
@@ -3481,10 +3981,10 @@ class Window(Adw.ApplicationWindow):
         self.live_on = True
         self.strip.meters.reset_holds()
         self.analysis.warm_up()
-        self.live_btn.set_label("АУДИОПОТОК: ЗАКРЫТЬ")
+        self.live_btn.set_label("АЦП ●")
         self.live_btn.add_css_class("suggested-action")
         self.generator_btn.set_sensitive(True)
-        self.generator_btn.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+        self.generator_btn.set_label("ГЕН")
         self.generator_btn.set_active(False)
         self.live.sync_generator_button(False, True)
         self.live.start()
@@ -3498,7 +3998,7 @@ class Window(Adw.ApplicationWindow):
         if self.generator_btn.get_active():
             self.generator_btn.set_active(False)
         self.generator_btn.set_sensitive(False)
-        self.generator_btn.set_label("▶  ПОДАТЬ ТЕСТОВЫЙ СИГНАЛ")
+        self.generator_btn.set_label("ГЕН")
         self.live.sync_generator_button(False, False)
         self.live.stop()
         if self.be is not None:
@@ -3506,7 +4006,7 @@ class Window(Adw.ApplicationWindow):
         self.strip.meters.set_stale("аудиопоток закрыт")
         self.strip.set_health(None, "Поток: закрыт")
         self.live_on = False
-        self.live_btn.set_label("АУДИОПОТОК: ОТКРЫТЬ")
+        self.live_btn.set_label("АЦП")
         self.live_btn.remove_css_class("suggested-action")
         self.spectrum.reset_average()
         if self.spectrum.timer is not None:
@@ -3575,6 +4075,11 @@ class Window(Adw.ApplicationWindow):
                 except Exception as exc:  # noqa: BLE001
                     err = exc
             if err is not None:
+                if hasattr(page, "on_job_error"):
+                    try:
+                        page.on_job_error(err)
+                    except Exception:
+                        pass
                 self.toast(f"Ошибка измерения: {err}")
                 self.status.set_text("Ошибка измерения")
                 if hasattr(page, "say"):
