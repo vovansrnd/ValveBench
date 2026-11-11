@@ -3485,9 +3485,35 @@ class Window(Adw.ApplicationWindow):
 
 
 class App(Adw.Application):
+    """Строго одно главное окно на экземпляр приложения (fix4, P0 «два окна»).
+
+    GApplication с фиксированным application_id — единственный экземпляр на
+    сессию: повторный ./run.sh становится remote-клиентом и пересылает
+    «activate» уже работающему процессу. Прежний обработчик
+    ``lambda a: Window(a).present()`` создавал НОВОЕ окно на каждый такой
+    сигнал: второй запуск давал второе окно, третий — третье (воспроизведено
+    на изолированном стенде: 1 → 2 → 3 окна). Теперь окно одно: повторная
+    активация только показывает существующее. Штатный обработчик close-request
+    самого Window (остановка аудиопотока, освобождение ресурсов) не
+    затрагивается; при закрытии окна сбрасывается только ссылка.
+    """
+
     def __init__(self):
         super().__init__(application_id="local.valvebench")
-        self.connect("activate", lambda a: Window(a).present())
+        self._window = None
+        self.connect("activate", self._on_activate)
+
+    def _on_activate(self, app):
+        if self._window is None:
+            self._window = Window(self)
+            self._window.connect("close-request", self._on_window_close_request)
+        self._window.present()
+
+    def _on_window_close_request(self, window):
+        # Возвращаем False: штатная обработка закрытия (в т.ч. своя у Window
+        # с остановкой аудио) продолжится; здесь только забываем ссылку.
+        self._window = None
+        return False
 
 
 def main():

@@ -1,0 +1,39 @@
+{
+ "results": [
+  [
+   "A: импорт пакета (valvebench раньше numpy) → BLAS=1 поток",
+   true,
+   "blas_threads=1, proc_threads=1, lib=/usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.32.so"
+  ],
+  [
+   "B: numpy импортирован раньше пакета → было N, после пакета 1",
+   true,
+   "до: blas=4 (потоков 4), после: blas=1"
+  ],
+  [
+   "C: заранее установленный OPENBLAS_NUM_THREADS=4 уважается",
+   true,
+   "blas_threads=4, env={'OPENBLAS_NUM_THREADS': '4', 'OMP_NUM_THREADS': '1'}"
+  ],
+  [
+   "D: заранее установленный OPENBLAS_NUM_THREADS=1 — 1",
+   true,
+   "blas_threads=1"
+  ],
+  [
+   "E: python -m valvebench selftest проходит (пакетный путь цел)",
+   true,
+   "selftest PASS: 96"
+  ],
+  [
+   "F: run.sh --version",
+   true,
+   "ValveBench 0.1.20-dev3"
+  ],
+  [
+   "G: numpy раньше пакета + import valvebench.ui → BLAS=1",
+   true,
+   "{'blas_threads': 1, 'proc_threads': 8, 'blas_lib': '/usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.32.so', 'env': {'OPENBLAS_NUM_THREADS': '1', 'OMP_NUM_THREADS': '1'}}"
+  ]
+ ]
+}

@@ -1,0 +1,40 @@
+{
+ "results": [
+  [
+   "1. первое activate: создано одно окно",
+   true,
+   "get_windows=1, создано Window=1"
+  ],
+  [
+   "2. ссылка app._window установлена",
+   true,
+   "app._window=Window"
+  ],
+  [
+   "3. повторное activate: окон по-прежнему одно, объект тот же",
+   true,
+   "get_windows=1, создано Window=1, тот же объект=True"
+  ],
+  [
+   "4. третье activate: окон по-прежнему одно",
+   true,
+   "get_windows=1, создано Window=1"
+  ],
+  [
+   "5. закрытие окна: ссылка сброшена",
+   true,
+   "app._window=None, get_windows=0"
+  ],
+  [
+   "6. activate после закрытия: одно НОВОЕ окно",
+   true,
+   "get_windows=1, всего созданий Window=2, новое окно не равно старому=True"
+  ],
+  [
+   "7. счётчик инстанцирований Window == 2 (начальное + после закрытия)",
+   true,
+   "создано Window=2"
+  ]
+ ],
+ "windows_created": 2
+}
