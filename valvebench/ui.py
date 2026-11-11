@@ -17,6 +17,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, GLib, Gtk  # noqa: E402
 
 from . import calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
+from .identity import application_id as _resolved_application_id  # noqa: E402
 from . import gainmatch  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
@@ -3485,27 +3486,8 @@ class Window(Adw.ApplicationWindow):
 
 
 def _application_id() -> str:
-    """Идентификатор экземпляра приложения (fix4.1, P0.1 «изоляция копий»).
-
-    GApplication делает единственный экземпляр на СЕССИЮ по application_id.
-    При одном id у 27 рабочих копий запуск dev-копии активировал чужое окно
-    (иногда чужой версии), а сам процесс молча завершался. Правило:
-
-    * ``VALVEBENCH_APPLICATION_ID`` — явное переопределение (тесты, спецзапуски);
-    * в дереве есть каталог ``verification/`` → рабочая копия: детерминированный
-      ``local.valvebench.dev.p`` + 12 hex SHA-256 от realpath дерева — постоянен
-      для каталога, различен для разных копий;
-    * иначе (установленная копия, verification/ отсутствует) — стабильный
-      ``local.valvebench``, как и раньше.
-    """
-    override = os.environ.get("VALVEBENCH_APPLICATION_ID")
-    if override:
-        return override
-    tree = os.path.realpath(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    if not os.path.isdir(os.path.join(tree, "verification")):
-        return "local.valvebench"          # установленная копия — стабильный id
-    digest = hashlib.sha256(tree.encode("utf-8", "surrogateescape")).hexdigest()[:12]
-    return f"local.valvebench.dev.p{digest}"
+    """Resolve the explicit installed/development identity policy."""
+    return _resolved_application_id()
 
 
 class App(Adw.Application):

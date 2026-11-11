@@ -26,7 +26,7 @@ from gi.repository import Adw, GLib  # noqa: E402
 
 # изоляция от реальных экземпляров пользователя на общей шине D-Bus
 os.environ.setdefault("VALVEBENCH_APPLICATION_ID",
-                      "local.valvebench.test.{os.getpid()}")
+                      f"local.valvebench.test.p{os.getpid()}")
 import valvebench.ui as ui  # noqa: E402
 
 STEPS = []

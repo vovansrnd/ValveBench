@@ -18,21 +18,25 @@
 if [ "${1:-}" != "__inner" ]; then
     TREE="${1:-$(dirname "$0")/..}"
     TREE="$(cd "$TREE" && pwd)"
-    VERDICT_FILE=/tmp/dev-ids-verdict.txt
-    export VERDICT_FILE
-    rm -f "$VERDICT_FILE"
+    TMP_BASE="$(mktemp -d -t valvebench-dev-ids.XXXXXX)"
+    export VB_TEST_TMP="$TMP_BASE"
+    export VERDICT_FILE="$TMP_BASE/verdict.txt"
+    set +e
     timeout -k 5 360 dbus-run-session -- bash "$0" __inner "$TREE"
-    grep -q FAIL "$VERDICT_FILE" 2>/dev/null && exit 1
-    grep -q PASS "$VERDICT_FILE" 2>/dev/null && exit 0
-    echo "нет вердикта — тест не дошёл до конца"; exit 1
+    rc=$?
+    set -e
+    if grep -q '^FAIL ' "$VERDICT_FILE" 2>/dev/null; then echo "FAIL: see $TMP_BASE"; exit 1; fi
+    if grep -q '^PASS ' "$VERDICT_FILE" 2>/dev/null; then echo "PASS: evidence in $TMP_BASE"; exit 0; fi
+    echo "нет вердикта — тест не дошёл до конца (exit=$rc); logs: $TMP_BASE"; exit 1
 fi
 set -u
 SRC_TREE="${2:-.}"
 SRC_TREE="$(cd "$SRC_TREE" && pwd)"
 
-A=/tmp/vb-idtest-A
-B=/tmp/vb-idtest-B
-VERDICT="${VERDICT_FILE:-/tmp/dev-ids-verdict.txt}"
+TMP_BASE="${VB_TEST_TMP:?temporary directory missing}"
+A="$TMP_BASE/tree-A"
+B="$TMP_BASE/tree-B"
+VERDICT="${VERDICT_FILE:?verdict file missing}"
 : > "$VERDICT"
 
 say()  { echo "$@" | tee -a "$VERDICT" >/dev/null; }
@@ -58,28 +62,35 @@ windows_of_pid() {  # сколько X-окон ValveBench принадлежи�
 }
 
 total_windows() { xwininfo -root -tree 2>/dev/null | grep -c "ValveBench"; }
-alive() { kill -0 "$1" 2>/dev/null && echo да || echo нет; }
+alive() {
+    local state
+    kill -0 "$1" 2>/dev/null || { echo нет; return; }
+    state="$(ps -o stat= -p "$1" 2>/dev/null | tr -d ' ')"
+    [[ -n "$state" && "$state" != Z* && "$state" != X* ]] && echo да || echo нет
+}
 
 bus_names() { busctl --user list --no-legend 2>/dev/null | awk '{print $1}' | grep -c "valvebench"; }
 has_name() { busctl --user list --no-legend 2>/dev/null | awk '{print $1}' | grep -qx "$1" && echo да || echo нет; }
 
 # --- подготовка: два независимых дерева с verification/ (обе — dev-копии)
-rm -rf "$A" "$B"
+mkdir -p "$TMP_BASE"
 cp -a "$SRC_TREE" "$A"
 cp -a "$SRC_TREE" "$B"
-export XDG_RUNTIME_DIR="$(mktemp -d)"
+export XDG_RUNTIME_DIR="$(mktemp -d "$TMP_BASE/runtime.XXXXXX")"
 chmod 700 "$XDG_RUNTIME_DIR"
 
 XVFB_PID=""
 LAUNCHED=""   # PID процессов, запущенных самим тестом
 cleanup() {
     [ -n "${XVFB_PID:-}" ] && kill "$XVFB_PID" 2>/dev/null
-    for p in $LAUNCHED; do kill "$p" 2>/dev/null; done
+    for p in $LAUNCHED; do kill "$p" 2>/dev/null || true; done
+    for p in $LAUNCHED; do wait "$p" 2>/dev/null || true; done
+    [ -n "${XVFB_PID:-}" ] && wait "$XVFB_PID" 2>/dev/null || true
 }
 trap cleanup EXIT
 
 # уникальный дисплей на прогон: прошлые Xvfb не должны мешать
-for D in $(seq 90 130); do
+for D in $(seq 90 180); do
     if ! xdpyinfo -display ":$D" >/dev/null 2>&1; then DISP=$D; break; fi
 done
 DISP=${DISP:-131}
@@ -88,7 +99,9 @@ XVFB_PID=$!
 for _ in $(seq 1 20); do xdpyinfo -display ":$DISP" >/dev/null 2>&1 && break; sleep 0.5; done
 xdpyinfo -display ":$DISP" >/dev/null 2>&1 || { echo "FAIL: Xvfb :$DISP не поднялся"; exit 1; }
 export DISPLAY=":$DISP"
-export GDK_BACKEND=x11   # иначе GDK найдёт wayland-0 в XDG_RUNTIME_DIR и окно уйдёт на экран пользователя
+export GDK_BACKEND=x11   # принудительно используем Xvfb
+unset WAYLAND_DISPLAY
+unset VALVEBENCH_APPLICATION_ID VALVEBENCH_BUILD_PROFILE
 
 ID_A=$(dev_id "$A")
 ID_B=$(dev_id "$B")
@@ -106,9 +119,9 @@ wait_win() {  # $1 pid-владелец, $2 сколько секунд ждат
 
 # --- 1. Запустить A
 cd "$A"
-./run.sh > /tmp/dev-ids-A1.log 2>&1 &
+./run.sh > "$TMP_BASE/dev-ids-A1.log" 2>&1 &
 PA=$!; LAUNCHED="$LAUNCHED $PA"
-wait_win "$PA" 40 || { say "FAIL: окно A не появилось"; tail -5 /tmp/dev-ids-A1.log; exit 1; }
+wait_win "$PA" 40 || { say "FAIL: окно A не появилось"; tail -5 "$TMP_BASE/dev-ids-A1.log"; exit 1; }
 sleep 4
 say "шаг 1: A запущен: PID=$PA, жив=$(alive $PA), окон у A=$(windows_of_pid $PA), всего=$(total_windows)"
 pf "шаг 1: запуск A даёт одно окно A" "$(windows_of_pid $PA)" 1
@@ -117,7 +130,7 @@ pfz "шаг 1: id A владеет шиной" "$(has_name "$ID_A")" "да"
 
 # --- 2. Запустить A снова
 cd "$A"
-./run.sh > /tmp/dev-ids-A2.log 2>&1 &
+./run.sh > "$TMP_BASE/dev-ids-A2.log" 2>&1 &
 PA2=$!; LAUNCHED="$LAUNCHED $PA2"
 sleep 12
 say "шаг 2: повторный A: второй PID=$PA2 жив=$(alive $PA2), окон у A=$(windows_of_pid $PA), всего=$(total_windows)"
@@ -126,7 +139,7 @@ pf "шаг 2: окон по-прежнему одно (у A)" "$(windows_of_pid 
 
 # --- 3. Запустить B — ключевой шаг: B НЕ должен активировать A
 cd "$B"
-./run.sh > /tmp/dev-ids-B1.log 2>&1 &
+./run.sh > "$TMP_BASE/dev-ids-B1.log" 2>&1 &
 PB=$!; LAUNCHED="$LAUNCHED $PB"
 sleep 15
 say "шаг 3: B запущен: PID=$PB, жив=$(alive $PB), окон у B=$(windows_of_pid $PB), всего=$(total_windows)"
@@ -137,7 +150,7 @@ pf "шаг 3: всего окон ровно два (A и B)" "$(total_windows)"
 
 # --- 4. Запустить B снова
 cd "$B"
-./run.sh > /tmp/dev-ids-B2.log 2>&1 &
+./run.sh > "$TMP_BASE/dev-ids-B2.log" 2>&1 &
 PB2=$!; LAUNCHED="$LAUNCHED $PB2"
 sleep 12
 say "шаг 4: повторный B: второй PID=$PB2 жив=$(alive $PB2), всего=$(total_windows)"
@@ -146,7 +159,7 @@ pf "шаг 4: всего окон по-прежнему два" "$(total_windows
 
 # --- 5. Запустить A снова (повторная активация A)
 cd "$A"
-./run.sh > /tmp/dev-ids-A3.log 2>&1 &
+./run.sh > "$TMP_BASE/dev-ids-A3.log" 2>&1 &
 PA3=$!; LAUNCHED="$LAUNCHED $PA3"
 sleep 12
 say "шаг 5: третий запуск A: PID=$PA3 жив=$(alive $PA3), окон у A=$(windows_of_pid $PA), всего=$(total_windows)"
@@ -160,7 +173,7 @@ sleep 5
 say "шаг 6: A закрыт: всего окон=$(total_windows)"
 pf "шаг 6: после закрытия A осталось окно B" "$(total_windows)" 1
 cd "$A"
-./run.sh > /tmp/dev-ids-A4.log 2>&1 &
+./run.sh > "$TMP_BASE/dev-ids-A4.log" 2>&1 &
 PA4=$!; LAUNCHED="$LAUNCHED $PA4"
 wait_win "$PA4" 40 || { say "FAIL: новое окно A не появилось"; exit 1; }
 sleep 4
