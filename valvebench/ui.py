@@ -324,6 +324,7 @@ class LivePage(Gtk.Box):
         self.clock_label = Gtk.Label(label="RMS · Peak · Hold", xalign=1)
         self.timer = None
         self.last_generator_settings = None
+        self._generator_label = ""
         self.tracker = GainTracker()
         self._tare_ctx = None
         self._last_tare_reset_reason = None
@@ -681,8 +682,26 @@ class LivePage(Gtk.Box):
         self.tracker.clear_tare()
         self.win.toast("ΔG: ноль сброшен")
 
+    def _refresh_live_frequency_notice(self):
+        """Не оставлять в Live без предупреждения тон, совпадающий с гармоникой сети."""
+        message = self._generator_label
+        if self.generator_active() and self.last_generator_settings is not None:
+            freq = float(self.last_generator_settings[0])
+            try:
+                mains = float(self.win.cal.get("mains", 50.0) or 50.0)
+            except (AttributeError, TypeError, ValueError):
+                mains = 50.0
+            warnings = gainmatch.mains_proximity_warnings((freq,), mains, df_hz=1.0, min_bins=6.0)
+            if warnings:
+                # Короткая явная плашка в том же блоке, где отображаются параметры
+                # реально поданного генератора. ΔG остаётся численно доступной,
+                # но пользователь не может принять её за чистый результат.
+                message += "\n⚠ СЕТЕВАЯ КОЛЛИЗИЯ: " + warnings[0]
+        self.vlabel.set_text(message)
+
     def _update_delta(self):
         """Обновить ΔG только по свежему, непрерывному аудиопотоку."""
+        self._refresh_live_frequency_notice()
         # Состояние сбрасывается в начале: ни один путь выхода не оставляет на экране
         # прежнее «проверенное» значение.
         self._last_delta_state = None
@@ -797,7 +816,8 @@ class LivePage(Gtk.Box):
             self._tare_ctx = None
             if be is not None and be.live_running and not self.generator_active():
                 be.live_set_loop(None)
-                self.vlabel.set_text("Генератор выключен · ЦАП подаёт тишину · АЦП продолжает измерение")
+                self._generator_label = "Генератор выключен · ЦАП подаёт тишину · АЦП продолжает измерение"
+                self.vlabel.set_text(self._generator_label)
                 self.last_generator_settings = None
                 if hasattr(self.win, "spectrum"):
                     self.win.spectrum.reset_average()
@@ -818,11 +838,12 @@ class LivePage(Gtk.Box):
         self._tare_ctx = self._tare_context()   # контекст ПОСЛЕ обновления настроек
         vin_l = self.win.cal.dut_in_v(self.lv.get_value(), 0)
         vin_r = self.win.cal.dut_in_v(self.lv.get_value(), 1)
-        self.vlabel.set_text(
+        self._generator_label = (
             f"ПОДАНО: {actual_freq:.0f} Гц · {self.lv.get_value():.1f} dBFS · "
             f"{'L + R' if route == 0 else 'только L' if route == 1 else 'только R'}"
             + (f" · расчёт Uin L {calib.fmt_v(vin_l)} / R {calib.fmt_v(vin_r)} RMS"
                if vin_l is not None or vin_r is not None else ""))
+        self._refresh_live_frequency_notice()
         if hasattr(self.win, "spectrum"):
             self.win.spectrum.reset_average()
 

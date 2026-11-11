@@ -143,12 +143,15 @@ def _harmonic_basis(fs, f, n, nharm):
     got = _cache_get(_PINV_CACHE, key, _PINV_CACHE_MAX)
     if got is not None:
         return got
-    t = np.arange(n) / float(fs)
-    w = 2.0 * math.pi * f
-    cols = [np.ones(n)]
+    # Заполняем матрицу сразу: список из 1+2H отдельных массивов и
+    # column_stack создавали несколько временных копий N×(1+2H), заметно
+    # удорожая cache miss в живом 75-мс цикле.
+    t = (np.arange(n, dtype=np.float64) / float(fs)) * (2.0 * math.pi * f)
+    A = np.empty((n, 1 + 2 * nharm), dtype=np.float64)
+    A[:, 0] = 1.0
     for h in range(1, nharm + 1):
-        cols += [np.cos(h * w * t), np.sin(h * w * t)]
-    A = np.column_stack(cols)
+        np.cos(h * t, out=A[:, 2 * h - 1])
+        np.sin(h * t, out=A[:, 2 * h])
     # A is tall (N×19). Form the tiny Gram matrix and compute its inverse
     # pseudo-inverse instead of an SVD of the full tall matrix: for this
     # normalized harmonic basis stayed well-conditioned in the tested domain
@@ -336,10 +339,6 @@ def mains_proximity_warnings(freqs, mains_hz: float, df_hz: float = 1.0,
     if max_harmonic is None:
         max_harmonic = 400
     k_max = min(int(max_harmonic), int(math.floor(max(freqs) / mains_hz) + 1))
-    # альтернативные точки других профилей: совет уместен, только если замена
-    # реально уводит от данной гармоники
-    alternatives = sorted({round(float(g), 6) for name, (_, g) in FREQUENCY_PROFILES.items()
-                           for g in g} - {round(float(f), 6) for f in freqs})
     for f in freqs:
         for k in range(1, k_max + 1):
             fh = k * mains_hz
@@ -347,9 +346,19 @@ def mains_proximity_warnings(freqs, mains_hz: float, df_hz: float = 1.0,
                 continue
             distance_bins = abs(f - fh) / float(df_hz)
             if distance_bins < min_bins:
-                alt = next((g for g in alternatives
-                            if abs(g - fh) / float(df_hz) >= min_bins), None)
-                tail = (f" — рассмотрите частоту {alt:g} Гц" if alt
+                # Динамический обход: предлагаем ближайшую точку по обе стороны
+                # опасной гармоники. Это работает и для 50, и для 60 Гц, а также
+                # для дрейфующей фактической частоты сети (например, 49.97 Гц).
+                margin_hz = min_bins * float(df_hz) + 0.5 * float(df_hz)
+                dynamic = (fh - margin_hz, fh + margin_hz)
+                profile_alts = [float(g) for _name, (_label, values) in FREQUENCY_PROFILES.items()
+                                for g in values]
+                candidates = sorted(set(dynamic + tuple(profile_alts)), key=lambda g: abs(g - f))
+                alt = next((g for g in candidates if g > 0 and
+                            abs(g - fh) / float(df_hz) >= min_bins and
+                            all(abs(g - j * mains_hz) / float(df_hz) >= min_bins
+                                for j in range(1, int(math.floor(g / mains_hz)) + 1))), None)
+                tail = (f" — ближайшая безопасная частота около {alt:g} Гц" if alt
                         else " — измените частоту или убедитесь в малости фона сети")
                 out.append(
                     f"частота {f:g} Гц на {distance_bins:.1f} бина от {k}-й гармоники "
@@ -477,16 +486,21 @@ class GainTracker:
             band_hi = 20000.0
         band_hi = min(band_hi, 0.45 * fs)
 
-        def _rms_nh(fc, ch):
-            return tone_fit_harmonics(seg[:, ch], fs, fc, nharm=9, f_max=0.45 * fs,
-                                      f_band_hi=band_hi, include_sinad=False)[2]
+        def _frequency_residual(fc):
+            # Для выбора между номиналом и оценкой достаточно LSQ основного
+            # тона: гармоники и широкополосный остаток остаются в residual.
+            # Не строим два полноразмерных H1…H9 базиса только ради выбора f.
+            # Раньше два кандидата могли вызвать два cache miss подряд в GUI;
+            # полный базис теперь строится ровно один раз для выбранной частоты.
+            return tone_fit(seg[:, 0], fs, fc)[2]
 
         # Фактическая частота: расстройка тактов (десятки ppm) при LSQ на
         # номинале попадает в остаток и ложно снижает C/R (10 кГц, 21 ppm →
         # ~14 дБ). Оценка по медианному фазовому набегу может сорваться на
         # мультилинейном сигнале (гребёнка гармоник, близкая линия), поэтому
-        # частота выбирается по МИНИМУМУ негармонического остатка между
-        # номиналом и оценкой — метрологически осмысленный критерий.
+        # частота выбирается по минимуму остатка после LSQ основного тона
+        # между номиналом и оценкой. Гармоники/фон остаются в остатке, но
+        # полноразмерный H1…H9 базис не строится дважды ради выбора кандидата.
         # Кандидаты нормализуются ДО оценки остатка. Раньше округление было
         # только после min(...): шумовая f_est гуляла на ~1e-3 Гц, а _rms_nh()
         # успевал создавать новый ключ pinv-кеша с точностью 1e-6 на каждом тике.
@@ -501,7 +515,7 @@ class GainTracker:
         # Порог вставки после квантования — половина шага 0.01 Гц.
         if f_ok and abs(f_est_q - f_nom) >= 0.01:
             candidates.insert(0, f_est_q)
-        f_fit = min(candidates, key=lambda fc: _rms_nh(fc, 0))
+        f_fit = min(candidates, key=_frequency_residual)
         amps, phs, res_nh, res_full, stab = [], [], [], [], []
         for c in (0, 1):
             a, ph, r_nh, r_full = tone_fit_harmonics(seg[:, c], fs, f_fit, nharm=9,

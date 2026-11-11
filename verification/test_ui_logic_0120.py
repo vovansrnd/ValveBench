@@ -219,6 +219,8 @@ def mk_live(be):
     lp.tol = types.SimpleNamespace(get_value=lambda: 0.2)
     lp.lv = types.SimpleNamespace(get_value=lambda: -6.0); lp.route = Sel(0)
     lp.last_generator_settings = (1000.0, -6.0, 0)
+    lp._generator_label = "ПОДАНО: 1000 Гц · −6 dBFS · L + R"
+    lp.vlabel = Lab()
     lp._last_xruns = None; lp._last_xrun_at = None; lp._fresh_after_event_frames = None
     lp._delta_error_shown = False; lp._last_delta_state = None; lp._delta_blocked = True
     for nm in ("read_l", "read_r", "detail_l", "detail_r", "xrun_label", "clip_label", "status_label", "clock_label"):
@@ -236,6 +238,9 @@ check("strip delta matches the built-in 0.014 dB", abs(lp.win.strip.meters.delta
 check("RMS numbers reach the strip", lp.win.strip.meters.rms[0] is not None and abs(lp.win.strip.meters.rms[0] - (-6.02)) < 0.05,
       f"{lp.win.strip.meters.rms}")
 check("no hidden exception in _update_delta", not lp.win.toasts_, str(lp.win.toasts_))
+check("Live generator label warns when the selected tone coincides with 50 Hz mains harmonic",
+      "СЕТЕВАЯ КОЛЛИЗИЯ" in lp.vlabel.t and "1000 Гц" in lp.vlabel.t,
+      lp.vlabel.t)
 # XRUN-событие в окне ΔG 0.6 с
 be.events.append({"kind": "xrun_capture", "frame": be.total - 1000, "t": time.monotonic(), "fatal": True, "dur_ms": 84.6,
                   "suspect": (be.total - 24000, be.total + 4000)})
