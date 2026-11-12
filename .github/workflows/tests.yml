@@ -1,0 +1,38 @@
+name: ValveBench regression tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install numerical dependencies
+        run: python -m pip install --upgrade pip numpy scipy
+
+      - name: Compile Python sources
+        run: python -m compileall -q valvebench verification
+
+      - name: Run project DSP and simulator self-tests
+        run: python -m valvebench selftest
+
+      - name: Test split-clock preflight
+        run: python verification/test_split_clock_preflight.py
+
+      - name: Test IMD with independent-clock drift
+        run: python verification/test_imd_clock_drift.py
