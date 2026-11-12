@@ -70,6 +70,12 @@ def main() -> int:
         help="digital silence appended inside the same aplay stream after the test programme",
     )
     parser.add_argument(
+        "--tone-postroll",
+        type=float,
+        default=0.0,
+        help="continue the generated test tone after the nominal programme, before any DAC silence postroll",
+    )
+    parser.add_argument(
         "--out-dir",
         default="measurements/diagnostics/d10-emu-thd-full-capture",
         help="output directory relative to the project root (must not already exist)",
@@ -107,6 +113,35 @@ def main() -> int:
 
     def tapped_play_record(out, tail=0.8):
         sent = np.asarray(out, dtype=np.float64)
+        source_frames = int(len(sent))
+        tone_postroll_frames = 0
+        if state["label"] == "thd":
+            tone_postroll_frames = int(round(float(args.tone_postroll) * fs))
+            if tone_postroll_frames < 0:
+                raise ValueError("--tone-postroll must be non-negative")
+            if tone_postroll_frames:
+                # Rig._seg() ends with a 10 ms fade. Remove that fade, continue
+                # the exact coherent sine phase, then put the fade at the new end.
+                ramp_n = min(int(0.01 * fs), len(sent))
+                k, amplitude = rig.amp_tone(args.frequency, args.level)
+                start_index = len(sent) - ramp_n
+                indices = np.arange(
+                    start_index, start_index + tone_postroll_frames + ramp_n,
+                    dtype=np.int64,
+                )
+                phase = 2.0 * np.pi * ((k * indices) % rig.n) / rig.n
+                extension = np.zeros(
+                    (len(indices), 2), dtype=np.float64
+                )
+                for channel in (0, 1):
+                    if np.max(np.abs(sent[:-ramp_n, channel])) > 0.0:
+                        extension[:, channel] = amplitude * np.sin(phase)
+                fade = 0.5 - 0.5 * np.cos(
+                    np.pi * np.arange(ramp_n, dtype=np.float64) / ramp_n
+                )
+                extension[-ramp_n:, :] *= fade[::-1, None]
+                sent = np.vstack((sent[:-ramp_n], extension))
+
         preroll_frames = int(round(float(args.dac_preroll) * fs))
         if preroll_frames < 0:
             raise ValueError("--dac-preroll must be non-negative")
@@ -123,6 +158,9 @@ def main() -> int:
             "dac_preroll_seconds": float(preroll_frames / fs),
             "dac_postroll_frames": postroll_frames,
             "dac_postroll_seconds": float(postroll_frames / fs),
+            "source_frames_before_tone_postroll": source_frames,
+            "tone_postroll_frames": tone_postroll_frames,
+            "tone_postroll_seconds": float(tone_postroll_frames / fs),
             "stimulus_frames": int(len(sent)),
             "stimulus_seconds": float(len(sent) / fs),
             "playback_frames_including_preroll": int(len(playback)),
@@ -174,6 +212,7 @@ def main() -> int:
         "settle_seconds": float(args.settle),
         "dac_preroll_seconds": float(args.dac_preroll),
         "dac_postroll_seconds": float(args.dac_postroll),
+        "tone_postroll_seconds": float(args.tone_postroll),
         "analysis_window_seconds": float(args.blocks),
         "runs": state["runs"],
     }
