@@ -168,6 +168,20 @@ class DutComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ComparisonError, "Параметры теста THD"):
             compare_sessions([first, path])
 
+    def test_single_channel_thd_does_not_create_fake_two_channel_aggregate(self):
+        first_data = make_envelope("590", "session-A")
+        second_data = make_envelope("591", "session-B")
+        for envelope in (first_data, second_data):
+            envelope["result"]["parameters"]["thd"]["route"] = "L"
+            envelope["result"]["tests"]["thd"]["ch"].pop("R")
+        first = self._write("dut-590", first_data)
+        second = self._write("dut-591", second_data)
+        result = compare_sessions([first, second])
+        metric = result["devices"][0]["metrics"]["thd"]["thd_pct"]
+        self.assertEqual(metric["L"], 0.2)
+        self.assertIsNone(metric["R"])
+        self.assertIsNone(metric["aggregate"])
+
     def test_same_dut_can_be_compared_across_two_saved_revisions(self):
         first = self._write("before", make_envelope("590", "before-session", note="before"))
         second = self._write("after", make_envelope("590", "after-session", note="after"))
