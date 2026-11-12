@@ -124,6 +124,7 @@ class CaptureTimebaseTests(unittest.TestCase):
         self.assertEqual(len(seen), 2)
         self.assertGreater(len(seen[0]), rig.be.last_input_frames)
         self.assertAlmostEqual(result["clock_correction_ppm"], 25.6, places=4)
+        self.assertIs(result["clock_check"], rig.clock_result)
         self.assertTrue(any("временная база захвата скорректирована" in w
                             for w in result["warnings"]))
 
@@ -145,6 +146,7 @@ class CaptureTimebaseTests(unittest.TestCase):
         self.assertEqual(len(captured), 1)
         self.assertLess(len(captured[0][1]), rig.be.last_input_frames + int(0.3 * rig.fs))
         self.assertAlmostEqual(result["clock_correction_ppm"], -25.6, places=4)
+        self.assertIs(result["clock_check"], rig.clock_result)
         self.assertTrue(any("временная база захвата скорректирована" in w
                             for w in result["warnings"]))
 
