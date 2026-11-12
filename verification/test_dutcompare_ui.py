@@ -69,6 +69,13 @@ class DutComparisonUiContractTests(unittest.TestCase):
         self.assertIn("def _populate_metrics_table", self.source)
         self.assertIn('metric.get("aggregate")', self.source)
 
+    def test_gui_clock_pilot_level_is_user_configurable_and_defaults_to_minus_72(self):
+        self.assertIn('"clock_probe_level_dbfs": -72.0', self.source)
+        self.assertIn('c.get("clock_probe_level_dbfs", -72.0)', self.source)
+        self.assertIn('self.cal.get("clock_probe_level_dbfs", -72.0)', self.source)
+        self.assertIn('m.clock_check(rig, level_dbfs=clock_level)', self.source)
+        self.assertIn("Уровень не повышается автоматически", self.source)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
