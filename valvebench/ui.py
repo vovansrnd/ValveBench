@@ -764,9 +764,10 @@ class DutComparisonPage(Page):
         self.session_scroll.set_max_content_height(560)
         self.session_scroll.set_propagate_natural_height(True)
         self.session_scroll.set_child(self.session_box)
+        self.response_plot = Plot(xlog=True, xlabel="Частота, Гц", ylabel="Отклонение, дБ")
 
         super().__init__(title, help_text, self.refresh_button, self.selection_status,
-                         self.session_scroll, self.compare_button)
+                         self.session_scroll, self.compare_button, plot=self.response_plot)
         self.refresh_sessions()
 
     @staticmethod
@@ -874,14 +875,62 @@ class DutComparisonPage(Page):
 
         threading.Thread(target=work, daemon=True).start()
 
+    def _show_response_curves(self, comparison):
+        palette = (
+            (0.16, 0.48, 0.82), (0.82, 0.31, 0.18), (0.18, 0.62, 0.38),
+            (0.62, 0.38, 0.76), (0.74, 0.57, 0.14), (0.12, 0.62, 0.66),
+            (0.76, 0.32, 0.55), (0.42, 0.48, 0.56), (0.52, 0.55, 0.18),
+        )
+        traces = []
+        modes = set()
+        xlo, xhi = float("inf"), 0.0
+        for index, device in enumerate(comparison.get("devices", [])):
+            curve = (device.get("curves") or {}).get("response")
+            if not curve:
+                continue
+            frequency = curve.get("frequency_hz") or []
+            if len(frequency) < 2:
+                continue
+            modes.add(curve.get("mode", "flat"))
+            xlo, xhi = min(xlo, float(frequency[0])), max(xhi, float(frequency[-1]))
+            color = palette[index % len(palette)]
+            label = str(device.get("device_id") or f"#{index + 1}")
+            traces.append({
+                "x": frequency, "y": curve.get("L_db", []),
+                "label": f"{label} L", "color": color, "width": 2.0,
+            })
+            traces.append({
+                "x": frequency, "y": curve.get("R_db", []),
+                "label": f"{label} R", "color": color, "dash": True, "width": 2.0,
+            })
+        self.response_plot.set_traces(traces)
+        if traces:
+            ylabel = ("Отклонение от RIAA, дБ" if modes == {"riaa"}
+                      else "АЧХ, нормированная на 1 кГц, дБ")
+            self.response_plot.set_view(
+                xlim=(xlo, xhi), xlabel="Частота, Гц", ylabel=ylabel)
+            self.response_plot.autoscale_y()
+        else:
+            self.response_plot.set_view(
+                xlim=(20.0, 20000.0), xlabel="Частота, Гц",
+                ylabel="АЧХ: в выбранных сессиях нет sweep"
+            )
+            self.response_plot.autoscale_y()
+
     def _comparison_finished(self, comparison, output, report, error):
         self._comparing = False
         self.refresh_button.set_sensitive(True)
         if error is not None:
+            self.response_plot.set_traces([])
             self.say(f"СРАВНЕНИЕ НЕ ВЫПОЛНЕНО\n{type(error).__name__}: {error}")
             self.win.toast(f"Сессии несопоставимы: {error}")
         else:
-            self.say(report + f"\n\nСРАВНЕНИЕ СОХРАНЕНО:\n{output}")
+            self._show_response_curves(comparison)
+            legend_note = (
+                "\n\nГРАФИК АЧХ: цвет — аппарат; L — сплошная линия, R — пунктир."
+                if self.response_plot.traces else ""
+            )
+            self.say(report + legend_note + f"\n\nСРАВНЕНИЕ СОХРАНЕНО:\n{output}")
             self.win.toast("Сравнение DUT сохранено")
         self._update_selection_status()
         return False
