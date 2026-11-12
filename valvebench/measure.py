@@ -158,12 +158,14 @@ class Rig:
                 tone_hz = self.f_of(k)
                 break
         d = self._onset(rec, tone_hz=tone_hz)
-        # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
-        # (узкополосный поиск не нашёл тон) не теряется
-        warns = list(self.be.notes)
-        wins, pos = [], d
-        # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
-        # (узкополосный поиск не нашёл тон) не теряется
+        # A successful narrowband detector locates the first test tone itself.
+        # The first segment's settle interval is BEFORE that tone and must not
+        # be added again. Broadband fallback instead detects programme onset,
+        # so it keeps the original settle offset.
+        tone_onset = bool(getattr(self, "_onset_used_narrowband", False))
+        first_settle = meta[0][1] if meta and tone_onset else 0
+        pos = d - first_settle
+        # Copy notes after onset detection so fallback warnings are retained.
         warns = list(self.be.notes)
         wins = []
         for (ln, s_n) in meta:
@@ -179,9 +181,12 @@ class Rig:
         return wins, warns
 
     def _onset(self, rec, tone_hz=None):
+        self._onset_used_narrowband = False
         if tone_hz is not None:
             try:
-                return self._onset_narrowband(rec, tone_hz)
+                onset = self._onset_narrowband(rec, tone_hz)
+                self._onset_used_narrowband = True
+                return onset
             except MeasureError:
                 if float(np.max(np.abs(rec))) <= 0.0:
                     raise
@@ -249,7 +254,19 @@ class Rig:
             end = min(m, i + sustain)
             span = end - i
             if above[i] and (cum[end] - cum[i]) >= 0.9 * span:
-                return i * blk
+                # The centred moving 5-period window begins responding before
+                # the real burst. At the first threshold crossing, approximately
+                # fraction=thr/peak of that window contains the tone. Undo this
+                # leading-edge bias and the 5 ms block quantization.
+                block_start = i * blk
+                block_end = min(n, block_start + blk)
+                crossings = np.flatnonzero(env[block_start:block_end] > thr)
+                if not crossings.size:
+                    continue
+                crossing = block_start + int(crossings[0])
+                fraction = float(np.clip(thr / max(peak, 1e-12), 0.0, 0.95))
+                onset = crossing + 0.5 * win - fraction * win
+                return max(0, int(round(onset)))
         raise MeasureError(
             "начало тона не найдено узкополосно: проверь кабели, уровни и частоту "
             f"генератора ({tone_hz:.0f} Гц)")
