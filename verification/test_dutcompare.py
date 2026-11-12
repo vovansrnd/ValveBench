@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Tests for strict cross-DUT session comparisons."""
+from __future__ import annotations
+
+import json
+import math
+import tempfile
+import unittest
+from pathlib import Path
+
+import numpy as np
+
+from valvebench.dutcompare import ComparisonError, compare_sessions
+
+
+def make_envelope(device_id, session_id, *, note="", rate=96000, mixer="mixer-A",
+                  thd_level=-12.0, state="complete"):
+    frequency = np.geomspace(20.0, 20000.0, 100).tolist()
+    left_response = np.linspace(-0.4, 0.3, 100).tolist()
+    right_response = np.linspace(-0.2, 0.5, 100).tolist()
+    left_riaa = np.linspace(-0.5, 0.4, 100).tolist()
+    right_riaa = np.linspace(-0.3, 0.6, 100).tolist()
+    tests = {
+        "noise": {
+            "kind": "noise", "ch": {
+                "L": {"unw_dbfs": -100.0, "a_dbfs": -103.0, "c_dbfs": -101.0, "hum": []},
+                "R": {"unw_dbfs": -90.0, "a_dbfs": -93.0, "c_dbfs": -91.0, "hum": []},
+            },
+        },
+        "response": {
+            "kind": "sweep", "mode": "riaa", "calibration_note": "same calibrated path",
+            "ch": {
+                "L": {"freq": frequency, "fr_norm_db": left_response,
+                      "riaa_dev_db": left_riaa, "gain_1k_db": 20.0},
+                "R": {"freq": frequency, "fr_norm_db": right_response,
+                      "riaa_dev_db": right_riaa, "gain_1k_db": 22.0},
+            },
+        },
+        "thd": {
+            "kind": "thd", "ch": {
+                "L": {"level_dbfs": -20.0, "thd_pct": 0.2, "thd_db": -53.98,
+                      "thd_upper_pct": 0.25, "thd_upper_db": -52.04,
+                      "thdn_pct": 0.5, "thdn_db": -46.02,
+                      "noise_dbfs": -66.0, "thd_bound": False, "thd_partial": False},
+                "R": {"level_dbfs": -19.0, "thd_pct": 0.4, "thd_db": -47.96,
+                      "thd_upper_pct": 0.45, "thd_upper_db": -46.94,
+                      "thdn_pct": 0.6, "thdn_db": -44.44,
+                      "noise_dbfs": -64.0, "thd_bound": True, "thd_partial": False},
+            },
+        },
+        "imd": {
+            "kind": "imd", "ch": {
+                "L": {"imd_pct": 0.1, "imd_db": -60.0, "d2_pct": 0.08, "d3_pct": 0.06,
+                      "products": [{"label": "fв−fн", "dbc": -61.0}]},
+                "R": {"imd_pct": 0.2, "imd_db": -53.98, "d2_pct": 0.16, "d3_pct": 0.12,
+                      "products": [{"label": "fв−fн", "dbc": -55.0}]},
+            },
+        },
+    }
+    result = {
+        "kind": "dut_batch", "schema": 1, "state": state,
+        "test_order": ["noise", "response", "thd", "imd"],
+        "parameters": {
+            "noise": {"seconds": 8.0},
+            "response": {"f_lo": 20.0, "f_hi": 20000.0, "dur": 8.0, "mode": "riaa", "iec": True},
+            "thd": {"frequency_hz": 997.0, "level_dbfs": thd_level, "route": "both"},
+            "imd": {"f1_hz": 19000.0, "f2_hz": 20000.0, "mode": "ccif", "level_dbfs": -12.0},
+        },
+        "tests": tests,
+    }
+    context = {
+        "software": {"name": "ValveBench", "version": "0.1.21-dev4"},
+        "device": {"stable_id": "pair:DAC-ADC", "dac_alsa_pcm": "hw:3,0", "alsa_pcm": "hw:2,0"},
+        "audio_io": {
+            "dac_device": "hw:3,0", "adc_device": "hw:2,0",
+            "device_pair_key": "pair:DAC-ADC", "sample_rate_hz": rate,
+            "playback_format": "S24_3LE", "capture_format": "S24_3LE",
+            "playback_channels": 2, "capture_channels": 2,
+            "alsa_mixer_fingerprint": mixer,
+        },
+        "calibration": {
+            "out_fs_vrms": [2.0, 2.0], "in_fs_vrms": [0.2, 0.2],
+            "dut_to_adc_pad_db": 12.0, "mains_hz": 50, "analysis_band_hi_hz": 20000,
+        },
+    }
+    return {
+        "format": "valvebench-device-measurement", "schema": 1,
+        "device_id": device_id, "session_id": session_id, "note": note,
+        "measurement_context": context, "result": result,
+    }
+
+
+class DutComparisonTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def _write(self, name, envelope):
+        path = self.root / name
+        path.mkdir()
+        with (path / "session.json").open("w", encoding="utf-8") as fh:
+            json.dump(envelope, fh)
+        return str(path)
+
+    def test_comparison_keeps_lr_and_adds_power_correct_aggregate(self):
+        first = self._write("dut-590", make_envelope("590", "session-A", note="tube set A"))
+        second = self._write("dut-591", make_envelope("591", "session-B", note="tube set B"))
+        result = compare_sessions([first, second])
+        self.assertEqual(result["device_order"], ["590", "591"])
+        noise = result["devices"][0]["metrics"]["noise"]["unw_dbfs"]
+        self.assertEqual(noise["L"], -100.0)
+        self.assertEqual(noise["R"], -90.0)
+        expected = 10.0 * math.log10((10 ** (-100.0 / 10) + 10 ** (-90.0 / 10)) / 2.0)
+        self.assertAlmostEqual(noise["aggregate"], expected, places=8)
+        thd = result["devices"][0]["metrics"]["thd"]["thd_pct"]
+        self.assertEqual(thd["L"], 0.2)
+        self.assertEqual(thd["R"], 0.4)
+        self.assertAlmostEqual(thd["aggregate"], math.sqrt((0.2**2 + 0.4**2) / 2), places=10)
+        self.assertEqual(result["devices"][0]["metrics"]["thd"]["thd_status"]["R"], "bound")
+
+    def test_response_curves_keep_lr_and_generate_aggregate(self):
+        path = self._write("dut-590", make_envelope("590", "session-A"))
+        result = compare_sessions([path, self._write("dut-591", make_envelope("591", "session-B"))])
+        curve = result["devices"][0]["curves"]["response"]
+        self.assertEqual(len(curve["frequency_hz"]), len(curve["L_db"]))
+        self.assertEqual(len(curve["frequency_hz"]), len(curve["R_db"]))
+        self.assertEqual(len(curve["frequency_hz"]), len(curve["aggregate_db"]))
+        self.assertAlmostEqual(curve["aggregate_db"][0],
+                               (curve["L_db"][0] + curve["R_db"][0]) / 2.0, places=10)
+        gain = result["devices"][0]["metrics"]["response"]["gain_1k_db"]
+        self.assertEqual(gain["L"], 20.0)
+        self.assertEqual(gain["R"], 22.0)
+        self.assertAlmostEqual(gain["aggregate"], 20.0 * math.log10((10 + 10**1.1) / 2), places=8)
+
+    def test_different_measurement_chain_is_rejected(self):
+        first = self._write("dut-590", make_envelope("590", "session-A"))
+        second = make_envelope("591", "session-B", mixer="mixer-B")
+        path = self._write("dut-591", second)
+        with self.assertRaisesRegex(ComparisonError, "mixer_fingerprint"):
+            compare_sessions([first, path])
+
+    def test_different_test_parameters_are_rejected(self):
+        first = self._write("dut-590", make_envelope("590", "session-A"))
+        second = make_envelope("591", "session-B", thd_level=-6.0)
+        path = self._write("dut-591", second)
+        with self.assertRaisesRegex(ComparisonError, "Параметры теста THD"):
+            compare_sessions([first, path])
+
+    def test_same_dut_can_be_compared_across_two_saved_revisions(self):
+        first = self._write("before", make_envelope("590", "before-session", note="before"))
+        second = self._write("after", make_envelope("590", "after-session", note="after"))
+        result = compare_sessions([first, second])
+        self.assertEqual(result["device_order"], ["590", "590"])
+        self.assertEqual([x["note"] for x in result["devices"]], ["before", "after"])
+
+    def test_partial_package_is_rejected(self):
+        first = self._write("dut-590", make_envelope("590", "session-A", state="partial"))
+        second = self._write("dut-591", make_envelope("591", "session-B"))
+        with self.assertRaisesRegex(ComparisonError, "завершённых пакетов"):
+            compare_sessions([first, second])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
