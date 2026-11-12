@@ -232,7 +232,9 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     """THD, THD+N, гармоники и фон по установившемуся тону.
 
     THD+N считается по усреднённым мощностям окон Блэкмана–Харриса; лепесток
-    несущей исключается маской.
+    несущей исключается маской. В некогерентном режиме гармоники проходят
+    отдельный gate относительно локального широкополосного пола; THD — только
+    сумма достоверных линий, THD upper — сумма всех обнаруженных мощностей.
 
     При когерентном тоне гармоники оцениваются по прямоугольному DFT-бину.
     Комплексные коэффициенты гармоник каждого блока нормируются на фазу
@@ -393,28 +395,78 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
         Pf = float(np.sum(Pdir[fund_mask]))
         if Pf <= 0:
             raise ValueError("тон не найден")
-        ph = 0.0
-        raw_power = 0.0
+
+        # Build the complete line mask first. Local noise estimates must not
+        # sample the skirts of the fundamental, another harmonic, or mains hum.
+        harmonic_bins = []
         for h in range(2, nharm + 1):
             fh = h * f_est
             if fh > b_hi:
                 break
             kh = int(round(fh / df))
+            if 0 < kh < Pdir.size:
+                harmonic_bins.append((h, fh, kh))
+        guard = max(half_f + 2, 8)
+        skip = np.zeros(Pdir.size, dtype=bool)
+        for kk in [k0] + [kh for _, _, kh in harmonic_bins]:
+            skip[max(0, kk - guard):min(Pdir.size, kk + guard + 1)] = True
+        for m_ in range(1, 7):
+            km = int(round(m_ * mains / df)) if mains > 0 else 0
+            if 0 < km < Pdir.size:
+                skip[max(0, km - guard):min(Pdir.size, km + guard + 1)] = True
+
+        detected_power = 0.0
+        raw_power = 0.0
+        floors = []
+        credible_count = 0
+        local_radius = max(8, int(round(40.0 / df)))
+        for h, fh, kh in harmonic_bins:
             a, b = max(0, kh - half_f), min(Pdir.size, kh + half_f + 1)
-            p = float(np.sum(Pdir[a:b]))
+            p_observed = float(np.sum(Pdir[a:b]))
+            width = b - a
             masked[a:b] = True
-            ph += p
-            raw_power += p
-            harm.append({"h": h, "f": fh, "dbc": db10(p / Pf) if p > 0 else -300.0,
-                         "pct": 100.0 * math.sqrt(p / Pf), "bound": False, "credible": None,
-                         "raw_dbc": db10(p / Pf) if p > 0 else -300.0,
-                         "floor_dbc": None, "margin_db": None, "phase_coherence": None})
-        thd = math.sqrt(ph / Pf)
-        thd_upper = thd
-        thd_bound = False
-        thd_partial = False
-        line_floor_dbc = None
-        line_mode = "bh-power"
+
+            # Estimate broadband noise under this harmonic from nearby bins.
+            # The median is robust to isolated unrelated tones; multiplying by
+            # the lobe width estimates the noise power included in p_observed.
+            local_lo, local_hi = max(1, kh - local_radius), min(Pdir.size, kh + local_radius + 1)
+            local_bins = np.arange(local_lo, local_hi)
+            keep = (np.abs(local_bins - kh) > guard) & ~skip[local_lo:local_hi]
+            floor_available = int(np.count_nonzero(keep)) >= 8 and width > 0
+            if floor_available:
+                p_random = max(float(np.median(Pdir[local_bins[keep]])) * width, 0.0)
+            else:
+                p_random = 0.0
+            p_stable = max(float((coherent_line_floors or {}).get(h, 0.0)), 0.0)
+            p_noise = p_random + p_stable
+            margin = db10(p_observed / max(p_noise, 1e-300)) if p_observed > 0 else -300.0
+            credible = bool(floor_available and margin >= MARGIN_OK_DB)
+            p_corrected = max(p_observed - p_noise, 0.0)
+            p_used = p_corrected if credible else p_observed
+            if credible:
+                detected_power += p_corrected
+                credible_count += 1
+            raw_power += p_observed
+            floors.append(p_noise)
+            harm.append({
+                "h": h, "f": fh,
+                "dbc": db10(p_used / Pf) if p_used > 0 and Pf > 0 else -300.0,
+                "pct": 100.0 * math.sqrt(p_used / Pf) if Pf > 0 else 0.0,
+                "bound": not credible, "credible": credible,
+                "raw_dbc": db10(p_observed / Pf) if p_observed > 0 and Pf > 0 else -300.0,
+                "floor_dbc": db10(p_noise / Pf) if p_noise > 0 and Pf > 0 else -300.0,
+                "random_floor_dbc": db10(p_random / Pf) if p_random > 0 and Pf > 0 else -300.0,
+                "stable_spur_floor_dbc": db10(p_stable / Pf) if p_stable > 0 and Pf > 0 else None,
+                "stable_spur_floor_dbfs": rms_dbfs(math.sqrt(p_stable)) if p_stable > 0 else None,
+                "margin_db": margin, "phase_coherence": None,
+            })
+
+        thd = math.sqrt(max(detected_power, 0.0) / Pf) if Pf > 0 else 0.0
+        thd_upper = math.sqrt(max(raw_power, 0.0) / Pf) if Pf > 0 else 0.0
+        thd_bound = bool(harmonic_bins) and credible_count == 0
+        thd_partial = bool(harmonic_bins) and 0 < credible_count < len(harmonic_bins)
+        line_floor_dbc = db10(float(np.mean(floors)) / Pf) if floors and Pf > 0 else None
+        line_mode = "bh-power-floor-gated"
 
     if Pf <= 0:
         raise ValueError("тон не найден")
