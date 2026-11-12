@@ -447,7 +447,8 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
                 detected_power += p_corrected
                 credible_count += 1
             raw_power += p_observed
-            floors.append(p_noise)
+            if floor_available:
+                floors.append(p_noise)
             harm.append({
                 "h": h, "f": fh,
                 "dbc": db10(p_used / Pf) if p_used > 0 and Pf > 0 else -300.0,
