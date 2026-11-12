@@ -4267,6 +4267,9 @@ class Window(Adw.ApplicationWindow):
                         raise m.MeasureError(
                             "Такты выбранных ЦАП и АЦП не согласованы для точного измерения. "
                             + m.text_clock(clock))
+                    # Measurement functions use this validated ratio to place
+                    # ADC captures on the DAC/source timebase before analysis.
+                    rig.clock_result = clock
                 res = fn(rig)
                 if isinstance(res, dict):
                     res.setdefault("_valvebench_context", measurement_context)
