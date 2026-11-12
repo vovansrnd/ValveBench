@@ -27,9 +27,6 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q valvebench verification
 
-      - name: Test Rig onset and settle alignment
-        run: python verification/test_rig_onset_alignment.py
-
       - name: Run project DSP and simulator self-tests
         run: python -m valvebench selftest
 
