@@ -101,7 +101,7 @@ def _check_compatibility(sessions):
     warnings = []
     first_version = ((first["context"].get("software") or {}).get("version"))
     required = (
-        "device_pair_key", "dac_device", "adc_device", "sample_rate_hz",
+        "device_pair_key", "dac_stable_id", "adc_stable_id", "sample_rate_hz",
         "playback_format", "capture_format", "playback_channels", "capture_channels",
         "mixer_fingerprint",
     )
@@ -121,6 +121,15 @@ def _check_compatibility(sessions):
         current_conditions = _conditions(current)
         for key, value in conditions.items():
             other = current_conditions.get(key)
+            if key in ("dac_device", "adc_device") and _json_equal(
+                    conditions.get("dac_stable_id" if key == "dac_device" else "adc_stable_id"),
+                    current_conditions.get("dac_stable_id" if key == "dac_device" else "adc_stable_id")):
+                if not _json_equal(value, other):
+                    warnings.append(
+                        f"Для DUT {current['device_id']} изменился номер ALSA {key}: "
+                        f"{value!r} → {other!r}; устойчивый ID физического устройства совпадает"
+                    )
+                continue
             if not _json_equal(value, other):
                 raise ComparisonError(
                     f"Несопоставимые условия для аппарата {current['device_id']}: "
