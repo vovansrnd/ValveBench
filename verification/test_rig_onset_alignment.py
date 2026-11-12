@@ -97,6 +97,8 @@ class RigOnsetAlignmentTests(unittest.TestCase):
                 "repeat_stable": row["repeat_stable"],
                 "L_reasons": row["channels"]["L"]["validity_reasons"],
                 "R_reasons": row["channels"]["R"]["validity_reasons"],
+                "L_envelopes": [q["envelope"] for q in row["channels"]["L"]["repeats"]],
+                "R_envelopes": [q["envelope"] for q in row["channels"]["R"]["repeats"]],
             }
             for row in series["rows"]
             if not row["valid"] or row.get("repeat_stable") is not True
