@@ -1,0 +1,69 @@
+прогон                             плато,с  окно,с  THD+N production-окно L/R    THD+N окно ВНУТРИ плато L/R
+d10-emu-thd-full-capture             2.118   2.000        9.104/9.096                 0.525/0.071         
+d10-emu-thd-full-capture-4blocks     4.120   4.000        6.310/6.278                 0.643/0.085         
+d10-emu-thd-postroll-06              4.118   4.000        6.378/6.343                 0.675/0.092         
+d10-emu-thd-preroll-06               4.150   4.000        5.201/5.091                 1.053/0.127         
+d10-emu-thd-tone-tail-06             4.718   4.000        1.038/0.126                 1.045/0.127         
+
+окно ВНУТРИ плато: старт = плато+0.4 с, конец ≤ плато_end−0.1 с (длина сокращается,
+если 4.0 с не помещается). Production-аналитика та же (Rig._tone_an).
+Traceback (most recent call last):
+  File "<stdin>", line 51, in <module>
+  File "/usr/lib/python3.14/json/__init__.py", line 181, in dump
+    for chunk in iterable:
+                 ^^^^^^^^
+  File "/usr/lib/python3.14/json/encoder.py", line 444, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 451, in _iterencode
+    newobj = _default(o)
+  File "/usr/lib/python3.14/json/encoder.py", line 182, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type int64 is not JSON serializable
+when serializing list item 0
+when serializing dict item 'window'
+when serializing dict item 'fitting'
+when serializing dict item 'd10-emu-thd-full-capture'
+Error in sys.excepthook:
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 238, in partial_apport_excepthook
+    return apport_excepthook(binary, exc_type, exc_obj, exc_tb)
+  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 122, in apport_excepthook
+    report["ExecutableTimestamp"] = str(int(os.stat(binary).st_mtime))
+                                            ~~~~~~~^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/opt/MyApps/Adudio/ValveBench-git/-'
+
+Original exception was:
+Traceback (most recent call last):
+  File "<stdin>", line 51, in <module>
+  File "/usr/lib/python3.14/json/__init__.py", line 181, in dump
+    for chunk in iterable:
+                 ^^^^^^^^
+  File "/usr/lib/python3.14/json/encoder.py", line 444, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/usr/lib/python3.14/json/encoder.py", line 451, in _iterencode
+    newobj = _default(o)
+  File "/usr/lib/python3.14/json/encoder.py", line 182, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type int64 is not JSON serializable
+when serializing list item 0
+when serializing dict item 'window'
+when serializing dict item 'fitting'
+when serializing dict item 'd10-emu-thd-full-capture'
