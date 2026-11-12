@@ -217,6 +217,12 @@ def _make_response_comparison(test_result):
     hi = min(float(left_f[-1]), float(right_f[-1]))
     if hi <= lo:
         raise ComparisonError("Диапазоны частот кривых L/R не пересекаются")
+    # Preserve the full measured sweep grid for graph overlays. The smaller
+    # standard-frequency subset is duplicated below for compact scalar metrics.
+    full_f = left_f[(left_f >= lo) & (left_f <= hi)]
+    full_l = np.interp(np.log10(full_f), np.log10(left_f), left)
+    full_r = np.interp(np.log10(full_f), np.log10(right_f), right)
+    full_avg = (full_l + full_r) / 2.0
     points = np.asarray([f for f in FREQUENCY_POINTS_HZ if lo <= f <= hi], dtype=float)
     l_points = np.interp(np.log10(points), np.log10(left_f), left) if points.size else np.array([])
     r_points = np.interp(np.log10(points), np.log10(right_f), right) if points.size else np.array([])
@@ -224,10 +230,14 @@ def _make_response_comparison(test_result):
     curve = {
         "name": curve_name,
         "mode": mode,
-        "frequency_hz": points.tolist(),
-        "L_db": l_points.tolist(),
-        "R_db": r_points.tolist(),
-        "aggregate_db": aggregate.tolist(),
+        "frequency_hz": full_f.tolist(),
+        "L_db": full_l.tolist(),
+        "R_db": full_r.tolist(),
+        "aggregate_db": full_avg.tolist(),
+        "sampled_frequency_hz": points.tolist(),
+        "sampled_L_db": l_points.tolist(),
+        "sampled_R_db": r_points.tolist(),
+        "sampled_aggregate_db": aggregate.tolist(),
     }
     # RMS deviation from target over the log-spaced sweep bins. Use the full
     # source curve, not only the selected display points.
@@ -286,7 +296,8 @@ def _extract_session_metrics(session):
             curves["response"] = curve
             _put_metric(metrics, test, "rms_error_db", "dB", left_error, right_error, "rms")
             for frequency, left_db, right_db, avg_db in zip(
-                    curve["frequency_hz"], curve["L_db"], curve["R_db"], curve["aggregate_db"]):
+                    curve["sampled_frequency_hz"], curve["sampled_L_db"],
+                    curve["sampled_R_db"], curve["sampled_aggregate_db"]):
                 metrics.setdefault(test, {})[f"{curve['name']}_{frequency:g}Hz"] = {
                     "L": left_db, "R": right_db, "aggregate": avg_db, "unit": "dB",
                 }
