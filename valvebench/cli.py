@@ -86,6 +86,24 @@ def split_clock_preflight(rig, dac_hw, adc_hw):
     return result
 
 
+def require_coherent_timebase(command, clock_result):
+    """Refuse analyses that still assume a shared sample clock.
+
+    Tone/IMD estimators can operate on non-coherent blocks after their
+    per-block power averaging fix. Farina sweep deconvolution and H1 transfer
+    analysis still use the generator's nominal timebase, so they must not run
+    across independent clocks until sample-rate correction is implemented.
+    """
+    if (command in ("sweep", "noise-response")
+            and clock_result is not None
+            and not clock_result.get("coherent", False)):
+        raise m.MeasureError(
+            f"Команда {command} пока не поддерживает коррекцию расхождения тактов "
+            "ЦАП/АЦП. Сначала используйте общий тактовый источник или дождитесь "
+            "реализации коррекции временной базы."
+        )
+
+
 def make_rig(a):
     cal = calib.load()
     if a.sim:
@@ -110,6 +128,7 @@ def make_rig(a):
     if not a.sim and a.cmd not in ("clock", "noise"):
         result = split_clock_preflight(rig, dac_hw, adc_hw)
         if result:
+            require_coherent_timebase(a.cmd, result)
             print(m.text_clock(result), file=sys.stderr)
     return rig
 
