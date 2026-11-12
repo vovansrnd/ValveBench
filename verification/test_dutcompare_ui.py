@@ -63,6 +63,12 @@ class DutComparisonUiContractTests(unittest.TestCase):
         self.assertIn('curve.get("L_db", [])', self.source)
         self.assertIn('curve.get("R_db", [])', self.source)
 
+    def test_comparison_page_builds_metric_table_with_lr_and_mean_columns(self):
+        self.assertIn("self.metrics_grid = Gtk.Grid", self.source)
+        self.assertIn('("Тест", "Показатель", "DUT", "L", "R", "ср.", "ед.")', self.source)
+        self.assertIn("def _populate_metrics_table", self.source)
+        self.assertIn('metric.get("aggregate")', self.source)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
