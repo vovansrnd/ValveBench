@@ -186,7 +186,7 @@ def main(argv=None):
     p.add_argument("sessions", nargs="+", help="пути к каталогам сессий или session.json")
     p.add_argument("--out-dir", help="каталог для comparison.json и CSV; по умолчанию measurements/comparisons/")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=997); p.add_argument("--level", type=float, default=-12)
-    p.add_argument("--wav", help="сохранить исходный стереозахват как float32 WAV; существующий файл не перезаписывается")
+    p.add_argument("--wav", help="сохранить окно стереозахвата, переданное в THD-анализ, как float32 WAV; существующий файл не перезаписывается")
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=997)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
     p = sub.add_parser("imd"); p.add_argument("--preset", default="CCIF 19+20 кГц", choices=list(m.IMD_PRESETS))
