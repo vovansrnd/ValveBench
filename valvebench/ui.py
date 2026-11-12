@@ -19,6 +19,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from . import __version__, calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
 from .identity import application_id as _resolved_application_id  # noqa: E402
 from . import gainmatch  # noqa: E402
+from . import dutcompare  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
 from .backend import (AlsaCli, SimBackend, SimChannel, common_pcm_rates, list_pcm_devices,
@@ -728,6 +729,162 @@ class MeasurementBatchPage(Page):
         else:
             lines.append("Все результаты сохраняются одной кнопкой в один паспорт устройства.")
         self.say("\n\n".join(lines))
+
+
+class DutComparisonPage(Page):
+    """Pick saved DUT sessions and compare them without opening audio devices."""
+
+    def __init__(self, win):
+        self.win = win
+        self.sessions = []
+        self.session_checks = []
+        self._refreshing = False
+        self._comparing = False
+
+        title = Gtk.Label(label="Сохранённые измерения DUT", xalign=0)
+        title.add_css_class("heading")
+        help_text = Gtk.Label(
+            label=("Отметь две или более завершённые сессии. Сравнение проверяет "
+                   "одинаковость измерительного тракта, калибровки и параметров. "
+                   "L и R остаются раздельными; агрегат рассчитывается дополнительно. "
+                   "Аудиоустройства при сравнении не открываются."),
+            xalign=0, wrap=True)
+        help_text.add_css_class("dim-label")
+
+        self.refresh_button = button("ОБНОВИТЬ СПИСОК", self.refresh_sessions)
+        self.compare_button = button("СРАВНИТЬ ВЫБРАННЫЕ СЕССИИ", self.compare_selected, True)
+        self.compare_button.set_sensitive(False)
+        self.selection_status = Gtk.Label(label="Сохранённые сессии ещё не загружены", xalign=0)
+        self.selection_status.add_css_class("dim-label")
+
+        self.session_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.session_box.set_margin_top(4)
+        self.session_scroll = Gtk.ScrolledWindow()
+        self.session_scroll.set_min_content_height(360)
+        self.session_scroll.set_max_content_height(560)
+        self.session_scroll.set_propagate_natural_height(True)
+        self.session_scroll.set_child(self.session_box)
+
+        super().__init__(title, help_text, self.refresh_button, self.selection_status,
+                         self.session_scroll, self.compare_button)
+        self.refresh_sessions()
+
+    @staticmethod
+    def _session_label(session):
+        tests = ", ".join(str(test).upper() for test in session.get("test_order", [])) or "без списка тестов"
+        note = f" · {session['note']}" if session.get("note") else ""
+        stamp = session.get("created_at_local") or session.get("session_id") or ""
+        return (
+            f"DUT {session.get('device_id') or '?'} · {stamp}\n"
+            f"{tests}{note}\n"
+            f"{session.get('session_id') or ''}"
+        )
+
+    def _selected_paths(self):
+        return [
+            session["path"]
+            for session, check in self.session_checks
+            if check.get_active()
+        ]
+
+    def _update_selection_status(self):
+        count = len(self._selected_paths())
+        total = len(self.sessions)
+        if self._refreshing:
+            message = "Обновляю список сессий…"
+        elif total == 0:
+            message = "Завершённых пакетов DUT не найдено. Сначала сохрани пакет измерений."
+        else:
+            message = f"Найдено сессий: {total} · выбрано: {count} · для сравнения нужно минимум две"
+        self.selection_status.set_text(message)
+        self.compare_button.set_sensitive(not self._refreshing and not self._comparing and count >= 2)
+
+    def refresh_sessions(self):
+        if self._refreshing or self._comparing:
+            return
+        self._refreshing = True
+        self.refresh_button.set_sensitive(False)
+        self.compare_button.set_sensitive(False)
+        self._update_selection_status()
+
+        def work():
+            try:
+                sessions = dutcompare.discover_sessions()
+                error = None
+            except Exception as exc:  # noqa: BLE001
+                sessions, error = [], exc
+            GLib.idle_add(self._show_sessions, sessions, error)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _show_sessions(self, sessions, error):
+        self._refreshing = False
+        self.refresh_button.set_sensitive(True)
+        while child := self.session_box.get_first_child():
+            self.session_box.remove(child)
+        self.sessions = list(sessions or [])
+        self.session_checks = []
+        if error is not None:
+            self.session_box.append(Gtk.Label(
+                label=f"Не удалось прочитать список сессий: {type(error).__name__}: {error}",
+                xalign=0, wrap=True))
+            self.say(f"Список измерений не загружен:\n{type(error).__name__}: {error}")
+        elif not self.sessions:
+            self.session_box.append(Gtk.Label(
+                label="Пока нет завершённых пакетов DUT. Измерь аппарат на странице «Пакетный замер DUT» и сохрани результат.",
+                xalign=0, wrap=True))
+            self.say("Сохранённые завершённые пакеты DUT не найдены.")
+        else:
+            for session in self.sessions:
+                check = Gtk.CheckButton(label=self._session_label(session))
+                check.set_halign(Gtk.Align.FILL)
+                check.connect("toggled", lambda *_: self._update_selection_status())
+                self.session_box.append(check)
+                self.session_checks.append((session, check))
+            self.say(
+                f"Загружено сессий: {len(self.sessions)}.\n"
+                "Отметь пакеты, которые нужно сравнить. При несовпадении условий "
+                "измерений сравнение будет остановлено с указанием причины."
+            )
+        self._update_selection_status()
+        return False
+
+    def compare_selected(self):
+        if self._comparing or self._refreshing:
+            return
+        paths = self._selected_paths()
+        if len(paths) < 2:
+            self.win.toast("Выбери минимум две завершённые сессии DUT")
+            return
+        self._comparing = True
+        self.refresh_button.set_sensitive(False)
+        self.compare_button.set_sensitive(False)
+        self._update_selection_status()
+        self.say("Сравниваю сохранённые сессии…")
+
+        def work():
+            try:
+                comparison = dutcompare.compare_sessions(paths)
+                output = dutcompare.save_comparison(comparison)
+                report = dutcompare.text_comparison(comparison)
+                error = None
+            except Exception as exc:  # noqa: BLE001
+                comparison, output, report, error = None, None, None, exc
+            GLib.idle_add(self._comparison_finished, comparison, output, report, error)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _comparison_finished(self, comparison, output, report, error):
+        self._comparing = False
+        self.refresh_button.set_sensitive(True)
+        if error is not None:
+            self.say(f"СРАВНЕНИЕ НЕ ВЫПОЛНЕНО\n{type(error).__name__}: {error}")
+            self.win.toast(f"Сессии несопоставимы: {error}")
+        else:
+            self.say(report + f"\n\nСРАВНЕНИЕ СОХРАНЕНО:\n{output}")
+            self.win.toast("Сравнение DUT сохранено")
+        self._update_selection_status()
+        return False
 
 
 class LivePage(Gtk.Box):
@@ -3592,9 +3749,11 @@ class Window(Adw.ApplicationWindow):
         self.peakhold = PeakHoldPage(self)
         self.setup = SetupPage(self)
         self.batch_page = MeasurementBatchPage(self)
+        self.compare_page = DutComparisonPage(self)
         pages = (
             ("live", "Gain Match / Уровень", self.live),
             ("batch", "Пакетный замер DUT", self.batch_page),
+            ("compare", "Сравнение DUT", self.compare_page),
             ("generator", "Генератор / Осциллограф", self.generator_page),
             ("spectrum", "Спектр (большой экран)", self.spectrum),
             ("thd", "THD / THD+N", self.thd_page),
