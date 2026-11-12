@@ -216,7 +216,8 @@ def clock_check(rig, level_dbfs=-72.0):
         ppm = (f0 / rig.f_of(k) - 1.0) * 1e6 if math.isfinite(f0) else float("nan")
         level = float(r.get("level_dbfs", float("nan")))
         noise = float(r.get("noise_dbfs", float("nan")))
-        snr = level - noise if math.isfinite(level) and math.isfinite(noise) else float("nan")
+        snr = float(r.get("local_snr_db", float("nan")))
+        local_noise = float(r.get("local_noise_dbfs", float("nan")))
         coh_err = float(r.get("coh_err_bins", float("nan")))
         clock_ok = math.isfinite(ppm) and abs(ppm) <= CLOCK_MAX_PPM
         signal_ok = math.isfinite(snr) and snr >= CLOCK_MIN_SNR_DB
@@ -226,7 +227,7 @@ def clock_check(rig, level_dbfs=-72.0):
         per_channel_coherent.append(coherent)
         out["ch"][CH[c]] = {
             "f0": f0, "ppm": ppm, "level_dbfs": level, "noise_dbfs": noise,
-            "snr_db": snr, "coh_err_bins": coh_err,
+            "snr_db": snr, "local_noise_dbfs": local_noise, "coh_err_bins": coh_err,
             "clock_ok": clock_ok, "signal_ok": signal_ok, "coherent": coherent,
         }
         for detail in r.get("warnings", []):
@@ -238,7 +239,7 @@ def clock_check(rig, level_dbfs=-72.0):
             )
         if not signal_ok:
             warns.append(
-                f"{CH[c]}: недостаточный SNR для проверки такта "
+                f"{CH[c]}: недостаточный локальный SNR около несущей для проверки такта "
                 f"({snr:.1f} dB; требуется не менее {CLOCK_MIN_SNR_DB:.0f} dB)"
             )
         if not coherent:
@@ -269,7 +270,7 @@ def text_clock(r):
         state = "когерентен" if v.get("coherent") else "некогерентен"
         lines.append(
             f"  {c}: {v['f0']:.3f} Гц  ({v['ppm']:+.1f} ppm)  "
-            f"уровень {v['level_dbfs']:.1f} dBFS  SNR {v.get('snr_db', float('nan')):.1f} dB  "
+            f"уровень {v['level_dbfs']:.1f} dBFS  локальный SNR {v.get('snr_db', float('nan')):.1f} dB  "
             f"· {state} ({v.get('coh_err_bins', float('nan')):+.4f} бина)"
         )
     lines.append(
@@ -277,7 +278,7 @@ def text_clock(r):
         + ("PASS" if r.get("clock_ok", r.get("ok", False)) else "FAIL")
     )
     lines.append(
-        f"  Достоверность сигнала (SNR ≥ {CLOCK_MIN_SNR_DB:.0f} dB, без XRUN/CLIP): "
+        f"  Достоверность сигнала (локальный SNR ≥ {CLOCK_MIN_SNR_DB:.0f} dB, без XRUN/CLIP): "
         + ("PASS" if r.get("signal_ok", r.get("ok", False)) else "FAIL")
     )
     lines.append(
