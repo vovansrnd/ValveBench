@@ -18,7 +18,8 @@ from .signals import make_test_noise
 CH = ("L", "R")
 
 CLOCK_MAX_PPM = 100.0
-CLOCK_MIN_SNR_DB = 20.0  # engineering signal-validity floor; not an uncertainty guarantee
+CLOCK_CHANNEL_SPREAD_PPM = 5.0  # L/R must agree on the one physical ADC clock
+CLOCK_MIN_SNR_DB = 20.0  # carrier-local engineering floor, not an uncertainty guarantee
 
 
 class MeasureError(RuntimeError):
@@ -194,7 +195,7 @@ class Rig:
 def clock_check(rig, level_dbfs=-72.0):
     """Measure relative DAC/ADC clock error and report three independent states.
 
-    clock_ok: measured relative error is within the configured ppm gate.
+    clock_ok: both channel estimates are within the ppm gate and agree with each other.
     signal_ok: both channels contain a usable tone, with adequate SNR and no
                transport/ADC-overload warning.
     coherent: the measured tone lies within COH_TOL_BINS of the analysis grid.
@@ -209,7 +210,7 @@ def clock_check(rig, level_dbfs=-72.0):
     k, a = rig.amp_tone(1000.0, level_dbfs)
     wins, warns = rig.run([([(k, a)], [(k, a)], 0.4)])
     out = {"kind": "clock", "test_level_dbfs": level_dbfs, "warnings": warns, "ch": {}}
-    per_channel_clock, per_channel_signal, per_channel_coherent = [], [], []
+    per_channel_clock, per_channel_signal, per_channel_coherent, per_channel_ppm = [], [], [], []
     for c in (0, 1):
         r = rig._tone_an(wins[0], c, k, nharm=2)
         f0 = float(r.get("f0", float("nan")))
@@ -225,6 +226,7 @@ def clock_check(rig, level_dbfs=-72.0):
         per_channel_clock.append(clock_ok)
         per_channel_signal.append(signal_ok)
         per_channel_coherent.append(coherent)
+        per_channel_ppm.append(ppm)
         out["ch"][CH[c]] = {
             "f0": f0, "ppm": ppm, "level_dbfs": level, "noise_dbfs": noise,
             "snr_db": snr, "local_noise_dbfs": local_noise, "coh_err_bins": coh_err,
@@ -255,7 +257,17 @@ def clock_check(rig, level_dbfs=-72.0):
     )
     if transport_bad:
         warns.append("проверка такта недействительна: XRUN или перегрузка АЦП")
-    out["clock_ok"] = all(per_channel_clock)
+    finite_ppm = [v for v in per_channel_ppm if math.isfinite(v)]
+    channel_spread = (max(finite_ppm) - min(finite_ppm)) if len(finite_ppm) == 2 else float("inf")
+    clock_consistent = channel_spread <= CLOCK_CHANNEL_SPREAD_PPM
+    if not clock_consistent:
+        warns.append(
+            f"оценки такта L/R расходятся на {channel_spread:.1f} ppm "
+            f"(допуск ±{CLOCK_CHANNEL_SPREAD_PPM:.1f} ppm); общая частота АЦП не подтверждена"
+        )
+    out["clock_channel_spread_ppm"] = channel_spread
+    out["clock_consistent"] = clock_consistent
+    out["clock_ok"] = all(per_channel_clock) and clock_consistent
     out["signal_ok"] = all(per_channel_signal) and not transport_bad
     out["coherent"] = all(per_channel_coherent)
     # Backwards-compatible overall gate: within ppm limit AND signal is usable.
@@ -276,6 +288,11 @@ def text_clock(r):
     lines.append(
         f"  Тактовый допуск ±{CLOCK_MAX_PPM:.0f} ppm: "
         + ("PASS" if r.get("clock_ok", r.get("ok", False)) else "FAIL")
+    )
+    lines.append(
+        f"  Согласие каналов L/R (разброс ≤ {CLOCK_CHANNEL_SPREAD_PPM:.1f} ppm): "
+        + ("PASS" if r.get("clock_consistent", True) else "FAIL")
+        + f" ({r.get('clock_channel_spread_ppm', 0.0):.1f} ppm)"
     )
     lines.append(
         f"  Достоверность сигнала (локальный SNR ≥ {CLOCK_MIN_SNR_DB:.0f} dB, без XRUN/CLIP): "
