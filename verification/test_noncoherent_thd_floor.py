@@ -71,6 +71,18 @@ class NonCoherentThdFloorTests(unittest.TestCase):
             self.assertLessEqual(item["random_floor_dbc"], item["floor_dbc"] + 1e-9)
             self.assertFalse(item["credible"])
 
+    def test_noncoherent_thdn_matches_known_broadband_noise(self):
+        noise_rms = 10 ** (-55.0 / 20.0)
+        noise = self.rng.normal(0.0, noise_rms, self.t.size)
+        result = analyze_tone(self._base() + noise, self.fs, self.f0,
+                              self.n, nharm=8, mains=0, band=(20.0, 20000.0))
+        # White noise is limited to 20 kHz of the 24-kHz Nyquist band.
+        expected_db = 20.0 * np.log10(noise_rms * np.sqrt(20000.0 / 24000.0) / 0.1)
+        self.assertGreater(abs(result["coh_err_bins"]), COH_TOL_BINS)
+        self.assertAlmostEqual(result["thdn_db"], expected_db, delta=1.5)
+        self.assertAlmostEqual(result["noise_dbfs"], -55.0 + 10.0 * np.log10(20000.0 / 24000.0),
+                               delta=1.5)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
