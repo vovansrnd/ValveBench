@@ -43,9 +43,9 @@ ID аппарата и заметка берутся на момент стар�
 После измерений можно сравнить две или более сохранённые сессии из командной строки:
 
 ```bash
-./run.sh cli dut-compare \
-  measurements/devices/590/<session-590> \
-  measurements/devices/591/<session-591>
+SESSION_590="measurements/devices/590/20261112-101500-dut_batch"
+SESSION_591="measurements/devices/591/20261112-103000-dut_batch"
+./run.sh cli dut-compare "$SESSION_590" "$SESSION_591"
 ```
 
 Вместо каталога можно передать прямой путь к `session.json`. Результат сохраняется в `measurements/comparisons/<timestamp>-dut-comparison/`:
