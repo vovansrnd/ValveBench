@@ -80,8 +80,10 @@ class NonCoherentThdFloorTests(unittest.TestCase):
         expected_db = 20.0 * np.log10(noise_rms * np.sqrt(20000.0 / 24000.0) / 0.1)
         self.assertGreater(abs(result["coh_err_bins"]), COH_TOL_BINS)
         self.assertAlmostEqual(result["thdn_db"], expected_db, delta=1.5)
-        self.assertAlmostEqual(result["noise_dbfs"], -55.0 + 10.0 * np.log10(20000.0 / 24000.0),
-                               delta=1.5)
+        # noise_dbfs is sine-equivalent dBFS: RMS noise is multiplied by √2.
+        expected_noise_dbfs = (-55.0 + 10.0 * np.log10(20000.0 / 24000.0)
+                               + 10.0 * np.log10(2.0))
+        self.assertAlmostEqual(result["noise_dbfs"], expected_noise_dbfs, delta=1.5)
 
     def test_thdn_is_stable_at_a_realistic_25ppm_clock_offset(self):
         fs = 48000
