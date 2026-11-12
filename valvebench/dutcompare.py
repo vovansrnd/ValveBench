@@ -98,11 +98,8 @@ def _check_compatibility(sessions):
     warnings = []
     first_version = ((first["context"].get("software") or {}).get("version"))
     for current in sessions[1:]:
-        if current["device_id"] == first["device_id"]:
-            raise ComparisonError(
-                f"Повторяется ID аппарата {current['device_id']!r}; "
-                "каждый элемент сравнения должен иметь отдельный ID DUT"
-            )
+        if current["path"] == first["path"]:
+            raise ComparisonError("Одна и та же сессия указана для сравнения дважды")
         current_conditions = _conditions(current)
         for key, value in conditions.items():
             other = current_conditions.get(key)
