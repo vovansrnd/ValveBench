@@ -474,7 +474,8 @@ class _Shim:
 def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
     """IMD двухтонального сигнала. mode: 'ccif' (равные тона) или 'smpte' (4:1).
 
-    Продукты считаются по усреднённому периоду (шум подавлен).
+    Мощности линий усредняются по отдельным блокам; фазовое взаимопогашение
+    из-за независимых тактов ЦАП/АЦП не искажает численный результат.
     CCIF  : d2 = f2−f1, d3 = 2f1−f2, 2f2−f1, d5; проценты — к (A1+A2) (IEC 60268-3).
     SMPTE : боковые fв±m·fн, m=1..4; проценты — к амплитуде верхнего тона.
     """
@@ -485,9 +486,9 @@ def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
     # Average spectral powers instead. The lobe integration tolerates the
     # small per-block bin offset while retaining phase-independent RMS.
     spectra = [Block(block, fs) for block in blocks]
-    # Keep a waveform-average spectrum only for the legacy display payload;
-    # all numeric IMD amplitudes below come from power-averaged block spectra.
-    avg = Block(blocks.mean(axis=0), fs)
+    # Power-average magnitudes for the spectrum display as well: a waveform
+    # average would still make drifting tones disappear from the displayed plot.
+    spec_amp = np.sqrt(np.mean([blk.amp ** 2 for blk in spectra], axis=0))
     lo, hi = sorted((f1, f2))
     def amp(f):
         powers = [blk.lobe(f, half) for blk in spectra]
@@ -526,7 +527,7 @@ def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
         "products": prods, "ref": ref_name,
         "imd_pct": 100.0 * tot / denom, "imd_db": db20(tot / denom),
         "d2_pct": 100.0 * d2 / denom, "d3_pct": 100.0 * d3 / denom,
-        "freq": avg.freq, "spec_db": db20(avg.amp),
+        "freq": spectra[0].freq, "spec_db": db20(spec_amp),
     }
 
 
