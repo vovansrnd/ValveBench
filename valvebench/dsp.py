@@ -429,6 +429,34 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     p_n = float(np.sum(Pdir[sel & ~masked]))
     Pf_dir = float(np.sum(Pdir[fund_mask]))
 
+    # Local SNR around the carrier is the appropriate validity metric for
+    # frequency estimation. Broadband noise/hum elsewhere in the audio band
+    # must not invalidate a clearly resolved 1 kHz clock pilot.
+    local_radius = max(8, int(round(40.0 / df)))
+    local_a = max(1, k0 - local_radius)
+    local_b = min(Pdir.size, k0 + local_radius + 1)
+    local_mask = np.zeros(Pdir.size, dtype=bool)
+    local_mask[local_a:local_b] = True
+    local_mask[fund_mask] = False
+    for h in range(2, nharm + 1):
+        kh = int(round(h * f_est / df))
+        if 0 < kh < Pdir.size:
+            local_mask[max(0, kh - 2):min(Pdir.size, kh + 3)] = False
+    if mains > 0:
+        for m_ in range(1, 7):
+            km = int(round(m_ * mains / df))
+            if local_a <= km < local_b:
+                local_mask[max(0, km - 2):min(Pdir.size, km + 3)] = False
+    local_bins = Pdir[local_mask]
+    if local_bins.size:
+        local_noise_power = float(np.median(local_bins) * (2 * half_f + 1))
+        local_noise_power = max(local_noise_power, 1e-300)
+        local_noise_dbfs = rms_dbfs(math.sqrt(local_noise_power))
+        local_snr_db = db10(Pf_dir / local_noise_power) if Pf_dir > 0 else -300.0
+    else:
+        local_noise_dbfs = float("nan")
+        local_snr_db = float("nan")
+
     hum = []
     if mains > 0:
         for m_ in range(1, 7):
@@ -456,6 +484,7 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
         "thdn_db": db10(p_dn / Pf_dir) if Pf_dir > 0 else -300.0,
         "noise_dbc": db10(p_n / Pf_dir) if Pf_dir > 0 else -300.0,
         "noise_dbfs": rms_dbfs(math.sqrt(p_n)),
+        "local_noise_dbfs": local_noise_dbfs, "local_snr_db": local_snr_db,
         "hum": hum, "warnings": warn,
         "freq": ref.freq, "spec_db": db20(spec_amp),
     }
