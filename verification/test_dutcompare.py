@@ -83,9 +83,11 @@ def make_envelope(device_id, session_id, *, note="", rate=96000, mixer="mixer-A"
     }
     context = {
         "software": {"name": "ValveBench", "version": "0.1.21-dev4"},
-        "device": {"stable_id": "pair:DAC-ADC", "dac_alsa_pcm": "hw:3,0", "alsa_pcm": "hw:2,0"},
+        "device": {"stable_id": "pair:DAC-ADC", "dac_alsa_pcm": "hw:3,0", "alsa_pcm": "hw:2,0",
+                   "dac_stable_id": "usb:DAC-serial", "adc_stable_id": "usb:ADC-serial"},
         "audio_io": {
             "dac_device": "hw:3,0", "adc_device": "hw:2,0",
+            "dac_stable_id": "usb:DAC-serial", "adc_stable_id": "usb:ADC-serial",
             "device_pair_key": "pair:DAC-ADC", "sample_rate_hz": rate,
             "playback_format": "S24_3LE", "capture_format": "S24_3LE",
             "playback_channels": 2, "capture_channels": 2,
@@ -153,6 +155,17 @@ class DutComparisonTests(unittest.TestCase):
         self.assertEqual(gain["L"], 20.0)
         self.assertEqual(gain["R"], 22.0)
         self.assertAlmostEqual(gain["aggregate"], 20.0 * math.log10((10 + 10**1.1) / 2), places=8)
+
+    def test_alsa_card_renumbering_is_warning_when_stable_ids_match(self):
+        first = self._write("dut-590", make_envelope("590", "session-A"))
+        second_data = make_envelope("591", "session-B")
+        second_data["measurement_context"]["audio_io"]["dac_device"] = "hw:4,0"
+        second_data["measurement_context"]["audio_io"]["adc_device"] = "hw:5,0"
+        second = self._write("dut-591", second_data)
+        result = compare_sessions([first, second])
+        self.assertTrue(any("номер ALSA" in warning for warning in result["warnings"]))
+        self.assertEqual(result["conditions"]["dac_stable_id"], "usb:DAC-serial")
+        self.assertEqual(result["conditions"]["adc_stable_id"], "usb:ADC-serial")
 
     def test_different_measurement_chain_is_rejected(self):
         first = self._write("dut-590", make_envelope("590", "session-A"))
