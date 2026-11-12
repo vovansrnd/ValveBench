@@ -64,6 +64,12 @@ def main() -> int:
         help="digital silence prepended inside the same aplay stream before the test programme",
     )
     parser.add_argument(
+        "--dac-postroll",
+        type=float,
+        default=0.0,
+        help="digital silence appended inside the same aplay stream after the test programme",
+    )
+    parser.add_argument(
         "--out-dir",
         default="measurements/diagnostics/d10-emu-thd-full-capture",
         help="output directory relative to the project root (must not already exist)",
@@ -104,13 +110,19 @@ def main() -> int:
         preroll_frames = int(round(float(args.dac_preroll) * fs))
         if preroll_frames < 0:
             raise ValueError("--dac-preroll must be non-negative")
+        postroll_frames = int(round(float(args.dac_postroll) * fs))
+        if postroll_frames < 0:
+            raise ValueError("--dac-postroll must be non-negative")
         preroll = np.zeros((preroll_frames, 2), dtype=np.float64)
-        playback = np.vstack((preroll, sent)) if preroll_frames else sent
+        postroll = np.zeros((postroll_frames, 2), dtype=np.float64)
+        playback = np.vstack((preroll, sent, postroll))
         captured = original_play_record(playback, tail=tail)
         item = {
             "label": state["label"],
             "dac_preroll_frames": preroll_frames,
             "dac_preroll_seconds": float(preroll_frames / fs),
+            "dac_postroll_frames": postroll_frames,
+            "dac_postroll_seconds": float(postroll_frames / fs),
             "stimulus_frames": int(len(sent)),
             "stimulus_seconds": float(len(sent) / fs),
             "playback_frames_including_preroll": int(len(playback)),
@@ -161,6 +173,7 @@ def main() -> int:
         "blocks": int(args.blocks),
         "settle_seconds": float(args.settle),
         "dac_preroll_seconds": float(args.dac_preroll),
+        "dac_postroll_seconds": float(args.dac_postroll),
         "analysis_window_seconds": float(args.blocks),
         "runs": state["runs"],
     }
