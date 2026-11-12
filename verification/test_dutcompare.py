@@ -134,10 +134,12 @@ class DutComparisonTests(unittest.TestCase):
         path = self._write("dut-590", make_envelope("590", "session-A"))
         result = compare_sessions([path, self._write("dut-591", make_envelope("591", "session-B"))])
         curve = result["devices"][0]["curves"]["response"]
+        self.assertEqual(len(curve["frequency_hz"]), 100)  # full sweep grid for graph overlays
         self.assertEqual(len(curve["frequency_hz"]), len(curve["L_db"]))
         self.assertEqual(len(curve["frequency_hz"]), len(curve["R_db"]))
         self.assertEqual(len(curve["frequency_hz"]), len(curve["aggregate_db"]))
-        self.assertAlmostEqual(curve["aggregate_db"][0],
+        self.assertLessEqual(len(curve["sampled_frequency_hz"]), 22)
+        self.assertAlmostEqual(curve["sampled_aggregate_db"][0],
                                (curve["L_db"][0] + curve["R_db"][0]) / 2.0, places=10)
         gain = result["devices"][0]["metrics"]["response"]["gain_1k_db"]
         self.assertEqual(gain["L"], 20.0)
