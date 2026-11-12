@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
 
 import numpy as np
 
-from valvebench.dutcompare import ComparisonError, compare_sessions, save_comparison
+from valvebench.dutcompare import ComparisonError, compare_sessions, discover_sessions, save_comparison
 from valvebench.cli import main as cli_main
 
 
@@ -218,6 +218,22 @@ class DutComparisonTests(unittest.TestCase):
         self.assertEqual(code, 0, stdout.getvalue())
         self.assertIn("СРАВНЕНИЕ DUT", stdout.getvalue())
         self.assertTrue(any(output_dir.iterdir()))
+
+    def test_discovery_lists_only_complete_saved_dut_sessions(self):
+        complete = self._write("dut-590", make_envelope("590", "complete-A", note="tested"))
+        self._write("dut-590-partial", make_envelope("591", "partial-B", state="partial"))
+        invalid_dir = self.root / "dut-invalid"
+        invalid_dir.mkdir()
+        (invalid_dir / "session.json").write_text("{broken", encoding="utf-8")
+        result = discover_sessions(self.root)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["device_id"], "590")
+        self.assertEqual(result[0]["session_id"], "complete-A")
+        self.assertEqual(result[0]["note"], "tested")
+        self.assertEqual(result[0]["path"], str((Path(complete) / "session.json").resolve()))
+
+    def test_discovery_of_missing_directory_returns_empty_list(self):
+        self.assertEqual(discover_sessions(self.root / "absent"), [])
 
     def test_comparison_export_writes_json_metrics_and_lr_curves(self):
         first = self._write("dut-590", make_envelope("590", "session-A"))
