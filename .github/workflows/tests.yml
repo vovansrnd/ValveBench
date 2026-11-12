@@ -45,6 +45,9 @@ jobs:
       - name: Test THD raw WAV capture preservation
         run: python verification/test_thd_capture_wav.py
 
+      - name: Test Rig onset and settle alignment
+        run: python verification/test_rig_onset_alignment.py
+
       - name: Test DUT session comparison
         run: python verification/test_dutcompare.py
 
