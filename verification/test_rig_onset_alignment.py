@@ -13,6 +13,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from valvebench.measure import Rig
+from valvebench import gainmatch
+from valvebench.backend import SimBackend, SimChannel
+from valvebench.calib import Calibration
 
 
 class DelayedStartBackend:
@@ -61,6 +64,40 @@ class RigOnsetAlignmentTests(unittest.TestCase):
                 f"channel {channel}: analysis window contains a silent tail",
             )
 
+
+
+    def test_gainmatch_simulated_loopback_stays_valid_and_repeatable(self):
+        backend = SimBackend(
+            SimChannel(gain=0.97, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
+            SimChannel(gain=1.03, noise_dbfs=-125, hum50_dbfs=-130, hum100_dbfs=-130),
+            seed=17,
+        )
+        rig = Rig(backend, Calibration(), fs=48000, blocks=2, settle=0.15)
+        rig.open()
+
+        interface_freq_error = {100.0: -0.25, 1000.0: 0.10, 10000.0: 0.35}
+        original = rig._tone_an
+
+        def wrapped(window, channel, k, nharm=9, coherent_line_floors=None):
+            result = original(
+                window, channel, k, nharm=nharm,
+                coherent_line_floors=coherent_line_floors,
+            )
+            if int(channel) == 0:
+                result["level_dbfs"] += interface_freq_error.get(
+                    round(float(rig.f_of(k)), 6), 0.0
+                )
+            return result
+
+        rig._tone_an = wrapped
+        series = gainmatch.measure_series(
+            rig, level_dbfs=-24.0, repeats=3, purpose="loopback"
+        )
+        bad = [
+            row for row in series["rows"]
+            if not row["valid"] or row.get("repeat_stable") is not True
+        ]
+        self.assertFalse(bad, f"invalid simulated Gain Match rows after onset alignment: {bad!r}")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
