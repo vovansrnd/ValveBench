@@ -186,6 +186,7 @@ def main(argv=None):
     p.add_argument("sessions", nargs="+", help="пути к каталогам сессий или session.json")
     p.add_argument("--out-dir", help="каталог для comparison.json и CSV; по умолчанию measurements/comparisons/")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=997); p.add_argument("--level", type=float, default=-12)
+    p.add_argument("--wav", help="сохранить исходный стереозахват как float32 WAV; существующий файл не перезаписывается")
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=997)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
     p = sub.add_parser("imd"); p.add_argument("--preset", default="CCIF 19+20 кГц", choices=list(m.IMD_PRESETS))
@@ -513,7 +514,7 @@ def main(argv=None):
     if a.cmd == "clock":
         res = m.clock_check(rig, level_dbfs=a.clock_level); text = m.text_clock(res)
     elif a.cmd == "thd":
-        res = m.thd_point(rig, a.f, a.level); text = m.text_thd(res)
+        res = m.thd_point(rig, a.f, a.level, capture_wav=a.wav); text = m.text_thd(res)
     elif a.cmd == "thdlevel":
         lv = [float(x.strip()) for x in a.levels.split(",") if x.strip()]
         res = m.thd_vs_level(rig, a.f, lv); text = m.text_thd_level(res)
