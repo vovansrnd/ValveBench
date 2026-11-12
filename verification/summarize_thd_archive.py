@@ -119,6 +119,7 @@ def main() -> int:
             "created", "branch", "dac", "adc", "sample_rate_hz",
             "test_frequency_hz", "generator_level_dbfs", "clock_level_dbfs",
             "blocks", "settle_seconds", "dac_preroll_seconds", "dac_postroll_seconds",
+            "tone_postroll_seconds",
         ):
             print(f"{key}: {metadata.get(key)}")
         clock = metadata.get("clock_preflight", {})
