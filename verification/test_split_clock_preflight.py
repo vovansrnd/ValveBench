@@ -99,6 +99,7 @@ class SplitClockPreflightTests(unittest.TestCase):
                         "coh_err_bins": ppm / 1000.0, "warnings": []}
         result = clock_check(InconsistentRig())
         self.assertTrue(result["signal_ok"])
+        self.assertTrue(result["clock_ppm_ok"])
         self.assertFalse(result["clock_consistent"])
         self.assertFalse(result["clock_ok"])
         self.assertAlmostEqual(result["clock_channel_spread_ppm"], 15.0, delta=0.1)
