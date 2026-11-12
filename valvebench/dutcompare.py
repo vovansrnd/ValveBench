@@ -45,7 +45,7 @@ def _read_session(path):
     if result.get("state") != "complete":
         raise ComparisonError(
             f"Сессия {source} имеет статус {result.get('state')!r}; "
-            "для строгого сравнения нужны завершённые пакеты без ошибок"
+            "для строгого сравнения допустимы только завершённые пакеты без ошибок"
         )
     tests = result.get("tests")
     order = result.get("test_order")
