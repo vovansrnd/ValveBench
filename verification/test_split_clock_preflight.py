@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 from valvebench.backend import SimBackend, SimChannel
 from valvebench.calib import Calibration
 from valvebench.measure import Rig, MeasureError, clock_check
-from valvebench.cli import split_clock_preflight, require_coherent_timebase
+from valvebench.cli import split_clock_preflight, require_usable_clock_for_resampling
 
 
 class SplitClockPreflightTests(unittest.TestCase):
@@ -127,14 +127,18 @@ class SplitClockPreflightTests(unittest.TestCase):
             split_clock_preflight(rig, "hw:1,0", "hw:2,0", level_dbfs=-72.0)
         self.assertEqual(rig.requested_levels, [-72.0])
 
-    def test_sweep_and_h1_require_coherent_timebase(self):
-        incoherent = {"coherent": False}
+    def test_sweep_and_h1_accept_valid_noncoherent_clock_for_resampling(self):
+        measured = {"ok": True, "clock_ok": True, "signal_ok": True, "coherent": False}
+        require_usable_clock_for_resampling("sweep", measured)
+        require_usable_clock_for_resampling("noise-response", measured)
+        require_usable_clock_for_resampling("imd", measured)
+
+    def test_sweep_and_h1_reject_invalid_clock_before_resampling(self):
+        invalid = {"ok": False, "clock_ok": True, "signal_ok": False, "coherent": False}
         with self.assertRaises(MeasureError):
-            require_coherent_timebase("sweep", incoherent)
+            require_usable_clock_for_resampling("sweep", invalid)
         with self.assertRaises(MeasureError):
-            require_coherent_timebase("noise-response", incoherent)
-        # The corrected IMD estimator is specifically allowed to handle drift.
-        require_coherent_timebase("imd", incoherent)
+            require_usable_clock_for_resampling("noise-response", invalid)
 
     def test_legacy_single_device_config_migrates_to_both_endpoints(self):
         legacy = Calibration({"device": "hw:2,0", "fs": 192000,
