@@ -75,6 +75,9 @@ def _conditions(session):
         "device_pair_key": device.get("stable_id") or audio.get("device_pair_key"),
         "dac_device": audio.get("dac_device") or device.get("dac_alsa_pcm"),
         "adc_device": audio.get("adc_device") or device.get("alsa_pcm"),
+        "dac_stable_id": audio.get("dac_stable_id") or device.get("dac_stable_id"),
+        "adc_stable_id": audio.get("adc_stable_id") or device.get("adc_stable_id"),
+        "backend": audio.get("backend"),
         "sample_rate_hz": audio.get("sample_rate_hz"),
         "playback_format": audio.get("playback_format"),
         "capture_format": audio.get("capture_format"),
@@ -97,9 +100,24 @@ def _check_compatibility(sessions):
     first_params = first["result"].get("parameters") or {}
     warnings = []
     first_version = ((first["context"].get("software") or {}).get("version"))
+    required = (
+        "device_pair_key", "dac_device", "adc_device", "sample_rate_hz",
+        "playback_format", "capture_format", "playback_channels", "capture_channels",
+        "mixer_fingerprint",
+    )
+    missing = [key for key in required if conditions.get(key) in (None, "")]
+    if missing:
+        raise ComparisonError(
+            "В первой сессии не зафиксированы обязательные условия сравнения: "
+            + ", ".join(missing)
+        )
+    if not conditions.get("calibration"):
+        raise ComparisonError("В первой сессии отсутствует контекст калибровки")
+    seen_paths = {first["path"]}
     for current in sessions[1:]:
-        if current["path"] == first["path"]:
+        if current["path"] in seen_paths:
             raise ComparisonError("Одна и та же сессия указана для сравнения дважды")
+        seen_paths.add(current["path"])
         current_conditions = _conditions(current)
         for key, value in conditions.items():
             other = current_conditions.get(key)
