@@ -44,3 +44,6 @@ jobs:
 
       - name: Test DUT session comparison
         run: python verification/test_dutcompare.py
+
+      - name: Test DUT comparison GTK page contract
+        run: python verification/test_dutcompare_ui.py
