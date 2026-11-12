@@ -257,12 +257,14 @@ def _extract_session_metrics(session):
         if test == "noise":
             for key, unit in (("unw_dbfs", "dBFS"), ("a_dbfs", "dBFS"), ("c_dbfs", "dBFS")):
                 _put_metric(metrics, test, key, unit, L.get(key), R.get(key), "power_db")
-            # Preserve stable line information (L/R remain explicit).
-            for freq in (50, 100, 150, 200, 250, 300):
+            # Preserve the configured mains harmonics instead of assuming 50 Hz.
+            mains = _finite((session["context"].get("calibration") or {}).get("mains_hz")) or 50.0
+            for multiple in range(1, 7):
+                freq = int(round(mains * multiple))
                 lval = next((_finite(h.get("dbfs")) for h in L.get("hum", [])
-                             if round(float(h.get("f", 0))) == freq), None)
+                             if abs(float(h.get("f", 0)) - freq) < 0.5), None)
                 rval = next((_finite(h.get("dbfs")) for h in R.get("hum", [])
-                             if round(float(h.get("f", 0))) == freq), None)
+                             if abs(float(h.get("f", 0)) - freq) < 0.5), None)
                 if lval is not None or rval is not None:
                     _put_metric(metrics, test, f"hum_{freq}_dbfs", "dBFS", lval, rval, "power_db")
         elif test == "thd":
@@ -274,11 +276,36 @@ def _extract_session_metrics(session):
                 ("noise_dbfs", "dBFS", "power_db"),
             ):
                 _put_metric(metrics, test, key, unit, L.get(key), R.get(key), mode)
+            def thd_state(channel):
+                if not channel.get("harmonics"):
+                    return "n/a"
+                if channel.get("thd_bound"):
+                    return "bound"
+                if channel.get("thd_partial"):
+                    return "partial"
+                return "measured"
             metrics[test]["thd_status"] = {
-                "L": "bound" if L.get("thd_bound") else ("partial" if L.get("thd_partial") else "measured"),
-                "R": "bound" if R.get("thd_bound") else ("partial" if R.get("thd_partial") else "measured"),
+                "L": thd_state(L), "R": thd_state(R),
                 "aggregate": None, "unit": "status",
             }
+            left_h = {int(item["h"]): item for item in L.get("harmonics", []) if "h" in item}
+            right_h = {int(item["h"]): item for item in R.get("harmonics", []) if "h" in item}
+            for harmonic in sorted(set(left_h) | set(right_h)):
+                lh, rh = left_h.get(harmonic, {}), right_h.get(harmonic, {})
+                prefix = f"H{harmonic}"
+                for field, unit, mode in (
+                    ("dbc", "dBc", "power_db"),
+                    ("raw_dbc", "dBc", "power_db"),
+                    ("floor_dbc", "dBc", "power_db"),
+                    ("margin_db", "dB", "mean"),
+                ):
+                    _put_metric(metrics, test, f"{prefix}_{field}", unit,
+                                lh.get(field), rh.get(field), mode)
+                metrics[test][f"{prefix}_status"] = {
+                    "L": ("measured" if lh.get("credible") else "bound") if lh else "n/a",
+                    "R": ("measured" if rh.get("credible") else "bound") if rh else "n/a",
+                    "aggregate": None, "unit": "status",
+                }
         elif test == "imd":
             for key, unit, mode in (
                 ("imd_pct", "%", "rms"), ("imd_db", "dBc", "power_db"),
@@ -328,8 +355,11 @@ def compare_sessions(paths):
         devices.append({
             "device_id": session["device_id"],
             "session_id": session["session_id"],
+            "created_at_local": session["envelope"].get("created_at_local"),
+            "started_at_local": session["result"].get("started_at_local"),
+            "finished_at_local": session["result"].get("finished_at_local"),
+            "software_version": ((session["context"].get("software") or {}).get("version")),
             "note": session["note"],
-            "source_session": session["path"],
             "metrics": metrics,
             "curves": curves,
         })
@@ -339,6 +369,7 @@ def compare_sessions(paths):
         "created_at_local": datetime.now().astimezone().isoformat(timespec="seconds"),
         "conditions": conditions,
         "test_order": list(sessions[0]["test_order"]),
+        "parameters": sessions[0]["result"].get("parameters") or {},
         "device_order": [item["device_id"] for item in devices],
         "devices": devices,
         "warnings": warnings,
