@@ -321,7 +321,7 @@ def main(argv=None):
             rig = Rig(be, cfg, fs=int(fs), blocks=max(a.blocks, 4), settle=0.25)
             rig.open()
             if not a.sim and a.cmd in ("passport", "watch"):
-                ck = split_clock_preflight(rig, dac_hw, adc_hw)
+                ck = split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=a.clock_level)
                 if ck:
                     clock_checks.append({"fs": int(fs), **ck})
             return rig
@@ -410,7 +410,7 @@ def main(argv=None):
             rig = Rig(be, cfg, fs=a.rate or cfg["fs"], blocks=a.blocks, settle=0.25)
             rig.open()
             if not a.sim:
-                split_clock_preflight(rig, dac_hw, adc_hw)
+                split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=a.clock_level)
             report = run_loopback_report(rig, frequency=a.f, levels=levels, repeats=a.repeats,
                                          silence_seconds=a.silence_seconds, csv_path=a.csv)
             print(report)
@@ -440,7 +440,7 @@ def main(argv=None):
             rig = Rig(be, cfg, fs=a.rate or cfg["fs"], blocks=a.blocks, settle=0.25)
             rig.open()
             if not a.sim:
-                split_clock_preflight(rig, dac_hw, adc_hw)
+                split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=a.clock_level)
             if a.cmd == "levelscan":
                 res = scans.run_level_scan(rig, a.f, [float(v) for v in a.levels.split(",") if v.strip()])
                 report = scans.text_level_scan(res)
