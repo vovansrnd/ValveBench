@@ -265,12 +265,14 @@ def clock_check(rig, level_dbfs=-72.0):
             f"оценки такта L/R расходятся на {channel_spread:.1f} ppm "
             f"(допуск ±{CLOCK_CHANNEL_SPREAD_PPM:.1f} ppm); общая частота АЦП не подтверждена"
         )
+    clock_ppm_ok = all(per_channel_clock)
     out["clock_channel_spread_ppm"] = channel_spread
+    out["clock_ppm_ok"] = clock_ppm_ok
     out["clock_consistent"] = clock_consistent
-    out["clock_ok"] = all(per_channel_clock) and clock_consistent
+    out["clock_ok"] = clock_ppm_ok and clock_consistent
     out["signal_ok"] = all(per_channel_signal) and not transport_bad
     out["coherent"] = all(per_channel_coherent)
-    # Backwards-compatible overall gate: within ppm limit AND signal is usable.
+    # The overall gate includes ppm tolerance, agreement between channels and signal validity.
     # Coherence is deliberately independent and must be checked by each analyzer.
     out["ok"] = out["clock_ok"] and out["signal_ok"]
     return out
@@ -286,8 +288,8 @@ def text_clock(r):
             f"· {state} ({v.get('coh_err_bins', float('nan')):+.4f} бина)"
         )
     lines.append(
-        f"  Тактовый допуск ±{CLOCK_MAX_PPM:.0f} ppm: "
-        + ("PASS" if r.get("clock_ok", r.get("ok", False)) else "FAIL")
+        f"  Допуск расхождения ±{CLOCK_MAX_PPM:.0f} ppm: "
+        + ("PASS" if r.get("clock_ppm_ok", r.get("clock_ok", r.get("ok", False))) else "FAIL")
     )
     lines.append(
         f"  Согласие каналов L/R (разброс ≤ {CLOCK_CHANNEL_SPREAD_PPM:.1f} ppm): "
