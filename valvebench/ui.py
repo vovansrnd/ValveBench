@@ -4543,7 +4543,9 @@ class Window(Adw.ApplicationWindow):
                 measurement_context["audio_io"]["alsa_mixer_fingerprint"] = \
                     Window._mixer_fingerprint_for_pair(dac_hw, adc_hw)
                 if clock_sensitive and dac_hw != adc_hw:
-                    clock_level = float(self.cal.get("clock_probe_level_dbfs", -72.0))
+                    clock_level = float(
+                        (measurement_context.get("calibration") or {}).get("clock_probe_level_dbfs", -72.0)
+                    )
                     clock = m.clock_check(rig, level_dbfs=clock_level)
                     measurement_context["audio_io"]["clock_check"] = clock
                     if not clock.get("ok", False):
