@@ -9,6 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 import sys
+from contextlib import redirect_stdout
+from io import StringIO
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -17,6 +19,7 @@ if str(ROOT) not in sys.path:
 import numpy as np
 
 from valvebench.dutcompare import ComparisonError, compare_sessions, save_comparison
+from valvebench.cli import main as cli_main
 
 
 def make_envelope(device_id, session_id, *, note="", rate=96000, mixer="mixer-A",
@@ -167,6 +170,17 @@ class DutComparisonTests(unittest.TestCase):
         second = self._write("dut-591", make_envelope("591", "session-B"))
         with self.assertRaisesRegex(ComparisonError, "завершённые пакеты"):
             compare_sessions([first, second])
+
+    def test_cli_dut_compare_runs_without_opening_audio_devices(self):
+        first = self._write("dut-590", make_envelope("590", "session-A"))
+        second = self._write("dut-591", make_envelope("591", "session-B"))
+        output_dir = self.root / "cli-comparison"
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            code = cli_main(["dut-compare", first, second, "--out-dir", str(output_dir)])
+        self.assertEqual(code, 0, stdout.getvalue())
+        self.assertIn("СРАВНЕНИЕ DUT", stdout.getvalue())
+        self.assertTrue(any(output_dir.iterdir()))
 
     def test_comparison_export_writes_json_metrics_and_lr_curves(self):
         first = self._write("dut-590", make_envelope("590", "session-A"))
