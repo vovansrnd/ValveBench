@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import math
 import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -392,10 +393,23 @@ def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9, capture_wav
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists():
             raise MeasureError(f"запись WAV уже существует, отказ от перезаписи: {path}")
-        temp_path = path.with_name(path.name + ".tmp.wav")
+        # A unique same-directory temporary file makes concurrent captures
+        # independent. Hard-linking into the final name is atomic and, unlike
+        # os.replace(), never overwrites a file created by another process
+        # after the existence check above.
+        fd, temp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.", suffix=".tmp.wav", dir=str(path.parent)
+        )
+        os.close(fd)
+        temp_path = Path(temp_name)
         try:
             wavfile.write(str(temp_path), int(rig.fs), np.asarray(wins[0], dtype=np.float32))
-            os.replace(temp_path, path)
+            try:
+                os.link(temp_path, path)
+            except FileExistsError as exc:
+                raise MeasureError(
+                    f"запись WAV уже существует, отказ от перезаписи: {path}"
+                ) from exc
         finally:
             try:
                 temp_path.unlink(missing_ok=True)
@@ -417,7 +431,7 @@ def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9, capture_wav
 def text_thd(res):
     L = [f"THD  f = {res['f']:.1f} Гц, уровень генератора {res['level_dbfs']:.1f} dBFS"]
     if res.get("capture_wav"):
-        L.append(f"Исходная запись сохранена: {res['capture_wav']} · {res.get('capture_format')} · {res.get('capture_sample_rate_hz')} Гц")
+        L.append(f"Окно захвата, переданное в THD-анализ, сохранено: {res['capture_wav']} · {res.get('capture_format')} · {res.get('capture_sample_rate_hz')} Гц")
     for c, r in res["ch"].items():
         inf = r["info"]
         L.append(f"\n[{c}]  вход АЦП {r['level_dbfs']:.2f} dBFS"
