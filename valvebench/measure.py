@@ -598,9 +598,17 @@ def noise_response(rig, seconds=10.0, kind="pink", level_dbfs=-24.0, f_lo=20.0, 
     warns = list(rig.be.notes)
     if float(np.max(np.abs(rec))) >= 0.98:
         warns.append("ПЕРЕГРУЗКА АЦП во время шумового измерения — результат недостоверен")
+    correction_ppm = capture_clock_ppm(rig)
+    if correction_ppm:
+        rec = resample_capture_timebase(rec, correction_ppm, rig.fs)
+        warns.append(
+            f"временная база захвата скорректирована на {correction_ppm:+.2f} ppm "
+            "(ЦАП/источник → сетка Fs генератора)"
+        )
     aligned = noise_transfer_capture(source, rec, rig.fs, f_lo, f_hi, iec,
                                       analysis_signal=x, analysis_offset=lead)
     out = {"kind": "noise_response", "mode": kind, "seconds": seconds, "level_dbfs": level_dbfs,
+           "clock_correction_ppm": correction_ppm,
            "signal": info, "iec": bool(iec), "warnings": warns, "ch": aligned["ch"],
            "alignment_samples": aligned["alignment_samples"],
            "calibration_note": "H1 включает АЦП, ЦАП, аттенюатор и DUT; без loop-профиля это относительное измерение."}
@@ -732,7 +740,15 @@ def sweep(rig, f_lo=20.0, f_hi=20000.0, dur=8.0, level_1k_dbfs=-20.0, mode="riaa
     warns += list(rig.be.notes)
     if float(np.max(np.abs(rec))) >= 0.98:
         warns.append("ПЕРЕГРУЗКА ВХОДА АЦП во время свипа — результат недостоверен")
-    out = {"kind": "sweep", "fs": int(rig.fs), "mode": mode, "iec": iec, "level_1k_dbfs": dsp.db20(a1),
+    correction_ppm = capture_clock_ppm(rig)
+    if correction_ppm:
+        rec = resample_capture_timebase(rec, correction_ppm, rig.fs)
+        warns.append(
+            f"временная база захвата скорректирована на {correction_ppm:+.2f} ppm "
+            "(ЦАП/источник → сетка Fs генератора)"
+        )
+    out = {"kind": "sweep", "fs": int(rig.fs), "mode": mode, "iec": iec,
+           "clock_correction_ppm": correction_ppm, "level_1k_dbfs": dsp.db20(a1),
            "f_lo": f_lo, "f_hi": f_hi, "dur": dur, "warnings": warns, "ch": {}}
     for c in (0, 1):
         r = dsp.analyze_sweep(rec[:, c], spec, f_lo=f_lo, f_hi=f_hi, nharm=nharm,
