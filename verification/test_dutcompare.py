@@ -2,6 +2,7 @@
 """Tests for strict cross-DUT session comparisons."""
 from __future__ import annotations
 
+import csv
 import json
 import math
 import tempfile
@@ -15,7 +16,7 @@ if str(ROOT) not in sys.path:
 
 import numpy as np
 
-from valvebench.dutcompare import ComparisonError, compare_sessions
+from valvebench.dutcompare import ComparisonError, compare_sessions, save_comparison
 
 
 def make_envelope(device_id, session_id, *, note="", rate=96000, mixer="mixer-A",
@@ -164,8 +165,32 @@ class DutComparisonTests(unittest.TestCase):
     def test_partial_package_is_rejected(self):
         first = self._write("dut-590", make_envelope("590", "session-A", state="partial"))
         second = self._write("dut-591", make_envelope("591", "session-B"))
-        with self.assertRaisesRegex(ComparisonError, "завершённых пакетов"):
+        with self.assertRaisesRegex(ComparisonError, "завершённые пакеты"):
             compare_sessions([first, second])
+
+    def test_comparison_export_writes_json_metrics_and_lr_curves(self):
+        first = self._write("dut-590", make_envelope("590", "session-A"))
+        second = self._write("dut-591", make_envelope("591", "session-B"))
+        comparison = compare_sessions([first, second])
+        output = Path(save_comparison(comparison, self.root / "comparison-output"))
+        self.assertTrue((output / "comparison.json").is_file())
+        self.assertTrue((output / "metrics.csv").is_file())
+        self.assertTrue((output / "curves.csv").is_file())
+        with (output / "metrics.csv").open(encoding="utf-8", newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        noise = next(row for row in rows
+                     if row["device_id"] == "590" and row["test"] == "noise"
+                     and row["metric"] == "unw_dbfs")
+        self.assertEqual(noise["L"], "-100.0")
+        self.assertEqual(noise["R"], "-90.0")
+        self.assertNotEqual(noise["aggregate"], "")
+        with (output / "curves.csv").open(encoding="utf-8", newline="") as fh:
+            curve_rows = list(csv.DictReader(fh))
+        self.assertTrue(any(row["device_id"] == "590" and row["L_db"] and row["R_db"]
+                            and row["aggregate_db"] for row in curve_rows))
+        with (output / "comparison.json").open(encoding="utf-8") as fh:
+            saved = json.load(fh)
+        self.assertEqual(saved["kind"], "dut_comparison")
 
 
 if __name__ == "__main__":
