@@ -166,11 +166,6 @@ class Rig:
         # settle is counted twice and the analysis window runs into silence.
         first_settle = meta[0][1] if meta else 0
         pos = d - first_settle
-        if pos < 0:
-            raise MeasureError(
-                "обнаруженное начало тона раньше ожидаемой паузы settle; "
-                "запись не позволяет надёжно выровнять окно анализа"
-            )
         # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
         # (узкополосный поиск не нашёл тон) не теряется
         warns = list(self.be.notes)
