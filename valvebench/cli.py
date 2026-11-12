@@ -48,42 +48,35 @@ def validate_pair_rate(dac_hw, adc_hw, fs):
                          + ", ".join(str(v) for v in rates))
 
 
-def split_clock_preflight(rig, dac_hw, adc_hw):
-    """Check independent physical clocks before a coherent measurement; do not correct drift."""
+def split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=-72.0):
+    """Check independent physical clocks at an explicitly selected safe level."""
     if str(dac_hw) == str(adc_hw):
         return None
-    result = None
-    # Штатный уровень −72 dBFS рассчитан на тракты с фонокорректором. На прямых
-    # кабельных линиях с высоким полом (напр. D10→E-MU: −77.4 dBFS, приёмка
-    # 0.1.21-dev4) тон −72 dBFS ложится НИЖЕ пола и onset невозможен —
-    # ворота когерентности в принципе не могут работать на этом уровне.
-    # Тогда preflight поднимает уровень до −30 dBFS (далеко от перегрузки,
-    # АЦП ≈ −43 dBFS) и честно помечает это в предупреждениях; ворота
-    # >100 ppm не зависят от уровня.
-    last_err = None
-    for level, note in ((-72.0, None), (-30.0, "preflight: уровень поднят до -30 dBFS — "
-                        "шумовой пол линии выше штатного -72 dBFS")):
-        try:
-            result = m.clock_check(rig, level_dbfs=level)
-        except m.MeasureError as exc:
-            # «тон не найден» → попробовать следующий уровень; прочие ошибки — наверх
-            if "не найден" not in str(exc):
-                raise
-            last_err = exc
-            result = {"ok": False, "ch": {}, "warnings": [note] if note else [],
-                      "test_level_dbfs": level, "kind": "clock",
-                      "retry_pending": True}
-            continue
-        if note and result is not None:
-            result.setdefault("warnings", []).append(note)
-        break
-    if result is None or result.get("retry_pending"):
-        raise m.MeasureError("Такты ЦАП и АЦП не согласованы для точного измерения. "
-                             + (m.text_clock(result) if result else "тон не найден"))
+    result = m.clock_check(rig, level_dbfs=level_dbfs)
     if not result.get("ok", False):
-        raise m.MeasureError("Такты ЦАП и АЦП не согласованы для точного измерения. "
-                             + m.text_clock(result))
+        raise m.MeasureError(
+            "Не удалось подтвердить пригодность раздельной пары ЦАП/АЦП: "
+            + m.text_clock(result)
+        )
     return result
+
+
+def require_coherent_timebase(command, clock_result):
+    """Refuse analyses that still assume a shared sample clock.
+
+    Tone/IMD estimators can operate on non-coherent blocks after their
+    per-block power averaging fix. Farina sweep deconvolution and H1 transfer
+    analysis still use the generator's nominal timebase, so they must not run
+    across independent clocks until sample-rate correction is implemented.
+    """
+    if (command in ("sweep", "noise-response")
+            and clock_result is not None
+            and not clock_result.get("coherent", False)):
+        raise m.MeasureError(
+            f"Команда {command} пока не поддерживает коррекцию расхождения тактов "
+            "ЦАП/АЦП. Сначала используйте общий тактовый источник или дождитесь "
+            "реализации коррекции временной базы."
+        )
 
 
 def make_rig(a):
@@ -108,8 +101,10 @@ def make_rig(a):
     # A pure ADC noise capture does not depend on DAC/ADC clock coherence.
     # All generated-tone, sweep and H1 tests on split devices must preflight.
     if not a.sim and a.cmd not in ("clock", "noise"):
-        result = split_clock_preflight(rig, dac_hw, adc_hw)
+        result = split_clock_preflight(rig, dac_hw, adc_hw,
+                                        level_dbfs=a.clock_level)
         if result:
+            require_coherent_timebase(a.cmd, result)
             print(m.text_clock(result), file=sys.stderr)
     return rig
 
@@ -122,6 +117,9 @@ def main(argv=None):
     ap.add_argument("--adc", help="ALSA PCM для записи/АЦП, например hw:3,0")
     ap.add_argument("--rate", type=int, help="частота дискретизации")
     ap.add_argument("--blocks", type=int, default=2, help="число когерентных блоков в измерениях тона")
+    ap.add_argument("--clock-level", type=float, default=-72.0,
+                    help="уровень контрольного тона раздельных ЦАП/АЦП, dBFS; "
+                         "повышайте только при заведомо безопасном физическом тракте")
     ap.add_argument("--save", action="store_true", help="сохранить результат в JSON")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("cards", help="карты и объявленные режимы (формат/каналы/частоты)")
@@ -323,7 +321,7 @@ def main(argv=None):
             rig = Rig(be, cfg, fs=int(fs), blocks=max(a.blocks, 4), settle=0.25)
             rig.open()
             if not a.sim and a.cmd in ("passport", "watch"):
-                ck = split_clock_preflight(rig, dac_hw, adc_hw)
+                ck = split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=a.clock_level)
                 if ck:
                     clock_checks.append({"fs": int(fs), **ck})
             return rig
@@ -412,7 +410,7 @@ def main(argv=None):
             rig = Rig(be, cfg, fs=a.rate or cfg["fs"], blocks=a.blocks, settle=0.25)
             rig.open()
             if not a.sim:
-                split_clock_preflight(rig, dac_hw, adc_hw)
+                split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=a.clock_level)
             report = run_loopback_report(rig, frequency=a.f, levels=levels, repeats=a.repeats,
                                          silence_seconds=a.silence_seconds, csv_path=a.csv)
             print(report)
@@ -442,7 +440,7 @@ def main(argv=None):
             rig = Rig(be, cfg, fs=a.rate or cfg["fs"], blocks=a.blocks, settle=0.25)
             rig.open()
             if not a.sim:
-                split_clock_preflight(rig, dac_hw, adc_hw)
+                split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=a.clock_level)
             if a.cmd == "levelscan":
                 res = scans.run_level_scan(rig, a.f, [float(v) for v in a.levels.split(",") if v.strip()])
                 report = scans.text_level_scan(res)
@@ -501,7 +499,7 @@ def main(argv=None):
     rig = make_rig(a)
     res = None
     if a.cmd == "clock":
-        res = m.clock_check(rig); text = m.text_clock(res)
+        res = m.clock_check(rig, level_dbfs=a.clock_level); text = m.text_clock(res)
     elif a.cmd == "thd":
         res = m.thd_point(rig, a.f, a.level); text = m.text_thd(res)
     elif a.cmd == "thdlevel":

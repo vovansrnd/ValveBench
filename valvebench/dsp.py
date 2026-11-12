@@ -429,6 +429,34 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
     p_n = float(np.sum(Pdir[sel & ~masked]))
     Pf_dir = float(np.sum(Pdir[fund_mask]))
 
+    # Local SNR around the carrier is the appropriate validity metric for
+    # frequency estimation. Broadband noise/hum elsewhere in the audio band
+    # must not invalidate a clearly resolved 1 kHz clock pilot.
+    local_radius = max(8, int(round(40.0 / df)))
+    local_a = max(1, k0 - local_radius)
+    local_b = min(Pdir.size, k0 + local_radius + 1)
+    local_mask = np.zeros(Pdir.size, dtype=bool)
+    local_mask[local_a:local_b] = True
+    local_mask[fund_mask] = False
+    for h in range(2, nharm + 1):
+        kh = int(round(h * f_est / df))
+        if 0 < kh < Pdir.size:
+            local_mask[max(0, kh - 2):min(Pdir.size, kh + 3)] = False
+    if mains > 0:
+        for m_ in range(1, 7):
+            km = int(round(m_ * mains / df))
+            if local_a <= km < local_b:
+                local_mask[max(0, km - 2):min(Pdir.size, km + 3)] = False
+    local_bins = Pdir[local_mask]
+    if local_bins.size:
+        local_noise_power = float(np.median(local_bins) * (2 * half_f + 1))
+        local_noise_power = max(local_noise_power, 1e-300)
+        local_noise_dbfs = rms_dbfs(math.sqrt(local_noise_power))
+        local_snr_db = db10(Pf_dir / local_noise_power) if Pf_dir > 0 else -300.0
+    else:
+        local_noise_dbfs = float("nan")
+        local_snr_db = float("nan")
+
     hum = []
     if mains > 0:
         for m_ in range(1, 7):
@@ -456,6 +484,7 @@ def analyze_tone(x, fs, f0, n, nharm=9, band=(20.0, 20000.0), mains=50.0, half=H
         "thdn_db": db10(p_dn / Pf_dir) if Pf_dir > 0 else -300.0,
         "noise_dbc": db10(p_n / Pf_dir) if Pf_dir > 0 else -300.0,
         "noise_dbfs": rms_dbfs(math.sqrt(p_n)),
+        "local_noise_dbfs": local_noise_dbfs, "local_snr_db": local_snr_db,
         "hum": hum, "warnings": warn,
         "freq": ref.freq, "spec_db": db20(spec_amp),
     }
@@ -474,14 +503,25 @@ class _Shim:
 def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
     """IMD двухтонального сигнала. mode: 'ccif' (равные тона) или 'smpte' (4:1).
 
-    Продукты считаются по усреднённому периоду (шум подавлен).
+    Мощности линий усредняются по отдельным блокам; фазовое взаимопогашение
+    из-за независимых тактов ЦАП/АЦП не искажает численный результат.
     CCIF  : d2 = f2−f1, d3 = 2f1−f2, 2f2−f1, d5; проценты — к (A1+A2) (IEC 60268-3).
     SMPTE : боковые fв±m·fн, m=1..4; проценты — к амплитуде верхнего тона.
     """
     blocks = _blocks(x, n)
-    avg = Block(blocks.mean(axis=0), fs)
+    # Do not average waveforms in the time domain: with independent DAC/ADC
+    # clocks, the phase of each tone rotates between blocks and can cancel
+    # almost completely (19/20 kHz are especially sensitive to 20-30 ppm).
+    # Average spectral powers instead. The lobe integration tolerates the
+    # small per-block bin offset while retaining phase-independent RMS.
+    spectra = [Block(block, fs) for block in blocks]
+    # Power-average magnitudes for the spectrum display as well: a waveform
+    # average would still make drifting tones disappear from the displayed plot.
+    spec_amp = np.sqrt(np.mean([blk.amp ** 2 for blk in spectra], axis=0))
     lo, hi = sorted((f1, f2))
-    amp = lambda f: math.sqrt(avg.lobe(f, half))          # rms линии
+    def amp(f):
+        powers = [blk.lobe(f, half) for blk in spectra]
+        return math.sqrt(float(np.mean(powers)))  # RMS line, power-averaged
     a_lo, a_hi = amp(lo), amp(hi)
     lim = min(band_hi or 0.45 * fs, 0.45 * fs)
     prods = []
@@ -516,7 +556,7 @@ def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
         "products": prods, "ref": ref_name,
         "imd_pct": 100.0 * tot / denom, "imd_db": db20(tot / denom),
         "d2_pct": 100.0 * d2 / denom, "d3_pct": 100.0 * d3 / denom,
-        "freq": avg.freq, "spec_db": db20(avg.amp),
+        "freq": spectra[0].freq, "spec_db": db20(spec_amp),
     }
 
 

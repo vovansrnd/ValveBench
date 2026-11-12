@@ -17,6 +17,10 @@ from .signals import make_test_noise
 
 CH = ("L", "R")
 
+CLOCK_MAX_PPM = 100.0
+CLOCK_CHANNEL_SPREAD_PPM = 5.0  # L/R must agree on the one physical ADC clock
+CLOCK_MIN_SNR_DB = 20.0  # carrier-local engineering floor, not an uncertainty guarantee
+
 
 class MeasureError(RuntimeError):
     pass
@@ -189,12 +193,16 @@ class Rig:
 
 
 def clock_check(rig, level_dbfs=-72.0):
-    """Check DAC/ADC clock agreement with a deliberately low-level 1 kHz tone.
+    """Measure relative DAC/ADC clock error and report three independent states.
 
-    The signal passes through the user's physical path (which may include an
-    Anti-RIAA network and a phono preamp). A high default level could overdrive
-    a DUT, so the preflight uses -72 dBFS unless the caller explicitly opts in
-    to another level.
+    clock_ok: both channel estimates are within the ppm gate and agree with each other.
+    signal_ok: both channels contain a usable tone, with adequate SNR and no
+               transport/ADC-overload warning.
+    coherent: the measured tone lies within COH_TOL_BINS of the analysis grid.
+
+    A non-coherent result is not automatically a clock failure: drift-aware
+    analyzers may still use it. Algorithms that require a coherent timebase
+    must check the coherent flag separately.
     """
     level_dbfs = float(level_dbfs)
     if not math.isfinite(level_dbfs) or not -120.0 <= level_dbfs <= -24.0:
@@ -202,24 +210,100 @@ def clock_check(rig, level_dbfs=-72.0):
     k, a = rig.amp_tone(1000.0, level_dbfs)
     wins, warns = rig.run([([(k, a)], [(k, a)], 0.4)])
     out = {"kind": "clock", "test_level_dbfs": level_dbfs, "warnings": warns, "ch": {}}
+    per_channel_clock, per_channel_signal, per_channel_coherent, per_channel_ppm = [], [], [], []
     for c in (0, 1):
         r = rig._tone_an(wins[0], c, k, nharm=2)
-        err = (r["f0"] / rig.f_of(k) - 1.0) * 1e6
-        out["ch"][CH[c]] = {"f0": r["f0"], "ppm": err, "level_dbfs": r["level_dbfs"]}
+        f0 = float(r.get("f0", float("nan")))
+        ppm = (f0 / rig.f_of(k) - 1.0) * 1e6 if math.isfinite(f0) else float("nan")
+        level = float(r.get("level_dbfs", float("nan")))
+        noise = float(r.get("noise_dbfs", float("nan")))
+        snr = float(r.get("local_snr_db", float("nan")))
+        local_noise = float(r.get("local_noise_dbfs", float("nan")))
+        coh_err = float(r.get("coh_err_bins", float("nan")))
+        clock_ok = math.isfinite(ppm) and abs(ppm) <= CLOCK_MAX_PPM
+        signal_ok = math.isfinite(snr) and snr >= CLOCK_MIN_SNR_DB
+        coherent = math.isfinite(coh_err) and abs(coh_err) <= dsp.COH_TOL_BINS
+        per_channel_clock.append(clock_ok)
+        per_channel_signal.append(signal_ok)
+        per_channel_coherent.append(coherent)
+        per_channel_ppm.append(ppm)
+        out["ch"][CH[c]] = {
+            "f0": f0, "ppm": ppm, "level_dbfs": level, "noise_dbfs": noise,
+            "snr_db": snr, "local_noise_dbfs": local_noise, "coh_err_bins": coh_err,
+            "clock_ok": clock_ok, "signal_ok": signal_ok, "coherent": coherent,
+        }
         for detail in r.get("warnings", []):
             warns.append(f"{CH[c]}: {detail}")
-        if abs(err) > 100:
-            warns.append(f"{CH[c]}: частота захвата отличается от воспроизведения на {err:+.0f} ppm "
-                         f"(×{r['f0'] / rig.f_of(k):.4f}) — такт ЦАП и АЦП разный, измерения ложны")
-    out["ok"] = not any(("такт" in w or "не когерентен" in w) for w in warns)
+        if not clock_ok:
+            warns.append(
+                f"{CH[c]}: относительное расхождение тактов {ppm:+.1f} ppm "
+                f"превышает допуск ±{CLOCK_MAX_PPM:.0f} ppm"
+            )
+        if not signal_ok:
+            warns.append(
+                f"{CH[c]}: недостаточный локальный SNR около несущей для проверки такта "
+                f"({snr:.1f} dB; требуется не менее {CLOCK_MIN_SNR_DB:.0f} dB)"
+            )
+        if not coherent:
+            warns.append(
+                f"{CH[c]}: тон некогерентен окну "
+                f"(сдвиг {coh_err:+.4f} бина; допуск ±{dsp.COH_TOL_BINS:.3f})"
+            )
+
+    transport_bad = any(
+        token in str(w).upper()
+        for w in warns
+        for token in ("XRUN", "UNDERRUN", "OVERRUN", "CLIP", "OVERLOAD", "ПЕРЕГРУЗ")
+    )
+    if transport_bad:
+        warns.append("проверка такта недействительна: XRUN или перегрузка АЦП")
+    finite_ppm = [v for v in per_channel_ppm if math.isfinite(v)]
+    channel_spread = (max(finite_ppm) - min(finite_ppm)) if len(finite_ppm) == 2 else float("inf")
+    clock_consistent = channel_spread <= CLOCK_CHANNEL_SPREAD_PPM
+    if not clock_consistent:
+        warns.append(
+            f"оценки такта L/R расходятся на {channel_spread:.1f} ppm "
+            f"(допуск ±{CLOCK_CHANNEL_SPREAD_PPM:.1f} ppm); общая частота АЦП не подтверждена"
+        )
+    clock_ppm_ok = all(per_channel_clock)
+    out["clock_channel_spread_ppm"] = channel_spread
+    out["clock_ppm_ok"] = clock_ppm_ok
+    out["clock_consistent"] = clock_consistent
+    out["clock_ok"] = clock_ppm_ok and clock_consistent
+    out["signal_ok"] = all(per_channel_signal) and not transport_bad
+    out["coherent"] = all(per_channel_coherent)
+    # The overall gate includes ppm tolerance, agreement between channels and signal validity.
+    # Coherence is deliberately independent and must be checked by each analyzer.
+    out["ok"] = out["clock_ok"] and out["signal_ok"]
     return out
 
 
 def text_clock(r):
     lines = [f"Проверка такта (1 кГц, {r.get('test_level_dbfs', -72.0):.1f} dBFS):"]
     for c, v in r["ch"].items():
-        lines.append(f"  {c}: {v['f0']:.3f} Гц  ({v['ppm']:+.1f} ppm)  уровень {v['level_dbfs']:.1f} dBFS")
-    lines.append("  такт ЦАП = такту АЦП; тон когерентен окну" if r["ok"] else "  ТАКТ/КОГЕРЕНТНОСТЬ НЕ ПРОШЛИ ПРОВЕРКУ")
+        state = "когерентен" if v.get("coherent") else "некогерентен"
+        lines.append(
+            f"  {c}: {v['f0']:.3f} Гц  ({v['ppm']:+.1f} ppm)  "
+            f"уровень {v['level_dbfs']:.1f} dBFS  локальный SNR {v.get('snr_db', float('nan')):.1f} dB  "
+            f"· {state} ({v.get('coh_err_bins', float('nan')):+.4f} бина)"
+        )
+    lines.append(
+        f"  Допуск расхождения ±{CLOCK_MAX_PPM:.0f} ppm: "
+        + ("PASS" if r.get("clock_ppm_ok", r.get("clock_ok", r.get("ok", False))) else "FAIL")
+    )
+    lines.append(
+        f"  Согласие каналов L/R (разброс ≤ {CLOCK_CHANNEL_SPREAD_PPM:.1f} ppm): "
+        + ("PASS" if r.get("clock_consistent", True) else "FAIL")
+        + f" ({r.get('clock_channel_spread_ppm', 0.0):.1f} ppm)"
+    )
+    lines.append(
+        f"  Достоверность сигнала (локальный SNR ≥ {CLOCK_MIN_SNR_DB:.0f} dB, без XRUN/CLIP): "
+        + ("PASS" if r.get("signal_ok", r.get("ok", False)) else "FAIL")
+    )
+    lines.append(
+        f"  Когерентность окна (±{dsp.COH_TOL_BINS:.3f} бина): "
+        + ("PASS" if r.get("coherent", False) else "не выполнена")
+    )
     return "\n".join(lines + [f"! {w}" for w in r["warnings"]])
 
 
