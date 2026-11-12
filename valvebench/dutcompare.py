@@ -182,10 +182,15 @@ def _aggregate(values, mode):
 
 
 def _put_metric(metrics, test, name, unit, left, right, aggregate_mode):
+    left_value, right_value = _finite(left), _finite(right)
+    # A two-channel aggregate is meaningful only when both channels were
+    # measured. Never turn a deliberate L-only/R-only test into a fake DUT mean.
+    aggregate = (_aggregate((left_value, right_value), aggregate_mode)
+                 if left_value is not None and right_value is not None else None)
     metrics.setdefault(test, {})[name] = {
-        "L": _finite(left),
-        "R": _finite(right),
-        "aggregate": _aggregate((left, right), aggregate_mode),
+        "L": left_value,
+        "R": right_value,
+        "aggregate": aggregate,
         "unit": unit,
     }
 
