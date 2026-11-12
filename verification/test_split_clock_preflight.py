@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import sys
 
@@ -126,6 +127,19 @@ class SplitClockPreflightTests(unittest.TestCase):
         with self.assertRaises(MeasureError):
             split_clock_preflight(rig, "hw:1,0", "hw:2,0", level_dbfs=-72.0)
         self.assertEqual(rig.requested_levels, [-72.0])
+
+    def test_shared_preflight_attaches_clock_result_to_rig(self):
+        expected = {
+            "ok": True, "clock_ok": True, "signal_ok": True,
+            "ch": {"L": {"ppm": 25.0}, "R": {"ppm": 25.0}},
+        }
+        class BareRig:
+            clock_result = None
+        rig = BareRig()
+        with patch("valvebench.cli.m.clock_check", return_value=expected):
+            result = split_clock_preflight(rig, "hw:1,0", "hw:2,0")
+        self.assertIs(result, expected)
+        self.assertIs(rig.clock_result, expected)
 
     def test_sweep_and_h1_accept_valid_noncoherent_clock_for_resampling(self):
         measured = {"ok": True, "clock_ok": True, "signal_ok": True, "coherent": False}
