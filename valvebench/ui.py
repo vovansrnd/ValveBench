@@ -3446,6 +3446,11 @@ class SetupPage(Page):
                         "Потери перед проверяемым устройством, например inverse-RIAA/входной делитель")
         self.adc_att = spin("PAD DUT → вход АЦП, дБ", -60, 0, 0.1, c.get("adc_att_db", 0.0), 1,
                             "Только фактически измеренное ослабление установленного адаптера. Не задавай значение по расчёту без проверки реальной нагрузки и источника.")
+        self.clock_probe_level = spin(
+            "Уровень контрольного тона clock-preflight, dBFS", -120, -24, 1,
+            c.get("clock_probe_level_dbfs", -72.0), 1,
+            "По умолчанию −72 dBFS. Повышай уровень только после проверки безопасного сигнала на прямой петле; не поднимай его автоматически при подключённом DUT."
+        )
         self.out_l = spin("ЦАП L: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][0] or 0, 3)
         self.out_r = spin("ЦАП R: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][1] or 0, 3)
         self.in_l = spin("АЦП L: В RMS при 0 dBFS", 0, 50, 0.01, c["in_fs_vrms"][0] or 0, 3)
@@ -3484,6 +3489,7 @@ class SetupPage(Page):
         info.add_css_class("dim-label")
         super().__init__(win,
                          group("Измерительные параметры", self.mains, self.band, self.att, self.adc_att),
+                         group("Независимые тактовые генераторы ЦАП/АЦП", self.clock_probe_level),
                          group("Калибровка ЦАП (для абсолютного напряжения)", self.out_l, self.out_r),
                          group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r,
                                Gtk.Label(label="Калибровку ADC по петле выполняй с тем же физическим PAD DUT→ADC в обоих каналах. После изменения делителя/входного режима повтори ADC-калибровку и калибровку АЧХ карты.", xalign=0, wrap=True)),
@@ -3495,9 +3501,10 @@ class SetupPage(Page):
                          button("1. КАЛИБРОВАТЬ АЧХ ПАРЫ ЦАП→АЦП · ПРЯМАЯ ПЕТЛЯ", self.calibrate_response, True),
                          self.noise_status,
                          button("2. ИЗМЕРИТЬ ШУМОВОЙ ПОЛ АЦП", self.calibrate_noise),
-                         Gtk.Label(label=("Проверка тактов подаёт короткий синус 1 кГц на −72 dBFS и сравнивает частоту в записи АЦП "
-                                          "с частотой, которую выдаёт ЦАП. Это проверка расхождения частот дискретизации, "
-                                          "а не синхронизации часов компьютера."), xalign=0, wrap=True),
+                         Gtk.Label(label=("Проверка тактов подаёт короткий синус 1 кГц на заданном выше уровне "
+                                          "(по умолчанию −72 dBFS) и сравнивает частоту в записи АЦП с частотой ЦАП. "
+                                          "Уровень не повышается автоматически: повышай его только на заведомо безопасной прямой петле, "
+                                          "не через подключённый DUT. Это проверка расхождения частот дискретизации, а не синхронизации часов компьютера."), xalign=0, wrap=True),
                          button("ПРОВЕРИТЬ СОВПАДЕНИЕ ЧАСТОТ ЦАП И АЦП", self.check_clock),
                          button("Сохранить настройки", self.apply))
         self.auto_response.connect("notify::active", self.on_auto_changed)
@@ -3515,6 +3522,7 @@ class SetupPage(Page):
         self.band.set_value(float(c["band_hi"]))
         self.att.set_value(float(c["att_db"]))
         self.adc_att.set_value(float(c.get("adc_att_db", 0.0)))
+        self.clock_probe_level.set_value(float(c.get("clock_probe_level_dbfs", -72.0)))
         self.out_l.set_value(float(c["out_fs_vrms"][0] or 0))
         self.out_r.set_value(float(c["out_fs_vrms"][1] or 0))
         self.in_l.set_value(float(c["in_fs_vrms"][0] or 0))
@@ -3571,6 +3579,7 @@ class SetupPage(Page):
         c["band_hi"] = self.band.get_value()
         c["att_db"] = self.att.get_value()
         c["adc_att_db"] = self.adc_att.get_value()
+        c["clock_probe_level_dbfs"] = self.clock_probe_level.get_value()
         c["out_fs_vrms"] = [self.out_l.get_value() or None, self.out_r.get_value() or None]
         c["in_fs_vrms"] = [self.in_l.get_value() or None, self.in_r.get_value() or None]
         c["auto_apply_response"] = self.auto_response.get_active()
@@ -3658,7 +3667,11 @@ class SetupPage(Page):
                          clock_sensitive=False)
 
     def check_clock(self):
-        self.win.run_job(m.clock_check, lambda result: self.say(m.text_clock(result)),
+        level = float(self.clock_probe_level.get_value())
+        self.win.cal["clock_probe_level_dbfs"] = level
+        calib.save(self.win.cal)
+        self.win.run_job(lambda rig: m.clock_check(rig, level_dbfs=level),
+                         lambda result: self.say(m.text_clock(result)),
                          "проверяю согласование тактов ЦАП и АЦП", clock_sensitive=False)
 
     def cal_out(self):
@@ -4257,6 +4270,7 @@ class Window(Adw.ApplicationWindow):
             "in_fs_vrms": self.cal.get("in_fs_vrms"),
             "dac_to_dut_attenuation_db": self.cal.get("att_db"),
             "dut_to_adc_pad_db": self.cal.get("adc_att_db", 0.0),
+            "clock_probe_level_dbfs": self.cal.get("clock_probe_level_dbfs", -72.0),
             "mains_hz": self.cal.get("mains"), "analysis_band_hi_hz": self.cal.get("band_hi"),
         }
         be = rig.be
@@ -4529,7 +4543,8 @@ class Window(Adw.ApplicationWindow):
                 measurement_context["audio_io"]["alsa_mixer_fingerprint"] = \
                     Window._mixer_fingerprint_for_pair(dac_hw, adc_hw)
                 if clock_sensitive and dac_hw != adc_hw:
-                    clock = m.clock_check(rig, level_dbfs=-72.0)
+                    clock_level = float(self.cal.get("clock_probe_level_dbfs", -72.0))
+                    clock = m.clock_check(rig, level_dbfs=clock_level)
                     measurement_context["audio_io"]["clock_check"] = clock
                     if not clock.get("ok", False):
                         raise m.MeasureError(
