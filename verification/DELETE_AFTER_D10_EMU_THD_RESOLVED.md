@@ -252,3 +252,65 @@ The runner refuses to overwrite an existing output directory; use a new `--out-d
 - Do not modify PR #4 during this investigation.
 - Keep all outputs in the project directory, never in `~`.
 - Use the actual attached hardware; do not settle the question by simulation alone.
+
+
+## 11. Review of the hardware-agent report and `timing_probe.py` (12 Nov 2026)
+
+**Do not accept the report's sample-accurate timing conclusions or implement its proposed `Rig.run()` change yet.** Inspection of the committed probe found frame-index bookkeeping and detection problems. The physical observations (notably L/R output-noise asymmetry and a repeatable-looking residual) are useful leads, but the current code does not prove the stated 0.747–0.756 s latency or +0.425 s tone extension.
+
+### 11.1 Search-window offsets are added incorrectly
+
+`first_above()` returns an index relative to the array slice it receives. In `run_case()`:
+
+- Start marker is searched in `e65[int(0.7*fs):int(2.2*fs)]`, but the returned local index is converted using `+ int(0.9*fs)`. Correct slice-origin conversion would start with `+ int(0.7*fs)`.
+- Tone start is searched in `e997[int(0.7*fs):int(3.0*fs)]`, but uses `+ int(1.0*fs)` instead of `+ int(0.7*fs)`.
+- End marker is searched in `e8[int(1.5*fs):int(submitted_frames*0.95)]`, but uses `+ int(2.0*fs)` instead of `+ int(1.5*fs)`.
+
+For the first committed 2 s / 50 ms case, values printed into JSON are:
+- start marker = 336511;
+- tone first = 355711;
+- end marker = 394111.
+
+Removing only the excess slice-origin offsets gives:
+- 336511 − 0.2·192000 = 298111;
+- 355711 − 0.3·192000 = 298111;
+- 394111 − 0.5·192000 = 298111.
+
+All three detections map to exactly the same captured frame. That cannot represent the programmed start marker, tone start (210 ms later), and end marker (2.36 s after start marker) as distinct events. The result indicates false triggering / marker cross-detection and invalid frame labels, not sample-accurate detection.
+
+The `latency_start_s` calculation also compares a capture-relative index with a programme-relative marker frame without accounting for (a) the 0.5 s `arecord` head start, (b) the 50 ms pad prepended before the programme, and (c) the erroneous +0.2 s slice offset. Thus the reported ~0.75 s is not a valid physical DAC latency measurement. The actual capture start time must be explicitly accounted for.
+
+### 11.2 End-marker detection is not reliable
+
+The probe uses an 8 kHz end marker while the source is a 997 Hz tone. The report itself notes that 8 kHz is too close to the tone's 8th harmonic (7976 Hz), and end-marker detection is poor. The committed JSON's end-marker coordinate also maps to the same frame as the start marker after correcting the slice origin. Do not use this end marker as evidence for the end of the tone. Replace it with a distinct, validated marker (for example a coded burst/chirp in a separate frequency band) and verify it is detected only at its known location.
+
+### 11.3 Tone-duration threshold is not an independent marker measurement
+
+The probe infers start/end from `last_above()` / `first_above()` on a 5 ms moving-demodulation envelope and a threshold derived from the minimum of candidate "quiet" windows. It must be validated against the marker locations and against raw waveform excerpts. In particular, the first threshold crossing may be leakage/transient at the 6.5 kHz start marker; the last crossing may reflect residual tone, an end transient, or threshold bias. Do not equate this with proof that every DAC sample is played.
+
+The 400 ms buffer case already demonstrates channel-specific false detection: L reports 2.7457 s while R reports 2.425 s, and the report attributes this to an L spur. That is a failure of the detector for that case, not a measured duration difference.
+
+### 11.4 Committed evidence conflicts with report text
+
+The committed `measurements/diagnostics/timing-postroll.json` for `post_silence_s=0.6` reports:
+- captured tone duration 2.425 s on both channels;
+- `tone_last_frame` 821072 (L) / 821071 (R).
+
+The baseline 50 ms buffer case in `timing-probe-192000.json` reports 2.425 s and `tone_last_frame` 821313 (both channels). These committed values do **not** show the report's claimed +1.066 s / +0.64 s extension after appending 0.6 s silence. The source report may reflect an uncommitted run, but the discrepancy must be reconciled by preserving the exact raw log/JSON and waveform from that run.
+
+Also, the committed `timing-probe-192000.json` contains three 2 s cases (buffers 50/200/400 ms), not the stated 1/2/5/10 s duration series. The series must be committed as data or the report must identify the separate artifact that contains it.
+
+### 11.5 Required correction before deciding on the production fix
+
+Ask the hardware agent to:
+
+1. Correct every sliced-array index conversion by adding the actual slice start; save both local and absolute indices in JSON so this cannot recur.
+2. Record the 0.5 s capture pre-roll and 50 ms playback pre-pad separately; compute expected event positions in the capture timebase explicitly. Do not call a difference "DAC latency" until these offsets and the arecord start semantics are accounted for.
+3. Replace the 8 kHz end marker with a robust, distinct coded marker. Test marker detection on the recorded raw signal and demonstrate there are no false detections in silence, the start marker, or the tone.
+4. Save raw capture WAVE/PCM for at least one run and produce a small numeric excerpt / envelope table around each expected marker. The report must show separate, correctly ordered start-marker, tone-start, tone-end, and end-marker indices.
+5. Repeat a short series (1, 2, 5, 10 s) and in-stream silence (0, 0.6, 1.5 s), with exact command lines and per-run output artifacts committed.
+6. Explain the observed L/R residual / 300 Hz line separately; avoid assigning it to D10 firmware until E-MU-only and D10-only control measurements are documented.
+
+Only after those points are resolved should the team choose between a robust marker/matched-filter onset locator, an improved onset detector, or a backend transport/drain change. A cross-correlation POC may be developed on the diagnostic branch, but must not be applied to production `Rig.run()` until it has regression tests for tone-only, multi-segment, clock-drift, click/noise, and DUT-response cases.
+
+**Decision at this review:** no approval yet for the production `Rig.run()` cross-correlation fix. Request corrected sample-level evidence first. PR #4 remains untouched.
