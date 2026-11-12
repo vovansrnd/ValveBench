@@ -314,3 +314,53 @@ Ask the hardware agent to:
 Only after those points are resolved should the team choose between a robust marker/matched-filter onset locator, an improved onset detector, or a backend transport/drain change. A cross-correlation POC may be developed on the diagnostic branch, but must not be applied to production `Rig.run()` until it has regression tests for tone-only, multi-segment, clock-drift, click/noise, and DUT-response cases.
 
 **Decision at this review:** no approval yet for the production `Rig.run()` cross-correlation fix. Request corrected sample-level evidence first. PR #4 remains untouched.
+
+
+## 12. Review of agent v2 report and probe (12 Nov 2026)
+
+The v2 work is a substantial correction. The v1 claims of +0.425 s tone extension, digital-silence substitution, and 0.75 s DAC latency are explicitly withdrawn by the agent and must remain withdrawn. The v2 data supports a new working explanation: the old `Rig.run()` onset detector can trigger on an early capture click / pre-tone residue, while the actual 997 Hz programme tone begins much later. The 1/2/5/10 s marker-B positions are close to their expected positions; trailing-silence tests show post-tone RMS around −79 to −81 dBFS. This is strong evidence against the earlier fixed truncation/substitution theory.
+
+**However, do not implement the proposed production change yet. The v2 marker detector's own JSON is internally inconsistent and needs one more correction.**
+
+### 12.1 Marker peak score contradicts the claimed correlation
+
+In the v2 JSON files, `marker_A_scores` and `marker_B_scores` (the scores attached to the positions actually stored in `*_peaks_abs`) are approximately 0.46–0.49, while `marker_A_corr_max` / `marker_B_corr_max` are approximately 0.994–1.000.
+
+Examples from `timing-v2-baseline-2s.json`:
+- Marker A stored at frame 298015 with stored peak score 0.493, but `marker_A_corr_max` is 0.998.
+- Marker B stored at frame 726182 with stored peak score 0.466, but `marker_B_corr_max` is 0.998.
+
+The report quotes the near-1.0 `corr_max` as the marker confidence, while the stored detected event is associated with a score around 0.5. Those are not interchangeable. `fft_xcorr_peaks()` groups threshold crossings and then skips `0.1*fs` after each group; it may skip a stronger local maximum within that interval. The JSON also says the function writes all peaks, but this skip means it does not enumerate all local maxima.
+
+Required correction:
+- For each marker template, compute and retain the actual global maximum index and score, not just `cc.max()`.
+- Enumerate local maxima with a principled minimum separation (at least template duration, with explicit rationale), and do not skip an interval before checking whether it contains a stronger maximum.
+- Store every candidate's absolute frame and normalized correlation score.
+- Select the event only if the selected peak's own score passes a stated threshold; report the selected peak score beside its selected frame.
+- On the saved raw capture, print a compact candidate table around the expected A/B positions and show that the selected maximum is at the correct marker, not merely that some other location in the file has a high correlation.
+- Explain the roughly 2:1 difference between stored peak scores and `corr_max`.
+
+Until this is resolved, the claimed marker correlations of 0.996/0.998 and the sample-accurate anchor positions are not fully validated.
+
+### 12.2 Tone-envelope first/last crossings are known to be unreliable
+
+The v2 JSON itself shows `tone_first_abs` occurring before the expected tone start (for example, 2 s case: ~318k versus expected ~342k), and `tone_last_abs` extending far beyond the expected tone end, sometimes into the capture tail. The report acknowledges false triggering on marker A and does not use these values as final proof. Keep them explicitly labelled diagnostic-only; do not use `tone_last_abs` / `tone_last_tail_s_*` as measured tone duration.
+
+The strongest end-of-tone evidence currently comes from the expected programme position plus the independently detected marker B, and from the post-tone RMS in the trailing-silence cases. That is promising, but it depends on validating marker B detection as above.
+
+### 12.3 L/R control is not yet an E-MU-only isolation
+
+`controls-emu-only.txt` says “E-MU-only (D10 idle)”, but the v2 report clarifies that D10 remained physically connected. Therefore it is an idle-D10 connected-path measurement, not an isolated E-MU-only control. The source of the L/R residual asymmetry remains unknown. Required next control: physically disconnect the D10-to-E-MU cable at the E-MU inputs, keep E-MU gain settings documented and unchanged, then repeat capture-only noise measurement. Do not attribute the asymmetry to D10 or E-MU until this is done.
+
+### 12.4 Current decision and next agent task
+
+The v2 evidence makes the stale-onset / pre-tone-window contamination explanation the leading hypothesis for the original 6–9% THD+N. The v1 fixed-tail-loss explanation is withdrawn. The v2 marker-B alignment and trailing-silence results are promising, but marker correlation bookkeeping still needs validation.
+
+Ask the hardware agent for a narrow v2.1 correction:
+1. Fix peak enumeration / score association as described in §12.1, using the already saved raw baseline capture first (no new hardware run until offline detection is validated).
+2. Show selected A and B peak frames, their own normalized scores, and all competing local maxima; verify the correct ordering and frame separation against the known stimulus.
+3. Recompute the 1/2/5/10 s and trailing-silence conclusions from the corrected detector. Preserve the existing v2 artifacts; add v2.1 outputs rather than overwriting them.
+4. Only if offline validation passes, run one short physical repeat (2 s tone + 0.6 s trailing silence) to verify reproducibility.
+5. Separately perform the physical E-MU-only control by disconnecting the D10 cable, with gain settings recorded. This is a distinct question and must not block the timing conclusion.
+
+Do not change production `Rig.run()`, `measure.py`, `backend.py`, or PR #4 yet. After v2.1 marker validation, the coordinator can decide whether to implement a guarded marker/matched-filter locator on the diagnostic branch and build regression tests before touching production code.
