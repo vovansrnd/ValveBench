@@ -83,6 +83,27 @@ class NonCoherentThdFloorTests(unittest.TestCase):
         self.assertAlmostEqual(result["noise_dbfs"], -55.0 + 10.0 * np.log10(20000.0 / 24000.0),
                                delta=1.5)
 
+    def test_thdn_is_stable_at_a_realistic_25ppm_clock_offset(self):
+        fs = 48000
+        n = fs
+        blocks = 8
+        ppm = 25.0
+        f0 = 997.0
+        actual_f = f0 * (1.0 + ppm * 1e-6)
+        t = np.arange(n * blocks, dtype=np.float64) / fs
+        carrier_rms = 0.5
+        carrier = carrier_rms * np.sqrt(2.0) * np.sin(2 * np.pi * actual_f * t)
+        noise_rms = 1e-5
+        rng = np.random.default_rng(2500)
+        noise = rng.normal(0.0, noise_rms, t.size)
+        result = analyze_tone(carrier + noise, fs, f0, n, nharm=8, mains=0,
+                              band=(20.0, 20000.0))
+        expected_db = 20.0 * np.log10(noise_rms * np.sqrt(20000.0 / 24000.0) / carrier_rms)
+        self.assertGreater(abs(result["coh_err_bins"]), COH_TOL_BINS)
+        self.assertLess(abs(result["coh_err_bins"]), 0.05)
+        self.assertAlmostEqual(result["thdn_db"], expected_db, delta=1.5)
+        self.assertTrue(result["thd_bound"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
