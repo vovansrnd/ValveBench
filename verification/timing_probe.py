@@ -90,29 +90,33 @@ def build_program(fs, tone_s, trailing_silence_s=0.0):
     return np.concatenate(P), pos
 
 
-def fft_xcorr_peaks(capture, template, fs):
-    """Согласованный фильтр: ВСЕ пики нормированной корреляции выше 0.4 максимума.
-    Возвращает (позиции_абс, значения). Позиция = левый край совпадения."""
+def xcorr_markers(capture, template, fs):
+    """v2.1 (§12.1): согласованный фильтр с ПОЛНЫМ перебором локальных максимумов.
+
+    v2-баг: группировка переходов порога + пропуск 0.1*fs после каждой группы
+    (чирп 80 мс!) — пропускала главный пик и выбирала точку на склоне лепестка
+    (298015/0.491 вместо 298152/0.9951 на сохранённом захвате).
+
+    v2.1: scipy.find_peaks с минимальным разносом = длина шаблона (обоснование:
+    главный лепесток автокорреляции линейного чирпа ≈ 1/полоса = 1 мс, длина
+    шаблона 80 мс — консервативный разнос, исключающий собственные лепестки).
+    Возвращает: global (кадр, score), список ВСЕХ локальных максимумов
+    (кадр, score), и нигде не пропускает интервалы."""
+    from scipy.signal import find_peaks
     n = len(capture); m = len(template)
     L = int(2 ** np.ceil(np.log2(n + m)))
     F = np.fft.rfft(capture, L) * np.conj(np.fft.rfft(template, L))
-    cc = np.fft.irfft(F, L)[: max(1, n - m + 1)]
+    cc = np.fft.irfft(F, L)[: n - m + 1]
     energy = np.convolve(capture ** 2, np.ones(m), "valid").clip(1e-30)
     cc = cc[: len(energy)] / (np.linalg.norm(template) * np.sqrt(energy))
-    thr = 0.4 * float(cc.max())
-    peaks = []
-    i = 0
-    while i < len(cc):
-        if cc[i] > thr:
-            j = i
-            while j < len(cc) and cc[j] > thr:
-                j += 1
-            pk = i + int(np.argmax(cc[i:j]))
-            peaks.append((pk, float(cc[pk])))
-            i = j + int(0.1 * fs)
-        else:
-            i += 1
-    return peaks, float(cc.max())
+    gmax = int(np.argmax(cc)); gscore = float(cc[gmax])
+    pk, props = find_peaks(cc, height=0.15, distance=m)
+    # глобальный максимум мог быть на краю (не локальный пик find_peaks) — добавить
+    allmax = [(int(p), float(h)) for p, h in zip(pk, props["peak_heights"])]
+    if not any(abs(p - gmax) < m // 2 for p, _ in allmax):
+        allmax.append((gmax, gscore))
+    allmax.sort(key=lambda t: -t[1])
+    return {"global": (gmax, gscore), "maxima": allmax}
 
 
 def demod_env(x, fs, f, win_s=0.005):
@@ -177,21 +181,22 @@ def run_case(fs, tone_s, buffer_ms, trailing_silence_s, hw_dac, hw_adc,
         "pad_frames": pad_n,
     }
     events = {}
+    SEL_MIN_SCORE = 0.5   # критерий выбора: score глобального максимума ≥ 0.5
     for c, name, arr in ((0, "L", capL), (1, "R", capR)):
         ev = {}
         tmplA = chirp(fs, 0.08, 6500, 7500)
-        peaksA, maxA = fft_xcorr_peaks(arr, tmplA, fs)
-        ev["marker_A_peaks_abs"] = [int(p) for p, _ in peaksA]
-        ev["marker_A_scores"] = [round(s, 3) for _, s in peaksA]
-        ev["marker_A_corr_max"] = round(maxA, 3)
+        xa = xcorr_markers(arr, tmplA, fs)
+        ev["marker_A_global_abs"], ev["marker_A_global_score"] = xa["global"]
+        ev["marker_A_all_maxima"] = [(int(p), round(s, 4)) for p, s in xa["maxima"]]
+        ev["marker_A_selected_score_ok"] = bool(ev["marker_A_global_score"] >= SEL_MIN_SCORE)
         tmplB = chirp(fs, 0.08, 10500, 11500)
-        peaksB, maxB = fft_xcorr_peaks(arr, tmplB, fs)
-        ev["marker_B_peaks_abs"] = [int(p) for p, _ in peaksB]
-        ev["marker_B_scores"] = [round(s, 3) for _, s in peaksB]
-        ev["marker_B_corr_max"] = round(maxB, 3)
+        xb = xcorr_markers(arr, tmplB, fs)
+        ev["marker_B_global_abs"], ev["marker_B_global_score"] = xb["global"]
+        ev["marker_B_all_maxima"] = [(int(p), round(s, 4)) for p, s in xb["maxima"]]
+        ev["marker_B_selected_score_ok"] = bool(ev["marker_B_global_score"] >= SEL_MIN_SCORE)
         # тон: порог от самой тихой 0.15-с области ДО маркера А
         e997 = demod_env(arr, fs, 997)
-        mA = ev["marker_A_peaks_abs"][0] if ev["marker_A_peaks_abs"] else None
+        mA = ev["marker_A_global_abs"]
         quiet = []
         if mA:
             for i in range(int(0.2 * fs), max(int(0.25 * fs), mA - int(0.2 * fs)), int(0.15 * fs)):
@@ -216,9 +221,9 @@ def run_case(fs, tone_s, buffer_ms, trailing_silence_s, hw_dac, hw_adc,
         events[name] = ev
     res["events"] = events
 
-    mA = events["L"]["marker_A_peaks_abs"]
-    if mA:
-        start_offset = mA[0] - (fr["marker_A_start"] + pad_n)
+    mA = events["L"]["marker_A_global_abs"]
+    if mA is not None:
+        start_offset = mA - (fr["marker_A_start"] + pad_n)
         res["start_offset_s"] = round(start_offset / fs, 5)
         res["start_offset_note"] = ("смещение старта программы в базе захвата: arecord pre-roll + "
                                     "открытие aplay/D10; НЕ является латентностью D10 (§11.5.2)")
@@ -245,10 +250,11 @@ def run_case(fs, tone_s, buffer_ms, trailing_silence_s, hw_dac, hw_adc,
                 r_post = 20 * np.log10(max(float(np.sqrt(np.mean(arr[te:te + post]**2)) * 2**0.5), 1e-12))
                 res[f"rms_tone_dBFS_{name}"] = round(r_tone, 1)
                 res[f"rms_post_tone_dBFS_{name}"] = round(r_post, 1)
-        mB = events["R"]["marker_B_peaks_abs"]
-        if mB:
-            res["marker_B_expected_minus_detected_s"] = round(
-                (res["expected_abs"]["marker_B_start"] - mB[0]) / fs, 5)
+        mB = events["R"]["marker_B_global_abs"]
+        res["marker_B_expected_minus_detected_s"] = round(
+            (res["expected_abs"]["marker_B_start"] - mB) / fs, 5)
+        res["marker_B_score"] = events["R"]["marker_B_global_score"]
+        res["marker_A_score"] = events["L"]["marker_A_global_score"]
 
     if save_raw:
         os.makedirs(outdir, exist_ok=True)

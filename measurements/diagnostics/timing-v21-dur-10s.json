@@ -1,0 +1,82 @@
+{
+ "tone_s": 10.0,
+ "buffer_ms": 100,
+ "trailing_silence_s": 0.0,
+ "arecord_prestart_s": 0.501,
+ "aplay_elapsed_s": 12.4372,
+ "aplay_rc": 0,
+ "aplay_err": "",
+ "arecord_err": "Recording raw data '/tmp/tp_cap_v21-dur-10s.raw' : Signed 24 bit Little Endian in 3bytes, Rate 192000 Hz, Stereo",
+ "submitted_frames": 2382720,
+ "captured_frames": 3072000,
+ "pad_frames": 9600,
+ "events": {
+  "L": {
+   "marker_A_global_abs": 296857,
+   "marker_A_global_score": 0.9997117041016987,
+   "marker_A_all_maxima": [
+    [
+     296857,
+     0.9997
+    ]
+   ],
+   "marker_A_selected_score_ok": true,
+   "marker_B_global_abs": 2261063,
+   "marker_B_global_score": 0.9991685903296394,
+   "marker_B_all_maxima": [
+    [
+     2261063,
+     0.9992
+    ]
+   ],
+   "marker_B_selected_score_ok": true,
+   "tone_thr": 0.00011246657993593359,
+   "tone_search_slice_start_abs": 316057,
+   "tone_first_local": 24619,
+   "tone_first_abs": 340676,
+   "tone_last_abs": 2759811
+  },
+  "R": {
+   "marker_A_global_abs": 296857,
+   "marker_A_global_score": 0.998790722103123,
+   "marker_A_all_maxima": [
+    [
+     296857,
+     0.9988
+    ]
+   ],
+   "marker_A_selected_score_ok": true,
+   "marker_B_global_abs": 2261063,
+   "marker_B_global_score": 0.9984525751008992,
+   "marker_B_all_maxima": [
+    [
+     2261063,
+     0.9985
+    ]
+   ],
+   "marker_B_selected_score_ok": true,
+   "tone_thr": 1.8812256027317337e-05,
+   "tone_search_slice_start_abs": 316057,
+   "tone_first_local": 24529,
+   "tone_first_abs": 340586,
+   "tone_last_abs": 2759789
+  }
+ },
+ "start_offset_s": 0.49613,
+ "start_offset_note": "смещение старта программы в базе захвата: arecord pre-roll + открытие aplay/D10; НЕ является латентностью D10 (§11.5.2)",
+ "expected_abs": {
+  "marker_A_start": 296857,
+  "tone_start": 341017,
+  "tone_end": 2261017,
+  "marker_B_start": 2261017
+ },
+ "tone_last_tail_s_L": 2.5979,
+ "tone_last_tail_s_R": 2.5978,
+ "rms_tone_dBFS_L": -37.2,
+ "rms_post_tone_dBFS_L": -46.0,
+ "rms_tone_dBFS_R": -36.8,
+ "rms_post_tone_dBFS_R": -44.6,
+ "marker_B_expected_minus_detected_s": -0.00024,
+ "marker_B_score": 0.9984525751008992,
+ "marker_A_score": 0.9997117041016987
+}
