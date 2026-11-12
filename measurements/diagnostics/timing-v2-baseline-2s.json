@@ -1,0 +1,69 @@
+{
+ "tone_s": 2.0,
+ "buffer_ms": 100,
+ "trailing_silence_s": 0.0,
+ "arecord_prestart_s": 0.5009,
+ "aplay_elapsed_s": 4.4345,
+ "aplay_rc": 0,
+ "aplay_err": "",
+ "arecord_err": "Recording raw data '/tmp/tp_cap_baseline-2s.raw' : Signed 24 bit Little Endian in 3bytes, Rate 192000 Hz, Stereo",
+ "submitted_frames": 846720,
+ "captured_frames": 1536000,
+ "pad_frames": 9600,
+ "events": {
+  "L": {
+   "marker_A_peaks_abs": [
+    298015
+   ],
+   "marker_A_scores": [
+    0.493
+   ],
+   "marker_A_corr_max": 0.998,
+   "marker_B_peaks_abs": [
+    726182
+   ],
+   "marker_B_scores": [
+    0.466
+   ],
+   "marker_B_corr_max": 0.998,
+   "tone_thr": 0.00012717744376726254,
+   "tone_search_slice_start_abs": 317215,
+   "tone_first_local": 24834,
+   "tone_first_abs": 342049,
+   "tone_last_abs": 1124217
+  },
+  "R": {
+   "marker_A_peaks_abs": [
+    298015
+   ],
+   "marker_A_scores": [
+    0.491
+   ],
+   "marker_A_corr_max": 0.995,
+   "marker_B_peaks_abs": [
+    726182
+   ],
+   "marker_B_scores": [
+    0.467
+   ],
+   "marker_B_corr_max": 0.996,
+   "tone_thr": 2.235032099412943e-05,
+   "tone_search_slice_start_abs": 317215,
+   "tone_first_local": 24683,
+   "tone_first_abs": 341898,
+   "tone_last_abs": 972993
+  }
+ },
+ "start_offset_s": 0.50216,
+ "start_offset_note": "смещение старта программы в базе захвата: arecord pre-roll + открытие aplay/D10; НЕ является латентностью D10 (§11.5.2)",
+ "expected_abs": {
+  "marker_A_start": 298015,
+  "tone_start": 342175,
+  "tone_end": 726175,
+  "marker_B_start": 726175
+ },
+ "tail_s_L": 2.0731,
+ "tail_s_R": 1.2855,
+ "marker_B_expected_minus_detected_s": -4e-05,
+ "saved_capture": "capture-full-baseline-2s.raw (S24_3LE stereo, 192000 Hz)"
+}

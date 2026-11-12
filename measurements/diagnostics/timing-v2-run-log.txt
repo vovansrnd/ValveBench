@@ -1,0 +1,9 @@
+baseline-2s: --tone 2.0 --trailing 0.0 --buffer 100 --rate 192000 --tag baseline-2s
+dur-10s: --tone 10.0 --trailing 0.0 --buffer 100 --rate 192000 --tag dur-10s
+dur-1s: --tone 1.0 --trailing 0.0 --buffer 100 --rate 192000 --tag dur-1s
+dur-2s: --tone 2.0 --trailing 0.0 --buffer 100 --rate 192000 --tag dur-2s
+dur-5s: --tone 5.0 --trailing 0.0 --buffer 100 --rate 192000 --tag dur-5s
+trail-0.6: --tone 2.0 --trailing 0.6 --buffer 100 --rate 192000 --tag trail-0.6
+trail-0: --tone 2.0 --trailing 0.0 --buffer 100 --rate 192000 --tag trail-0
+trail-1.5: --tone 2.0 --trailing 1.5 --buffer 100 --rate 192000 --tag trail-1.5
+trailing-06: --tone 2.0 --trailing 0.6 --buffer 100 --rate 192000 --tag trailing-06

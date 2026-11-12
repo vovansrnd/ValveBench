@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
-"""Посемпловая характеристика пути D10 → E-MU (ТЗ координатора §8).
+"""timing_probe v2 — посемпловая характеристика D10→E-MU (корректирующее
+задание координатора §11.5 после ревизии v1).
 
-Программа: лидирующая тишина 1 с → маркер старта (6.5 кГц, 60 мс) →
-стабильный тон 997 Гц заданной длительности → маркер конца (8 кГц, 60 мс) →
-тишина 1 с. arecord стартует заранее, пишет дольше программы на +3 с.
+v1 ошибки, исправленные здесь (см. §11 handoff-файла):
+  * смещения срезов прибавлялись неверно → все «события» были одним кадром;
+    теперь: детекция в АБСОЛЮТНЫХ координатах захвата, в JSON сохраняются и
+    локальный индекс, и начало среза, и абсолютный кадр каждого события;
+  * конечный маркер 8 кГц коллизировал с H8 тона (7976 Гц) → заменён на
+    ЛИНЕЙНЫЕ ЧИРП-маркеры (наклонные свипы) и детектируются согласованным
+    фильтром по всей записи: в JSON пишутся ВСЕ пики выше порога — ложные
+    срабатывания видны явно;
+  * «latency 0.75 с» смешивала время; теперь модель временной базы явная:
+    capture t=0 = старт arecord; aplay стартует позже (замер по часам);
+    в поток добавлен пад 0.05 с; ожидаемые позиции событий пересчитаны в
+    базу захвата через стартовое смещение (определяемое по СТАРТ-маркеру);
+    величина называется start_offset_s — это НЕ «латентность D10»;
+  * результаты каждого прогона пишутся в ОТДЕЛЬНЫЙ файл (v1 перезаписывала);
+    полный сырой захват сохраняется для базового прогона.
 
-Сравнение с источником: точные кадры начала/конца тона (порог по узкой
-демодуляции 997 Гц), маркеры по демодуляции 6.5/8 кГц, отдельно L/R,
-задержка старта/конца, длительность захваченного тона против поданной.
-
-Автодетект карт по USB-ID (номера карточек плавают).
+Программа: пад 0.05 | тишина 1.0 | ЧИРП-А 6.5→7.5 кГц 80 мс | тишина 0.15 |
+тон 997 (tone_s) | [тишина trailing_silence_s] | ЧИРП-Б 10.5→11.5 кГц 80 мс |
+тишина 1.0.
 """
 import argparse
 import json
 import os
 import subprocess
-import sys
 import time
 from datetime import datetime
 
@@ -37,8 +47,75 @@ def find_card(usbid):
     return None
 
 
+def chirp(fs, dur, f0, f1, level_dbfs=-30.0):
+    n = int(round(dur * fs))
+    t = np.arange(n) / fs
+    k = (f1 - f0) / dur
+    ph = 2 * np.pi * (f0 * t + 0.5 * k * t * t)
+    s = 10 ** (level_dbfs / 20) * np.sin(ph)
+    fade = int(0.01 * fs)
+    s[:fade] *= np.linspace(0, 1, fade)
+    s[-fade:] *= np.linspace(1, 0, fade)
+    return s
+
+
+def build_program(fs, tone_s, trailing_silence_s=0.0):
+    """Позиции сегментов: pos[name+"_start"/"_end"] в кадрах программы.
+    Явные start/end вместо v2-ошибки, где fr[name] был стартом сегмента."""
+    P = []
+    pos = {}
+    cur = [0]
+    def seg(dur, sig=None, name=None):
+        n = int(round(dur * fs))
+        if name:
+            pos[name + "_start"] = cur[0]
+        P.append(np.zeros((n, 2)) if sig is None else sig)
+        cur[0] += len(P[-1])
+        if name:
+            pos[name + "_end"] = cur[0]
+    seg(1.0, name="lead")
+    seg(0.08, np.column_stack([chirp(fs, 0.08, 6500, 7500)] * 2), name="marker_A")
+    seg(0.15, name="gap1")
+    nt = int(round(tone_s * fs))
+    tone = 10 ** (-30 / 20) * np.sin(2 * np.pi * 997 * np.arange(nt) / fs)
+    fade = int(0.01 * fs)
+    tone[:fade] *= np.linspace(0, 1, fade)
+    tone[-fade:] *= np.linspace(1, 0, fade)
+    seg(tone_s, np.column_stack([tone, tone]), name="tone")
+    if trailing_silence_s:
+        seg(trailing_silence_s, name="trailing")
+    seg(0.08, np.column_stack([chirp(fs, 0.08, 10500, 11500)] * 2), name="marker_B")
+    seg(1.0, name="tail")
+    pos["program_len"] = cur[0]
+    return np.concatenate(P), pos
+
+
+def fft_xcorr_peaks(capture, template, fs):
+    """Согласованный фильтр: ВСЕ пики нормированной корреляции выше 0.4 максимума.
+    Возвращает (позиции_абс, значения). Позиция = левый край совпадения."""
+    n = len(capture); m = len(template)
+    L = int(2 ** np.ceil(np.log2(n + m)))
+    F = np.fft.rfft(capture, L) * np.conj(np.fft.rfft(template, L))
+    cc = np.fft.irfft(F, L)[: max(1, n - m + 1)]
+    energy = np.convolve(capture ** 2, np.ones(m), "valid").clip(1e-30)
+    cc = cc[: len(energy)] / (np.linalg.norm(template) * np.sqrt(energy))
+    thr = 0.4 * float(cc.max())
+    peaks = []
+    i = 0
+    while i < len(cc):
+        if cc[i] > thr:
+            j = i
+            while j < len(cc) and cc[j] > thr:
+                j += 1
+            pk = i + int(np.argmax(cc[i:j]))
+            peaks.append((pk, float(cc[pk])))
+            i = j + int(0.1 * fs)
+        else:
+            i += 1
+    return peaks, float(cc.max())
+
+
 def demod_env(x, fs, f, win_s=0.005):
-    """Огибающая узкой демодуляции на f (скользящее среднее по win)."""
     n = len(x)
     t = np.arange(n) / fs
     z = x * np.exp(-2j * np.pi * f * t)
@@ -50,170 +127,157 @@ def demod_env(x, fs, f, win_s=0.005):
     return 2 * np.abs((cs[hi] - cs[lo]) / np.maximum(hi - lo, 1))
 
 
-def first_above(env, thr):
-    idx = np.where(env > thr)[0]
-    return int(idx[0]) if len(idx) else None
+def run_case(fs, tone_s, buffer_ms, trailing_silence_s, hw_dac, hw_adc,
+             save_raw=False, outdir=".", tag="run"):
+    prog, fr = build_program(fs, tone_s, trailing_silence_s)
+    pad_n = int(0.05 * fs)
+    submitted = np.concatenate([np.zeros((pad_n, 2)), prog, np.zeros((pad_n, 2))])
+    iv = np.round(np.clip(submitted, -1, 1) * (1 << 31)).astype("<i4")  # DX1-класс требует S32; D10 принимает S32_LE тоже
+    sub_path = f"/tmp/tp_sub_{tag}.s32"
+    iv.tofile(sub_path)
 
-
-def last_above(env, thr):
-    idx = np.where(env > thr)[0]
-    return int(idx[-1]) if len(idx) else None
-
-
-def build_program(fs, tone_s):
-    """Программа: тишина 1с | маркер 6.5к 60мс | тишина 0.15с | тон 997
-    | тишина 0.15с | маркер 8к 60мс | тишина 1с. Возврат: (2,) сигнал, словарь кадров."""
-    parts = []
-    frames = {}
-    def seg(dur, sig=None):
-        n = int(round(dur * fs))
-        parts.append(np.zeros((n, 2)) if sig is None else sig)
-        return n
-    frames["lead_silence_start"] = sum(len(p) for p in parts)
-    frames["lead_silence_end"] = frames["lead_silence_start"] + seg(1.0)
-    tm = np.arange(int(0.06 * fs)) / fs
-    marker_start = 10 ** (-30 / 20) * np.sin(2 * np.pi * 6500 * tm)
-    marker_end = 10 ** (-30 / 20) * np.sin(2 * np.pi * 8000 * tm)
-    ms = np.column_stack([marker_start, marker_start])
-    me = np.column_stack([marker_end, marker_end])
-    frames["start_marker"] = frames["lead_silence_end"]
-    frames["start_marker_end"] = frames["start_marker"] + seg(0.06, ms)
-    frames["gap1_end"] = frames["start_marker_end"] + seg(0.15)
-    frames["tone"] = frames["gap1_end"]
-    nt = int(round(tone_s * fs))
-    tone = 10 ** (-30 / 20) * np.sin(2 * np.pi * 997 * np.arange(nt) / fs)
-    fade = int(0.01 * fs)
-    tone[:fade] *= np.linspace(0, 1, fade)
-    tone[-fade:] *= np.linspace(1, 0, fade)
-    parts.append(np.column_stack([tone, tone]))
-    frames["tone_end"] = frames["tone"] + nt
-    frames["gap2_end"] = frames["tone_end"] + seg(0.15)
-    frames["end_marker"] = frames["gap2_end"]
-    frames["end_marker_end"] = frames["end_marker"] + seg(0.06, me)
-    frames["tail_silence"] = frames["end_marker_end"]
-    frames["tail_silence_end"] = frames["tail_silence"] + seg(1.0)
-    prog = np.concatenate(parts)
-    frames["program_len"] = len(prog)
-    return prog, frames
-
-
-def run_case(fs, tone_s, buffer_ms, post_silence_s, extend_tone_s, hw_dac, hw_adc):
-    prog, fr = build_program(fs, tone_s)
-    if extend_tone_s:
-        # удлинить сам тон: вставить продолжение тона перед gap2
-        nt = int(round(extend_tone_s * fs))
-        extra = 10 ** (-30 / 20) * np.sin(2 * np.pi * 997 * np.arange(nt) / fs)
-        prog = np.concatenate([prog[: fr["tone_end"]],
-                               np.column_stack([extra, extra]),
-                               prog[fr["tone_end"]:]])
-        fr["tone_end"] += nt
-        for k in ("gap2_end", "end_marker", "end_marker_end", "tail_silence",
-                  "tail_silence_end", "program_len"):
-            fr[k] += nt
-    if post_silence_s:
-        n = int(round(post_silence_s * fs))
-        prog = np.concatenate([prog, np.zeros((n, 2))])
-        fr["post_silence"] = len(prog) - n
-    # подмешать Play-пад 50 мс нулями, как делает AlsaCli.play_record
-    pad = int(0.05 * fs)
-    submitted = np.concatenate([np.zeros((pad, 2)), prog, np.zeros((pad, 2))])
-    iv = np.round(np.clip(submitted, -1, 1) * (1 << 31)).astype("<i4")  # DX1: S32_LE
-    wav_raw = "/tmp/dx_timing_submitted.s32"
-    iv.tofile(wav_raw)
-    submitted_frames = len(submitted)
-
-    rec_frames_total = int((submitted_frames / fs + 3.0) * fs)
+    rec_s = len(submitted) / fs + 3.0
+    cap_path = f"/tmp/tp_cap_{tag}.raw"
+    t_cap0 = time.monotonic()
     cap = subprocess.Popen(
         ["arecord", "-D", f"hw:{hw_adc},0", "-f", "S24_3LE", "-r", str(fs),
-         "-c", "2", "-d", str(int(submitted_frames / fs + 3)),
-         "-t", "raw", "/tmp/dx_timing_cap.raw"], stderr=subprocess.PIPE)
+         "-c", "2", "-d", str(int(rec_s) + 1), "-t", "raw", cap_path],
+        stderr=subprocess.PIPE)
     time.sleep(0.5)
-    t0 = time.monotonic()
+    t_play0 = time.monotonic()
     play = subprocess.run(
         ["aplay", "-D", f"hw:{hw_dac},0", "-f", "S32_LE", "-r", str(fs),
-         "-c", "2", "-q", "--buffer-time", str(buffer_ms * 1000), wav_raw],
+         "-c", "2", "-q", "--buffer-time", str(buffer_ms * 1000), sub_path],
         stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    play_elapsed = time.monotonic() - t0
+    t_play1 = time.monotonic()
     cap.wait()
     cap_err = cap.stderr.read().decode("utf-8", "replace")
 
-    raw = open("/tmp/dx_timing_cap.raw", "rb").read()
+    raw = open(cap_path, "rb").read()
     n = len(raw) // 6
     b = np.frombuffer(raw[:n * 6], dtype=np.uint8).reshape(n, 6)
-    capL = np.zeros(n); capR = np.zeros(n)
-    for c, arr in ((0, capL), (1, capR)):
+    chans = []
+    for c in (0, 1):
         v = b[:, 3 * c:3 * c + 3].copy().astype(np.int32)
         v = v[:, 0] | (v[:, 1] << 8) | (v[:, 2] << 16)
         v = np.where(v >= 1 << 23, v - (1 << 24), v)
-        arr[:] = v / float(1 << 23)
+        chans.append(v / float(1 << 23))
+    capL, capR = chans
 
-    res = {"tone_s": tone_s, "buffer_ms": buffer_ms,
-           "post_silence_s": post_silence_s, "extend_tone_s": extend_tone_s,
-           "submitted_frames": submitted_frames, "captured_frames": n,
-           "aplay_rc": play.returncode, "aplay_elapsed_s": round(play_elapsed, 3),
-           "aplay_err": play.stderr.decode("utf-8", "replace").strip()[:120],
-           "arecord_err": cap_err.strip()[:120]}
-
-    # маркеры и тон в захвате; эталон шума — самая тихая 0.3-с область первых 2 с
-    # (латенция сдвигает всё на ~0.5-1.0 с, фиксированные окна не годятся)
-    def quiet_noise(arr):
-        e = demod_env(arr, fs, 997)
-        chunk = int(0.3 * fs)
-        best = []
-        for i in range(int(0.4 * fs), min(int(2.0 * fs), len(e)) - chunk, chunk):
-            best.append(float(np.median(e[i:i + chunk])))
-        return max(min(best), 1e-9)
-    noise_ref = quiet_noise(capL)
-    tone_thr = max(8 * noise_ref, 1e-6)
+    res = {
+        "tone_s": tone_s, "buffer_ms": buffer_ms,
+        "trailing_silence_s": trailing_silence_s,
+        "arecord_prestart_s": round(t_play0 - t_cap0, 4),
+        "aplay_elapsed_s": round(t_play1 - t_play0, 4),
+        "aplay_rc": play.returncode,
+        "aplay_err": play.stderr.decode("utf-8", "replace").strip()[:120],
+        "arecord_err": cap_err.strip()[:120],
+        "submitted_frames": len(submitted),
+        "captured_frames": n,
+        "pad_frames": pad_n,
+    }
+    events = {}
     for c, name, arr in ((0, "L", capL), (1, "R", capR)):
+        ev = {}
+        tmplA = chirp(fs, 0.08, 6500, 7500)
+        peaksA, maxA = fft_xcorr_peaks(arr, tmplA, fs)
+        ev["marker_A_peaks_abs"] = [int(p) for p, _ in peaksA]
+        ev["marker_A_scores"] = [round(s, 3) for _, s in peaksA]
+        ev["marker_A_corr_max"] = round(maxA, 3)
+        tmplB = chirp(fs, 0.08, 10500, 11500)
+        peaksB, maxB = fft_xcorr_peaks(arr, tmplB, fs)
+        ev["marker_B_peaks_abs"] = [int(p) for p, _ in peaksB]
+        ev["marker_B_scores"] = [round(s, 3) for _, s in peaksB]
+        ev["marker_B_corr_max"] = round(maxB, 3)
+        # тон: порог от самой тихой 0.15-с области ДО маркера А
         e997 = demod_env(arr, fs, 997)
-        e65 = demod_env(arr, fs, 6500)
-        e8 = demod_env(arr, fs, 8000)
-        thr_m = max(8 * quiet_noise(arr), 1e-6)
-        thr_m8 = thr_m
-        sm = first_above(e65[int(0.7 * fs):int(2.2 * fs)], thr_m)
-        tone_s_i = first_above(e997[int(0.7 * fs):int(3.0 * fs)], tone_thr)
-        tone_e = last_above(e997[int(0.7 * fs): int(submitted_frames * 0.98)], tone_thr)
-        em = first_above(e8[int(1.5 * fs):int(submitted_frames * 0.95)], thr_m8)
-        res[f"{name}"] = {
-            "start_marker_frame": (sm + int(0.9 * fs)) if sm is not None else None,
-            "tone_first_frame": (tone_s_i + int(1.0 * fs)) if tone_s_i is not None else None,
-            "tone_last_frame": (tone_e + int(1.0 * fs)) if tone_e is not None else None,
-            "end_marker_frame": (em + int(2.0 * fs)) if em is not None else None,
-            "latency_start_s": round(((sm + int(0.9 * fs)) - fr["start_marker"]) / fs, 5) if sm is not None else None,
-            "captured_tone_s": round(((tone_e - tone_s_i) / fs), 4) if (tone_s_i is not None and tone_e is not None) else None,
+        mA = ev["marker_A_peaks_abs"][0] if ev["marker_A_peaks_abs"] else None
+        quiet = []
+        if mA:
+            for i in range(int(0.2 * fs), max(int(0.25 * fs), mA - int(0.2 * fs)), int(0.15 * fs)):
+                quiet.append(float(np.median(e997[i:i + int(0.15 * fs)])))
+        thr = max(8 * (min(quiet) if quiet else 1e-7), 1e-6)
+        ev["tone_thr"] = thr
+        ev["tone_search_slice_start_abs"] = None
+        ev["tone_first_local"] = None
+        if mA:
+            # поиск тона ПОСЛЕ конца маркера А: пик согласованного фильтра —
+            # левый край совпадения, сам маркер длится 0.08 с и его
+            # огибающая на 997 Гц триггерит детектор (ошибка v1/v2.1)
+            w0 = mA + int(0.10 * fs)
+            w1 = min(mA + int(0.35 * fs) + int(tone_s * fs) + int(2.5 * fs), n)
+            ev["tone_search_slice_start_abs"] = w0
+            seg = e997[w0:w1]
+            above = np.where(seg > thr)[0]
+            if len(above):
+                ev["tone_first_local"] = int(above[0])
+                ev["tone_first_abs"] = int(above[0] + w0)
+                ev["tone_last_abs"] = int(above[-1] + w0)
+        events[name] = ev
+    res["events"] = events
+
+    mA = events["L"]["marker_A_peaks_abs"]
+    if mA:
+        start_offset = mA[0] - (fr["marker_A_start"] + pad_n)
+        res["start_offset_s"] = round(start_offset / fs, 5)
+        res["start_offset_note"] = ("смещение старта программы в базе захвата: arecord pre-roll + "
+                                    "открытие aplay/D10; НЕ является латентностью D10 (§11.5.2)")
+        res["expected_abs"] = {
+            "marker_A_start": fr["marker_A_start"] + pad_n + start_offset,
+            "tone_start": fr["tone_start"] + pad_n + start_offset,
+            "tone_end": fr["tone_end"] + pad_n + start_offset,
+            "marker_B_start": fr["marker_B_start"] + pad_n + start_offset,
         }
-    return res, fr
+        for name in ("L", "R"):
+            for key in ("tone_last_abs", "tone_contiguous_last_abs"):
+                tl = events[name].get(key)
+                if tl is not None:
+                    res[f"{key.replace('_abs','')}_tail_s_{name}"] = round(
+                        (tl - res["expected_abs"]["tone_end"]) / fs, 4)
+        # прямой RMS-замер послетоновой зоны: [tone_end .. tone_end+0.4 с]
+        # против зоны тона — если D10 продлевает тон, там будет тон, а не шум
+        te = res["expected_abs"]["tone_end"]
+        ts = res["expected_abs"]["tone_start"]
+        post = int(0.4 * fs)
+        for name, arr in (("L", capL), ("R", capR)):
+            if te + post < n and ts < te:
+                r_tone = 20 * np.log10(max(float(np.sqrt(np.mean(arr[ts + int(0.3*fs):te - int(0.1*fs)]**2)) * 2**0.5), 1e-12))
+                r_post = 20 * np.log10(max(float(np.sqrt(np.mean(arr[te:te + post]**2)) * 2**0.5), 1e-12))
+                res[f"rms_tone_dBFS_{name}"] = round(r_tone, 1)
+                res[f"rms_post_tone_dBFS_{name}"] = round(r_post, 1)
+        mB = events["R"]["marker_B_peaks_abs"]
+        if mB:
+            res["marker_B_expected_minus_detected_s"] = round(
+                (res["expected_abs"]["marker_B_start"] - mB[0]) / fs, 5)
+
+    if save_raw:
+        os.makedirs(outdir, exist_ok=True)
+        import shutil
+        shutil.copy(cap_path, os.path.join(outdir, f"capture-full-{tag}.raw"))
+        shutil.copy(sub_path, os.path.join(outdir, f"submitted-{tag}.s32"))
+        res["saved_capture"] = f"capture-full-{tag}.raw (S24_3LE stereo, {fs} Hz)"
+    return res
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--durations", default="1,2,5,10")
-    ap.add_argument("--buffers", default="100")
+    ap.add_argument("--tone", type=float, default=2.0)
+    ap.add_argument("--trailing", type=float, default=0.0)
+    ap.add_argument("--buffer", type=int, default=100)
+    ap.add_argument("--save-raw", action="store_true")
+    ap.add_argument("--tag", default="run")
     ap.add_argument("--rate", type=int, default=192000)
     a = ap.parse_args()
-    dac = find_card(DAC_USBID); adc = find_card(ADC_USBID)
-    assert dac is not None and adc is not None, "карты не найдены"
-    print(f"DAC D10 = hw:{dac},0 | ADC E-MU = hw:{adc},0 | rate {a.rate}", flush=True)
-    all_res = []
-    for tone_s in [float(x) for x in a.durations.split(",")]:
-        for buf in [int(x) for x in a.buffers.split(",")]:
-            res, fr = run_case(a.rate, tone_s, buf, 0, 0, dac, adc)
-            all_res.append(res)
-            L, R = res["L"], res["R"]
-            print(f"тон {tone_s:>4}с буфер {buf:>3}мс: "
-                  f"задержка L={L['latency_start_s']} R={R['latency_start_s']}; "
-                  f"захвачено L={L['captured_tone_s']} R={R['captured_tone_s']} "
-                  f"(подано {tone_s}); конец L={L['tone_last_frame']} R={R['tone_last_frame']} "
-                  f"(подано {fr['tone_end']}); аплей rc={res['aplay_rc']} {res['aplay_elapsed_s']}с",
-                  flush=True)
-    out = os.path.join(ROOT, "measurements", "diagnostics",
-                       f"timing-probe-{a.rate}.json")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    json.dump({"rate": a.rate, "cases": all_res,
-               "frames_5s_program": fr, "timestamp": datetime.now().isoformat()},
-              open(out, "w"), ensure_ascii=False, indent=1)
-    print("JSON:", out)
+    dac, adc = find_card(DAC_USBID), find_card(ADC_USBID)
+    assert dac is not None and adc is not None, "D10/E-MU не найдены"
+    outdir = os.path.join(ROOT, "measurements", "diagnostics")
+    os.makedirs(outdir, exist_ok=True)
+    res = run_case(a.rate, a.tone, a.buffer, a.trailing, dac, adc,
+                   save_raw=a.save_raw, outdir=outdir, tag=a.tag)
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+    path = os.path.join(outdir, f"timing-v2-{a.tag}.json")
+    json.dump(res, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print("JSON:", path, flush=True)
 
 
 if __name__ == "__main__":
