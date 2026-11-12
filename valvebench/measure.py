@@ -158,10 +158,23 @@ class Rig:
                 tone_hz = self.f_of(k)
                 break
         d = self._onset(rec, tone_hz=tone_hz)
+        # _onset() locates the beginning of the first TEST TONE, not the
+        # beginning of the segment: _seg() has already inserted s_n seconds
+        # of settling silence before that tone. Convert the detected tone
+        # position back to the segment origin before applying each segment's
+        # settle offset below. Without this subtraction, the first segment's
+        # settle is counted twice and the analysis window runs into silence.
+        first_settle = meta[0][1] if meta else 0
+        pos = d - first_settle
+        if pos < 0:
+            raise MeasureError(
+                "обнаруженное начало тона раньше ожидаемой паузы settle; "
+                "запись не позволяет надёжно выровнять окно анализа"
+            )
         # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
         # (узкополосный поиск не нашёл тон) не теряется
         warns = list(self.be.notes)
-        wins, pos = [], d
+        wins = []
         for (ln, s_n) in meta:
             a = pos + s_n
             b = a + self.blocks * self.n
