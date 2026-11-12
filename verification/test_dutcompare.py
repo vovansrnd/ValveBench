@@ -220,17 +220,24 @@ class DutComparisonTests(unittest.TestCase):
         self.assertTrue(any(output_dir.iterdir()))
 
     def test_discovery_lists_only_complete_saved_dut_sessions(self):
-        complete = self._write("dut-590", make_envelope("590", "complete-A", note="tested"))
-        self._write("dut-590-partial", make_envelope("591", "partial-B", state="partial"))
-        invalid_dir = self.root / "dut-invalid"
-        invalid_dir.mkdir()
+        devices_root = self.root / "devices"
+        complete_dir = devices_root / "590" / "complete-A"
+        complete_dir.mkdir(parents=True)
+        with (complete_dir / "session.json").open("w", encoding="utf-8") as fh:
+            json.dump(make_envelope("590", "complete-A", note="tested"), fh)
+        partial_dir = devices_root / "591" / "partial-B"
+        partial_dir.mkdir(parents=True)
+        with (partial_dir / "session.json").open("w", encoding="utf-8") as fh:
+            json.dump(make_envelope("591", "partial-B", state="partial"), fh)
+        invalid_dir = devices_root / "592" / "invalid-C"
+        invalid_dir.mkdir(parents=True)
         (invalid_dir / "session.json").write_text("{broken", encoding="utf-8")
-        result = discover_sessions(self.root)
+        result = discover_sessions(devices_root)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["device_id"], "590")
         self.assertEqual(result[0]["session_id"], "complete-A")
         self.assertEqual(result[0]["note"], "tested")
-        self.assertEqual(result[0]["path"], str((Path(complete) / "session.json").resolve()))
+        self.assertEqual(result[0]["path"], str((complete_dir / "session.json").resolve()))
 
     def test_discovery_of_missing_directory_returns_empty_list(self):
         self.assertEqual(discover_sessions(self.root / "absent"), [])
