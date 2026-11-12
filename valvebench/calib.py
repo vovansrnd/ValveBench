@@ -21,6 +21,9 @@ DEFAULTS = {
     "adc_att_db": 0.0,
     "mains": 50.0,
     "band_hi": 20000.0,
+    # Clock pilot is deliberately quiet by default. Users may raise it only
+    # after confirming that the physical path is safe for the connected DUT.
+    "clock_probe_level_dbfs": -72.0,
     "frequency_response_profiles": {},
     "noise_floor_profiles": {},
     "auto_apply_response": True,
