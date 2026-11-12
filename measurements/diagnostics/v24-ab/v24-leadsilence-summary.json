@@ -1,0 +1,46 @@
+[
+ {
+  "variant": "A",
+  "repeat": 1,
+  "plateau_start_s": 1.8583,
+  "plateau_len_s": 4.5413,
+  "expected_full_tone_s": 4.55,
+  "tone_loss_s": 0.0087,
+  "trunc_vs_expected_end_s": 0.0013,
+  "rms_last_0_3s_of_plateau_dBFS": -36.8,
+  "rms_post_tone_0_4s_dBFS": -74.2
+ },
+ {
+  "variant": "A",
+  "repeat": 2,
+  "plateau_start_s": 1.8574,
+  "plateau_len_s": 4.5413,
+  "expected_full_tone_s": 4.55,
+  "tone_loss_s": 0.0087,
+  "trunc_vs_expected_end_s": 0.0013,
+  "rms_last_0_3s_of_plateau_dBFS": -36.8,
+  "rms_post_tone_0_4s_dBFS": -74.3
+ },
+ {
+  "variant": "B",
+  "repeat": 1,
+  "plateau_start_s": 1.8463,
+  "plateau_len_s": 4.5413,
+  "expected_full_tone_s": 4.55,
+  "tone_loss_s": 0.0087,
+  "trunc_vs_expected_end_s": 0.0013,
+  "rms_last_0_3s_of_plateau_dBFS": -36.8,
+  "rms_post_tone_0_4s_dBFS": -81.3
+ },
+ {
+  "variant": "B",
+  "repeat": 2,
+  "plateau_start_s": 1.855,
+  "plateau_len_s": 4.5414,
+  "expected_full_tone_s": 4.55,
+  "tone_loss_s": 0.0086,
+  "trunc_vs_expected_end_s": 0.0014,
+  "rms_last_0_3s_of_plateau_dBFS": -36.8,
+  "rms_post_tone_0_4s_dBFS": -81.4
+ }
+]

@@ -1,0 +1,83 @@
+[
+ {
+  "tone_s": 2.0,
+  "trailing_s": 0.0,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0643,
+  "tone_loss_s": 0.4857,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 2.0,
+  "trailing_s": 0.6,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0643,
+  "tone_loss_s": 0.4857,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 2.0,
+  "trailing_s": 1.08,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0644,
+  "tone_loss_s": 0.4856,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 2.0,
+  "trailing_s": 2.0,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0643,
+  "tone_loss_s": 0.4857,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 4.55,
+  "trailing_s": 0.0,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0643,
+  "tone_loss_s": 0.4857,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 4.55,
+  "trailing_s": 0.6,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0642,
+  "tone_loss_s": 0.4858,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 4.55,
+  "trailing_s": 1.08,
+  "buffer_ms": 100,
+  "plateau_len_s": 4.0644,
+  "tone_loss_s": 0.4856,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 4.55,
+  "trailing_s": 0.0,
+  "buffer_ms": 200,
+  "plateau_len_s": 4.0644,
+  "tone_loss_s": 0.4856,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ },
+ {
+  "tone_s": 4.55,
+  "trailing_s": 0.0,
+  "buffer_ms": 400,
+  "plateau_len_s": 4.0644,
+  "tone_loss_s": 0.4856,
+  "marker": null,
+  "rms_post_dBFS_R": null
+ }
+]

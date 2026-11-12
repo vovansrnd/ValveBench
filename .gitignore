@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 measurements/**/*.wav
+measurements/diagnostics/v24-ab/*.npy
+measurements/diagnostics/v24-ab/*.bin
+measurements/diagnostics/v24-ab/*.raw

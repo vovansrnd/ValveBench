@@ -1,0 +1,6 @@
+arecord: arecord -q -D hw:3,0 -t raw -f S24_3LE -r 192000 -c 2 -d 6
+aplay:   aplay -q -D hw:2,0 -t raw -f S32_LE -r 192000 -c 2 --buffer-time=100000 (stdin)
+stdin bytes: 8064000
+aplay/arecord rc: 0/0 (play_record raises BackendError при ненулевом rc — исключения не было)
+be.notes: []
+elapsed_s: 8.286
