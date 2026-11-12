@@ -98,9 +98,11 @@ class ThdCaptureWavTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "cli-capture.wav"
             output = StringIO()
-            with patch("valvebench.cli.make_rig", return_value=rig), \\
-                 patch("valvebench.cli.m.text_thd", return_value="fake THD report"), \\
-                 redirect_stdout(output):
+            with (
+                patch("valvebench.cli.make_rig", return_value=rig),
+                patch("valvebench.cli.m.text_thd", return_value="fake THD report"),
+                redirect_stdout(output),
+            ):
                 code = cli_main(["--sim", "thd", "--wav", str(target)])
             self.assertEqual(code, 0, output.getvalue())
             self.assertTrue(target.is_file())
