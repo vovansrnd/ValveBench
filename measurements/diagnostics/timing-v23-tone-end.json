@@ -1,0 +1,373 @@
+{
+ "marker_A_abs": 298629,
+ "marker_A_score": 0.9980395114380293,
+ "start_offset_frames": 97029,
+ "start_offset_s": 0.50536,
+ "start_offset_note": "arecord pre-roll + открытие aplay/D10 (§11.5.2)",
+ "expected_tone_capture": [
+  342789,
+  726789
+ ],
+ "expected_tone_start_s": 1.7854,
+ "expected_tone_end_s": 3.7854,
+ "expected_markerB_abs": 726789,
+ "submitted_tone_end_expected": 629760,
+ "submitted_tone_last_abs": 645214,
+ "submitted_tone_last_minus_expected_s": 0.08049,
+ "marker_B_abs": 726816,
+ "marker_B_score": 0.993497576908834,
+ "marker_B_expected_minus_detected_s": -0.00014,
+ "marker_B_all_maxima": [
+  [
+   726816,
+   0.9935
+  ]
+ ],
+ "envelope_window": [
+  333189,
+  755616
+ ],
+ "envelope": {
+  "L": {
+   "thresholds": {
+    "below_45dBFS": {
+     "frame_abs": 726006,
+     "t_s": 3.7813,
+     "rel_markerB_s": -0.00422,
+     "rel_expected_tone_end_s": -0.00408
+    },
+    "below_55dBFS": {
+     "frame_abs": 726557,
+     "t_s": 3.7842,
+     "rel_markerB_s": -0.00135,
+     "rel_expected_tone_end_s": -0.00121
+    },
+    "below_65dBFS": {
+     "frame_abs": 730341,
+     "t_s": 3.8039,
+     "rel_markerB_s": 0.01836,
+     "rel_expected_tone_end_s": 0.0185
+    }
+   },
+   "last_above_minus45_abs": 726005,
+   "last_above_minus45_rel_markerB_s": -0.00422,
+   "rms_table_near_expected_end": [
+    {
+     "dt_ms_to_expected_end": -600,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -580,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -560,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -540,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -520,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -500,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -480,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -460,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -440,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -420,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -400,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -380,
+     "rms_dBFS": -37.1
+    },
+    {
+     "dt_ms_to_expected_end": -360,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -340,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -320,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -300,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -280,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -260,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -240,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -220,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -200,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -180,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -160,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -140,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -120,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -100,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -80,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -60,
+     "rms_dBFS": -37.2
+    },
+    {
+     "dt_ms_to_expected_end": -40,
+     "rms_dBFS": -38.6
+    },
+    {
+     "dt_ms_to_expected_end": -20,
+     "rms_dBFS": -39.1
+    },
+    {
+     "dt_ms_to_expected_end": 0,
+     "rms_dBFS": -38.8
+    },
+    {
+     "dt_ms_to_expected_end": 20,
+     "rms_dBFS": -38.2
+    },
+    {
+     "dt_ms_to_expected_end": 40,
+     "rms_dBFS": -40.0
+    },
+    {
+     "dt_ms_to_expected_end": 60,
+     "rms_dBFS": -44.0
+    },
+    {
+     "dt_ms_to_expected_end": 80,
+     "rms_dBFS": -80.1
+    },
+    {
+     "dt_ms_to_expected_end": 100,
+     "rms_dBFS": -80.1
+    }
+   ]
+  },
+  "R": {
+   "thresholds": {
+    "below_45dBFS": {
+     "frame_abs": 726063,
+     "t_s": 3.7816,
+     "rel_markerB_s": -0.00392,
+     "rel_expected_tone_end_s": -0.00378
+    },
+    "below_55dBFS": {
+     "frame_abs": 726561,
+     "t_s": 3.7842,
+     "rel_markerB_s": -0.00133,
+     "rel_expected_tone_end_s": -0.00119
+    },
+    "below_65dBFS": {
+     "frame_abs": 731019,
+     "t_s": 3.8074,
+     "rel_markerB_s": 0.02189,
+     "rel_expected_tone_end_s": 0.02203
+    }
+   },
+   "last_above_minus45_abs": 726062,
+   "last_above_minus45_rel_markerB_s": -0.00393,
+   "rms_table_near_expected_end": [
+    {
+     "dt_ms_to_expected_end": -600,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -580,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -560,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -540,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -520,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -500,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -480,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -460,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -440,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -420,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -400,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -380,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -360,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -340,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -320,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -300,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -280,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -260,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -240,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -220,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -200,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -180,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -160,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -140,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -120,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -100,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -80,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -60,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": -40,
+     "rms_dBFS": -38.1
+    },
+    {
+     "dt_ms_to_expected_end": -20,
+     "rms_dBFS": -38.2
+    },
+    {
+     "dt_ms_to_expected_end": 0,
+     "rms_dBFS": -37.5
+    },
+    {
+     "dt_ms_to_expected_end": 20,
+     "rms_dBFS": -36.8
+    },
+    {
+     "dt_ms_to_expected_end": 40,
+     "rms_dBFS": -38.6
+    },
+    {
+     "dt_ms_to_expected_end": 60,
+     "rms_dBFS": -42.6
+    },
+    {
+     "dt_ms_to_expected_end": 80,
+     "rms_dBFS": -81.8
+    },
+    {
+     "dt_ms_to_expected_end": 100,
+     "rms_dBFS": -81.9
+    }
+   ]
+  }
+ },
+ "verdict": "пробный захват (trailing=0): тон 997 Гц идёт вплотную к маркеру B — последний кадр выше −45 dBFS за 4.2 мс до маркера B; маркер B в ожидаемой позиции (Δ -0.00014 с, score 0.993); обрыва тона в ЭТОМ захвате нет (хвост потока = тишина, предсказание модели no-drain)"
+}

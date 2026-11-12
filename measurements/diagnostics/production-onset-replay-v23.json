@@ -1,0 +1,242 @@
+[
+ {
+  "case": "d10-emu-thd-full-capture",
+  "plateau_frames": [
+   150528,
+   557184
+  ],
+  "plateau_s": [
+   0.784,
+   2.902
+  ],
+  "plateau_len_s": 2.118,
+  "production_onset_frame": 148800,
+  "onset_vs_plateau_start_ms": -9.0,
+  "program_tone_len_s": 2.55,
+  "truncation_s": -0.423,
+  "thd": {
+   "production": {
+    "window_frames": [
+     244800,
+     628800
+    ],
+    "window_len_s": 2.0,
+    "blocks_full": 2,
+    "analyzed_frames": 384000,
+    "analyzed_len_s": 2.0,
+    "truncated_by_blocks": false,
+    "thdn_pct_L": 9.104,
+    "residual_dbfs_L": -58.3,
+    "thdn_pct_R": 9.096,
+    "residual_dbfs_R": -57.9
+   },
+   "fitting": {
+    "window_frames": [
+     227328,
+     537984
+    ],
+    "window_len_s": 1.618,
+    "blocks_full": 1,
+    "analyzed_frames": 192000,
+    "analyzed_len_s": 1.0,
+    "truncated_by_blocks": true,
+    "thdn_pct_L": 0.525,
+    "residual_dbfs_L": -82.8,
+    "thdn_pct_R": 0.071,
+    "residual_dbfs_R": -99.7
+   }
+  }
+ },
+ {
+  "case": "d10-emu-thd-full-capture-4blocks",
+  "plateau_frames": [
+   150528,
+   941568
+  ],
+  "plateau_s": [
+   0.784,
+   4.904
+  ],
+  "plateau_len_s": 4.12,
+  "production_onset_frame": 148800,
+  "onset_vs_plateau_start_ms": -9.0,
+  "program_tone_len_s": 4.55,
+  "truncation_s": -0.421,
+  "thd": {
+   "production": {
+    "window_frames": [
+     244800,
+     1012800
+    ],
+    "window_len_s": 4.0,
+    "blocks_full": 4,
+    "analyzed_frames": 768000,
+    "analyzed_len_s": 4.0,
+    "truncated_by_blocks": false,
+    "thdn_pct_L": 6.31,
+    "residual_dbfs_L": -61.3,
+    "thdn_pct_R": 6.278,
+    "residual_dbfs_R": -61.0
+   },
+   "fitting": {
+    "window_frames": [
+     227328,
+     922368
+    ],
+    "window_len_s": 3.62,
+    "blocks_full": 3,
+    "analyzed_frames": 576000,
+    "analyzed_len_s": 3.0,
+    "truncated_by_blocks": true,
+    "thdn_pct_L": 0.643,
+    "residual_dbfs_L": -81.0,
+    "thdn_pct_R": 0.085,
+    "residual_dbfs_R": -98.2
+   }
+  }
+ },
+ {
+  "case": "d10-emu-thd-postroll-06",
+  "plateau_frames": [
+   150528,
+   941184
+  ],
+  "plateau_s": [
+   0.784,
+   4.902
+  ],
+  "plateau_len_s": 4.118,
+  "production_onset_frame": 148800,
+  "onset_vs_plateau_start_ms": -9.0,
+  "program_tone_len_s": 4.55,
+  "truncation_s": -0.423,
+  "thd": {
+   "production": {
+    "window_frames": [
+     244800,
+     1012800
+    ],
+    "window_len_s": 4.0,
+    "blocks_full": 4,
+    "analyzed_frames": 768000,
+    "analyzed_len_s": 4.0,
+    "truncated_by_blocks": false,
+    "thdn_pct_L": 6.378,
+    "residual_dbfs_L": -61.2,
+    "thdn_pct_R": 6.343,
+    "residual_dbfs_R": -60.9
+   },
+   "fitting": {
+    "window_frames": [
+     227328,
+     921984
+    ],
+    "window_len_s": 3.618,
+    "blocks_full": 3,
+    "analyzed_frames": 576000,
+    "analyzed_len_s": 3.0,
+    "truncated_by_blocks": true,
+    "thdn_pct_L": 0.675,
+    "residual_dbfs_L": -80.6,
+    "thdn_pct_R": 0.092,
+    "residual_dbfs_R": -97.5
+   }
+  }
+ },
+ {
+  "case": "d10-emu-thd-preroll-06",
+  "plateau_frames": [
+   259968,
+   1056768
+  ],
+  "plateau_s": [
+   1.354,
+   5.504
+  ],
+  "plateau_len_s": 4.15,
+  "production_onset_frame": 258240,
+  "onset_vs_plateau_start_ms": -9.0,
+  "program_tone_len_s": 4.55,
+  "truncation_s": -0.391,
+  "thd": {
+   "production": {
+    "window_frames": [
+     354240,
+     1122240
+    ],
+    "window_len_s": 4.0,
+    "blocks_full": 4,
+    "analyzed_frames": 768000,
+    "analyzed_len_s": 4.0,
+    "truncated_by_blocks": false,
+    "thdn_pct_L": 5.201,
+    "residual_dbfs_L": -62.9,
+    "thdn_pct_R": 5.091,
+    "residual_dbfs_R": -62.7
+   },
+   "fitting": {
+    "window_frames": [
+     336768,
+     1037568
+    ],
+    "window_len_s": 3.65,
+    "blocks_full": 3,
+    "analyzed_frames": 576000,
+    "analyzed_len_s": 3.0,
+    "truncated_by_blocks": true,
+    "thdn_pct_L": 1.053,
+    "residual_dbfs_L": -76.7,
+    "thdn_pct_R": 0.127,
+    "residual_dbfs_R": -94.7
+   }
+  }
+ },
+ {
+  "case": "d10-emu-thd-tone-tail-06",
+  "plateau_frames": [
+   150912,
+   1056768
+  ],
+  "plateau_s": [
+   0.786,
+   5.504
+  ],
+  "plateau_len_s": 4.718,
+  "production_onset_frame": 148800,
+  "onset_vs_plateau_start_ms": -11.0,
+  "program_tone_len_s": 5.15,
+  "truncation_s": -0.421,
+  "thd": {
+   "production": {
+    "window_frames": [
+     244800,
+     1012800
+    ],
+    "window_len_s": 4.0,
+    "blocks_full": 4,
+    "analyzed_frames": 768000,
+    "analyzed_len_s": 4.0,
+    "truncated_by_blocks": false,
+    "thdn_pct_L": 1.038,
+    "residual_dbfs_L": -76.8,
+    "thdn_pct_R": 0.126,
+    "residual_dbfs_R": -94.8
+   },
+   "fitting": {
+    "window_frames": [
+     227712,
+     995712
+    ],
+    "window_len_s": 4.0,
+    "blocks_full": 4,
+    "analyzed_frames": 768000,
+    "analyzed_len_s": 4.0,
+    "truncated_by_blocks": false,
+    "thdn_pct_L": 1.045,
+    "residual_dbfs_L": -76.8,
+    "thdn_pct_R": 0.127,
+    "residual_dbfs_R": -94.7
+   }
+  }
+ }
+]
