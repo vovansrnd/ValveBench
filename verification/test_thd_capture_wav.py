@@ -6,6 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 import sys
+from contextlib import redirect_stdout
+from io import StringIO
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -15,6 +18,7 @@ import numpy as np
 from scipy.io import wavfile
 
 from valvebench.measure import MeasureError, thd_point
+from valvebench.cli import main as cli_main
 
 
 class FakeRig:
@@ -88,6 +92,19 @@ class ThdCaptureWavTests(unittest.TestCase):
         rig = FakeRig(np.zeros((96000, 2), dtype=np.float64))
         result = thd_point(rig)
         self.assertNotIn("capture_wav", result)
+
+    def test_cli_wav_option_reaches_thd_capture_method(self):
+        rig = FakeRig(np.zeros((96000, 2), dtype=np.float64))
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "cli-capture.wav"
+            output = StringIO()
+            with patch("valvebench.cli.make_rig", return_value=rig), \\
+                 patch("valvebench.cli.m.text_thd", return_value="fake THD report"), \\
+                 redirect_stdout(output):
+                code = cli_main(["--sim", "thd", "--wav", str(target)])
+            self.assertEqual(code, 0, output.getvalue())
+            self.assertTrue(target.is_file())
+            self.assertIn("fake THD report", output.getvalue())
 
 
 if __name__ == "__main__":
