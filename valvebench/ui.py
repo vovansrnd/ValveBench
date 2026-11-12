@@ -19,6 +19,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from . import __version__, calib, dsp, measure as m, signals, store, vinyl, preferences  # noqa: E402
 from .identity import application_id as _resolved_application_id  # noqa: E402
 from . import gainmatch  # noqa: E402
+from . import dutcompare  # noqa: E402
 from .gainmatch import GainTracker  # noqa: E402
 from .gainview import GainDeltaView  # noqa: E402
 from .backend import (AlsaCli, SimBackend, SimChannel, common_pcm_rates, list_pcm_devices,
@@ -218,6 +219,12 @@ class Page(Gtk.Box):
             plot.set_view_changed_callback(self._sync_plot_scale)
         else:
             self.y_min = self.y_max = self.plot_scale_hint = None
+
+        # Optional page-specific content (e.g. DUT comparison table) sits
+        # between the graph controls and the textual report.
+        self.right_extra = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.right_extra.set_visible(False)
+        right.append(self.right_extra)
 
         self.buf, sw = textview()
         sw.set_min_content_height(150)
@@ -728,6 +735,265 @@ class MeasurementBatchPage(Page):
         else:
             lines.append("Все результаты сохраняются одной кнопкой в один паспорт устройства.")
         self.say("\n\n".join(lines))
+
+
+class DutComparisonPage(Page):
+    """Pick saved DUT sessions and compare them without opening audio devices."""
+
+    def __init__(self, win):
+        self.win = win
+        self.sessions = []
+        self.session_checks = []
+        self._refreshing = False
+        self._comparing = False
+
+        title = Gtk.Label(label="Сохранённые измерения DUT", xalign=0)
+        title.add_css_class("heading")
+        help_text = Gtk.Label(
+            label=("Отметь две или более завершённые сессии. Сравнение проверяет "
+                   "одинаковость измерительного тракта, калибровки и параметров. "
+                   "L и R остаются раздельными; агрегат рассчитывается дополнительно. "
+                   "Аудиоустройства при сравнении не открываются."),
+            xalign=0, wrap=True)
+        help_text.add_css_class("dim-label")
+
+        self.refresh_button = button("ОБНОВИТЬ СПИСОК", self.refresh_sessions)
+        self.compare_button = button("СРАВНИТЬ ВЫБРАННЫЕ СЕССИИ", self.compare_selected, True)
+        self.compare_button.set_sensitive(False)
+        self.selection_status = Gtk.Label(label="Сохранённые сессии ещё не загружены", xalign=0)
+        self.selection_status.add_css_class("dim-label")
+
+        self.session_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.session_box.set_margin_top(4)
+        self.session_scroll = Gtk.ScrolledWindow()
+        self.session_scroll.set_min_content_height(360)
+        self.session_scroll.set_max_content_height(560)
+        self.session_scroll.set_propagate_natural_height(True)
+        self.session_scroll.set_child(self.session_box)
+        self.response_plot = Plot(xlog=True, xlabel="Частота, Гц", ylabel="Отклонение, дБ")
+        self.metrics_title = Gtk.Label(label="Таблица L/R и агрегат по каналам", xalign=0)
+        self.metrics_title.add_css_class("heading")
+        self.metrics_grid = Gtk.Grid(column_spacing=12, row_spacing=4)
+        self.metrics_grid.set_column_homogeneous(False)
+        self.metrics_scroll = Gtk.ScrolledWindow()
+        self.metrics_scroll.set_min_content_height(230)
+        self.metrics_scroll.set_max_content_height(440)
+        self.metrics_scroll.set_propagate_natural_height(True)
+        self.metrics_scroll.set_child(self.metrics_grid)
+        self.metrics_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.metrics_panel.append(self.metrics_title)
+        self.metrics_panel.append(self.metrics_scroll)
+
+        super().__init__(title, help_text, self.refresh_button, self.selection_status,
+                         self.session_scroll, self.compare_button, plot=self.response_plot)
+        self.right_extra.append(self.metrics_panel)
+        self.refresh_sessions()
+
+    @staticmethod
+    def _session_label(session):
+        tests = ", ".join(str(test).upper() for test in session.get("test_order", [])) or "без списка тестов"
+        note = f" · {session['note']}" if session.get("note") else ""
+        stamp = session.get("created_at_local") or session.get("session_id") or ""
+        return (
+            f"DUT {session.get('device_id') or '?'} · {stamp}\n"
+            f"{tests}{note}\n"
+            f"{session.get('session_id') or ''}"
+        )
+
+    def _selected_paths(self):
+        return [
+            session["path"]
+            for session, check in self.session_checks
+            if check.get_active()
+        ]
+
+    def _update_selection_status(self):
+        count = len(self._selected_paths())
+        total = len(self.sessions)
+        if self._refreshing:
+            message = "Обновляю список сессий…"
+        elif total == 0:
+            message = "Завершённых пакетов DUT не найдено. Сначала сохрани пакет измерений."
+        else:
+            message = f"Найдено сессий: {total} · выбрано: {count} · для сравнения нужно минимум две"
+        self.selection_status.set_text(message)
+        self.compare_button.set_sensitive(not self._refreshing and not self._comparing and count >= 2)
+
+    def refresh_sessions(self):
+        if self._refreshing or self._comparing:
+            return
+        self._refreshing = True
+        self.refresh_button.set_sensitive(False)
+        self.compare_button.set_sensitive(False)
+        self._update_selection_status()
+
+        def work():
+            try:
+                sessions = dutcompare.discover_sessions()
+                error = None
+            except Exception as exc:  # noqa: BLE001
+                sessions, error = [], exc
+            GLib.idle_add(self._show_sessions, sessions, error)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _show_sessions(self, sessions, error):
+        self._refreshing = False
+        self.refresh_button.set_sensitive(True)
+        while child := self.session_box.get_first_child():
+            self.session_box.remove(child)
+        self.sessions = list(sessions or [])
+        self.session_checks = []
+        if error is not None:
+            self.session_box.append(Gtk.Label(
+                label=f"Не удалось прочитать список сессий: {type(error).__name__}: {error}",
+                xalign=0, wrap=True))
+            self.say(f"Список измерений не загружен:\n{type(error).__name__}: {error}")
+        elif not self.sessions:
+            self.session_box.append(Gtk.Label(
+                label="Пока нет завершённых пакетов DUT. Измерь аппарат на странице «Пакетный замер DUT» и сохрани результат.",
+                xalign=0, wrap=True))
+            self.say("Сохранённые завершённые пакеты DUT не найдены.")
+        else:
+            for session in self.sessions:
+                check = Gtk.CheckButton(label=self._session_label(session))
+                check.set_halign(Gtk.Align.FILL)
+                check.connect("toggled", lambda *_: self._update_selection_status())
+                self.session_box.append(check)
+                self.session_checks.append((session, check))
+            self.say(
+                f"Загружено сессий: {len(self.sessions)}.\n"
+                "Отметь пакеты, которые нужно сравнить. При несовпадении условий "
+                "измерений сравнение будет остановлено с указанием причины."
+            )
+        self._update_selection_status()
+        return False
+
+    def compare_selected(self):
+        if self._comparing or self._refreshing:
+            return
+        paths = self._selected_paths()
+        if len(paths) < 2:
+            self.win.toast("Выбери минимум две завершённые сессии DUT")
+            return
+        self._comparing = True
+        self.refresh_button.set_sensitive(False)
+        self.compare_button.set_sensitive(False)
+        self._update_selection_status()
+        self.say("Сравниваю сохранённые сессии…")
+
+        def work():
+            try:
+                comparison = dutcompare.compare_sessions(paths)
+                output = dutcompare.save_comparison(comparison)
+                report = dutcompare.text_comparison(comparison)
+                error = None
+            except Exception as exc:  # noqa: BLE001
+                comparison, output, report, error = None, None, None, exc
+            GLib.idle_add(self._comparison_finished, comparison, output, report, error)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    @staticmethod
+    def _metric_cell_text(value):
+        if value is None:
+            return "—"
+        if isinstance(value, (int, float)):
+            return f"{float(value):.3f}"
+        return str(value)
+
+    def _populate_metrics_table(self, comparison):
+        while child := self.metrics_grid.get_first_child():
+            self.metrics_grid.remove(child)
+        headers = ("Тест", "Показатель", "DUT", "L", "R", "ср.", "ед.")
+        for column, heading in enumerate(headers):
+            label = Gtk.Label(label=heading, xalign=0)
+            label.add_css_class("heading")
+            self.metrics_grid.attach(label, column, 0, 1, 1)
+
+        row = 1
+        for device in comparison.get("devices", []):
+            for test, values in (device.get("metrics") or {}).items():
+                for name, metric in values.items():
+                    cells = (
+                        str(test).upper(),
+                        str(name),
+                        str(device.get("device_id") or "—"),
+                        self._metric_cell_text(metric.get("L")),
+                        self._metric_cell_text(metric.get("R")),
+                        self._metric_cell_text(metric.get("aggregate")),
+                        str(metric.get("unit") or ""),
+                    )
+                    for column, value in enumerate(cells):
+                        label = Gtk.Label(label=value, xalign=0 if column < 3 else 1)
+                        label.set_selectable(True)
+                        if column in (3, 4, 5):
+                            label.add_css_class("numeric")
+                        self.metrics_grid.attach(label, column, row, 1, 1)
+                    row += 1
+        self.right_extra.set_visible(row > 1)
+
+    def _show_response_curves(self, comparison):
+        palette = (
+            (0.16, 0.48, 0.82), (0.82, 0.31, 0.18), (0.18, 0.62, 0.38),
+            (0.62, 0.38, 0.76), (0.74, 0.57, 0.14), (0.12, 0.62, 0.66),
+            (0.76, 0.32, 0.55), (0.42, 0.48, 0.56), (0.52, 0.55, 0.18),
+        )
+        traces = []
+        modes = set()
+        xlo, xhi = float("inf"), 0.0
+        for index, device in enumerate(comparison.get("devices", [])):
+            curve = (device.get("curves") or {}).get("response")
+            if not curve:
+                continue
+            frequency = curve.get("frequency_hz") or []
+            if len(frequency) < 2:
+                continue
+            modes.add(curve.get("mode", "flat"))
+            xlo, xhi = min(xlo, float(frequency[0])), max(xhi, float(frequency[-1]))
+            color = palette[index % len(palette)]
+            label = str(device.get("device_id") or f"#{index + 1}")
+            traces.append({
+                "x": frequency, "y": curve.get("L_db", []),
+                "label": f"{label} L", "color": color, "width": 2.0,
+            })
+            traces.append({
+                "x": frequency, "y": curve.get("R_db", []),
+                "label": f"{label} R", "color": color, "dash": True, "width": 2.0,
+            })
+        self.response_plot.set_traces(traces)
+        if traces:
+            ylabel = ("Отклонение от RIAA, дБ" if modes == {"riaa"}
+                      else "АЧХ, нормированная на 1 кГц, дБ")
+            self.response_plot.set_view(
+                xlim=(xlo, xhi), xlabel="Частота, Гц", ylabel=ylabel)
+            self.response_plot.autoscale_y()
+        else:
+            self.response_plot.set_view(
+                xlim=(20.0, 20000.0), xlabel="Частота, Гц",
+                ylabel="АЧХ: в выбранных сессиях нет sweep"
+            )
+            self.response_plot.autoscale_y()
+
+    def _comparison_finished(self, comparison, output, report, error):
+        self._comparing = False
+        self.refresh_button.set_sensitive(True)
+        if error is not None:
+            self.response_plot.set_traces([])
+            self.right_extra.set_visible(False)
+            self.say(f"СРАВНЕНИЕ НЕ ВЫПОЛНЕНО\n{type(error).__name__}: {error}")
+            self.win.toast(f"Сессии несопоставимы: {error}")
+        else:
+            self._show_response_curves(comparison)
+            self._populate_metrics_table(comparison)
+            legend_note = (
+                "\n\nГРАФИК АЧХ: цвет — аппарат; L — сплошная линия, R — пунктир."
+                if self.response_plot.traces else ""
+            )
+            self.say(report + legend_note + f"\n\nСРАВНЕНИЕ СОХРАНЕНО:\n{output}")
+            self.win.toast("Сравнение DUT сохранено")
+        self._update_selection_status()
+        return False
 
 
 class LivePage(Gtk.Box):
@@ -3180,6 +3446,11 @@ class SetupPage(Page):
                         "Потери перед проверяемым устройством, например inverse-RIAA/входной делитель")
         self.adc_att = spin("PAD DUT → вход АЦП, дБ", -60, 0, 0.1, c.get("adc_att_db", 0.0), 1,
                             "Только фактически измеренное ослабление установленного адаптера. Не задавай значение по расчёту без проверки реальной нагрузки и источника.")
+        self.clock_probe_level = spin(
+            "Уровень контрольного тона clock-preflight, dBFS", -120, -24, 1,
+            c.get("clock_probe_level_dbfs", -72.0), 1,
+            "По умолчанию −72 dBFS. Повышай уровень только после проверки безопасного сигнала на прямой петле; не поднимай его автоматически при подключённом DUT."
+        )
         self.out_l = spin("ЦАП L: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][0] or 0, 3)
         self.out_r = spin("ЦАП R: В RMS при 0 dBFS", 0, 50, 0.01, c["out_fs_vrms"][1] or 0, 3)
         self.in_l = spin("АЦП L: В RMS при 0 dBFS", 0, 50, 0.01, c["in_fs_vrms"][0] or 0, 3)
@@ -3218,6 +3489,7 @@ class SetupPage(Page):
         info.add_css_class("dim-label")
         super().__init__(win,
                          group("Измерительные параметры", self.mains, self.band, self.att, self.adc_att),
+                         group("Независимые тактовые генераторы ЦАП/АЦП", self.clock_probe_level),
                          group("Калибровка ЦАП (для абсолютного напряжения)", self.out_l, self.out_r),
                          group("Калибровка АЦП (для абсолютного напряжения)", self.in_l, self.in_r,
                                Gtk.Label(label="Калибровку ADC по петле выполняй с тем же физическим PAD DUT→ADC в обоих каналах. После изменения делителя/входного режима повтори ADC-калибровку и калибровку АЧХ карты.", xalign=0, wrap=True)),
@@ -3229,9 +3501,10 @@ class SetupPage(Page):
                          button("1. КАЛИБРОВАТЬ АЧХ ПАРЫ ЦАП→АЦП · ПРЯМАЯ ПЕТЛЯ", self.calibrate_response, True),
                          self.noise_status,
                          button("2. ИЗМЕРИТЬ ШУМОВОЙ ПОЛ АЦП", self.calibrate_noise),
-                         Gtk.Label(label=("Проверка тактов подаёт короткий синус 1 кГц на −72 dBFS и сравнивает частоту в записи АЦП "
-                                          "с частотой, которую выдаёт ЦАП. Это проверка расхождения частот дискретизации, "
-                                          "а не синхронизации часов компьютера."), xalign=0, wrap=True),
+                         Gtk.Label(label=("Проверка тактов подаёт короткий синус 1 кГц на заданном выше уровне "
+                                          "(по умолчанию −72 dBFS) и сравнивает частоту в записи АЦП с частотой ЦАП. "
+                                          "Уровень не повышается автоматически: повышай его только на заведомо безопасной прямой петле, "
+                                          "не через подключённый DUT. Это проверка расхождения частот дискретизации, а не синхронизации часов компьютера."), xalign=0, wrap=True),
                          button("ПРОВЕРИТЬ СОВПАДЕНИЕ ЧАСТОТ ЦАП И АЦП", self.check_clock),
                          button("Сохранить настройки", self.apply))
         self.auto_response.connect("notify::active", self.on_auto_changed)
@@ -3249,6 +3522,7 @@ class SetupPage(Page):
         self.band.set_value(float(c["band_hi"]))
         self.att.set_value(float(c["att_db"]))
         self.adc_att.set_value(float(c.get("adc_att_db", 0.0)))
+        self.clock_probe_level.set_value(float(c.get("clock_probe_level_dbfs", -72.0)))
         self.out_l.set_value(float(c["out_fs_vrms"][0] or 0))
         self.out_r.set_value(float(c["out_fs_vrms"][1] or 0))
         self.in_l.set_value(float(c["in_fs_vrms"][0] or 0))
@@ -3305,6 +3579,7 @@ class SetupPage(Page):
         c["band_hi"] = self.band.get_value()
         c["att_db"] = self.att.get_value()
         c["adc_att_db"] = self.adc_att.get_value()
+        c["clock_probe_level_dbfs"] = self.clock_probe_level.get_value()
         c["out_fs_vrms"] = [self.out_l.get_value() or None, self.out_r.get_value() or None]
         c["in_fs_vrms"] = [self.in_l.get_value() or None, self.in_r.get_value() or None]
         c["auto_apply_response"] = self.auto_response.get_active()
@@ -3392,7 +3667,11 @@ class SetupPage(Page):
                          clock_sensitive=False)
 
     def check_clock(self):
-        self.win.run_job(m.clock_check, lambda result: self.say(m.text_clock(result)),
+        level = float(self.clock_probe_level.get_value())
+        self.win.cal["clock_probe_level_dbfs"] = level
+        calib.save(self.win.cal)
+        self.win.run_job(lambda rig: m.clock_check(rig, level_dbfs=level),
+                         lambda result: self.say(m.text_clock(result)),
                          "проверяю согласование тактов ЦАП и АЦП", clock_sensitive=False)
 
     def cal_out(self):
@@ -3592,9 +3871,11 @@ class Window(Adw.ApplicationWindow):
         self.peakhold = PeakHoldPage(self)
         self.setup = SetupPage(self)
         self.batch_page = MeasurementBatchPage(self)
+        self.compare_page = DutComparisonPage(self)
         pages = (
             ("live", "Gain Match / Уровень", self.live),
             ("batch", "Пакетный замер DUT", self.batch_page),
+            ("compare", "Сравнение DUT", self.compare_page),
             ("generator", "Генератор / Осциллограф", self.generator_page),
             ("spectrum", "Спектр (большой экран)", self.spectrum),
             ("thd", "THD / THD+N", self.thd_page),
@@ -3989,6 +4270,7 @@ class Window(Adw.ApplicationWindow):
             "in_fs_vrms": self.cal.get("in_fs_vrms"),
             "dac_to_dut_attenuation_db": self.cal.get("att_db"),
             "dut_to_adc_pad_db": self.cal.get("adc_att_db", 0.0),
+            "clock_probe_level_dbfs": self.cal.get("clock_probe_level_dbfs", -72.0),
             "mains_hz": self.cal.get("mains"), "analysis_band_hi_hz": self.cal.get("band_hi"),
         }
         be = rig.be
@@ -4261,7 +4543,10 @@ class Window(Adw.ApplicationWindow):
                 measurement_context["audio_io"]["alsa_mixer_fingerprint"] = \
                     Window._mixer_fingerprint_for_pair(dac_hw, adc_hw)
                 if clock_sensitive and dac_hw != adc_hw:
-                    clock = m.clock_check(rig, level_dbfs=-72.0)
+                    clock_level = float(
+                        (measurement_context.get("calibration") or {}).get("clock_probe_level_dbfs", -72.0)
+                    )
+                    clock = m.clock_check(rig, level_dbfs=clock_level)
                     measurement_context["audio_io"]["clock_check"] = clock
                     if not clock.get("ok", False):
                         raise m.MeasureError(

@@ -6,10 +6,14 @@
 from __future__ import annotations
 
 import math
+import os
+import tempfile
 import time
+from pathlib import Path
 
 import numpy as np
 from scipy import signal as sg
+from scipy.io import wavfile
 
 from . import dsp
 from .calib import Calibration, fmt_v
@@ -158,6 +162,10 @@ class Rig:
         # (узкополосный поиск не нашёл тон) не теряется
         warns = list(self.be.notes)
         wins, pos = [], d
+        # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
+        # (узкополосный поиск не нашёл тон) не теряется
+        warns = list(self.be.notes)
+        wins = []
         for (ln, s_n) in meta:
             a = pos + s_n
             b = a + self.blocks * self.n
@@ -378,12 +386,42 @@ def text_clock(r):
 # --------------------------------------------------------------------------- THD
 
 
-def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9):
+def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9, capture_wav=None):
     k, a = rig.amp_tone(f, level_dbfs)
     tl = [(k, a)] if route in ("both", "L") else []
     tr = [(k, a)] if route in ("both", "R") else []
     wins, warns = rig.run([(tl, tr, None)])
     res = {"kind": "thd", "f": rig.f_of(k), "level_dbfs": level_dbfs, "warnings": warns, "ch": {}}
+    if capture_wav:
+        path = Path(capture_wav)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            raise MeasureError(f"запись WAV уже существует, отказ от перезаписи: {path}")
+        # A unique same-directory temporary file makes concurrent captures
+        # independent. Hard-linking into the final name is atomic and, unlike
+        # os.replace(), never overwrites a file created by another process
+        # after the existence check above.
+        fd, temp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.", suffix=".tmp.wav", dir=str(path.parent)
+        )
+        os.close(fd)
+        temp_path = Path(temp_name)
+        try:
+            wavfile.write(str(temp_path), int(rig.fs), np.asarray(wins[0], dtype=np.float32))
+            try:
+                os.link(temp_path, path)
+            except FileExistsError as exc:
+                raise MeasureError(
+                    f"запись WAV уже существует, отказ от перезаписи: {path}"
+                ) from exc
+        finally:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        res["capture_wav"] = str(path.resolve())
+        res["capture_format"] = "IEEE float32 WAV"
+        res["capture_sample_rate_hz"] = int(rig.fs)
     for c in (0, 1):
         if (c == 0 and not tl) or (c == 1 and not tr):
             continue
@@ -396,6 +434,8 @@ def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9):
 
 def text_thd(res):
     L = [f"THD  f = {res['f']:.1f} Гц, уровень генератора {res['level_dbfs']:.1f} dBFS"]
+    if res.get("capture_wav"):
+        L.append(f"Окно захвата, переданное в THD-анализ, сохранено: {res['capture_wav']} · {res.get('capture_format')} · {res.get('capture_sample_rate_hz')} Гц")
     for c, r in res["ch"].items():
         inf = r["info"]
         L.append(f"\n[{c}]  вход АЦП {r['level_dbfs']:.2f} dBFS"

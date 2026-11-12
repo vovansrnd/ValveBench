@@ -140,6 +140,17 @@ class SplitClockPreflightTests(unittest.TestCase):
         with self.assertRaises(MeasureError):
             require_usable_clock_for_resampling("noise-response", invalid)
 
+    def test_clock_probe_level_defaults_low_and_persists_globally(self):
+        cal = Calibration()
+        self.assertEqual(cal.get("clock_probe_level_dbfs"), -72.0)
+        cal["clock_probe_level_dbfs"] = -30.0
+        cal.activate_profile("pair:D10:EMU", "hw:1,0|hw:2,0")
+        cal["out_fs_vrms"] = [2.0, 2.0]
+        restored = Calibration(cal.serialize())
+        self.assertEqual(restored.get("clock_probe_level_dbfs"), -30.0)
+        restored.activate_profile("pair:D10:EMU", "hw:1,0|hw:2,0")
+        self.assertEqual(restored.get("clock_probe_level_dbfs"), -30.0)
+
     def test_legacy_single_device_config_migrates_to_both_endpoints(self):
         legacy = Calibration({"device": "hw:2,0", "fs": 192000,
                               "out_fs_vrms": [1.0, 1.1], "in_fs_vrms": [0.2, 0.21]})
