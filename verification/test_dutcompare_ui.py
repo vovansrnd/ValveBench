@@ -55,6 +55,14 @@ class DutComparisonUiContractTests(unittest.TestCase):
         self.assertIn("len(paths) < 2", self.source)
         self.assertIn("СРАВНИТЬ ВЫБРАННЫЕ СЕССИИ", self.source)
 
+    def test_full_response_plot_keeps_left_and_right_distinct(self):
+        self.assertIn("self.response_plot = Plot(xlog=True", self.source)
+        self.assertIn('"label": f"{label} L"', self.source)
+        self.assertIn('"label": f"{label} R"', self.source)
+        self.assertIn('"dash": True', self.source)
+        self.assertIn('curve.get("L_db", [])', self.source)
+        self.assertIn('curve.get("R_db", [])', self.source)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
