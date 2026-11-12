@@ -83,7 +83,21 @@ class SplitClockPreflightTests(unittest.TestCase):
         self.assertTrue(any("расхождение тактов" in w for w in rejected["warnings"]))
 
     def test_clock_probe_rejects_inconsistent_left_right_clock_estimates(self):
-        result = clock_check(FakeRig(30.0, 45.0))
+        class InconsistentRig:
+            fs = 96000
+            def amp_tone(self, _f, _level):
+                return 1000, 10 ** (-72.0 / 20.0)
+            def run(self, _segs):
+                return [[object()]], []
+            def f_of(self, _k):
+                return 1000.0
+            def _tone_an(self, _win, ch, _k, nharm=2):
+                ppm = 30.0 if ch == 0 else 45.0
+                return {"f0": 1000.0 * (1.0 + ppm / 1e6),
+                        "level_dbfs": -72.0, "noise_dbfs": -105.0,
+                        "local_snr_db": 35.0, "local_noise_dbfs": -107.0,
+                        "coh_err_bins": ppm / 1000.0, "warnings": []}
+        result = clock_check(InconsistentRig())
         self.assertTrue(result["signal_ok"])
         self.assertFalse(result["clock_consistent"])
         self.assertFalse(result["clock_ok"])
