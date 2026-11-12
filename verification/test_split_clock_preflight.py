@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 from valvebench.backend import SimBackend, SimChannel
 from valvebench.calib import Calibration
 from valvebench.measure import Rig, MeasureError, clock_check
+from valvebench.cli import split_clock_preflight, require_coherent_timebase
 
 
 class SplitClockPreflightTests(unittest.TestCase):
@@ -76,6 +77,36 @@ class SplitClockPreflightTests(unittest.TestCase):
         self.assertFalse(rejected["ok"])
         self.assertFalse(rejected["clock_ok"])
         self.assertTrue(any("расхождение тактов" in w for w in rejected["warnings"]))
+
+    def test_low_snr_clock_probe_fails_without_raising_output_level(self):
+        class WeakSignalRig:
+            fs = 96000
+            def __init__(self):
+                self.requested_levels = []
+            def amp_tone(self, _f, level):
+                self.requested_levels.append(level)
+                return 1000, 10 ** (level / 20.0)
+            def run(self, _segs):
+                return [[object()]], []
+            def f_of(self, _k):
+                return 1000.0
+            def _tone_an(self, _win, _ch, _k, nharm=2):
+                return {"f0": 1000.0, "level_dbfs": -79.0,
+                        "noise_dbfs": -77.4, "coh_err_bins": 0.0,
+                        "warnings": []}
+        rig = WeakSignalRig()
+        with self.assertRaises(MeasureError):
+            split_clock_preflight(rig, "hw:1,0", "hw:2,0", level_dbfs=-72.0)
+        self.assertEqual(rig.requested_levels, [-72.0])
+
+    def test_sweep_and_h1_require_coherent_timebase(self):
+        incoherent = {"coherent": False}
+        with self.assertRaises(MeasureError):
+            require_coherent_timebase("sweep", incoherent)
+        with self.assertRaises(MeasureError):
+            require_coherent_timebase("noise-response", incoherent)
+        # The corrected IMD estimator is specifically allowed to handle drift.
+        require_coherent_timebase("imd", incoherent)
 
     def test_legacy_single_device_config_migrates_to_both_endpoints(self):
         legacy = Calibration({"device": "hw:2,0", "fs": 192000,
