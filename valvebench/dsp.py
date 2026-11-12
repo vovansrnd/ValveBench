@@ -485,6 +485,9 @@ def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
     # Average spectral powers instead. The lobe integration tolerates the
     # small per-block bin offset while retaining phase-independent RMS.
     spectra = [Block(block, fs) for block in blocks]
+    # Keep a waveform-average spectrum only for the legacy display payload;
+    # all numeric IMD amplitudes below come from power-averaged block spectra.
+    avg = Block(blocks.mean(axis=0), fs)
     lo, hi = sorted((f1, f2))
     def amp(f):
         powers = [blk.lobe(f, half) for blk in spectra]
