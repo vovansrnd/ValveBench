@@ -479,9 +479,16 @@ def analyze_imd(x, fs, f1, f2, n, mode="ccif", band_hi=None, half=HALF):
     SMPTE : боковые fв±m·fн, m=1..4; проценты — к амплитуде верхнего тона.
     """
     blocks = _blocks(x, n)
-    avg = Block(blocks.mean(axis=0), fs)
+    # Do not average waveforms in the time domain: with independent DAC/ADC
+    # clocks, the phase of each tone rotates between blocks and can cancel
+    # almost completely (19/20 kHz are especially sensitive to 20-30 ppm).
+    # Average spectral powers instead. The lobe integration tolerates the
+    # small per-block bin offset while retaining phase-independent RMS.
+    spectra = [Block(block, fs) for block in blocks]
     lo, hi = sorted((f1, f2))
-    amp = lambda f: math.sqrt(avg.lobe(f, half))          # rms линии
+    def amp(f):
+        powers = [blk.lobe(f, half) for blk in spectra]
+        return math.sqrt(float(np.mean(powers)))  # RMS line, power-averaged
     a_lo, a_hi = amp(lo), amp(hi)
     lim = min(band_hi or 0.45 * fs, 0.45 * fs)
     prods = []
