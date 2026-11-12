@@ -50,11 +50,15 @@ def make_envelope(device_id, session_id, *, note="", rate=96000, mixer="mixer-A"
                 "L": {"level_dbfs": -20.0, "thd_pct": 0.2, "thd_db": -53.98,
                       "thd_upper_pct": 0.25, "thd_upper_db": -52.04,
                       "thdn_pct": 0.5, "thdn_db": -46.02,
-                      "noise_dbfs": -66.0, "thd_bound": False, "thd_partial": False},
+                      "noise_dbfs": -66.0, "thd_bound": False, "thd_partial": False,
+                      "harmonics": [{"h": 2, "dbc": -53.98, "raw_dbc": -53.0,
+                                     "floor_dbc": -70.0, "margin_db": 16.0, "credible": True}]},
                 "R": {"level_dbfs": -19.0, "thd_pct": 0.4, "thd_db": -47.96,
                       "thd_upper_pct": 0.45, "thd_upper_db": -46.94,
                       "thdn_pct": 0.6, "thdn_db": -44.44,
-                      "noise_dbfs": -64.0, "thd_bound": True, "thd_partial": False},
+                      "noise_dbfs": -64.0, "thd_bound": True, "thd_partial": False,
+                      "harmonics": [{"h": 2, "dbc": -47.96, "raw_dbc": -46.94,
+                                     "floor_dbc": -62.0, "margin_db": 15.0, "credible": False}]},
             },
         },
         "imd": {
@@ -129,6 +133,10 @@ class DutComparisonTests(unittest.TestCase):
         self.assertEqual(thd["R"], 0.4)
         self.assertAlmostEqual(thd["aggregate"], math.sqrt((0.2**2 + 0.4**2) / 2), places=10)
         self.assertEqual(result["devices"][0]["metrics"]["thd"]["thd_status"]["R"], "bound")
+        h2 = result["devices"][0]["metrics"]["thd"]["H2_dbc"]
+        self.assertEqual(h2["L"], -53.98)
+        self.assertEqual(h2["R"], -47.96)
+        self.assertEqual(result["devices"][0]["metrics"]["thd"]["H2_status"]["R"], "bound")
 
     def test_response_curves_keep_lr_and_generate_aggregate(self):
         path = self._write("dut-590", make_envelope("590", "session-A"))
