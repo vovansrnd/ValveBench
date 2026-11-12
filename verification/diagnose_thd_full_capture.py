@@ -58,6 +58,12 @@ def main() -> int:
     parser.add_argument("--blocks", type=int, default=2)
     parser.add_argument("--settle", type=float, default=0.5)
     parser.add_argument(
+        "--dac-preroll",
+        type=float,
+        default=0.0,
+        help="digital silence prepended inside the same aplay stream before the test programme",
+    )
+    parser.add_argument(
         "--out-dir",
         default="measurements/diagnostics/d10-emu-thd-full-capture",
         help="output directory relative to the project root (must not already exist)",
@@ -95,17 +101,26 @@ def main() -> int:
 
     def tapped_play_record(out, tail=0.8):
         sent = np.asarray(out, dtype=np.float64)
-        captured = original_play_record(out, tail=tail)
+        preroll_frames = int(round(float(args.dac_preroll) * fs))
+        if preroll_frames < 0:
+            raise ValueError("--dac-preroll must be non-negative")
+        preroll = np.zeros((preroll_frames, 2), dtype=np.float64)
+        playback = np.vstack((preroll, sent)) if preroll_frames else sent
+        captured = original_play_record(playback, tail=tail)
         item = {
             "label": state["label"],
+            "dac_preroll_frames": preroll_frames,
+            "dac_preroll_seconds": float(preroll_frames / fs),
             "stimulus_frames": int(len(sent)),
             "stimulus_seconds": float(len(sent) / fs),
+            "playback_frames_including_preroll": int(len(playback)),
+            "playback_seconds_including_preroll": float(len(playback) / fs),
             "capture_frames": int(len(captured)),
             "capture_seconds": float(len(captured) / fs),
             "backend_notes": list(getattr(backend, "notes", [])),
         }
         if state["label"] == "thd":
-            write_float_wav(out_dir / "stimulus_thd.wav", fs, sent)
+            write_float_wav(out_dir / "stimulus_thd.wav", fs, playback)
             write_float_wav(out_dir / "capture_full_thd.wav", fs, captured)
             item["stimulus_file"] = "stimulus_thd.wav"
             item["capture_file"] = "capture_full_thd.wav"
@@ -145,6 +160,7 @@ def main() -> int:
         "clock_level_dbfs": float(args.clock_level),
         "blocks": int(args.blocks),
         "settle_seconds": float(args.settle),
+        "dac_preroll_seconds": float(args.dac_preroll),
         "analysis_window_seconds": float(args.blocks),
         "runs": state["runs"],
     }
