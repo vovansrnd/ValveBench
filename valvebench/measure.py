@@ -250,7 +250,7 @@ def clock_check(rig, level_dbfs=-72.0):
     transport_bad = any(
         token in str(w).upper()
         for w in warns
-        for token in ("XRUN", "UNDERRUN", "OVERRUN", "ПЕРЕГРУЗКА")
+        for token in ("XRUN", "UNDERRUN", "OVERRUN", "CLIP", "OVERLOAD", "ПЕРЕГРУЗ")
     )
     if transport_bad:
         warns.append("проверка такта недействительна: XRUN или перегрузка АЦП")
