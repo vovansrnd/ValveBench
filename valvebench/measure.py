@@ -414,8 +414,10 @@ def text_thd(res):
         if r.get("phase_coherence") is not None:
             L.append(f"  Фазовая согласованность блоков: {r['phase_coherence']:.4f}")
         if r.get("line_floor_dbc") is not None:
+            floor_label = ("когерентные линии" if r.get("line_mode") == "rect-phase-normalized"
+                           else "локальный шумовой пол")
             L.append(f"  Пол анализа гармоник: {r['line_floor_dbc']:.1f} dBc ({r['level_dbfs'] + r['line_floor_dbc']:.1f} dBFS) "
-                     f"· когерентные линии, усреднение {r['blocks']} с")
+                     f"· {floor_label}, усреднение {r['blocks']} блоков")
         L.append(f"  THD+N  {r['thdn_pct']:.5f} %   ({r['thdn_db']:.1f} dBc; остаток {residual_dbfs:.1f} dBFS)")
         L.append(f"  Шум без гармоник в полосе 20 Гц–{min(20000, r.get('band_hi', 20000))} Гц: "
                  f"{r['noise_dbfs']:.1f} dBFS ({r['noise_dbc']:.1f} dBc)")
