@@ -22,6 +22,74 @@ CLOCK_CHANNEL_SPREAD_PPM = 5.0  # L/R must agree on the one physical ADC clock
 CLOCK_MIN_SNR_DB = 20.0  # carrier-local engineering floor, not an uncertainty guarantee
 
 
+def capture_clock_ppm(rig):
+    """Return measured ADC-vs-DAC rate error for this Rig, or zero for shared clocks."""
+    result = getattr(rig, "clock_result", None)
+    if result is None:
+        return 0.0
+    if not result.get("ok", False):
+        raise MeasureError("коррекция временной базы невозможна: clock preflight не прошёл")
+    values = []
+    for ch in CH:
+        try:
+            value = float(result["ch"][ch]["ppm"])
+        except (KeyError, TypeError, ValueError):
+            raise MeasureError(f"нет достоверной оценки такта для канала {ch}") from None
+        if not math.isfinite(value):
+            raise MeasureError(f"недостоверная оценка такта для канала {ch}")
+        values.append(value)
+    spread = max(values) - min(values)
+    if spread > CLOCK_CHANNEL_SPREAD_PPM:
+        raise MeasureError(
+            f"оценки такта каналов L/R расходятся на {spread:.1f} ppm; "
+            "общая временная база захвата не подтверждена"
+        )
+    ppm = float(np.mean(values))
+    if abs(ppm) > CLOCK_MAX_PPM:
+        raise MeasureError(f"расхождение тактов {ppm:+.1f} ppm вне диапазона коррекции")
+    return ppm
+
+
+def resample_capture_timebase(rec, ppm, fs, pad_seconds=0.25):
+    """Resample an ADC capture onto the DAC/source sample-time grid.
+
+    clock_check reports f_ADC_observed / f_source - 1. The matching capture
+    time-axis correction therefore changes the number of samples by (1+ppm).
+    Reflection padding reduces FFT-resampler edge wraparound before trimming
+    back to the corrected capture interval.
+    """
+    data = np.asarray(rec, dtype=np.float64)
+    if data.ndim != 2 or data.shape[1] < 1:
+        raise MeasureError("коррекция временной базы ожидает массив захвата [frames, channels]")
+    ppm = float(ppm)
+    if not math.isfinite(ppm) or abs(ppm) > CLOCK_MAX_PPM:
+        raise MeasureError(f"недопустимое расхождение тактов для коррекции: {ppm!r} ppm")
+    if data.shape[0] < 64:
+        raise MeasureError("слишком короткая запись для коррекции временной базы")
+    ratio = 1.0 + ppm * 1e-6
+    if abs(ppm) < 1e-6:
+        return data
+    pad = min(max(16, int(round(float(fs) * float(pad_seconds)))),
+              max(0, (data.shape[0] - 2) // 4))
+    if pad:
+        padded = np.pad(data, ((pad, pad), (0, 0)), mode="reflect")
+    else:
+        padded = data
+    out_n = max(1, int(round(padded.shape[0] * ratio)))
+    actual_ratio = out_n / padded.shape[0]
+    converted = sg.resample(padded, out_n, axis=0)
+    start = int(round(pad * actual_ratio))
+    target_n = int(round(data.shape[0] * actual_ratio))
+    end = start + target_n
+    if end > converted.shape[0]:
+        target_n = converted.shape[0] - start
+        end = converted.shape[0]
+    corrected = converted[start:end]
+    if corrected.shape[0] < 64 or corrected.shape[0] != target_n:
+        raise MeasureError("не удалось сохранить достаточную длину после коррекции временной базы")
+    return corrected
+
+
 class MeasureError(RuntimeError):
     pass
 
