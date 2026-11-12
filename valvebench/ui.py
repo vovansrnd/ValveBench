@@ -220,6 +220,12 @@ class Page(Gtk.Box):
         else:
             self.y_min = self.y_max = self.plot_scale_hint = None
 
+        # Optional page-specific content (e.g. DUT comparison table) sits
+        # between the graph controls and the textual report.
+        self.right_extra = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.right_extra.set_visible(False)
+        right.append(self.right_extra)
+
         self.buf, sw = textview()
         sw.set_min_content_height(150)
         right.append(sw)
@@ -765,9 +771,22 @@ class DutComparisonPage(Page):
         self.session_scroll.set_propagate_natural_height(True)
         self.session_scroll.set_child(self.session_box)
         self.response_plot = Plot(xlog=True, xlabel="Частота, Гц", ylabel="Отклонение, дБ")
+        self.metrics_title = Gtk.Label(label="Таблица L/R и агрегат по каналам", xalign=0)
+        self.metrics_title.add_css_class("heading")
+        self.metrics_grid = Gtk.Grid(column_spacing=12, row_spacing=4)
+        self.metrics_grid.set_column_homogeneous(False)
+        self.metrics_scroll = Gtk.ScrolledWindow()
+        self.metrics_scroll.set_min_content_height(230)
+        self.metrics_scroll.set_max_content_height(440)
+        self.metrics_scroll.set_propagate_natural_height(True)
+        self.metrics_scroll.set_child(self.metrics_grid)
+        self.metrics_panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.metrics_panel.append(self.metrics_title)
+        self.metrics_panel.append(self.metrics_scroll)
 
         super().__init__(title, help_text, self.refresh_button, self.selection_status,
                          self.session_scroll, self.compare_button, plot=self.response_plot)
+        self.right_extra.append(self.metrics_panel)
         self.refresh_sessions()
 
     @staticmethod
@@ -875,6 +894,45 @@ class DutComparisonPage(Page):
 
         threading.Thread(target=work, daemon=True).start()
 
+    @staticmethod
+    def _metric_cell_text(value):
+        if value is None:
+            return "—"
+        if isinstance(value, (int, float)):
+            return f"{float(value):.3f}"
+        return str(value)
+
+    def _populate_metrics_table(self, comparison):
+        while child := self.metrics_grid.get_first_child():
+            self.metrics_grid.remove(child)
+        headers = ("Тест", "Показатель", "DUT", "L", "R", "ср.", "ед.")
+        for column, heading in enumerate(headers):
+            label = Gtk.Label(label=heading, xalign=0)
+            label.add_css_class("heading")
+            self.metrics_grid.attach(label, column, 0, 1, 1)
+
+        row = 1
+        for device in comparison.get("devices", []):
+            for test, values in (device.get("metrics") or {}).items():
+                for name, metric in values.items():
+                    cells = (
+                        str(test).upper(),
+                        str(name),
+                        str(device.get("device_id") or "—"),
+                        self._metric_cell_text(metric.get("L")),
+                        self._metric_cell_text(metric.get("R")),
+                        self._metric_cell_text(metric.get("aggregate")),
+                        str(metric.get("unit") or ""),
+                    )
+                    for column, value in enumerate(cells):
+                        label = Gtk.Label(label=value, xalign=0 if column < 3 else 1)
+                        label.set_selectable(True)
+                        if column in (3, 4, 5):
+                            label.add_css_class("numeric")
+                        self.metrics_grid.attach(label, column, row, 1, 1)
+                    row += 1
+        self.right_extra.set_visible(row > 1)
+
     def _show_response_curves(self, comparison):
         palette = (
             (0.16, 0.48, 0.82), (0.82, 0.31, 0.18), (0.18, 0.62, 0.38),
@@ -922,10 +980,12 @@ class DutComparisonPage(Page):
         self.refresh_button.set_sensitive(True)
         if error is not None:
             self.response_plot.set_traces([])
+            self.right_extra.set_visible(False)
             self.say(f"СРАВНЕНИЕ НЕ ВЫПОЛНЕНО\n{type(error).__name__}: {error}")
             self.win.toast(f"Сессии несопоставимы: {error}")
         else:
             self._show_response_curves(comparison)
+            self._populate_metrics_table(comparison)
             legend_note = (
                 "\n\nГРАФИК АЧХ: цвет — аппарат; L — сплошная линия, R — пунктир."
                 if self.response_plot.traces else ""
