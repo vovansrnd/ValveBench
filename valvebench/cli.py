@@ -7,7 +7,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import calib, measure as m, store, vinyl
+from . import calib, measure as m, store, vinyl, dutcompare
 from .backend import (AlsaCli, SimBackend, SimChannel, list_cards, parse_stream,
                       list_pcm_devices, list_duplex_devices, supported_duplex_rates,
                       supported_pcm_rates, common_pcm_rates)
@@ -182,6 +182,9 @@ def main(argv=None):
     p = sub.add_parser("steady-compare", help="свести несколько steady.json в одну сравнительную таблицу")
     p.add_argument("runs", nargs="+", help="пути к steady.json или каталогам измерений")
     p.add_argument("--csv", help="дополнительно сохранить таблицу в CSV")
+    p = sub.add_parser("dut-compare", help="сравнить сохранённые пакеты нескольких DUT при одинаковых условиях")
+    p.add_argument("sessions", nargs="+", help="пути к каталогам сессий или session.json")
+    p.add_argument("--out-dir", help="каталог для comparison.json и CSV; по умолчанию measurements/comparisons/")
     p = sub.add_parser("thd"); p.add_argument("--f", type=float, default=997); p.add_argument("--level", type=float, default=-12)
     p = sub.add_parser("thdlevel"); p.add_argument("--f", type=float, default=997)
     p.add_argument("--levels", default="-6,-12,-18,-24,-36,-48")
@@ -280,6 +283,16 @@ def main(argv=None):
             return 130
         except Exception as exc:
             print(f"GLITCH TEST ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    if a.cmd == "dut-compare":
+        try:
+            comparison = dutcompare.compare_sessions(a.sessions)
+            print(dutcompare.text_comparison(comparison))
+            output = dutcompare.save_comparison(comparison, a.out_dir)
+            print(f"\\nСРАВНЕНИЕ СОХРАНЕНО: {output}")
+            return 0
+        except Exception as exc:
+            print(f"DUT COMPARE ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
             return 2
     if a.cmd == "steady-compare":
         try:
