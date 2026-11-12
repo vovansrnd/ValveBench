@@ -6,10 +6,13 @@
 from __future__ import annotations
 
 import math
+import os
 import time
+from pathlib import Path
 
 import numpy as np
 from scipy import signal as sg
+from scipy.io import wavfile
 
 from . import dsp
 from .calib import Calibration, fmt_v
@@ -378,12 +381,29 @@ def text_clock(r):
 # --------------------------------------------------------------------------- THD
 
 
-def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9):
+def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9, capture_wav=None):
     k, a = rig.amp_tone(f, level_dbfs)
     tl = [(k, a)] if route in ("both", "L") else []
     tr = [(k, a)] if route in ("both", "R") else []
     wins, warns = rig.run([(tl, tr, None)])
     res = {"kind": "thd", "f": rig.f_of(k), "level_dbfs": level_dbfs, "warnings": warns, "ch": {}}
+    if capture_wav:
+        path = Path(capture_wav)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            raise MeasureError(f"запись WAV уже существует, отказ от перезаписи: {path}")
+        temp_path = path.with_name(path.name + ".tmp.wav")
+        try:
+            wavfile.write(str(temp_path), int(rig.fs), np.asarray(wins[0], dtype=np.float32))
+            os.replace(temp_path, path)
+        finally:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        res["capture_wav"] = str(path.resolve())
+        res["capture_format"] = "IEEE float32 WAV"
+        res["capture_sample_rate_hz"] = int(rig.fs)
     for c in (0, 1):
         if (c == 0 and not tl) or (c == 1 and not tr):
             continue
@@ -396,6 +416,8 @@ def thd_point(rig, f=1000.0, level_dbfs=-6.0, route="both", nharm=9):
 
 def text_thd(res):
     L = [f"THD  f = {res['f']:.1f} Гц, уровень генератора {res['level_dbfs']:.1f} dBFS"]
+    if res.get("capture_wav"):
+        L.append(f"Исходная запись сохранена: {res['capture_wav']} · {res.get('capture_format')} · {res.get('capture_sample_rate_hz')} Гц")
     for c, r in res["ch"].items():
         inf = r["info"]
         L.append(f"\n[{c}]  вход АЦП {r['level_dbfs']:.2f} dBFS"
