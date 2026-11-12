@@ -38,3 +38,6 @@ jobs:
 
       - name: Test capture timebase resampling
         run: python verification/test_capture_timebase_resampling.py
+
+      - name: Test non-coherent THD noise-floor gate
+        run: python verification/test_noncoherent_thd_floor.py
