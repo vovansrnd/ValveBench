@@ -35,3 +35,6 @@ jobs:
 
       - name: Test IMD with independent-clock drift
         run: python verification/test_imd_clock_drift.py
+
+      - name: Test capture timebase resampling
+        run: python verification/test_capture_timebase_resampling.py
