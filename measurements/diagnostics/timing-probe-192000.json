@@ -1,0 +1,105 @@
+{
+ "rate": 192000,
+ "cases": [
+  {
+   "tone_s": 2.0,
+   "buffer_ms": 50,
+   "post_silence_s": 0,
+   "extend_tone_s": 0,
+   "submitted_frames": 867840,
+   "captured_frames": 1344000,
+   "aplay_rc": 0,
+   "aplay_elapsed_s": 4.54,
+   "aplay_err": "",
+   "arecord_err": "Recording raw data '/tmp/dx_timing_cap.raw' : Signed 24 bit Little Endian in 3bytes, Rate 192000 Hz, Stereo",
+   "L": {
+    "start_marker_frame": 336511,
+    "tone_first_frame": 355711,
+    "tone_last_frame": 821313,
+    "end_marker_frame": 394111,
+    "latency_start_s": 0.75266,
+    "captured_tone_s": 2.425
+   },
+   "R": {
+    "start_marker_frame": 336508,
+    "tone_first_frame": 355711,
+    "tone_last_frame": 821313,
+    "end_marker_frame": 394108,
+    "latency_start_s": 0.75265,
+    "captured_tone_s": 2.425
+   }
+  },
+  {
+   "tone_s": 2.0,
+   "buffer_ms": 200,
+   "post_silence_s": 0,
+   "extend_tone_s": 0,
+   "submitted_frames": 867840,
+   "captured_frames": 1344000,
+   "aplay_rc": 0,
+   "aplay_elapsed_s": 4.565,
+   "aplay_err": "",
+   "arecord_err": "Recording raw data '/tmp/dx_timing_cap.raw' : Signed 24 bit Little Endian in 3bytes, Rate 192000 Hz, Stereo",
+   "L": {
+    "start_marker_frame": 329621,
+    "tone_first_frame": 348821,
+    "tone_last_frame": 814423,
+    "end_marker_frame": 387221,
+    "latency_start_s": 0.71678,
+    "captured_tone_s": 2.425
+   },
+   "R": {
+    "start_marker_frame": 329618,
+    "tone_first_frame": 348820,
+    "tone_last_frame": 814422,
+    "end_marker_frame": 387218,
+    "latency_start_s": 0.71676,
+    "captured_tone_s": 2.425
+   }
+  },
+  {
+   "tone_s": 2.0,
+   "buffer_ms": 400,
+   "post_silence_s": 0,
+   "extend_tone_s": 0,
+   "submitted_frames": 867840,
+   "captured_frames": 1344000,
+   "aplay_rc": 0,
+   "aplay_elapsed_s": 4.616,
+   "aplay_err": "",
+   "arecord_err": "Recording raw data '/tmp/dx_timing_cap.raw' : Signed 24 bit Little Endian in 3bytes, Rate 192000 Hz, Stereo",
+   "L": {
+    "start_marker_frame": 335717,
+    "tone_first_frame": 342406,
+    "tone_last_frame": 869583,
+    "end_marker_frame": 393317,
+    "latency_start_s": 0.74853,
+    "captured_tone_s": 2.7457
+   },
+   "R": {
+    "start_marker_frame": 335714,
+    "tone_first_frame": 354916,
+    "tone_last_frame": 820519,
+    "end_marker_frame": 393314,
+    "latency_start_s": 0.74851,
+    "captured_tone_s": 2.425
+   }
+  }
+ ],
+ "frames_5s_program": {
+  "lead_silence_start": 0,
+  "lead_silence_end": 192000,
+  "start_marker": 192000,
+  "start_marker_end": 203520,
+  "gap1_end": 232320,
+  "tone": 232320,
+  "tone_end": 616320,
+  "gap2_end": 645120,
+  "end_marker": 645120,
+  "end_marker_end": 656640,
+  "tail_silence": 656640,
+  "tail_silence_end": 848640,
+  "program_len": 848640
+ },
+ "timestamp": "2026-11-12T18:13:31.319509"
+}

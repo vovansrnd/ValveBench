@@ -1,0 +1,28 @@
+{
+ "tone_s": 2.0,
+ "buffer_ms": 100,
+ "post_silence_s": 0.6,
+ "extend_tone_s": 0,
+ "submitted_frames": 983040,
+ "captured_frames": 1536000,
+ "aplay_rc": 0,
+ "aplay_elapsed_s": 5.14,
+ "aplay_err": "",
+ "arecord_err": "Recording raw data '/tmp/dx_timing_cap.raw' : Signed 24 bit Little Endian in 3bytes, Rate 192000 Hz, Stereo",
+ "L": {
+  "start_marker_frame": 336269,
+  "tone_first_frame": 355469,
+  "tone_last_frame": 821072,
+  "end_marker_frame": 393869,
+  "latency_start_s": 0.7514,
+  "captured_tone_s": 2.425
+ },
+ "R": {
+  "start_marker_frame": 336267,
+  "tone_first_frame": 355469,
+  "tone_last_frame": 821071,
+  "end_marker_frame": 393867,
+  "latency_start_s": 0.75139,
+  "captured_tone_s": 2.425
+ }
+}

@@ -1,0 +1,18 @@
+D10 idle, поток закрыт: RMS L=-86.9 R=-102.2 | 300 Гц L=-108.0 R=-126.1 | 50 Гц L=-107.5 R=-125.9 | 1 кГц L=-95.8 R=-112.5
+Traceback (most recent call last):
+  File "<stdin>", line 30, in <module>
+TypeError: 'Popen' object is not callable
+Error in sys.excepthook:
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 238, in partial_apport_excepthook
+    return apport_excepthook(binary, exc_type, exc_obj, exc_tb)
+  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 122, in apport_excepthook
+    report["ExecutableTimestamp"] = str(int(os.stat(binary).st_mtime))
+                                            ~~~~~~~^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/opt/MyApps/Adudio/ValveBench-git/-'
+
+Original exception was:
+Traceback (most recent call last):
+  File "<stdin>", line 30, in <module>
+TypeError: 'Popen' object is not callable
+тон 997 −30 dBFS (D10 idle после): RMS L=-86.8 R=-102.0 | 300 Гц L=-110.5 R=-127.9 | 997 Гц L=-129.6 R=-148.1 | 1 кГц L=-96.2 R=-112.8

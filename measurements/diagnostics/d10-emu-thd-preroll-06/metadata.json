@@ -1,0 +1,123 @@
+{
+  "created": "2026-11-12T16:29:12.085653+03:00",
+  "repository": "vovansrnd/ValveBench",
+  "branch": "diagnostics/d10-full-capture",
+  "dac": "hw:3,0",
+  "adc": "hw:2,0",
+  "sample_rate_hz": 192000,
+  "test_frequency_hz": 997.0,
+  "generator_level_dbfs": -30.0,
+  "clock_level_dbfs": -30.0,
+  "blocks": 4,
+  "settle_seconds": 0.5,
+  "dac_preroll_seconds": 0.6,
+  "analysis_window_seconds": 4.0,
+  "runs": [
+    {
+      "label": "clock-preflight",
+      "dac_preroll_frames": 115200,
+      "dac_preroll_seconds": 0.6,
+      "stimulus_frames": 854400,
+      "stimulus_seconds": 4.45,
+      "playback_frames_including_preroll": 969600,
+      "playback_seconds_including_preroll": 5.05,
+      "capture_frames": 1536000,
+      "capture_seconds": 8.0,
+      "backend_notes": [],
+      "detected_tone_onset_frame": 183360,
+      "detected_tone_onset_seconds": 0.955,
+      "tone_hz_used_by_onset_detector": 1000.0,
+      "settle_seconds": 0.4,
+      "settle_frames": 76800,
+      "analysis_window_start_frame": 260160,
+      "analysis_window_end_frame": 1028160
+    },
+    {
+      "label": "thd",
+      "dac_preroll_frames": 115200,
+      "dac_preroll_seconds": 0.6,
+      "stimulus_frames": 873600,
+      "stimulus_seconds": 4.55,
+      "playback_frames_including_preroll": 988800,
+      "playback_seconds_including_preroll": 5.15,
+      "capture_frames": 1536000,
+      "capture_seconds": 8.0,
+      "backend_notes": [],
+      "stimulus_file": "stimulus_thd.wav",
+      "capture_file": "capture_full_thd.wav",
+      "detected_tone_onset_frame": 258240,
+      "detected_tone_onset_seconds": 1.345,
+      "tone_hz_used_by_onset_detector": 997.0,
+      "settle_seconds": 0.5,
+      "settle_frames": 96000,
+      "analysis_window_start_frame": 354240,
+      "analysis_window_end_frame": 1122240
+    }
+  ],
+  "clock_preflight": {
+    "kind": "clock",
+    "test_level_dbfs": -30.0,
+    "warnings": [
+      "L: сдвиг тона -0.0257 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+      "L: тон некогерентен окну (сдвиг -0.0257 бина; допуск ±0.002)",
+      "R: сдвиг тона -0.0258 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+      "R: тон некогерентен окну (сдвиг -0.0258 бина; допуск ±0.002)"
+    ],
+    "ch": {
+      "L": {
+        "f0": 999.9743001151066,
+        "ppm": -25.699884893315428,
+        "level_dbfs": -37.159745336726914,
+        "noise_dbfs": -83.20103239941373,
+        "snr_db": 73.37728150226229,
+        "local_noise_dbfs": -110.5370268389892,
+        "coh_err_bins": -0.025699884893356284,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false
+      },
+      "R": {
+        "f0": 999.9742288371384,
+        "ppm": -25.771162861620844,
+        "level_dbfs": -36.79694855190742,
+        "noise_dbfs": -99.94981882218613,
+        "snr_db": 91.6636148564769,
+        "local_noise_dbfs": -128.46056340838433,
+        "coh_err_bins": -0.025771162861587982,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false
+      }
+    },
+    "clock_channel_spread_ppm": 0.07127796830541655,
+    "clock_ppm_ok": true,
+    "clock_consistent": true,
+    "clock_ok": true,
+    "signal_ok": true,
+    "coherent": false,
+    "ok": true
+  },
+  "thd_report": "THD  f = 997.0 Гц, уровень генератора -30.0 dBFS\nОкно захвата, переданное в THD-анализ, сохранено: /opt/MyApps/Adudio/ValveBench-git/measurements/diagnostics/d10-emu-thd-preroll-06/analysis_window.wav · IEEE float32 WAV · 192000 Гц\n\n[L]  вход АЦП -37.24 dBFS\n  THD    не обнаружен выше порога достоверности; сырая сумма гармонических бинов (включая шум): 0.04682 % (-66.6 дБ)\n  Пол анализа гармоник: -78.0 dBc (-115.3 dBFS) · локальный шумовой пол, усреднение 4 блоков\n  THD+N  5.20139 %   (-25.7 dBc; остаток -62.9 dBFS)\n  Шум без гармоник в полосе 20 Гц–20000 Гц: -62.9 dBFS (-25.7 dBc)\n  гармоники: H2 ≤-68.2 dBc (-105.4 dBFS)  H3 ≤-75.3 dBc (-112.5 dBFS)  H4 ≤-77.4 dBc (-114.7 dBFS)  H5 ≤-83.3 dBc (-120.5 dBFS)  H6 ≤-82.7 dBc (-119.9 dBFS)  H7 ≤-84.1 dBc (-121.4 dBFS)  H8 ≤-84.2 dBc (-121.4 dBFS)  H9 ≤-87.7 dBc (-125.0 dBFS)\n  фон, дБc: 50 Гц -66.3  100 Гц -67.7  150 Гц -69.4  200 Гц -65.4  250 Гц -69.4  300 Гц -52.3\n\n[R]  вход АЦП -36.88 dBFS\n  THD    не обнаружен выше порога достоверности; сырая сумма гармонических бинов (включая шум): 0.00678 % (-83.4 дБ)\n  Пол анализа гармоник: -94.6 dBc (-131.5 dBFS) · локальный шумовой пол, усреднение 4 блоков\n  THD+N  5.09110 %   (-25.9 dBc; остаток -62.7 dBFS)\n  Шум без гармоник в полосе 20 Гц–20000 Гц: -62.7 dBFS (-25.9 dBc)\n  гармоники: H2 ≤-85.4 dBc (-122.3 dBFS)  H3 ≤-92.9 dBc (-129.7 dBFS)  H4 ≤-93.2 dBc (-130.1 dBFS)  H5 ≤-97.5 dBc (-134.4 dBFS)  H6 ≤-97.5 dBc (-134.4 dBFS)  H7 ≤-98.2 dBc (-135.1 dBFS)  H8 ≤-98.6 dBc (-135.4 dBFS)  H9 ≤-101.4 dBc (-138.2 dBFS)\n  фон, дБc: 50 Гц -80.5  100 Гц -85.9  150 Гц -88.0  200 Гц -84.2  250 Гц -88.0  300 Гц -71.5\n! L: сдвиг тона -0.0250 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса\n! R: сдвиг тона -0.0254 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+  "files": {
+    "analysis_window.wav": {
+      "bytes": 6144058,
+      "sha256": "4ad5d9c6da195fe64e0d03275607c07e3cab2bff5678deb4ed203a6de2c177c3"
+    },
+    "capture_full_thd.wav": {
+      "bytes": 12288058,
+      "sha256": "06a6b3e885dc00bb6d07b11982c69215c1aad63f99c473db008da16a6739d218"
+    },
+    "metadata.json": {
+      "bytes": 6097,
+      "sha256": "1a1f1f903460819c72edb07c94c4c1b30a7f88e8276affde9e6792a54e09fe18"
+    },
+    "report.txt": {
+      "bytes": 2527,
+      "sha256": "7fbf93cb500008854b47ac2cb6ff093c6b12cf4eea93956f71059f09fa5643b3"
+    },
+    "stimulus_thd.wav": {
+      "bytes": 7910458,
+      "sha256": "8abae97584e6c6120fcf70f7fcf33b7f01e03c37e775f1072e712bf4cd8a28cf"
+    }
+  }
+}
