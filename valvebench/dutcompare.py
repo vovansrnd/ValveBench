@@ -341,8 +341,10 @@ def _extract_session_metrics(session):
                     metrics[test]["gain_1k_db"][channel] = _finite(gain)
             gain_metric = metrics[test].get("gain_1k_db")
             if gain_metric:
-                gain_metric["aggregate"] = _aggregate(
-                    (gain_metric["L"], gain_metric["R"]), "amplitude_db")
+                gain_metric["aggregate"] = (
+                    _aggregate((gain_metric["L"], gain_metric["R"]), "amplitude_db")
+                    if gain_metric["L"] is not None and gain_metric["R"] is not None else None
+                )
     return metrics, curves
 
 
