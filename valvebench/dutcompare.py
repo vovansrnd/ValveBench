@@ -357,6 +357,49 @@ def _extract_session_metrics(session):
     return metrics, curves
 
 
+def discover_sessions(root=None):
+    """List complete saved DUT batches for the GUI session picker.
+
+    Only session metadata is returned; the comparison itself re-reads and
+    validates the selected sessions in the worker thread.
+    """
+    base = Path(root) if root else (
+        Path(__file__).resolve().parents[1] / "measurements" / "devices"
+    )
+    if not base.is_dir():
+        return []
+    found = []
+    for device_dir in sorted(base.iterdir()):
+        if device_dir.is_symlink() or not device_dir.is_dir():
+            continue
+        for session_dir in sorted(device_dir.iterdir(), reverse=True):
+            if session_dir.is_symlink() or not session_dir.is_dir():
+                continue
+            session_path = session_dir / "session.json"
+            if not session_path.is_file():
+                continue
+            try:
+                with session_path.open("r", encoding="utf-8") as fh:
+                    envelope = json.load(fh)
+                result = envelope.get("result") or {}
+                if (envelope.get("format") != "valvebench-device-measurement"
+                        or envelope.get("schema") != 1
+                        or result.get("kind") != "dut_batch"
+                        or result.get("state") != "complete"):
+                    continue
+                found.append({
+                    "path": str(session_path.resolve()),
+                    "device_id": str(envelope.get("device_id") or device_dir.name),
+                    "session_id": str(envelope.get("session_id") or session_dir.name),
+                    "created_at_local": str(envelope.get("created_at_local") or ""),
+                    "note": str(envelope.get("note") or ""),
+                    "test_order": list(result.get("test_order") or []),
+                })
+            except (OSError, json.JSONDecodeError, AttributeError, TypeError):
+                continue
+    return sorted(found, key=lambda item: item["created_at_local"], reverse=True)
+
+
 def compare_sessions(paths):
     """Compare 2+ complete saved DUT batch sessions under identical conditions."""
     if isinstance(paths, (str, os.PathLike)):
