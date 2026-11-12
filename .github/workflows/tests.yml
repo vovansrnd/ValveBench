@@ -41,3 +41,6 @@ jobs:
 
       - name: Test non-coherent THD noise-floor gate
         run: python verification/test_noncoherent_thd_floor.py
+
+      - name: Test DUT session comparison
+        run: python verification/test_dutcompare.py
