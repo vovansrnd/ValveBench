@@ -48,7 +48,7 @@ def test_nonzero_loopback_correction_is_subtracted():
     )
 
     expected_dut_delta = 20.0 * math.log10(1.0 / 0.4)
-    expected_corrected = 20.0 * __import__("math").log10(2.0)
+    expected_corrected = 20.0 * math.log10(2.0)
     for row in dut["rows"]:
         assert abs(row["delta_adc_db"] - expected_dut_delta) < 0.15, (
             row["requested_frequency_hz"], row["delta_adc_db"], expected_dut_delta
