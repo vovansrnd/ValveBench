@@ -364,56 +364,71 @@ def main() -> int:
             anchor_quality = {}
             channel_offsets = {}
             for name in ("L", "R"):
-                if name not in offsets_a or name not in offsets_b:
+                has_a = name in offsets_a
+                has_b = name in offsets_b
+                if has_a and has_b:
+                    disagreement_ms = abs(offsets_a[name] - offsets_b[name]) * 1000.0 / FS
+                    valid = disagreement_ms <= 2.0
+                    chosen_offset = int(round((offsets_a[name] + offsets_b[name]) / 2))
+                    anchor_quality[name] = {
+                        "valid": bool(valid),
+                        "source": "A+B" if valid else "A/B disagree",
+                        "A_B_disagreement_ms": round(disagreement_ms, 3),
+                    }
+                    if valid:
+                        channel_offsets[name] = chosen_offset
+                elif has_a:
+                    anchor_quality[name] = {
+                        "valid": True,
+                        "source": "A only (B marker absent or invalid)",
+                        "A_B_disagreement_ms": None,
+                    }
+                    channel_offsets[name] = offsets_a[name]
+                elif has_b:
+                    anchor_quality[name] = {
+                        "valid": True,
+                        "source": "B only (A marker absent or invalid)",
+                        "A_B_disagreement_ms": None,
+                    }
+                    channel_offsets[name] = offsets_b[name]
+                else:
                     anchor_quality[name] = {
                         "valid": False,
-                        "reason": "both unique markers are required on this channel",
+                        "source": "no unique marker",
+                        "A_B_disagreement_ms": None,
                     }
-                    continue
-                disagreement_ms = abs(offsets_a[name] - offsets_b[name]) * 1000.0 / FS
-                channel_offsets[name] = int(round((offsets_a[name] + offsets_b[name]) / 2))
-                anchor_quality[name] = {
-                    "valid": bool(disagreement_ms <= 2.0),
-                    "A_B_disagreement_ms": round(disagreement_ms, 3),
-                }
 
-            lr_a_ms = (
-                abs(offsets_a["L"] - offsets_a["R"]) * 1000.0 / FS
-                if "L" in offsets_a and "R" in offsets_a else None
-            )
-            lr_b_ms = (
-                abs(offsets_b["L"] - offsets_b["R"]) * 1000.0 / FS
-                if "L" in offsets_b and "R" in offsets_b else None
+            lr_offset_ms = (
+                abs(channel_offsets["L"] - channel_offsets["R"]) * 1000.0 / FS
+                if "L" in channel_offsets and "R" in channel_offsets else None
             )
             anchors_valid = (
                 len(channel_offsets) == 2
                 and all(anchor_quality[ch]["valid"] for ch in ("L", "R"))
-                and lr_a_ms is not None and lr_a_ms <= 2.0
-                and lr_b_ms is not None and lr_b_ms <= 2.0
+                and lr_offset_ms is not None and lr_offset_ms <= 2.0
             )
             row["program_alignment_quality"] = {
                 "valid": bool(anchors_valid),
-                "max_A_B_disagreement_ms": max(
-                    (anchor_quality[ch].get("A_B_disagreement_ms", float("inf"))
-                     for ch in ("L", "R")),
-                    default=None,
+                "L_R_program_offset_disagreement_ms": (
+                    None if lr_offset_ms is None else round(lr_offset_ms, 3)
                 ),
-                "L_R_A_anchor_disagreement_ms": None if lr_a_ms is None else round(lr_a_ms, 3),
-                "L_R_B_anchor_disagreement_ms": None if lr_b_ms is None else round(lr_b_ms, 3),
                 "tolerance_ms": 2.0,
                 "per_channel": anchor_quality,
             }
 
             if not anchors_valid:
                 row["capture_analysis_error"] = (
-                    "chirp anchors are not mutually consistent within 2 ms; "
+                    "no mutually consistent absolute program anchor within 2 ms; "
                     "do not report absolute tone-loss bounds"
                 )
             else:
+                program_offset_by_channel = {
+                    name: channel_offsets[name] for name in ("L", "R")
+                }
                 program_offset = int(round(float(np.median(list(channel_offsets.values())))))
                 row["program_offset_s"] = round(program_offset / FS, 6)
                 row["channel_program_offsets_s"] = {
-                    name: round(channel_offsets[name] / FS, 6)
+                    name: round(program_offset_by_channel[name] / FS, 6)
                     for name in ("L", "R")
                 }
 
@@ -452,18 +467,41 @@ def main() -> int:
                     info = profile.get("channels", {}).get(name, {})
                     if not info or "tone_start_s" not in info:
                         continue
-                    expected_start = (offsets_b[name] + lead_n) / FS
-                    expected_end = (
-                        offsets_a[name] + lead_n + seg_len - len(ctx.marker_b)
-                    ) / FS
-                    info["head_loss_ms_estimate"] = round(
-                        (info["tone_start_s"] - expected_start) * 1000.0, 3
-                    )
-                    info["head_anchor"] = "marker_B"
-                    info["tail_loss_ms_estimate"] = round(
-                        (expected_end - info["tone_end_s"]) * 1000.0, 3
-                    )
-                    info["tail_anchor"] = "marker_A"
+                    if name in offsets_b:
+                        expected_start = (offsets_b[name] + lead_n) / FS
+                        info["head_loss_ms_estimate"] = round(
+                            (info["tone_start_s"] - expected_start) * 1000.0, 3
+                        )
+                        info["head_anchor"] = "marker_B"
+                    elif name in offsets_a:
+                        expected_start = (offsets_a[name] + lead_n) / FS
+                        info["head_loss_ms_estimate"] = round(
+                            (info["tone_start_s"] - expected_start) * 1000.0, 3
+                        )
+                        info["head_anchor"] = "marker_A + known segment start"
+                    else:
+                        info["head_loss_ms_estimate"] = None
+                        info["head_anchor"] = None
+
+                    if name in offsets_a:
+                        expected_end = (
+                            offsets_a[name] + lead_n + seg_len - len(ctx.marker_b)
+                        ) / FS
+                        info["tail_loss_ms_estimate"] = round(
+                            (expected_end - info["tone_end_s"]) * 1000.0, 3
+                        )
+                        info["tail_anchor"] = "marker_A + known segment duration"
+                    elif name in offsets_b:
+                        expected_end = (
+                            offsets_b[name] + lead_n + seg_len - len(ctx.marker_b)
+                        ) / FS
+                        info["tail_loss_ms_estimate"] = round(
+                            (expected_end - info["tone_end_s"]) * 1000.0, 3
+                        )
+                        info["tail_anchor"] = "marker_B + known segment duration"
+                    else:
+                        info["tail_loss_ms_estimate"] = None
+                        info["tail_anchor"] = None
 
 
             row["files"] = {}
