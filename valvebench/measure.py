@@ -101,7 +101,8 @@ class MeasureError(RuntimeError):
 class Rig:
     """Стенд: бэкенд + калибровка + параметры когерентного окна."""
 
-    def __init__(self, backend, cal=None, fs=96000, df=1.0, blocks=2, settle=0.5):
+    def __init__(self, backend, cal=None, fs=96000, df=1.0, blocks=2, settle=0.5,
+                 edge_protect=True):
         self.be = backend
         self.cal = cal or Calibration()
         self.fs = int(fs)
@@ -111,6 +112,14 @@ class Rig:
         self.n = int(round(self.fs / df))
         self.progress = lambda msg: None      # GUI подменяет
         self.cancel = False
+        # edge-защита (candidate, ветка diagnostics/d10-full-capture, v2.10):
+        # D10-класс ЦАПов теряет ~0.22 с головы и ~0.19 с хвоста потока
+        # (измерено v2.6 на реальном железе). Тишина у краёв программы
+        # переводит потерю в неслышимую зону. Хвост 0.6 с дополнительно
+        # делает пост-потоковое состояние тихим (реплика хвоста = тишина).
+        self.edge_protect_enabled = bool(edge_protect)
+        self.edge_protect_lead_s = 1.5
+        self.edge_protect_tail_s = 0.6
 
     def open(self):
         self.be.open(self.fs)
@@ -151,7 +160,16 @@ class Rig:
             sig, s_n = self._seg(tl, tr, self.settle if st is None else st)
             parts.append(sig)
             meta.append((len(sig), s_n))
-        rec = self.be.play_record(np.concatenate(parts))
+        program = np.concatenate(parts)
+        # edge-защита: ОДИН раз вокруг всей программы (не в каждом _seg);
+        # onset детектирует начало тона уже после lead-тишины — индексация
+        # сегментов (meta: ln, s_n) не меняется, окна остаются привязаны
+        # к onset + s_n; s_n не модифицируется
+        if self.edge_protect_enabled:
+            lead = np.zeros((int(round(self.edge_protect_lead_s * self.fs)), 2))
+            tail = np.zeros((int(round(self.edge_protect_tail_s * self.fs)), 2))
+            program = np.concatenate([lead, program, tail])
+        rec = self.be.play_record(program)
         tone_hz = None
         for k, a in list(segs[0][0]) + list(segs[0][1]):
             if a > 0:
@@ -176,7 +194,42 @@ class Rig:
         pk = max(float(np.max(np.abs(w))) for w in wins)
         if pk >= 0.98:
             warns.append(f"ПЕРЕГРУЗКА ВХОДА АЦП (пик {dsp.db20(pk):.1f} dBFS): уменьши уровень или добавь делитель")
+        # отказ при недостатке УСТОЙЧИВОГО сигнала в окне (относительная
+        # проверка: провал ≥12 дБ ниже медианы окна на ≥50 мс; без
+        # абсолютных порогов уровня — тихие DUT не отбрасываются)
+        for wi, w in enumerate(wins):
+            reason = self._window_stability_reason(w)
+            if reason:
+                raise MeasureError(f"сегмент {wi + 1}: {reason} — "
+                                   f"недостаточно устойчивого сигнала для анализа")
         return wins, warns
+
+    def _window_stability_reason(self, win):
+        """None если окно устойчиво; строка-причина при провале ≥12 дБ ниже
+        медианы окна на ≥50 мс (относительная проверка, без абсолютных
+        порогов уровня)."""
+        w = int(round(0.002 * self.fs))
+        n = len(win) // w * w
+        if n < w * 4:
+            return None
+        rms = np.sqrt(np.mean(win[:n].reshape(-1, w, 2) ** 2, axis=1)).max(axis=1) * np.sqrt(2)
+        db = 20 * np.log10(np.clip(rms, 1e-12, None))
+        median = float(np.median(db))
+        drop_limit = median - 12.0
+        run_min = int(round(0.05 * self.fs / w))
+        i = 0
+        while i < len(db):
+            if db[i] < drop_limit:
+                j = i
+                while j < len(db) and db[j] < drop_limit:
+                    j += 1
+                if (j - i) * w / self.fs >= 0.05:
+                    return (f"провал {(median - float(np.max(db[i:j]))):.1f} дБ "
+                            f"длительностью {(j - i) * w / self.fs:.2f} с")
+                i = j
+            else:
+                i += 1
+        return None
 
     def _onset(self, rec, tone_hz=None):
         if tone_hz is not None:

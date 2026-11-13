@@ -87,9 +87,10 @@ check("backend construction passes selected DAC and ADC separately",
 check("saved measurement passport records both endpoint identities",
       '"dac_device": dac_hw' in context_method and '"adc_device": adc_hw' in context_method
       and '"device_pair_key": pair_key' in context_method)
-check("split-clock precision jobs require a clock preflight",
+check("split-clock precision jobs: preflight level from calibration, fails-closed",
       "if clock_sensitive and dac_hw != adc_hw" in run_job
-      and "m.clock_check(rig, level_dbfs=-72.0)" in run_job
+      and "clock_probe_level_dbfs" in run_job
+      and "m.clock_check(rig, level_dbfs=clock_level)" in run_job
       and 'not clock.get("ok", False)' in run_job)
 
 # Avoid layout churn and needless Cairo redraw requests.

@@ -49,14 +49,36 @@ def validate_pair_rate(dac_hw, adc_hw, fs):
 
 
 def split_clock_preflight(rig, dac_hw, adc_hw, level_dbfs=-72.0):
-    """Check independent physical clocks at an explicitly selected safe level."""
+    """Check independent physical clocks at an explicitly selected safe level.
+
+    D4 (диагностическая ветка, приёмка D10→E-MU): если заявленный уровень
+    даёт «тон не найден» (пол линии выше уровня, напр. D10→E-MU при
+    −72 dBFS — пол линии −77), выполняется один повтор на −30 dBFS.
+    fails-closed сохранён: результат должен быть ok на каком-то уровне,
+    иначе MeasureError блокирует точное измерение."""
     if str(dac_hw) == str(adc_hw):
         return None
-    result = m.clock_check(rig, level_dbfs=level_dbfs)
-    if not result.get("ok", False):
+    result = None
+    for level in dict.fromkeys((level_dbfs, -30.0)):
+        fallback = level != level_dbfs
+        try:
+            result = m.clock_check(rig, level_dbfs=level)
+        except m.MeasureError as exc:
+            if "не найден" in str(exc) and not fallback:
+                result = {"ok": False, "kind": "clock", "ch": {},
+                          "warnings": [f"уровень {level} dBFS: тон не найден "
+                                       f"(пол линии выше) — повтор на −30 dBFS"],
+                          "test_level_dbfs": level}
+                continue
+            raise
+        if fallback and result.get("ok", False):
+            result.setdefault("warnings", []).append(
+                f"preflight: уровень поднят до −30 dBFS — пол линии выше {level_dbfs:g} dBFS")
+        break
+    if not result or not result.get("ok", False):
         raise m.MeasureError(
             "Не удалось подтвердить пригодность раздельной пары ЦАП/АЦП: "
-            + m.text_clock(result)
+            + (m.text_clock(result) if result else "тон не найден ни на одном уровне")
         )
     rig.clock_result = result
     return result

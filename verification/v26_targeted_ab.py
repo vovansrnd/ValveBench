@@ -4,7 +4,8 @@
 БЕЗ искусственных пауз. Фактический интервал preflight→THD логируется.
 
 Чередование: L0, L1.5, L1.5, L0, L0, L1.5, L1.5, L0 (8 прогонов, 4 на условие).
-Программа прогона: [lead][chirp A][gap 0.15][тон 997 4.55][тишина 0.6][chirp Б][tail 1.0].
+Программа прогона: [lead][тон 997 −30 dBFS 4.55 с непрерывно — rig._seg с
+хвостом 0.5, включая fade-out; чирпы-маркеры не используются].
 """
 import json
 import os
@@ -137,12 +138,19 @@ def main():
         # лидирующая тишина тиха и в плато не входит) →
         # ожидаемый конец тона = плато-старт + 4.54 с (4.55 − fade-in);
         # lead_s в формулу НЕ входит (тишина рендерится до тона, не сдвигает его)
+        # поданный конец тона: старт плато (подъём env997 = старт тона после
+        # fade-in) + 4.54 с (4.55 − fade-in 0.01) — методика v2.6. Без этого
+        # определения имя было не определено (дефект §14.5.5 — исправлен)
+        submitted_tone_end = (pstart + int(round(4.54 * FS))
+                              if pstart is not None else None)
         last45 = None
         if pstart is not None:
             above2 = np.where(env[pstart:pend] > 10 ** (-45 / 20))[0]
             if len(above2):
                 last45 = int(above2[-1] + pstart)
-        tone_loss_s = round((submitted_tone_end - last45) / FS, 4) if last45 else None
+        tone_loss_s = (round((submitted_tone_end - last45) / FS, 4)
+                       if (last45 is not None and submitted_tone_end is not None)
+                       else None)
 
         r = {"run": idx + 1, "cond": cond, "lead_s": lead_s,
              "preflight_duration_s": preflight_dur,
@@ -150,7 +158,8 @@ def main():
              "captured_s": round(n_cap / FS, 3),
              "plateau_start_s": round(pstart / FS, 4) if pstart is not None else None,
              "plateau_len_s": round(plateau_len, 4) if plateau_len else None,
-             "submitted_tone_end_s": round(submitted_tone_end / FS, 4),
+             "submitted_tone_end_s": round(submitted_tone_end / FS, 4)
+             if submitted_tone_end is not None else None,
              "tone_last_above45_s": round(last45 / FS, 4) if last45 else None,
              "tone_loss_s": tone_loss_s,
              "chirpA": {k2: ev[f"chirpA_{k2}"] for k2 in ("L", "R")},

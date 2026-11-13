@@ -651,9 +651,13 @@ def run_selftest():
 
     def burst_pr(out, tail=0.8):
         rec = original_pr(out, tail)
+        # позиция всплеска — ВНУТРИ окна анализа при любой edge-защите:
+        # lead (edge_protect) + settle rig_b + 1.0 с в программу, + пад 0.05 в записи
+        lead_s = float(getattr(rig_b, "edge_protect_lead_s", 0.0) or 0.0)
+        pos = int((lead_s + rig_b.settle + 1.0) * rig_b.fs)
         n = int(0.05 * rig_b.fs)
         tt = np.arange(n) / rig_b.fs
-        rec[int(0.9 * rig_b.fs):int(0.9 * rig_b.fs) + n, 0] += 10 ** (-37.0 / 20) * np.sin(2 * np.pi * 1000.0 * tt)
+        rec[pos:pos + n, 0] += 10 ** (-37.0 / 20) * np.sin(2 * np.pi * 1000.0 * tt)
         return rec
 
     be_b.play_record = burst_pr
