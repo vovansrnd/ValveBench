@@ -1,0 +1,666 @@
+{
+ "source_json": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-results.json",
+ "production_constants": {
+  "block_ms": 5,
+  "noise_window_s": 0.2,
+  "thr": "max(8x_noise, 0.1x_p99)",
+  "sustain": "90% за 1 с"
+ },
+ "expected_window": [
+  2.255,
+  4.255
+ ],
+ "results": [
+  {
+   "index": 1,
+   "level_dbfs": -72.0,
+   "production_failed": true,
+   "production_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+   "capture": "20261114-004425-clock-01--72dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -88.2,
+     "peak99_dbfs": -75.7,
+     "thr_dbfs": -70.1,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.0,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -88.6,
+     "blocks_p90_dbfs": -77.8
+    },
+    "L": {
+     "noise_dbfs": -88.2,
+     "peak99_dbfs": -75.7,
+     "thr_dbfs": -70.1,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.0,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -88.6,
+     "blocks_p90_dbfs": -77.8
+    },
+    "R": {
+     "noise_dbfs": -104.7,
+     "peak99_dbfs": -78.2,
+     "thr_dbfs": -86.7,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.2943,
+     "sustain_found": true,
+     "onset_frame": 432000,
+     "onset_s": 2.25,
+     "blocks_median_dbfs": -104.8,
+     "blocks_p90_dbfs": -78.6
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -88.2,
+     "max": -82.1
+    },
+    "R": {
+     "median": -104.7,
+     "max": -98.4
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -78.6,
+    "R": -78.7
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -79.2,
+     "local_noise_dbfs": -77.5,
+     "snr_db": -1.7
+    },
+    "R": {
+     "A1k_dbfs": -78.8,
+     "local_noise_dbfs": -81.6,
+     "snr_db": 2.7
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -100.0,
+      "thr_with_quiet_noise_dbfs": -82.0,
+      "sustain_found_whole_record": true,
+      "onset_s": 2.25
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -114.6,
+      "thr_with_quiet_noise_dbfs": -96.6,
+      "sustain_found_whole_record": true,
+      "onset_s": 2.2
+     }
+    }
+   }
+  },
+  {
+   "index": 2,
+   "level_dbfs": -66.0,
+   "production_failed": true,
+   "production_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+   "capture": "20261114-004425-clock-02--66dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -89.6,
+     "peak99_dbfs": -71.6,
+     "thr_dbfs": -71.6,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.01,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -87.1,
+     "blocks_p90_dbfs": -72.3
+    },
+    "L": {
+     "noise_dbfs": -89.6,
+     "peak99_dbfs": -71.6,
+     "thr_dbfs": -71.6,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.01,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -87.1,
+     "blocks_p90_dbfs": -72.3
+    },
+    "R": {
+     "noise_dbfs": -106.2,
+     "peak99_dbfs": -72.6,
+     "thr_dbfs": -88.1,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.3514,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -103.4,
+     "blocks_p90_dbfs": -72.7
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -89.6,
+     "max": -82.4
+    },
+    "R": {
+     "median": -106.2,
+     "max": -98.9
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -72.7,
+    "R": -72.7
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -73.1,
+     "local_noise_dbfs": -77.4,
+     "snr_db": 4.3
+    },
+    "R": {
+     "A1k_dbfs": -72.8,
+     "local_noise_dbfs": -81.4,
+     "snr_db": 8.6
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -98.5,
+      "thr_with_quiet_noise_dbfs": -80.4,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.86
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -113.0,
+      "thr_with_quiet_noise_dbfs": -92.6,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.855
+     }
+    }
+   }
+  },
+  {
+   "index": 15,
+   "level_dbfs": -66.0,
+   "production_failed": true,
+   "production_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+   "capture": "20261114-004425-clock-15--66dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -90.1,
+     "peak99_dbfs": -71.1,
+     "thr_dbfs": -72.1,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.0743,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -86.8,
+     "blocks_p90_dbfs": -72.3
+    },
+    "L": {
+     "noise_dbfs": -90.1,
+     "peak99_dbfs": -71.1,
+     "thr_dbfs": -72.1,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.0743,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -86.8,
+     "blocks_p90_dbfs": -72.3
+    },
+    "R": {
+     "noise_dbfs": -106.8,
+     "peak99_dbfs": -72.5,
+     "thr_dbfs": -88.7,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.3514,
+     "sustain_found": true,
+     "onset_frame": 354240,
+     "onset_s": 1.845,
+     "blocks_median_dbfs": -103.2,
+     "blocks_p90_dbfs": -72.6
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -90.1,
+     "max": -81.6
+    },
+    "R": {
+     "median": -106.8,
+     "max": -98.5
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -72.7,
+    "R": -72.7
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -73.0,
+     "local_noise_dbfs": -77.6,
+     "snr_db": 4.5
+    },
+    "R": {
+     "A1k_dbfs": -72.8,
+     "local_noise_dbfs": -81.4,
+     "snr_db": 8.6
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -103.8,
+      "thr_with_quiet_noise_dbfs": -85.7,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.735
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -118.1,
+      "thr_with_quiet_noise_dbfs": -92.5,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.845
+     }
+    }
+   }
+  },
+  {
+   "index": 16,
+   "level_dbfs": -72.0,
+   "production_failed": true,
+   "production_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+   "capture": "20261114-004425-clock-16--72dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -89.8,
+     "peak99_dbfs": -76.1,
+     "thr_dbfs": -71.8,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.0,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -87.9,
+     "blocks_p90_dbfs": -78.0
+    },
+    "L": {
+     "noise_dbfs": -89.8,
+     "peak99_dbfs": -76.1,
+     "thr_dbfs": -71.8,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.0,
+     "sustain_found": false,
+     "onset_frame": null,
+     "onset_s": null,
+     "blocks_median_dbfs": -87.9,
+     "blocks_p90_dbfs": -78.0
+    },
+    "R": {
+     "noise_dbfs": -106.9,
+     "peak99_dbfs": -78.3,
+     "thr_dbfs": -88.8,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.3507,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -104.0,
+     "blocks_p90_dbfs": -78.6
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -89.8,
+     "max": -83.1
+    },
+    "R": {
+     "median": -106.9,
+     "max": -99.7
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -78.8,
+    "R": -78.7
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -79.5,
+     "local_noise_dbfs": -77.5,
+     "snr_db": -2.0
+    },
+    "R": {
+     "A1k_dbfs": -78.9,
+     "local_noise_dbfs": -81.6,
+     "snr_db": 2.7
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -101.8,
+      "thr_with_quiet_noise_dbfs": -83.8,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.855
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -116.7,
+      "thr_with_quiet_noise_dbfs": -98.3,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.85
+     }
+    }
+   }
+  },
+  {
+   "index": 3,
+   "level_dbfs": -60.0,
+   "production_failed": false,
+   "production_error": "",
+   "capture": "20261114-004425-clock-03--60dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -90.9,
+     "peak99_dbfs": -65.9,
+     "thr_dbfs": -72.8,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.3493,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -87.6,
+     "blocks_p90_dbfs": -66.7
+    },
+    "L": {
+     "noise_dbfs": -90.9,
+     "peak99_dbfs": -65.9,
+     "thr_dbfs": -72.8,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.3493,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -87.6,
+     "blocks_p90_dbfs": -66.7
+    },
+    "R": {
+     "noise_dbfs": -107.6,
+     "peak99_dbfs": -66.6,
+     "thr_dbfs": -86.6,
+     "thr_rule": "0.1x_peak99",
+     "frac_blocks_above_thr": 0.3521,
+     "sustain_found": true,
+     "onset_frame": 355200,
+     "onset_s": 1.85,
+     "blocks_median_dbfs": -103.8,
+     "blocks_p90_dbfs": -66.7
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -90.9,
+     "max": -83.1
+    },
+    "R": {
+     "median": -107.6,
+     "max": -99.4
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -67.0,
+    "R": -66.8
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -67.1,
+     "local_noise_dbfs": -77.2,
+     "snr_db": 10.0
+    },
+    "R": {
+     "A1k_dbfs": -66.8,
+     "local_noise_dbfs": -80.8,
+     "snr_db": 14.0
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -99.7,
+      "thr_with_quiet_noise_dbfs": -81.7,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.855
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -115.2,
+      "thr_with_quiet_noise_dbfs": -86.6,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.85
+     }
+    }
+   }
+  },
+  {
+   "index": 4,
+   "level_dbfs": -54.0,
+   "production_failed": false,
+   "production_error": "",
+   "capture": "20261114-004425-clock-04--54dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -89.4,
+     "peak99_dbfs": -60.7,
+     "thr_dbfs": -71.3,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.35,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -87.0,
+     "blocks_p90_dbfs": -60.8
+    },
+    "L": {
+     "noise_dbfs": -89.4,
+     "peak99_dbfs": -60.7,
+     "thr_dbfs": -71.3,
+     "thr_rule": "8x_noise",
+     "frac_blocks_above_thr": 0.35,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -87.0,
+     "blocks_p90_dbfs": -60.9
+    },
+    "R": {
+     "noise_dbfs": -105.9,
+     "peak99_dbfs": -60.7,
+     "thr_dbfs": -80.7,
+     "thr_rule": "0.1x_peak99",
+     "frac_blocks_above_thr": 0.35,
+     "sustain_found": true,
+     "onset_frame": 356160,
+     "onset_s": 1.855,
+     "blocks_median_dbfs": -103.4,
+     "blocks_p90_dbfs": -60.8
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -89.4,
+     "max": -80.9
+    },
+    "R": {
+     "median": -105.9,
+     "max": -97.9
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -61.1,
+    "R": -60.8
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -61.2,
+     "local_noise_dbfs": -76.5,
+     "snr_db": 15.3
+    },
+    "R": {
+     "A1k_dbfs": -60.8,
+     "local_noise_dbfs": -78.9,
+     "snr_db": 18.1
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -99.1,
+      "thr_with_quiet_noise_dbfs": -80.7,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.855
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -113.4,
+      "thr_with_quiet_noise_dbfs": -80.7,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.855
+     }
+    }
+   }
+  },
+  {
+   "index": 8,
+   "level_dbfs": -30.0,
+   "production_failed": false,
+   "production_error": "",
+   "capture": "20261114-004425-clock-08--30dB-capture.wav",
+   "frames": 1344000,
+   "production_reproduction": {
+    "combined": {
+     "noise_dbfs": -100.0,
+     "peak99_dbfs": -36.8,
+     "thr_dbfs": -56.8,
+     "thr_rule": "0.1x_peak99",
+     "frac_blocks_above_thr": 0.35,
+     "sustain_found": true,
+     "onset_frame": 357120,
+     "onset_s": 1.86,
+     "blocks_median_dbfs": -87.3,
+     "blocks_p90_dbfs": -36.8
+    },
+    "L": {
+     "noise_dbfs": -100.0,
+     "peak99_dbfs": -37.1,
+     "thr_dbfs": -57.1,
+     "thr_rule": "0.1x_peak99",
+     "frac_blocks_above_thr": 0.35,
+     "sustain_found": true,
+     "onset_frame": 357120,
+     "onset_s": 1.86,
+     "blocks_median_dbfs": -87.3,
+     "blocks_p90_dbfs": -37.2
+    },
+    "R": {
+     "noise_dbfs": -116.0,
+     "peak99_dbfs": -36.8,
+     "thr_dbfs": -56.8,
+     "thr_rule": "0.1x_peak99",
+     "frac_blocks_above_thr": 0.35,
+     "sustain_found": true,
+     "onset_frame": 357120,
+     "onset_s": 1.86,
+     "blocks_median_dbfs": -103.7,
+     "blocks_p90_dbfs": -36.8
+    }
+   },
+   "expected_window": {
+    "t0_s": 2.255,
+    "t1_s": 4.255
+   },
+   "first_02s_blocks_dbfs": {
+    "L": {
+     "median": -100.0,
+     "max": -81.9
+    },
+    "R": {
+     "median": -116.0,
+     "max": -98.6
+    }
+   },
+   "window_demod_env_dbfs": {
+    "L": -37.2,
+    "R": -36.8
+   },
+   "window_lsq_1k": {
+    "L": {
+     "A1k_dbfs": -37.2,
+     "local_noise_dbfs": -58.4,
+     "snr_db": 21.2
+    },
+    "R": {
+     "A1k_dbfs": -36.8,
+     "local_noise_dbfs": -58.1,
+     "snr_db": 21.3
+    }
+   },
+   "diagnostic_quiet_noise_reference": {
+    "note": "те же production-константы (8x/0.1x/90%), но шум — медиана самого тихого 0.2-с участка записи; диагностика, не production",
+    "channels": {
+     "L": {
+      "quietest_02s_noise_dbfs": -101.6,
+      "thr_with_quiet_noise_dbfs": -57.1,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.86
+     },
+     "R": {
+      "quietest_02s_noise_dbfs": -116.9,
+      "thr_with_quiet_noise_dbfs": -56.8,
+      "sustain_found_whole_record": true,
+      "onset_s": 1.86
+     }
+    }
+   }
+  }
+ ]
+}
