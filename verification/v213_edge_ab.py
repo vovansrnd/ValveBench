@@ -121,8 +121,9 @@ class MarkedCaptureCtx:
                 raise RuntimeError("marker positions do not fit the submitted Rig.run program")
             # Marker A is additive: the 997-Hz tone stays intact at onset.
             marked[a0:a1] += ctx.marker_a
-            # Marker B replaces only the final 10 ms, after the production window.
-            marked[b0:b1] = ctx.marker_b
+            # Marker B is additive in the final 10 ms. Preserve the submitted
+            # tone/fade: replacing it would create an artificial 10-ms tail loss.
+            marked[b0:b1] += ctx.marker_b
             capture = ctx._orig(marked, *args, **kwargs)
             ctx.pairs.append((
                 original,
@@ -520,7 +521,7 @@ def main() -> int:
 
                     if name in offsets_a:
                         expected_end = (
-                            offsets_a[name] + lead_n + seg_len - len(ctx.marker_b)
+                            offsets_a[name] + lead_n + seg_len
                         ) / FS
                         info["tail_loss_ms_estimate"] = round(
                             (expected_end - info["tone_end_s"]) * 1000.0, 3
@@ -528,7 +529,7 @@ def main() -> int:
                         info["tail_anchor"] = "marker_A + known segment duration"
                     elif name in offsets_b:
                         expected_end = (
-                            offsets_b[name] + lead_n + seg_len - len(ctx.marker_b)
+                            offsets_b[name] + lead_n + seg_len
                         ) / FS
                         info["tail_loss_ms_estimate"] = round(
                             (expected_end - info["tone_end_s"]) * 1000.0, 3
