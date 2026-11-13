@@ -1,0 +1,1169 @@
+{
+  "version": "v2.16-clock-offline-gate",
+  "source_json": "/opt/MyApps/Adudio/ValveBench-v216-clock-offline-gate/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-results.json",
+  "method": {
+    "playback_performed": false,
+    "onset": "same 5-ms narrowband envelope and sustain test as v2.15",
+    "window": "per-capture R onset + 0.4-s settle, 2.0-s exact production window",
+    "analyzer": "Rig._tone_an / dsp.analyze_tone, nharm=2",
+    "clock_gates": {
+      "min_carrier_local_snr_db": 20.0,
+      "max_abs_ppm": 100.0,
+      "max_lr_spread_ppm": 5.0
+    },
+    "transport_limit": "XRUN/backend notes cannot be reconstructed from WAV alone; numeric gates are reported separately."
+  },
+  "results": [
+    {
+      "index": 1,
+      "level_dbfs": -72.0,
+      "production_failed": true,
+      "capture": "20261114-004425-clock-01--72dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -88.16,
+          "peak99_dbfs": -75.74,
+          "threshold_dbfs": -70.1,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.0,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        },
+        "R": {
+          "noise_dbfs": -104.75,
+          "peak99_dbfs": -78.22,
+          "threshold_dbfs": -86.69,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.29429,
+          "sustain_found": true,
+          "onset_frame": 432000,
+          "onset_s": 2.25
+        },
+        "combined_production": {
+          "noise_dbfs": -88.16,
+          "peak99_dbfs": -75.74,
+          "threshold_dbfs": -70.1,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.0,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 432000,
+          "onset_s": 2.25,
+          "window_start_frame": 508800,
+          "window_end_frame": 892800,
+          "window_start_s": 2.65,
+          "window_end_s": 4.65,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00064528,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9686148727046,
+              "ppm": -31.385127295391335,
+              "level_dbfs": -79.17860563056537,
+              "noise_dbfs": -79.49342502973495,
+              "local_noise_dbfs": -105.48479134559416,
+              "carrier_local_snr_db": 26.306185715028786,
+              "coh_err_bins": -0.03138512729537979,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0314 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9761545808869,
+              "ppm": -23.845419113044386,
+              "level_dbfs": -78.95303396104411,
+              "noise_dbfs": -94.46501752271504,
+              "local_noise_dbfs": -112.38166130475383,
+              "carrier_local_snr_db": 33.42862734370972,
+              "coh_err_bins": -0.023845419113058597,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0238 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 7.539708182346949,
+          "clock_ppm_ok": false,
+          "clock_consistent": false,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": false,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00064528,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9788208475652,
+              "ppm": -21.17915243482482,
+              "level_dbfs": -79.18813606182151,
+              "noise_dbfs": -80.2154496623449,
+              "local_noise_dbfs": -106.55538251896186,
+              "carrier_local_snr_db": 27.367246457140347,
+              "coh_err_bins": -0.021179152434797288,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0212 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.97780228637,
+              "ppm": -22.197713629990012,
+              "level_dbfs": -78.78740060994349,
+              "noise_dbfs": -96.22284045121141,
+              "local_noise_dbfs": -122.3698737528703,
+              "carrier_local_snr_db": 43.58247314292683,
+              "coh_err_bins": -0.0221977136300211,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0222 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 1.0185611951651907,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      }
+    },
+    {
+      "index": 2,
+      "level_dbfs": -66.0,
+      "production_failed": true,
+      "capture": "20261114-004425-clock-02--66dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -89.63,
+          "peak99_dbfs": -71.63,
+          "threshold_dbfs": -71.56,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.01,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        },
+        "R": {
+          "noise_dbfs": -106.16,
+          "peak99_dbfs": -72.55,
+          "threshold_dbfs": -88.1,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.35143,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        },
+        "combined_production": {
+          "noise_dbfs": -89.63,
+          "peak99_dbfs": -71.63,
+          "threshold_dbfs": -71.56,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.01,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00076807,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9693024645848,
+              "ppm": -30.697535415291632,
+              "level_dbfs": -73.09463115185316,
+              "noise_dbfs": -79.85799641605595,
+              "local_noise_dbfs": -107.26807739002999,
+              "carrier_local_snr_db": 34.173446238176815,
+              "coh_err_bins": -0.030697535415242783,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0307 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9754483055062,
+              "ppm": -24.551694493779586,
+              "level_dbfs": -72.77534533977362,
+              "noise_dbfs": -95.83186081917066,
+              "local_noise_dbfs": -123.54491068717809,
+              "carrier_local_snr_db": 50.769565347404466,
+              "coh_err_bins": -0.024551694493766263,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0246 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 6.145840921512047,
+          "clock_ppm_ok": false,
+          "clock_consistent": false,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": false,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00076807,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9693024645848,
+              "ppm": -30.697535415291632,
+              "level_dbfs": -73.09463115185316,
+              "noise_dbfs": -79.85799641605595,
+              "local_noise_dbfs": -107.26807739002999,
+              "carrier_local_snr_db": 34.173446238176815,
+              "coh_err_bins": -0.030697535415242783,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0307 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9754483055062,
+              "ppm": -24.551694493779586,
+              "level_dbfs": -72.77534533977362,
+              "noise_dbfs": -95.83186081917066,
+              "local_noise_dbfs": -123.54491068717809,
+              "carrier_local_snr_db": 50.769565347404466,
+              "coh_err_bins": -0.024551694493766263,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0246 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 6.145840921512047,
+          "clock_ppm_ok": false,
+          "clock_consistent": false,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": false,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      }
+    },
+    {
+      "index": 15,
+      "level_dbfs": -66.0,
+      "production_failed": true,
+      "capture": "20261114-004425-clock-15--66dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -90.15,
+          "peak99_dbfs": -71.13,
+          "threshold_dbfs": -72.09,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.07429,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        },
+        "R": {
+          "noise_dbfs": -106.8,
+          "peak99_dbfs": -72.45,
+          "threshold_dbfs": -88.74,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.35143,
+          "sustain_found": true,
+          "onset_frame": 354240,
+          "onset_s": 1.845
+        },
+        "combined_production": {
+          "noise_dbfs": -90.15,
+          "peak99_dbfs": -71.13,
+          "threshold_dbfs": -72.09,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.07429,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 354240,
+          "onset_s": 1.845,
+          "window_start_frame": 431040,
+          "window_end_frame": 815040,
+          "window_start_s": 2.245,
+          "window_end_s": 4.245,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00077975,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9721881789782,
+              "ppm": -27.811821021850314,
+              "level_dbfs": -73.05444302410815,
+              "noise_dbfs": -81.92096414392098,
+              "local_noise_dbfs": -109.09216329536363,
+              "carrier_local_snr_db": 36.03772027125548,
+              "coh_err_bins": -0.02781182102182811,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0278 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9757525795828,
+              "ppm": -24.24742041717831,
+              "level_dbfs": -72.76530803973074,
+              "noise_dbfs": -97.75280379072215,
+              "local_noise_dbfs": -125.63307307911096,
+              "carrier_local_snr_db": 52.86776503938021,
+              "coh_err_bins": -0.02424742041716854,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0242 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 3.5644006046720023,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00077975,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9726141809634,
+              "ppm": -27.385819036607195,
+              "level_dbfs": -73.05245289125534,
+              "noise_dbfs": -81.86126946297227,
+              "local_noise_dbfs": -108.95267092196931,
+              "carrier_local_snr_db": 35.900218030713965,
+              "coh_err_bins": -0.027385819036567227,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0274 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.975828711146,
+              "ppm": -24.171288853902517,
+              "level_dbfs": -72.76493000899876,
+              "noise_dbfs": -97.69571727390647,
+              "local_noise_dbfs": -125.57726889404807,
+              "carrier_local_snr_db": 52.81233888504932,
+              "coh_err_bins": -0.02417128885394959,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0242 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 3.214530182704678,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      }
+    },
+    {
+      "index": 16,
+      "level_dbfs": -72.0,
+      "production_failed": true,
+      "capture": "20261114-004425-clock-16--72dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -89.82,
+          "peak99_dbfs": -76.05,
+          "threshold_dbfs": -71.75,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.0,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        },
+        "R": {
+          "noise_dbfs": -106.86,
+          "peak99_dbfs": -78.26,
+          "threshold_dbfs": -88.8,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.35071,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        },
+        "combined_production": {
+          "noise_dbfs": -89.82,
+          "peak99_dbfs": -76.05,
+          "threshold_dbfs": -71.75,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.0,
+          "sustain_found": false,
+          "onset_frame": null,
+          "onset_s": null
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.0007,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9812783555514,
+              "ppm": -18.721644448604913,
+              "level_dbfs": -79.53751814820514,
+              "noise_dbfs": -79.43633087074245,
+              "local_noise_dbfs": -108.40933336999447,
+              "carrier_local_snr_db": 28.871815221789333,
+              "coh_err_bins": -0.018721644448646657,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0187 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9767480338655,
+              "ppm": -23.25196613450764,
+              "level_dbfs": -78.83616270827562,
+              "noise_dbfs": -95.47782903424645,
+              "local_noise_dbfs": -124.36902507831775,
+              "carrier_local_snr_db": 45.532862370042125,
+              "coh_err_bins": -0.023251966134466784,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0233 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 4.530321685902727,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.0007,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9812783555514,
+              "ppm": -18.721644448604913,
+              "level_dbfs": -79.53751814820514,
+              "noise_dbfs": -79.43633087074245,
+              "local_noise_dbfs": -108.40933336999447,
+              "carrier_local_snr_db": 28.871815221789333,
+              "coh_err_bins": -0.018721644448646657,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0187 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9767480338655,
+              "ppm": -23.25196613450764,
+              "level_dbfs": -78.83616270827562,
+              "noise_dbfs": -95.47782903424645,
+              "local_noise_dbfs": -124.36902507831775,
+              "carrier_local_snr_db": 45.532862370042125,
+              "coh_err_bins": -0.023251966134466784,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0233 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 4.530321685902727,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      }
+    },
+    {
+      "index": 3,
+      "level_dbfs": -60.0,
+      "production_failed": false,
+      "capture": "20261114-004425-clock-03--60dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -90.86,
+          "peak99_dbfs": -65.93,
+          "threshold_dbfs": -72.8,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.34929,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        },
+        "R": {
+          "noise_dbfs": -107.55,
+          "peak99_dbfs": -66.59,
+          "threshold_dbfs": -86.59,
+          "threshold_rule": "0.1x_peak99",
+          "fraction_blocks_above": 0.35214,
+          "sustain_found": true,
+          "onset_frame": 355200,
+          "onset_s": 1.85
+        },
+        "combined_production": {
+          "noise_dbfs": -90.86,
+          "peak99_dbfs": -65.93,
+          "threshold_dbfs": -72.8,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.34929,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 355200,
+          "onset_s": 1.85,
+          "window_start_frame": 432000,
+          "window_end_frame": 816000,
+          "window_start_s": 2.25,
+          "window_end_s": 4.25,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00102031,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9768247335483,
+              "ppm": -23.175266451791465,
+              "level_dbfs": -67.10729359237276,
+              "noise_dbfs": -79.66636137159524,
+              "local_noise_dbfs": -107.17131867989906,
+              "carrier_local_snr_db": 40.06402508752632,
+              "coh_err_bins": -0.023175266451744392,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0232 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9766380320345,
+              "ppm": -23.361967965485064,
+              "level_dbfs": -66.77621583394726,
+              "noise_dbfs": -95.58431240088117,
+              "local_noise_dbfs": -123.12812121559055,
+              "carrier_local_snr_db": 56.35190538164329,
+              "coh_err_bins": -0.023361967965456643,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0234 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 0.186701513693599,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00102031,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9769617628407,
+              "ppm": -23.03823715932296,
+              "level_dbfs": -67.1069927282881,
+              "noise_dbfs": -79.64240837380541,
+              "local_noise_dbfs": -107.1679059749156,
+              "carrier_local_snr_db": 40.06091324662749,
+              "coh_err_bins": -0.023038237159312303,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0230 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9766641072017,
+              "ppm": -23.335892798237445,
+              "level_dbfs": -66.77616118168329,
+              "noise_dbfs": -95.56266155775553,
+              "local_noise_dbfs": -123.12091408756906,
+              "carrier_local_snr_db": 56.34475290588577,
+              "coh_err_bins": -0.023335892798286295,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0233 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 0.29765563891448465,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      },
+      "recorded_v214_clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -60.0,
+        "warnings": [
+          "L: сдвиг тона -0.0230 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0230 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0233 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0233 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9769617628407,
+            "ppm": -23.03823715932296,
+            "level_dbfs": -67.1069927282881,
+            "noise_dbfs": -79.64240837380541,
+            "snr_db": 40.06091324662749,
+            "local_noise_dbfs": -107.1679059749156,
+            "coh_err_bins": -0.023038237159312303,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9766641072017,
+            "ppm": -23.335892798237445,
+            "level_dbfs": -66.77616118168329,
+            "noise_dbfs": -95.56266155775553,
+            "snr_db": 56.34475290588577,
+            "local_noise_dbfs": -123.12091408756906,
+            "coh_err_bins": -0.023335892798286295,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.29765563891448465,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      }
+    },
+    {
+      "index": 4,
+      "level_dbfs": -54.0,
+      "production_failed": false,
+      "capture": "20261114-004425-clock-04--54dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -89.36,
+          "peak99_dbfs": -60.69,
+          "threshold_dbfs": -71.3,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.35,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        },
+        "R": {
+          "noise_dbfs": -105.9,
+          "peak99_dbfs": -60.71,
+          "threshold_dbfs": -80.71,
+          "threshold_rule": "0.1x_peak99",
+          "fraction_blocks_above": 0.35,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        },
+        "combined_production": {
+          "noise_dbfs": -89.36,
+          "peak99_dbfs": -60.69,
+          "threshold_dbfs": -71.3,
+          "threshold_rule": "8x_noise",
+          "fraction_blocks_above": 0.35,
+          "sustain_found": true,
+          "onset_frame": 356160,
+          "onset_s": 1.855
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00141454,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.977432134483,
+              "ppm": -22.56786551702028,
+              "level_dbfs": -61.1673396779488,
+              "noise_dbfs": -80.68713778191322,
+              "local_noise_dbfs": -110.32519964444501,
+              "carrier_local_snr_db": 49.15785996649619,
+              "coh_err_bins": -0.02256786551697587,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0226 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9765575083627,
+              "ppm": -23.44249163732659,
+              "level_dbfs": -60.78556031094745,
+              "noise_dbfs": -96.62880455889197,
+              "local_noise_dbfs": -126.18404558583785,
+              "carrier_local_snr_db": 65.3984852748904,
+              "coh_err_bins": -0.02344249163729728,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0234 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 0.8746261203063099,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.00141454,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.977432134483,
+              "ppm": -22.56786551702028,
+              "level_dbfs": -61.1673396779488,
+              "noise_dbfs": -80.68713778191322,
+              "local_noise_dbfs": -110.32519964444501,
+              "carrier_local_snr_db": 49.15785996649619,
+              "coh_err_bins": -0.02256786551697587,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0226 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9765575083627,
+              "ppm": -23.44249163732659,
+              "level_dbfs": -60.78556031094745,
+              "noise_dbfs": -96.62880455889197,
+              "local_noise_dbfs": -126.18404558583785,
+              "carrier_local_snr_db": 65.3984852748904,
+              "coh_err_bins": -0.02344249163729728,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0234 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 0.8746261203063099,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      },
+      "recorded_v214_clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -54.0,
+        "warnings": [
+          "L: сдвиг тона -0.0226 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0226 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0234 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0234 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.977432134483,
+            "ppm": -22.56786551702028,
+            "level_dbfs": -61.1673396779488,
+            "noise_dbfs": -80.68713778191322,
+            "snr_db": 49.15785996649619,
+            "local_noise_dbfs": -110.32519964444501,
+            "coh_err_bins": -0.02256786551697587,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9765575083627,
+            "ppm": -23.44249163732659,
+            "level_dbfs": -60.78556031094745,
+            "noise_dbfs": -96.62880455889197,
+            "snr_db": 65.3984852748904,
+            "local_noise_dbfs": -126.18404558583785,
+            "coh_err_bins": -0.02344249163729728,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.8746261203063099,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      }
+    },
+    {
+      "index": 8,
+      "level_dbfs": -30.0,
+      "production_failed": false,
+      "capture": "20261114-004425-clock-08--30dB-capture.wav",
+      "onset": {
+        "L": {
+          "noise_dbfs": -99.99,
+          "peak99_dbfs": -37.13,
+          "threshold_dbfs": -57.13,
+          "threshold_rule": "0.1x_peak99",
+          "fraction_blocks_above": 0.35,
+          "sustain_found": true,
+          "onset_frame": 357120,
+          "onset_s": 1.86
+        },
+        "R": {
+          "noise_dbfs": -116.0,
+          "peak99_dbfs": -36.79,
+          "threshold_dbfs": -56.79,
+          "threshold_rule": "0.1x_peak99",
+          "fraction_blocks_above": 0.35,
+          "sustain_found": true,
+          "onset_frame": 357120,
+          "onset_s": 1.86
+        },
+        "combined_production": {
+          "noise_dbfs": -99.99,
+          "peak99_dbfs": -36.79,
+          "threshold_dbfs": -56.79,
+          "threshold_rule": "0.1x_peak99",
+          "fraction_blocks_above": 0.35,
+          "sustain_found": true,
+          "onset_frame": 357120,
+          "onset_s": 1.86
+        }
+      },
+      "windows": {
+        "from_R_only_onset": {
+          "label": "R-only onset + 0.4-s clock settle",
+          "onset_frame": 357120,
+          "onset_s": 1.86,
+          "window_start_frame": 433920,
+          "window_end_frame": 817920,
+          "window_start_s": 2.26,
+          "window_end_s": 4.26,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.01469553,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9763198277784,
+              "ppm": -23.68017222154073,
+              "level_dbfs": -37.16874640985138,
+              "noise_dbfs": -79.8223544992992,
+              "local_noise_dbfs": -108.91557215497787,
+              "carrier_local_snr_db": 71.7468257451265,
+              "coh_err_bins": -0.02368017222158869,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9763158949761,
+              "ppm": -23.68410502395779,
+              "level_dbfs": -36.7944542934337,
+              "noise_dbfs": -95.81138294615266,
+              "local_noise_dbfs": -124.84885998289698,
+              "carrier_local_snr_db": 88.05440568946327,
+              "coh_err_bins": -0.023684105023903612,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 0.0039328024170615095,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        },
+        "from_success_reference_onset": {
+          "label": "fixed successful-capture onset reference + 0.4-s clock settle",
+          "onset_frame": 356160,
+          "onset_s": 1.855,
+          "window_start_frame": 432960,
+          "window_end_frame": 816960,
+          "window_start_s": 2.255,
+          "window_end_s": 4.255,
+          "window_frames": 384000,
+          "window_stability_reason": null,
+          "peak_abs": 0.01469553,
+          "adc_clip_gate_hit": false,
+          "channels": {
+            "L": {
+              "f0_hz": 999.9763159860371,
+              "ppm": -23.6840139629102,
+              "level_dbfs": -37.16876625582151,
+              "noise_dbfs": -79.85207389085244,
+              "local_noise_dbfs": -108.9803311918007,
+              "carrier_local_snr_db": 71.81156493597919,
+              "coh_err_bins": -0.023684013962906647,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            },
+            "R": {
+              "f0_hz": 999.9763154046917,
+              "ppm": -23.68459530832645,
+              "level_dbfs": -36.79445771552806,
+              "noise_dbfs": -95.83888354593712,
+              "local_noise_dbfs": -124.75706622797674,
+              "carrier_local_snr_db": 87.96260851244867,
+              "coh_err_bins": -0.02368459530828204,
+              "clock_ok": true,
+              "signal_ok": true,
+              "coherent": false,
+              "analyzer_warnings": [
+                "сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+              ]
+            }
+          },
+          "clock_channel_spread_ppm": 0.0005813454162506559,
+          "clock_ppm_ok": true,
+          "clock_consistent": true,
+          "signal_ok_both_channels": true,
+          "coherent_both_channels": false,
+          "clock_ok_without_transport_metadata": true,
+          "transport_metadata_available": false,
+          "note": "XRUN/transport warnings are not recoverable from the WAV/JSON; the overall flag above reproduces numeric gates only."
+        }
+      },
+      "recorded_v214_clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -30.0,
+        "warnings": [
+          "L: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9763198277784,
+            "ppm": -23.68017222154073,
+            "level_dbfs": -37.16874640985138,
+            "noise_dbfs": -79.8223544992992,
+            "snr_db": 71.7468257451265,
+            "local_noise_dbfs": -108.91557215497787,
+            "coh_err_bins": -0.02368017222158869,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9763158949761,
+            "ppm": -23.68410502395779,
+            "level_dbfs": -36.7944542934337,
+            "noise_dbfs": -95.81138294615266,
+            "snr_db": 88.05440568946327,
+            "local_noise_dbfs": -124.84885998289698,
+            "coh_err_bins": -0.023684105023903612,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.0039328024170615095,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      }
+    }
+  ]
+}
