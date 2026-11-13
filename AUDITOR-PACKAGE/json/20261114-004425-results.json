@@ -1,0 +1,1905 @@
+{
+  "version": "v2.14-clock-preflight-capture",
+  "hardware": {
+    "dac_usbid": "152a:85dd",
+    "adc_usbid": "041e:3f04",
+    "dac_pcm": "hw:2,0",
+    "adc_pcm": "hw:3,0",
+    "sample_rate_hz": 192000
+  },
+  "clock_level_order_dbfs": [
+    -72.0,
+    -66.0,
+    -60.0,
+    -54.0,
+    -48.0,
+    -42.0,
+    -36.0,
+    -30.0,
+    -30.0,
+    -36.0,
+    -42.0,
+    -48.0,
+    -54.0,
+    -60.0,
+    -66.0,
+    -72.0
+  ],
+  "safety_note": "Direct D10→E-MU loopback only; no DUT connected. This sweep does not authorize -30 dBFS for arbitrary high-gain phono stages.",
+  "clock_results": [
+    {
+      "index": 1,
+      "level_dbfs": -72.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-01--72dB-program.wav",
+          "frames": 873600,
+          "sha256": "e5de78e503e0ecd879553213339e60ab36da7996fb6c4fa4fc6a156e9c9ee224"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-01--72dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "2f490d3756c268b394681c76226cc775819ca94af333772a57ad89c60904531e"
+        }
+      },
+      "onset": null,
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -94.54,
+              "threshold_dbfs": -106.54,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -94.54,
+            "min_full_capture_dbfs": -132.22
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -109.7,
+              "threshold_dbfs": -121.7,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -109.7,
+            "min_full_capture_dbfs": -153.26
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "level_dbfs": -66.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-02--66dB-program.wav",
+          "frames": 873600,
+          "sha256": "ab950dc6dbc9f0266247653f47922835761c87a2762ccca3886767889e9efdd5"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-02--66dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "bc8ba1db6a54e51a6e7b7078d6a038f7dd0bde316a31c59551efa1a2ba08265d"
+        }
+      },
+      "onset": null,
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -87.97,
+              "threshold_dbfs": -99.97,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -87.97,
+            "min_full_capture_dbfs": -125.44
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -104.65,
+              "threshold_dbfs": -116.65,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -104.65,
+            "min_full_capture_dbfs": -147.01
+          }
+        }
+      }
+    },
+    {
+      "index": 3,
+      "level_dbfs": -60.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -60.0,
+        "warnings": [
+          "L: сдвиг тона -0.0230 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0230 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0233 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0233 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9769617628407,
+            "ppm": -23.03823715932296,
+            "level_dbfs": -67.1069927282881,
+            "noise_dbfs": -79.64240837380541,
+            "snr_db": 40.06091324662749,
+            "local_noise_dbfs": -107.1679059749156,
+            "coh_err_bins": -0.023038237159312303,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9766641072017,
+            "ppm": -23.335892798237445,
+            "level_dbfs": -66.77616118168329,
+            "noise_dbfs": -95.56266155775553,
+            "snr_db": 56.34475290588577,
+            "local_noise_dbfs": -123.12091408756906,
+            "coh_err_bins": -0.023335892798286295,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.29765563891448465,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-03--60dB-program.wav",
+          "frames": 873600,
+          "sha256": "315eae94ae89ffd3c064ba472f8d574dabe850e88f4c1d919123365c18508824"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-03--60dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "55fe042cc1088964574476a5d99dbce1aa06f007349df82959463a3296c70e37"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -67.16,
+              "threshold_dbfs": -79.16,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -88.82,
+            "min_full_capture_dbfs": -132.65
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -66.78,
+              "threshold_dbfs": -78.78,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -105.3,
+            "min_full_capture_dbfs": -147.77
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "level_dbfs": -54.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -54.0,
+        "warnings": [
+          "L: сдвиг тона -0.0226 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0226 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0234 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0234 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.977432134483,
+            "ppm": -22.56786551702028,
+            "level_dbfs": -61.1673396779488,
+            "noise_dbfs": -80.68713778191322,
+            "snr_db": 49.15785996649619,
+            "local_noise_dbfs": -110.32519964444501,
+            "coh_err_bins": -0.02256786551697587,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9765575083627,
+            "ppm": -23.44249163732659,
+            "level_dbfs": -60.78556031094745,
+            "noise_dbfs": -96.62880455889197,
+            "snr_db": 65.3984852748904,
+            "local_noise_dbfs": -126.18404558583785,
+            "coh_err_bins": -0.02344249163729728,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.8746261203063099,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-04--54dB-program.wav",
+          "frames": 873600,
+          "sha256": "9d58d07029acf814b5145fa641e04246781b96e57e4a1fc84c8652a2999506e5"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-04--54dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "c30c5eeff69b8eabfa75c6d88582e95147ffdf0d98d9755a97539dcd9f0ed302"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -61.18,
+              "threshold_dbfs": -73.18,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -88.25,
+            "min_full_capture_dbfs": -131.19
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -60.79,
+              "threshold_dbfs": -72.79,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -105.13,
+            "min_full_capture_dbfs": -153.22
+          }
+        }
+      }
+    },
+    {
+      "index": 5,
+      "level_dbfs": -48.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -48.0,
+        "warnings": [
+          "L: сдвиг тона -0.0243 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0243 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9757080183243,
+            "ppm": -24.291981675639285,
+            "level_dbfs": -55.138798375390934,
+            "noise_dbfs": -79.50062180501214,
+            "snr_db": 52.16609010537254,
+            "local_noise_dbfs": -107.30488848076347,
+            "coh_err_bins": -0.024291981675673924,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9762805624887,
+            "ppm": -23.719437511338093,
+            "level_dbfs": -54.78215310384499,
+            "noise_dbfs": -95.55068082746175,
+            "snr_db": 68.5496879575013,
+            "local_noise_dbfs": -123.3318410613463,
+            "coh_err_bins": -0.023719437511317665,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.5725441643011919,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-05--48dB-program.wav",
+          "frames": 873600,
+          "sha256": "4444a4949e8954506e39b54b028e2a6bf4e7d02f3a6068e6045ae3de0bc6e945"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-05--48dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "1ed12372a59e9c2a81c1a9467b0e1d6d27e6b1e160ea3c0957d46a372c8b92f7"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -55.15,
+              "threshold_dbfs": -67.15,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -87.76,
+            "min_full_capture_dbfs": -132.17
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -54.78,
+              "threshold_dbfs": -66.78,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -104.38,
+            "min_full_capture_dbfs": -154.64
+          }
+        }
+      }
+    },
+    {
+      "index": 6,
+      "level_dbfs": -42.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -42.0,
+        "warnings": [
+          "L: сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0236 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0236 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.976438045165,
+            "ppm": -23.561954834994125,
+            "level_dbfs": -49.156342324890126,
+            "noise_dbfs": -80.54938928847547,
+            "snr_db": 60.69266988493278,
+            "local_noise_dbfs": -109.84901220982292,
+            "coh_err_bins": -0.02356195483503143,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9763730878759,
+            "ppm": -23.626912124097288,
+            "level_dbfs": -48.78481496651146,
+            "noise_dbfs": -96.40830936081757,
+            "snr_db": 77.31020632852973,
+            "local_noise_dbfs": -126.09502129504119,
+            "coh_err_bins": -0.02362691212408663,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.06495728910316245,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-06--42dB-program.wav",
+          "frames": 873600,
+          "sha256": "b33f3da0cbb24011e044f24c6e1d08a92992d177d6f3c8283e8fe7fcebbfbe6c"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-06--42dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "7787cf255ffc4de7eade0e2f4ac1b04b8c3c7e7106cef97faeaad4f7bcfaa0c6"
+        }
+      },
+      "onset": {
+        "offset_frames": 355200
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.25,
+        "frames": 384000,
+        "end_s": 4.25
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -49.16,
+              "threshold_dbfs": -61.16,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -88.08,
+            "min_full_capture_dbfs": -132.19
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -48.79,
+              "threshold_dbfs": -60.79,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -104.7,
+            "min_full_capture_dbfs": -156.93
+          }
+        }
+      }
+    },
+    {
+      "index": 7,
+      "level_dbfs": -36.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -36.0,
+        "warnings": [
+          "L: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9762553664166,
+            "ppm": -23.744633583455688,
+            "level_dbfs": -43.159587694179855,
+            "noise_dbfs": -80.15671971235409,
+            "snr_db": 63.44175821259072,
+            "local_noise_dbfs": -106.60134590677059,
+            "coh_err_bins": -0.023744633583419272,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9763115281276,
+            "ppm": -23.6884718723962,
+            "level_dbfs": -42.78531037595177,
+            "noise_dbfs": -96.15167398958761,
+            "snr_db": 80.04647796619336,
+            "local_noise_dbfs": -122.83178834214512,
+            "coh_err_bins": -0.023688471872446826,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.056161711059488084,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-07--36dB-program.wav",
+          "frames": 873600,
+          "sha256": "349c3a7db948b471a3de10f19c33791e3d68b55386c9fcfc69eb1c5a3b41007c"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-07--36dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "746e6ebef75150465af96a0b66816ce1726e9474f344178f710bb07c888b8cbf"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -43.16,
+              "threshold_dbfs": -55.16,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -89.54,
+            "min_full_capture_dbfs": -131.42
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -42.79,
+              "threshold_dbfs": -54.79,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -105.88,
+            "min_full_capture_dbfs": -156.16
+          }
+        }
+      }
+    },
+    {
+      "index": 8,
+      "level_dbfs": -30.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -30.0,
+        "warnings": [
+          "L: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9763198277784,
+            "ppm": -23.68017222154073,
+            "level_dbfs": -37.16874640985138,
+            "noise_dbfs": -79.8223544992992,
+            "snr_db": 71.7468257451265,
+            "local_noise_dbfs": -108.91557215497787,
+            "coh_err_bins": -0.02368017222158869,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9763158949761,
+            "ppm": -23.68410502395779,
+            "level_dbfs": -36.7944542934337,
+            "noise_dbfs": -95.81138294615266,
+            "snr_db": 88.05440568946327,
+            "local_noise_dbfs": -124.84885998289698,
+            "coh_err_bins": -0.023684105023903612,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.0039328024170615095,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-08--30dB-program.wav",
+          "frames": 873600,
+          "sha256": "80e4a08b22bae70d148ae664a47bf65f2e41c9d57c10e5f04a6b4148bd82e586"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-08--30dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "b4d43911870c8bca1f3c57c216a722281c160e6671ec6152cf1cf4b19d103ebd"
+        }
+      },
+      "onset": {
+        "offset_frames": 357120
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.26,
+        "frames": 384000,
+        "end_s": 4.26
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.26,
+              "window_end_s": 4.26,
+              "median_dbfs": -37.17,
+              "threshold_dbfs": -49.17,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -89.52,
+            "min_full_capture_dbfs": -138.83
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.26,
+              "window_end_s": 4.26,
+              "median_dbfs": -36.8,
+              "threshold_dbfs": -48.8,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -106.07,
+            "min_full_capture_dbfs": -164.43
+          }
+        }
+      }
+    },
+    {
+      "index": 9,
+      "level_dbfs": -30.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -30.0,
+        "warnings": [
+          "L: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0237 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9762677912626,
+            "ppm": -23.732208737414773,
+            "level_dbfs": -37.173409686251645,
+            "noise_dbfs": -79.9798192962567,
+            "snr_db": 69.98468580708416,
+            "local_noise_dbfs": -107.15809549333582,
+            "coh_err_bins": -0.023732208737442306,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9762926476184,
+            "ppm": -23.707352381663327,
+            "level_dbfs": -36.795340055581995,
+            "noise_dbfs": -96.02420943843651,
+            "snr_db": 86.10279096219472,
+            "local_noise_dbfs": -122.8981310177767,
+            "coh_err_bins": -0.023707352381620694,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.024856355751445847,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-09--30dB-program.wav",
+          "frames": 873600,
+          "sha256": "80e4a08b22bae70d148ae664a47bf65f2e41c9d57c10e5f04a6b4148bd82e586"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-09--30dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "f504459ae05c5d7623a3e0c81c98b9bf999f955e697004bb0d0c10093f0be5c5"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -37.17,
+              "threshold_dbfs": -49.17,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -89.12,
+            "min_full_capture_dbfs": -136.83
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -36.8,
+              "threshold_dbfs": -48.8,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -105.92,
+            "min_full_capture_dbfs": -162.85
+          }
+        }
+      }
+    },
+    {
+      "index": 10,
+      "level_dbfs": -36.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -36.0,
+        "warnings": [
+          "L: сдвиг тона -0.0241 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0241 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0238 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0238 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9758734249484,
+            "ppm": -24.126575051575117,
+            "level_dbfs": -43.16022635824504,
+            "noise_dbfs": -81.57815068120328,
+            "snr_db": 66.099873796397,
+            "local_noise_dbfs": -109.26010015464206,
+            "coh_err_bins": -0.024126575051582222,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9762304571682,
+            "ppm": -23.76954283178634,
+            "level_dbfs": -42.785236711406995,
+            "noise_dbfs": -97.41286797486435,
+            "snr_db": 82.54192119425389,
+            "local_noise_dbfs": -125.32715790566087,
+            "coh_err_bins": -0.02376954283181476,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.35703221978877764,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-10--36dB-program.wav",
+          "frames": 873600,
+          "sha256": "349c3a7db948b471a3de10f19c33791e3d68b55386c9fcfc69eb1c5a3b41007c"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-10--36dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "001fcb7263630e85f4477c2c7ba866d6f36410cde8437d6798435eb24b5c8be1"
+        }
+      },
+      "onset": {
+        "offset_frames": 355200
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.25,
+        "frames": 384000,
+        "end_s": 4.25
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -43.16,
+              "threshold_dbfs": -55.16,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -89.99,
+            "min_full_capture_dbfs": -134.62
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -42.79,
+              "threshold_dbfs": -54.79,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -106.71,
+            "min_full_capture_dbfs": -150.76
+          }
+        }
+      }
+    },
+    {
+      "index": 11,
+      "level_dbfs": -42.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -42.0,
+        "warnings": [
+          "L: сдвиг тона -0.0240 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0240 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0238 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0238 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9759893075134,
+            "ppm": -24.010692486586827,
+            "level_dbfs": -49.157266743785904,
+            "noise_dbfs": -81.41702366203177,
+            "snr_db": 62.77048249402924,
+            "local_noise_dbfs": -111.92774923781515,
+            "coh_err_bins": -0.024010692486626795,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9762319963666,
+            "ppm": -23.768003633461987,
+            "level_dbfs": -48.78429040118181,
+            "noise_dbfs": -97.2974324422055,
+            "snr_db": 78.84501030515382,
+            "local_noise_dbfs": -127.62930070633561,
+            "coh_err_bins": -0.023768003633449553,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.24268885312483945,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-11--42dB-program.wav",
+          "frames": 873600,
+          "sha256": "b33f3da0cbb24011e044f24c6e1d08a92992d177d6f3c8283e8fe7fcebbfbe6c"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-11--42dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "34e6c81f004e20ed52946a1493d505b5eb6f9c9b0de3b9a866ec07a119649dd0"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -49.16,
+              "threshold_dbfs": -61.16,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -90.07,
+            "min_full_capture_dbfs": -132.41
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -48.78,
+              "threshold_dbfs": -60.78,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -107.11,
+            "min_full_capture_dbfs": -145.48
+          }
+        }
+      }
+    },
+    {
+      "index": 12,
+      "level_dbfs": -48.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -48.0,
+        "warnings": [
+          "L: сдвиг тона -0.0247 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0247 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0239 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0239 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9753429254636,
+            "ppm": -24.65707453647159,
+            "level_dbfs": -55.156050397952,
+            "noise_dbfs": -79.677658412416,
+            "snr_db": 51.35157664192831,
+            "local_noise_dbfs": -106.5076270398803,
+            "coh_err_bins": -0.024657074536435175,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9760678798042,
+            "ppm": -23.932120195802042,
+            "level_dbfs": -54.783722941225165,
+            "noise_dbfs": -95.72170337720988,
+            "snr_db": 67.89149669662287,
+            "local_noise_dbfs": -122.67521963784803,
+            "coh_err_bins": -0.023932120195809148,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.724954340669548,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-12--48dB-program.wav",
+          "frames": 873600,
+          "sha256": "4444a4949e8954506e39b54b028e2a6bf4e7d02f3a6068e6045ae3de0bc6e945"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-12--48dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "1dfd073ba81eed89b113109e6477037f3542ea8788117bb98268127b96b1d2a6"
+        }
+      },
+      "onset": {
+        "offset_frames": 355200
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.25,
+        "frames": 384000,
+        "end_s": 4.25
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -55.16,
+              "threshold_dbfs": -67.16,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -89.57,
+            "min_full_capture_dbfs": -135.02
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -54.79,
+              "threshold_dbfs": -66.79,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -106.09,
+            "min_full_capture_dbfs": -147.47
+          }
+        }
+      }
+    },
+    {
+      "index": 13,
+      "level_dbfs": -54.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -54.0,
+        "warnings": [
+          "L: сдвиг тона -0.0227 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0227 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0235 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0235 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9772591478326,
+            "ppm": -22.740852167468795,
+            "level_dbfs": -61.15757574438699,
+            "noise_dbfs": -81.06296213503774,
+            "snr_db": 49.045145602258145,
+            "local_noise_dbfs": -110.20272134664512,
+            "coh_err_bins": -0.022740852167430603,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.9764504715544,
+            "ppm": -23.549528445632184,
+            "level_dbfs": -60.78340398328382,
+            "noise_dbfs": -96.99869833161682,
+            "snr_db": 65.47761240619822,
+            "local_noise_dbfs": -126.26101638948202,
+            "coh_err_bins": -0.023549528445641954,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 0.8086762781633894,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-13--54dB-program.wav",
+          "frames": 873600,
+          "sha256": "9d58d07029acf814b5145fa641e04246781b96e57e4a1fc84c8652a2999506e5"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-13--54dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "0e5acd498f3243487cf9b5f4cec644df6d9e48faf78c3086120040bb55c6646c"
+        }
+      },
+      "onset": {
+        "offset_frames": 356160
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.255,
+        "frames": 384000,
+        "end_s": 4.255
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -61.17,
+              "threshold_dbfs": -73.17,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -90.36,
+            "min_full_capture_dbfs": -131.65
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.254,
+              "window_end_s": 4.254,
+              "median_dbfs": -60.79,
+              "threshold_dbfs": -72.79,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -106.21,
+            "min_full_capture_dbfs": -150.45
+          }
+        }
+      }
+    },
+    {
+      "index": 14,
+      "level_dbfs": -60.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_result": {
+        "kind": "clock",
+        "test_level_dbfs": -60.0,
+        "warnings": [
+          "L: сдвиг тона -0.0226 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0226 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0236 бина; допуск ±0.002)"
+        ],
+        "ch": {
+          "L": {
+            "f0": 999.9774316858868,
+            "ppm": -22.5683141131805,
+            "level_dbfs": -67.06983603298656,
+            "noise_dbfs": -81.52847540825327,
+            "snr_db": 41.588518954264885,
+            "local_noise_dbfs": -108.65835498725144,
+            "coh_err_bins": -0.022568314113186716,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0": 999.976398844072,
+            "ppm": -23.601155927921447,
+            "level_dbfs": -66.769274465206,
+            "noise_dbfs": -97.33123683261095,
+            "snr_db": 58.05343723773657,
+            "local_noise_dbfs": -124.82271170294256,
+            "coh_err_bins": -0.02360115592796319,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "clock_channel_spread_ppm": 1.032841814740948,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "ok": true
+      },
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-14--60dB-program.wav",
+          "frames": 873600,
+          "sha256": "315eae94ae89ffd3c064ba472f8d574dabe850e88f4c1d919123365c18508824"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-14--60dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "37ad09c06dffd406d0d8a2eb5c54f317c4a65fa39eba4cfd23691d205f5dd7c3"
+        }
+      },
+      "onset": {
+        "offset_frames": 355200
+      },
+      "window": {
+        "source": "traced Rig._onset + clock_check settle=0.4",
+        "start_s": 2.25,
+        "frames": 384000,
+        "end_s": 4.25
+      },
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -67.13,
+              "threshold_dbfs": -79.13,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -88.51,
+            "min_full_capture_dbfs": -135.93
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 2.25,
+              "window_end_s": 4.25,
+              "median_dbfs": -66.78,
+              "threshold_dbfs": -78.78,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -105.05,
+            "min_full_capture_dbfs": -144.24
+          }
+        }
+      }
+    },
+    {
+      "index": 15,
+      "level_dbfs": -66.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-15--66dB-program.wav",
+          "frames": 873600,
+          "sha256": "ab950dc6dbc9f0266247653f47922835761c87a2762ccca3886767889e9efdd5"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-15--66dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "6bf3d0ae6550eebc095dce45168ccd2cba9b94c6861374a8c16a27d56854ed46"
+        }
+      },
+      "onset": null,
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -88.62,
+              "threshold_dbfs": -100.62,
+              "runs": [
+                {
+                  "start_s": 0.919,
+                  "duration_s": 0.062,
+                  "max_drop_db": 43.08
+                },
+                {
+                  "start_s": 1.089,
+                  "duration_s": 0.05,
+                  "max_drop_db": 27.01
+                },
+                {
+                  "start_s": 6.357,
+                  "duration_s": 0.086,
+                  "max_drop_db": 29.11
+                }
+              ]
+            },
+            "median_full_capture_dbfs": -88.62,
+            "min_full_capture_dbfs": -134.65
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -105.29,
+              "threshold_dbfs": -117.29,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -105.29,
+            "min_full_capture_dbfs": -162.15
+          }
+        }
+      }
+    },
+    {
+      "index": 16,
+      "level_dbfs": -72.0,
+      "edge_protect": true,
+      "blocks": 2,
+      "clock_settle_s": 0.4,
+      "lead_s": 1.5,
+      "tail_s": 0.6,
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "files": {
+        "program": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-16--72dB-program.wav",
+          "frames": 873600,
+          "sha256": "e5de78e503e0ecd879553213339e60ab36da7996fb6c4fa4fc6a156e9c9ee224"
+        },
+        "capture": {
+          "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-clock-16--72dB-capture.wav",
+          "frames": 1344000,
+          "sha256": "c829013fe8f064c60063050b09127f829b6b49e417ac346cf48aad6dbc7da5f1"
+        }
+      },
+      "onset": null,
+      "envelope_2ms": {
+        "resolution_ms": 2.0,
+        "channels": {
+          "L": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -90.72,
+              "threshold_dbfs": -102.72,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -90.72,
+            "min_full_capture_dbfs": -131.94
+          },
+          "R": {
+            "dip_analysis": {
+              "window_start_s": 0.0,
+              "window_end_s": 7.0,
+              "median_dbfs": -106.87,
+              "threshold_dbfs": -118.87,
+              "runs": []
+            },
+            "median_full_capture_dbfs": -106.87,
+            "min_full_capture_dbfs": -151.07
+          }
+        }
+      }
+    }
+  ],
+  "protected_thd_tail_check": {
+    "edge_protect": true,
+    "tone_hz": 997.0,
+    "level_dbfs": -30.0,
+    "lead_s": 1.5,
+    "tail_s": 0.6,
+    "thd": {
+      "kind": "thd",
+      "f": 997.0,
+      "level_dbfs": -30.0,
+      "warnings": [
+        "L: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "R: сдвиг тона -0.0238 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+      ],
+      "ch": {
+        "L": {
+          "f0": 996.9762668761451,
+          "n": 192000,
+          "blocks": 2,
+          "coh_err_bins": -0.0237331238548677,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "level_dbfs": -37.181195839275794,
+          "rms": 0.009781944855348931,
+          "harmonics": [
+            {
+              "h": 2,
+              "f": 1993.9525337522903,
+              "dbc": -69.43872383388829,
+              "pct": 0.03373368679180013,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -69.43872383388829,
+              "floor_dbc": -75.7411703010289,
+              "random_floor_dbc": -75.7411703010289,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 6.302446467140608,
+              "phase_coherence": null
+            },
+            {
+              "h": 3,
+              "f": 2990.9288006284355,
+              "dbc": -78.17448556334092,
+              "pct": 0.012338879467344582,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -78.17448556334092,
+              "floor_dbc": -79.77412136190335,
+              "random_floor_dbc": -79.77412136190335,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 1.5996357985624292,
+              "phase_coherence": null
+            },
+            {
+              "h": 4,
+              "f": 3987.9050675045805,
+              "dbc": -79.72895877484505,
+              "pct": 0.010316967471656644,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -79.72895877484505,
+              "floor_dbc": -79.66122741459637,
+              "random_floor_dbc": -79.66122741459637,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": -0.06773136024869823,
+              "phase_coherence": null
+            },
+            {
+              "h": 5,
+              "f": 4984.881334380726,
+              "dbc": -83.32393427419063,
+              "pct": 0.006820296987775394,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -83.32393427419063,
+              "floor_dbc": -83.90309713210243,
+              "random_floor_dbc": -83.90309713210243,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 0.5791628579117893,
+              "phase_coherence": null
+            },
+            {
+              "h": 6,
+              "f": 5981.857601256871,
+              "dbc": -83.738340896916,
+              "pct": 0.006502538843222022,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -83.738340896916,
+              "floor_dbc": -84.06426454805853,
+              "random_floor_dbc": -84.06426454805853,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 0.3259236511425311,
+              "phase_coherence": null
+            },
+            {
+              "h": 7,
+              "f": 6978.833868133016,
+              "dbc": -85.02666205183921,
+              "pct": 0.005606178188685562,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -85.02666205183921,
+              "floor_dbc": -86.11662034771444,
+              "random_floor_dbc": -86.11662034771444,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 1.0899582958752476,
+              "phase_coherence": null
+            },
+            {
+              "h": 8,
+              "f": 7975.810135009161,
+              "dbc": -83.42925043401937,
+              "pct": 0.0067381004072833055,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -83.42925043401937,
+              "floor_dbc": -84.4069239878522,
+              "random_floor_dbc": -84.4069239878522,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 0.9776735538328291,
+              "phase_coherence": null
+            },
+            {
+              "h": 9,
+              "f": 8972.786401885307,
+              "dbc": -88.53004150961007,
+              "pct": 0.003745397571173852,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -88.53004150961007,
+              "floor_dbc": -87.04598798641987,
+              "random_floor_dbc": -87.04598798641987,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": -1.4840535231902072,
+              "phase_coherence": null
+            }
+          ],
+          "line_mode": "bh-power-floor-gated",
+          "line_floor_dbc": -80.96607321045033,
+          "thd_pct": 0.0,
+          "thd_db": -360.0,
+          "thd_upper_pct": 0.039702746570549736,
+          "thd_upper_db": -68.02358896842824,
+          "thd_bound": true,
+          "thd_partial": false,
+          "thdn_pct": 0.6564486637518913,
+          "thdn_db": -43.65598462746939,
+          "noise_dbc": -43.67190009524379,
+          "noise_dbfs": -80.85309593451959,
+          "local_noise_dbfs": -108.86332518933075,
+          "local_snr_db": 71.68212935005496,
+          "hum": [
+            {
+              "f": 50.0,
+              "dbfs": -105.37326247397993,
+              "dbc": -68.19206663470415
+            },
+            {
+              "f": 100.0,
+              "dbfs": -109.50301990023198,
+              "dbc": -72.32182406095619
+            },
+            {
+              "f": 150.0,
+              "dbfs": -106.0906751010492,
+              "dbc": -68.90947926177341
+            },
+            {
+              "f": 200.0,
+              "dbfs": -107.84268520390938,
+              "dbc": -70.66148936463358
+            },
+            {
+              "f": 250.0,
+              "dbfs": -102.32813714087933,
+              "dbc": -65.14694130160355
+            },
+            {
+              "f": 300.0,
+              "dbfs": -94.93785488329947,
+              "dbc": -57.756659044023664
+            }
+          ],
+          "warnings": [
+            "сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ],
+          "freq": "[0.0000e+00 1.0000e+00 2.0000e+00 ... 9.5998e+04 9.5999e+04 9.6000e+04]",
+          "spec_db": "[-119.1833335  -112.90829036 -107.6301757  ... -119.14414806 -121.6093358\n -124.65726839]",
+          "info": {
+            "dut_in_v": null,
+            "out_v": null,
+            "gain_db": null
+          }
+        },
+        "R": {
+          "f0": 996.9762386348793,
+          "n": 192000,
+          "blocks": 2,
+          "coh_err_bins": -0.02376136512066296,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "level_dbfs": -36.80286912010841,
+          "rms": 0.010217427062404071,
+          "harmonics": [
+            {
+              "h": 2,
+              "f": 1993.9524772697587,
+              "dbc": -84.62263063647475,
+              "pct": 0.005873114505560973,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -84.62263063647475,
+              "floor_dbc": -91.38809866475151,
+              "random_floor_dbc": -91.38809866475151,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 6.76546802827676,
+              "phase_coherence": null
+            },
+            {
+              "h": 3,
+              "f": 2990.928715904638,
+              "dbc": -92.07700599440528,
+              "pct": 0.0024897153693833212,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -92.07700599440528,
+              "floor_dbc": -94.40586148185645,
+              "random_floor_dbc": -94.40586148185645,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 2.3288554874511593,
+              "phase_coherence": null
+            },
+            {
+              "h": 4,
+              "f": 3987.9049545395173,
+              "dbc": -94.2626313414474,
+              "pct": 0.0019358354246450347,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -94.2626313414474,
+              "floor_dbc": -93.97890609574786,
+              "random_floor_dbc": -93.97890609574786,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": -0.28372524569953994,
+              "phase_coherence": null
+            },
+            {
+              "h": 5,
+              "f": 4984.881193174397,
+              "dbc": -96.07415239685909,
+              "pct": 0.0015714203759390317,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -96.07415239685909,
+              "floor_dbc": -97.8242812356497,
+              "random_floor_dbc": -97.8242812356497,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 1.7501288387906024,
+              "phase_coherence": null
+            },
+            {
+              "h": 6,
+              "f": 5981.857431809276,
+              "dbc": -96.75155463304037,
+              "pct": 0.0014535242051212645,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -96.75155463304037,
+              "floor_dbc": -97.9981254157007,
+              "random_floor_dbc": -97.9981254157007,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 1.246570782660315,
+              "phase_coherence": null
+            },
+            {
+              "h": 7,
+              "f": 6978.833670444155,
+              "dbc": -96.72776277222047,
+              "pct": 0.0014575110680474339,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -96.72776277222047,
+              "floor_dbc": -98.92642912024365,
+              "random_floor_dbc": -98.92642912024365,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 2.1986663480231865,
+              "phase_coherence": null
+            },
+            {
+              "h": 8,
+              "f": 7975.809909079035,
+              "dbc": -96.6527935347246,
+              "pct": 0.0014701455147330587,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -96.6527935347246,
+              "floor_dbc": -97.4605829401599,
+              "random_floor_dbc": -97.4605829401599,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": 0.8077894054352952,
+              "phase_coherence": null
+            },
+            {
+              "h": 9,
+              "f": 8972.786147713914,
+              "dbc": -102.23236720034669,
+              "pct": 0.0007733598831804473,
+              "bound": true,
+              "credible": false,
+              "raw_dbc": -102.23236720034669,
+              "floor_dbc": -99.73440312106243,
+              "random_floor_dbc": -99.73440312106243,
+              "stable_spur_floor_dbc": null,
+              "stable_spur_floor_dbfs": null,
+              "margin_db": -2.497964079284258,
+              "phase_coherence": null
+            }
+          ],
+          "line_mode": "bh-power-floor-gated",
+          "line_floor_dbc": -95.5547742364155,
+          "thd_pct": 0.0,
+          "thd_db": -360.0,
+          "thd_upper_pct": 0.007342033906007109,
+          "thd_upper_db": -82.68367228452462,
+          "thd_bound": true,
+          "thd_partial": false,
+          "thdn_pct": 0.10080609412186625,
+          "thdn_db": -59.93026424600491,
+          "noise_dbc": -59.95336350020931,
+          "noise_dbfs": -96.75623262031772,
+          "local_noise_dbfs": -125.11854250619437,
+          "local_snr_db": 88.31567338608596,
+          "hum": [
+            {
+              "f": 50.0,
+              "dbfs": -124.58543227440285,
+              "dbc": -87.78256315429444
+            },
+            {
+              "f": 100.0,
+              "dbfs": -125.34121898785921,
+              "dbc": -88.53834986775081
+            },
+            {
+              "f": 150.0,
+              "dbfs": -123.70314391048345,
+              "dbc": -86.90027479037504
+            },
+            {
+              "f": 200.0,
+              "dbfs": -125.03575655392896,
+              "dbc": -88.23288743382057
+            },
+            {
+              "f": 250.0,
+              "dbfs": -118.93404462458383,
+              "dbc": -82.13117550447542
+            },
+            {
+              "f": 300.0,
+              "dbfs": -111.67031967802431,
+              "dbc": -74.86745055791592
+            }
+          ],
+          "warnings": [
+            "сдвиг тона -0.0238 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ],
+          "freq": "[0.0000e+00 1.0000e+00 2.0000e+00 ... 9.5998e+04 9.5999e+04 9.6000e+04]",
+          "spec_db": "[-146.48911232 -128.64490343 -123.78084796 ... -124.49044118 -127.58071053\n -130.34856056]",
+          "info": {
+            "dut_in_v": null,
+            "out_v": null,
+            "gain_db": null
+          }
+        }
+      },
+      "capture_wav": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-thd-window.wav",
+      "capture_format": "IEEE float32 WAV",
+      "capture_sample_rate_hz": 192000
+    },
+    "files": {
+      "program": {
+        "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-thd-program.wav",
+        "sha256": "ecef49ff712f30badd56030d6dd2e091588aa255730bec8369a385abc65e6434"
+      },
+      "marked_program": {
+        "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-thd-marked-program.wav",
+        "sha256": "46b53fb4b129552ac7c10240a367db12c308f97d9f5b9902ddb4716d00f8b787"
+      },
+      "capture": {
+        "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-thd-capture.wav",
+        "sha256": "6cd9b3707d1a4bd5e6b329482062aa781ae64016cb8bfcf1bc54766f8f18cc24"
+      },
+      "window": {
+        "path": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-thd-window.wav",
+        "sha256": "f9c05866c4d3e06cdffa91fba12f0bd48ea5198518d79692ab14af440ec73789"
+      }
+    },
+    "onset": {
+      "offset_frames": 356160
+    },
+    "window": {
+      "start_s": 2.355,
+      "end_s": 4.355,
+      "frames": 384000
+    },
+    "window_slice": {
+      "exact_frames": true,
+      "max_abs_difference": 0.0
+    },
+    "marker_binding": {
+      "L": {
+        "A_score": 0.258702,
+        "A_gap": 0.239797,
+        "A_valid": false,
+        "offset_from_A_s": 0.354891,
+        "B_score": 0.045635,
+        "B_gap": 0.003843,
+        "B_valid": false,
+        "offset_from_B_s": 0.354953,
+        "A_B_disagreement_ms": 0.062
+      },
+      "R": {
+        "A_score": 0.287415,
+        "A_gap": 0.28023,
+        "A_valid": false,
+        "offset_from_A_s": 0.354891,
+        "B_score": 0.051296,
+        "B_gap": 0.036863,
+        "B_valid": false,
+        "offset_from_B_s": 0.354948,
+        "A_B_disagreement_ms": 0.057
+      }
+    },
+    "marker_binding_valid": false,
+    "boundary_frequency_hz": 996.9763847704172,
+    "tone_boundaries_vs_program": {
+      "resolution_ms": 2.0,
+      "channels": {},
+      "error": "independent A/B markers did not validate on both channels"
+    }
+  }
+}

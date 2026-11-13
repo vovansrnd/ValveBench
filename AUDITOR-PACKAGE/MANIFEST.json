@@ -1,0 +1,221 @@
+{
+ "package": "AUDITOR-PACKAGE",
+ "purpose": "независимый аудит clock estimator ValveBench",
+ "source_revision_results": "agent/v217-clock-estimator-stability-results @ b3e5d52",
+ "source_revision_code": "coordinator/v217-clock-estimator-stability @ 02e9591d",
+ "notes": "WAV скопированы без перекодирования и нормализации",
+ "files": [
+  {
+   "path": "json/20261114-004425-results.json",
+   "bytes": 69720,
+   "sha256": "bdbe2d829e9be13cae3eb77c0c56c08374477be6109c9f5e3f5475c4bd1f21b4"
+  },
+  {
+   "path": "json/v216-clock-offline-gate-results.json",
+   "bytes": 48923,
+   "sha256": "e08ff86fc29443890238bd5339fd9ee5f806d494eb45ee661188aec1db45d9ce"
+  },
+  {
+   "path": "json/v217-clock-estimator-stability-results.json",
+   "bytes": 121215,
+   "sha256": "609174eda36689ea878de5885da5e8e2c54488bc2ad5f7934168f246e882bb82"
+  },
+  {
+   "path": "reports/REPORT-v214-clock-diagnostic.md",
+   "bytes": 7692,
+   "sha256": "4fe556d46ece007a0025ee59decf9c4f924ae168b4655d04ded7b5244a89e75d"
+  },
+  {
+   "path": "reports/REPORT-v216-clock-offline-gate.md",
+   "bytes": 7711,
+   "sha256": "9759e467a73016aa6e6f7c141755614fcf5177ea0eb26937c0a556f6a266f955"
+  },
+  {
+   "path": "reports/REPORT-v217-clock-estimator-stability.md",
+   "bytes": 8680,
+   "sha256": "340693b1353147b075168cdf81192f80d2fbb857829989ca59c43cb5f1107461"
+  },
+  {
+   "path": "wav/20261114-004425-clock-01--72dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "2f490d3756c268b394681c76226cc775819ca94af333772a57ad89c60904531e",
+   "role": "clock_capture",
+   "clock_index": 1,
+   "level_dbfs": -72.0,
+   "direction": "asc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-01--72dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "e5de78e503e0ecd879553213339e60ab36da7996fb6c4fa4fc6a156e9c9ee224",
+   "role": "submitted_program",
+   "clock_index": 1,
+   "level_dbfs": -72.0,
+   "direction": "asc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-02--66dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "bc8ba1db6a54e51a6e7b7078d6a038f7dd0bde316a31c59551efa1a2ba08265d",
+   "role": "clock_capture",
+   "clock_index": 2,
+   "level_dbfs": -66.0,
+   "direction": "asc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-02--66dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "ab950dc6dbc9f0266247653f47922835761c87a2762ccca3886767889e9efdd5",
+   "role": "submitted_program",
+   "clock_index": 2,
+   "level_dbfs": -66.0,
+   "direction": "asc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-03--60dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "55fe042cc1088964574476a5d99dbce1aa06f007349df82959463a3296c70e37",
+   "role": "clock_capture",
+   "clock_index": 3,
+   "level_dbfs": -60.0,
+   "direction": "asc",
+   "v214_production_result": "ok",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-03--60dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "315eae94ae89ffd3c064ba472f8d574dabe850e88f4c1d919123365c18508824",
+   "role": "submitted_program",
+   "clock_index": 3,
+   "level_dbfs": -60.0,
+   "direction": "asc",
+   "v214_production_result": "ok",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-04--54dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "c30c5eeff69b8eabfa75c6d88582e95147ffdf0d98d9755a97539dcd9f0ed302",
+   "role": "clock_capture",
+   "clock_index": 4,
+   "level_dbfs": -54.0,
+   "direction": "asc",
+   "v214_production_result": "ok",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-04--54dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "9d58d07029acf814b5145fa641e04246781b96e57e4a1fc84c8652a2999506e5",
+   "role": "submitted_program",
+   "clock_index": 4,
+   "level_dbfs": -54.0,
+   "direction": "asc",
+   "v214_production_result": "ok",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-08--30dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "b4d43911870c8bca1f3c57c216a722281c160e6671ec6152cf1cf4b19d103ebd",
+   "role": "clock_capture",
+   "clock_index": 8,
+   "level_dbfs": -30.0,
+   "direction": "asc",
+   "v214_production_result": "ok",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-08--30dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "80e4a08b22bae70d148ae664a47bf65f2e41c9d57c10e5f04a6b4148bd82e586",
+   "role": "submitted_program",
+   "clock_index": 8,
+   "level_dbfs": -30.0,
+   "direction": "asc",
+   "v214_production_result": "ok",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-15--66dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "6bf3d0ae6550eebc095dce45168ccd2cba9b94c6861374a8c16a27d56854ed46",
+   "role": "clock_capture",
+   "clock_index": 15,
+   "level_dbfs": -66.0,
+   "direction": "desc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-15--66dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "ab950dc6dbc9f0266247653f47922835761c87a2762ccca3886767889e9efdd5",
+   "role": "submitted_program",
+   "clock_index": 15,
+   "level_dbfs": -66.0,
+   "direction": "desc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-16--72dB-capture.wav",
+   "bytes": 10752058,
+   "sha256": "c829013fe8f064c60063050b09127f829b6b49e417ac346cf48aad6dbc7da5f1",
+   "role": "clock_capture",
+   "clock_index": 16,
+   "level_dbfs": -72.0,
+   "direction": "desc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 1344000,
+   "channels": 2
+  },
+  {
+   "path": "wav/20261114-004425-clock-16--72dB-program.wav",
+   "bytes": 6988858,
+   "sha256": "e5de78e503e0ecd879553213339e60ab36da7996fb6c4fa4fc6a156e9c9ee224",
+   "role": "submitted_program",
+   "clock_index": 16,
+   "level_dbfs": -72.0,
+   "direction": "desc",
+   "v214_production_result": "FAIL",
+   "sample_rate_hz": 192000,
+   "frames": 873600,
+   "channels": 2
+  }
+ ]
+}
