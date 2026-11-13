@@ -231,46 +231,32 @@ def main() -> int:
             print(f"clock_check -30 ERROR: {row['clock_check']['error']}", flush=True)
 
         win_path = OUT / f"{TAG}-{label}-window.wav"
-        try:
-            with FullCaptureCtx(be) as ctx:
+        thd = None
+        with FullCaptureCtx(be) as ctx:
+            try:
                 thd = m.thd_point(
                     rig, f=997.0, level_dbfs=-30.0, capture_wav=str(win_path)
                 )
-            row["thd"] = thd
-            if len(ctx.pairs) != 1:
-                raise RuntimeError(f"expected one play_record, got {len(ctx.pairs)}")
+                row["thd"] = thd
+            except Exception as exc:
+                # Keep the raw full capture even when Rig.run/onset/validation
+                # rejects the measurement; a failed OFF arm is diagnostically
+                # important and must not discard the only source evidence.
+                row["measurement_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+                print(f"thd_point ERROR: {row['measurement_error']}", flush=True)
 
+        if len(ctx.pairs) != 1:
+            row["capture_error"] = f"expected one play_record, got {len(ctx.pairs)}"
+            print(f"capture ERROR: {row['capture_error']}", flush=True)
+        else:
             prog, cap = ctx.pairs[0]
             seg_len = int(round((rig.settle + rig.blocks * rig.n / FS + 0.05) * FS))
             lead_n = int(round(rig.edge_protect_lead_s * FS)) if edge_on else 0
-            if lead_n + seg_len > len(prog):
-                raise RuntimeError("submitted segment bounds exceed program")
-            segment = prog[lead_n:lead_n + seg_len]
 
             prog_path = OUT / f"{TAG}-{label}-program.wav"
             cap_path = OUT / f"{TAG}-{label}-full-capture.wav"
             wavfile.write(prog_path, FS, np.asarray(prog, dtype=np.float32))
             wavfile.write(cap_path, FS, np.asarray(cap, dtype=np.float32))
-
-            binding = {}
-            for c, name in ((0, "L"), (1, "R")):
-                off, score = norm_xcorr(cap[:, c], segment[:, c])
-                binding[name] = {
-                    "offset_frames": off,
-                    "offset_s": round(off / FS, 6),
-                    "score": round(score, 6),
-                }
-
-            # Channel offsets should agree within a few frames. Use the mean
-            # only for common window timing; retain both per-channel values.
-            off_l = binding["L"]["offset_frames"]
-            off_r = binding["R"]["offset_frames"]
-            offset = int(round((off_l + off_r) / 2))
-            row["program_binding"] = binding
-            row["channel_offset_difference_ms"] = round(abs(off_l - off_r) * 1000 / FS, 3)
-            row["capture_analysis"] = capture_tone_profile(
-                cap, offset, seg_len, FS, rig.settle
-            )
 
             row["files"] = {}
             for key, path, frames in (
@@ -284,28 +270,54 @@ def main() -> int:
                     "sha256": sha256_file(path) if path.exists() else None,
                 }
 
-            thd_ch = thd.get("ch", {})
-            row["thd_summary"] = {
-                ch: {
-                    "thdn_pct": thd_ch[ch].get("thdn_pct"),
-                    "thd_pct": thd_ch[ch].get("thd_pct"),
-                    "thd_upper_pct": thd_ch[ch].get("thd_upper_pct"),
-                    "level_dbfs": thd_ch[ch].get("level_dbfs"),
-                    "noise_dbfs": thd_ch[ch].get("noise_dbfs"),
-                }
-                for ch in ("L", "R") if ch in thd_ch
-            }
-            print(
-                f"program binding scores: "
-                f"L={binding['L']['score']:.4f}, R={binding['R']['score']:.4f}; "
-                f"offset Δ={row['channel_offset_difference_ms']:.3f} ms",
-                flush=True,
-            )
-            print(f"tone analysis: {row['capture_analysis']}", flush=True)
+            try:
+                if lead_n + seg_len > len(prog):
+                    raise RuntimeError("submitted segment bounds exceed program")
+                segment = prog[lead_n:lead_n + seg_len]
 
-        except Exception as exc:
-            row["measurement_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
-            print(f"thd_point ERROR: {row['measurement_error']}", flush=True)
+                binding = {}
+                for c, name in ((0, "L"), (1, "R")):
+                    off, score = norm_xcorr(cap[:, c], segment[:, c])
+                    binding[name] = {
+                        "offset_frames": off,
+                        "offset_s": round(off / FS, 6),
+                        "score": round(score, 6),
+                    }
+
+                # Channel offsets should agree within a few frames. Use the mean
+                # only for common window timing; retain both per-channel values.
+                off_l = binding["L"]["offset_frames"]
+                off_r = binding["R"]["offset_frames"]
+                offset = int(round((off_l + off_r) / 2))
+                row["program_binding"] = binding
+                row["channel_offset_difference_ms"] = round(abs(off_l - off_r) * 1000 / FS, 3)
+                row["capture_analysis"] = capture_tone_profile(
+                    cap, offset, seg_len, FS, rig.settle
+                )
+
+                print(
+                    f"program binding scores: "
+                    f"L={binding['L']['score']:.4f}, R={binding['R']['score']:.4f}; "
+                    f"offset Δ={row['channel_offset_difference_ms']:.3f} ms",
+                    flush=True,
+                )
+                print(f"tone analysis: {row['capture_analysis']}", flush=True)
+            except Exception as exc:
+                row["capture_analysis_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+                print(f"capture analysis ERROR: {row['capture_analysis_error']}", flush=True)
+
+            if thd is not None:
+                thd_ch = thd.get("ch", {})
+                row["thd_summary"] = {
+                    ch: {
+                        "thdn_pct": thd_ch[ch].get("thdn_pct"),
+                        "thd_pct": thd_ch[ch].get("thd_pct"),
+                        "thd_upper_pct": thd_ch[ch].get("thd_upper_pct"),
+                        "level_dbfs": thd_ch[ch].get("level_dbfs"),
+                        "noise_dbfs": thd_ch[ch].get("noise_dbfs"),
+                    }
+                    for ch in ("L", "R") if ch in thd_ch
+                }
 
         results.append(row)
 
