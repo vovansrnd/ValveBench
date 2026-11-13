@@ -252,26 +252,7 @@ def main() -> int:
     )
     backend.open(FS)
 
-    # A single reliable preflight before ABBA. This preserves the real
-    # preflight→THD state transition without repeating the questionable -72
-    # pilot before every arm.
-    preflight_rig = m.Rig(backend, cfg, fs=FS, edge_protect=False)
-    try:
-        clock = m.clock_check(preflight_rig, level_dbfs=-30.0)
-    except Exception as exc:
-        clock = {"error": f"{type(exc).__name__}: {str(exc)[:160]}"}
-    print(f"initial clock_check -30: {clock.get('ok', 'exception')}", flush=True)
-
-    # Use the measured DAC/ADC drift to tune the narrowband 2-ms lock-in.
-    ppm_values = []
-    if isinstance(clock, dict) and isinstance(clock.get("ch"), dict):
-        ppm_values = [
-            float(v["ppm"]) for v in clock["ch"].values()
-            if isinstance(v, dict) and np.isfinite(float(v.get("ppm", float("nan"))))
-        ]
-    ppm = float(np.median(ppm_values)) if ppm_values else -23.5
-    tone_f = 997.0 * (1.0 + ppm * 1e-6)
-
+    results = []
     results = []
     for label, edge_on in CASES:
         rig = m.Rig(backend, cfg, fs=FS, edge_protect=edge_on)
@@ -288,9 +269,31 @@ def main() -> int:
             "settle_s": rig.settle,
             "lead_s": rig.edge_protect_lead_s if edge_on else 0.0,
             "tail_s": rig.edge_protect_tail_s if edge_on else 0.0,
-            "clock_preflight_before_abba": clock,
-            "tone_frequency_for_boundary_hz": tone_f,
         }
+
+        # Match the actual clock-sensitive GUI job cadence for EVERY arm:
+        # clock_check on the same Rig, immediately followed by thd_point.
+        try:
+            clock = m.clock_check(rig, level_dbfs=-30.0)
+            row["clock_check_minus30"] = clock
+            ppm_values = [
+                float(v["ppm"]) for v in clock["ch"].values()
+                if np.isfinite(float(v.get("ppm", float("nan"))))
+            ]
+            ppm = float(np.median(ppm_values)) if ppm_values else -23.5
+            print(
+                f"clock_check -30: ok={clock.get('ok')} "
+                f"ppm={ {c: round(clock['ch'][c]['ppm'], 2) for c in clock['ch']} }",
+                flush=True,
+            )
+        except Exception as exc:
+            row["clock_check_minus30"] = {
+                "error": f"{type(exc).__name__}: {str(exc)[:160]}"
+            }
+            ppm = -23.5
+            print(f"clock_check -30 ERROR: {row['clock_check_minus30']['error']}", flush=True)
+        tone_f = 997.0 * (1.0 + ppm * 1e-6)
+        row["tone_frequency_for_boundary_hz"] = tone_f
 
         window_path = OUT / f"{TAG}-{label}-window.wav"
         thd = None
@@ -441,7 +444,7 @@ def main() -> int:
         "order": [name for name, _ in CASES],
         "notes": [
             "ABBA order: OFF, ON, ON, OFF.",
-            "One real clock_check(-30 dBFS) precedes the four thd_point arms.",
+            "Each ABBA arm performs clock_check(-30 dBFS) on the same Rig immediately before thd_point, matching GUI job cadence.",
             "No extra lead/post-roll duration is added by timing markers.",
             "Marker A is superimposed on the initial 80 ms; marker B replaces the final 10 ms, outside the 2-s measurement window.",
             "Absolute timing uses non-periodic chirps with peak-uniqueness checks, not the periodic 997-Hz tone.",
