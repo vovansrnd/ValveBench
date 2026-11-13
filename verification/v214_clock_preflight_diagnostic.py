@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
-"""v2.14 — capture-backed clock-pilot level diagnostic + protected THD tail check.
+"""v2.14 — capture-backed clock-pilot level sweep + independent protected-THD edge check.
 
 Hardware route: D10 (152a:85dd) -> E-MU 0404 USB (041e:3f04), direct
-loopback, no DUT. This is deliberately a diagnostic level sweep, NOT a proposed
-global default. It measures which pilot levels are reliable on this particular
-direct route; a real DUT may have gain and may require a lower safe level.
+loopback, no DUT. The pilot sweep characterizes THIS direct route only; it does
+not define a safe global clock-pilot level for arbitrary high-gain DUTs.
 
-For every clock level:
-  * instantiate GUI-default Rig, edge_protect=True;
-  * call the real m.clock_check(rig, level_dbfs=level);
-  * preserve the exact program and full capture even when Rig.run raises;
-  * trace the actual production onset index when available;
-  * store per-channel 2-ms tone envelope and exact stability-window dip runs.
+Part A: levels -72..-30 dBFS, then reverse order (ABBA-like level sweep).
+For every level:
+  * GUI-default Rig, edge_protect=True;
+  * real m.clock_check(level);
+  * exact program/full capture saved even when Rig.run raises;
+  * exact Rig._onset index traced when available;
+  * per-channel 2-ms tone envelope and 12-dB/50-ms dip analysis saved.
+No markers are injected into clock_check, so instrumentation cannot assist a
+weak pilot or change the clock-preflight result.
 
-Levels are tested low→high and then high→low to expose state-dependent drift.
-No markers are injected into clock-check: instrumentation must not make a weak
-pilot easier to detect.
-
-Finally one protected thd_point(997 Hz, -30 dBFS) is captured with an additive
-non-periodic end marker. The marker is added over the final 10 ms; it does NOT
-replace or truncate the submitted tone. This checks actual final-edge activity.
+Part B: one real edge-protected thd_point(997 Hz, -30 dBFS). Two unique chirps
+are ADDED (never substituted) over the first 80 ms and final 10 ms of the
+submitted segment. The 997-Hz signal remains intact. Program-to-capture timing
+uses both markers, and measured tone edges are compared with the same 2-ms
+boundary detector applied to the original submitted program. This accounts
+for the normal 10-ms attack/release ramps instead of misreporting them as
+hardware loss. The production analysis window is traced and checked against
+the exact slice of the full capture.
 """
 
 from __future__ import annotations
@@ -48,6 +51,8 @@ OUT = ROOT / "measurements" / "diagnostics" / "v214-clock-diagnostic"
 TAG = datetime.now().strftime("%Y%m%d-%H%M%S")
 LEVELS = (-72.0, -66.0, -60.0, -54.0, -48.0, -42.0, -36.0, -30.0,
           -30.0, -36.0, -42.0, -48.0, -54.0, -60.0, -66.0, -72.0)
+MARKER_A_S = 0.080
+MARKER_B_S = 0.010
 
 
 def sha256_file(path: Path) -> str:
@@ -59,7 +64,7 @@ def sha256_file(path: Path) -> str:
 
 
 class CaptureContext:
-    """Capture the exact input program and output of one backend.play_record."""
+    """Capture exact program and full ADC record for one backend.play_record."""
 
     def __init__(self, backend):
         self.backend = backend
@@ -82,16 +87,23 @@ class CaptureContext:
         self.backend.play_record = self.original
 
 
-class AdditiveEndMarkerContext:
-    """Add a unique marker without removing the final samples of the signal."""
+class MarkedThdCaptureContext:
+    """Add two chirps in ignored edge regions without removing submitted samples."""
 
     def __init__(self, backend, rig):
         self.backend = backend
         self.rig = rig
         self.pairs = []
         self.original = backend.play_record
-        self.marker = chirp(FS, 0.010, 14000.0, 18000.0, level_dbfs=-30.0)
-        self.marker_2ch = np.column_stack((self.marker, self.marker))
+        self.marker_a = chirp(FS, MARKER_A_S, 6500.0, 7500.0, level_dbfs=-40.0)
+        self.marker_b = chirp(FS, MARKER_B_S, 14000.0, 18000.0, level_dbfs=-45.0)
+        self.marker_a_2ch = np.column_stack((self.marker_a, self.marker_a))
+        self.marker_b_2ch = np.column_stack((self.marker_b, self.marker_b))
+        self.lead_n = int(round(rig.edge_protect_lead_s * FS))
+        self.seg_len = int(round(
+            (rig.settle + rig.blocks * rig.n / FS + 0.05) * FS
+        ))
+        self.marker_b_pos = self.lead_n + self.seg_len - len(self.marker_b)
 
     def __enter__(self):
         ctx = self
@@ -99,17 +111,13 @@ class AdditiveEndMarkerContext:
         def wrapped(out, *args, **kwargs):
             program = np.asarray(out, dtype=np.float64).copy()
             marked = program.copy()
-            seg_len = int(round(
-                (ctx.rig.settle + ctx.rig.blocks * ctx.rig.n / FS + 0.05) * FS
-            ))
-            lead = int(round(ctx.rig.edge_protect_lead_s * FS))
-            start = lead + seg_len - len(ctx.marker)
-            end = start + len(ctx.marker)
-            if start < lead or end > len(marked):
-                raise RuntimeError("end marker does not fit protected THD segment")
-            # IMPORTANT: additive, not replacement. The submitted sine/fade
-            # remains present beneath the 14–18 kHz marker.
-            marked[start:end] += ctx.marker_2ch
+            a0, a1 = ctx.lead_n, ctx.lead_n + len(ctx.marker_a)
+            b0, b1 = ctx.marker_b_pos, ctx.marker_b_pos + len(ctx.marker_b)
+            if a1 > len(marked) or b0 < a1 or b1 > len(marked):
+                raise RuntimeError("chirp marker positions do not fit Rig.run program")
+            marked[a0:a1] += ctx.marker_a_2ch
+            # Additive marker: the original tone and its normal release ramp remain.
+            marked[b0:b1] += ctx.marker_b_2ch
             capture = ctx.original(marked, *args, **kwargs)
             ctx.pairs.append((
                 program.copy(), marked.copy(),
@@ -124,8 +132,32 @@ class AdditiveEndMarkerContext:
         self.backend.play_record = self.original
 
 
+def normalized_xcorr_match(arr: np.ndarray, tmpl: np.ndarray, fs: int):
+    """FFT normalized correlation; return best offset, score and competitor."""
+    arr = np.asarray(arr, dtype=np.float64)
+    tmpl = np.asarray(tmpl, dtype=np.float64)
+    n, mm = len(arr), len(tmpl)
+    if mm < 8 or n < mm:
+        raise ValueError("invalid correlation lengths")
+    fft_len = 1 << int(np.ceil(np.log2(n + mm)))
+    corr = np.fft.irfft(
+        np.fft.rfft(arr, fft_len) * np.conj(np.fft.rfft(tmpl, fft_len)),
+        fft_len
+    )[:n - mm + 1]
+    cs = np.concatenate(([0.0], np.cumsum(arr * arr)))
+    energy = np.maximum(cs[mm:] - cs[:n - mm + 1], 1e-30)
+    scores = corr / (np.linalg.norm(tmpl) * np.sqrt(energy))
+    best = int(np.argmax(scores))
+    best_score = float(scores[best])
+    exclusion = max(mm // 2, int(round(0.010 * fs)))
+    other = scores.copy()
+    other[max(0, best - exclusion):min(len(other), best + exclusion + 1)] = -np.inf
+    second = float(np.max(other)) if np.any(np.isfinite(other)) else float("-inf")
+    return best, best_score, second
+
+
 def tone_envelope_2ms(x: np.ndarray, fs: int, f_hz: float) -> np.ndarray:
-    """Independent 2-ms lock-in amplitude for each channel."""
+    """Independent 2-ms least-squares amplitude profile for both channels."""
     w = int(round(0.002 * fs))
     n = len(x) // w
     if n <= 0:
@@ -138,42 +170,112 @@ def tone_envelope_2ms(x: np.ndarray, fs: int, f_hz: float) -> np.ndarray:
         np.ones(w),
     ))
     pinv = np.linalg.pinv(design)
-    out = np.empty((n, 2), dtype=np.float64)
+    db = np.empty((n, 2), dtype=np.float64)
     for ch in (0, 1):
         coef = pinv @ blocks[:, :, ch].T
         amp = np.hypot(coef[0], coef[1])
-        out[:, ch] = 20.0 * np.log10(np.maximum(amp, 1e-15))
-    return out
+        db[:, ch] = 20.0 * np.log10(np.maximum(amp, 1e-15))
+    return db
+
+
+def find_profile_bounds(db: np.ndarray, fs: int, segment_start: int,
+                        segment_end: int, channel: int,
+                        floor_db: float | None = None) -> dict:
+    """First/last sustained 997-Hz activity and internal gaps at 2-ms resolution."""
+    w = int(round(0.002 * fs))
+    centers = (np.arange(len(db)) + 0.5) * w
+    seg_start_samp = max(0, int(segment_start))
+    seg_end_samp = min(len(db) * w, int(segment_end))
+    expected = (centers >= seg_start_samp) & (centers < seg_end_samp)
+    idx = np.where(expected)[0]
+    if len(idx) < 8:
+        return {"error": "segment outside profile"}
+    outside = (centers < seg_start_samp - w) | (centers >= seg_end_samp + w)
+    if floor_db is None:
+        floor = float(np.median(db[outside, channel])) if np.count_nonzero(outside) >= 10 \
+            else float(np.percentile(db[:, channel], 20))
+    else:
+        floor = float(floor_db)
+    plateau = (centers >= seg_start_samp + 0.2 * (seg_end_samp - seg_start_samp)) & \
+              (centers < seg_start_samp + 0.8 * (seg_end_samp - seg_start_samp))
+    plateau_db = float(np.median(db[plateau, channel]))
+    threshold = max(floor + 12.0, plateau_db - 20.0)
+    active = db[:, channel] > threshold
+    mask = active[idx]
+    run_min = max(1, int(round(0.050 * fs / w)))
+
+    first = None
+    for j in range(0, max(0, len(mask) - run_min + 1)):
+        if mask[j] and np.count_nonzero(mask[j:j + run_min]) >= int(np.ceil(0.9 * run_min)):
+            first = int(idx[j])
+            break
+
+    last = None
+    for j in range(len(mask) - 1, run_min - 2, -1):
+        lo = j - run_min + 1
+        if mask[j] and np.count_nonzero(mask[lo:j + 1]) >= int(np.ceil(0.9 * run_min)):
+            last = int(idx[j])
+            break
+
+    if first is None or last is None or last < first:
+        return {
+            "error": "no sustained tone region",
+            "floor_dbfs": round(floor, 2),
+            "plateau_dbfs": round(plateau_db, 2),
+            "threshold_dbfs": round(threshold, 2),
+        }
+
+    between = active[first:last + 1]
+    gaps, current = [], 0
+    for value in between:
+        if not value:
+            current += 1
+        elif current:
+            gaps.append(current)
+            current = 0
+    if current:
+        gaps.append(current)
+
+    return {
+        "start_frame": int(first * w),
+        "end_frame": int((last + 1) * w),
+        "start_s": round(first * w / fs, 6),
+        "end_s": round((last + 1) * w / fs, 6),
+        "span_s": round((last + 1 - first) * w / fs, 6),
+        "floor_dbfs": round(floor, 2),
+        "plateau_dbfs": round(plateau_db, 2),
+        "threshold_dbfs": round(threshold, 2),
+        "inactive_bins_inside_bounds": int(len(between) - np.count_nonzero(between)),
+        "max_internal_gap_ms": round(max(gaps, default=0) * 2.0, 3),
+        "resolution_ms": 2.0,
+    }
 
 
 def dip_runs(db: np.ndarray, fs: int, window_start_frame: int | None,
              window_frames: int, channel: int) -> dict:
-    """Reproduce the diagnostic rule: >=12 dB below same-window median for >=50 ms."""
+    """Apply the same 12-dB / 50-ms per-channel dip criterion as Rig.run."""
     w = int(round(0.002 * fs))
     start = 0 if window_start_frame is None else max(0, window_start_frame // w)
-    if window_start_frame is None:
-        end = len(db)
-        mode = "whole_capture_no_onset"
-    else:
-        end = min(len(db), (window_start_frame + window_frames) // w)
-        mode = "traced_production_window"
+    end = len(db) if window_start_frame is None else min(
+        len(db), (window_start_frame + window_frames) // w
+    )
     values = db[start:end, channel]
     if not len(values):
-        return {"mode": mode, "error": "no samples"}
+        return {"error": "no samples"}
     median = float(np.median(values))
-    limit = median - 12.0
-    below = values < limit
-    min_bins = max(1, int(round(0.050 * fs / w)))
+    threshold = median - 12.0
+    mask = values < threshold
+    run_min = max(1, int(round(0.050 * fs / w)))
     runs = []
     i = 0
-    while i < len(below):
-        if not below[i]:
+    while i < len(mask):
+        if not mask[i]:
             i += 1
             continue
         j = i
-        while j < len(below) and below[j]:
+        while j < len(mask) and mask[j]:
             j += 1
-        if j - i >= min_bins:
+        if j - i >= run_min:
             runs.append({
                 "start_s": round((start + i + 0.5) * w / fs, 6),
                 "duration_s": round((j - i) * w / fs, 6),
@@ -181,13 +283,11 @@ def dip_runs(db: np.ndarray, fs: int, window_start_frame: int | None,
             })
         i = j
     return {
-        "mode": mode,
         "window_start_s": round(start * w / fs, 6),
         "window_end_s": round(end * w / fs, 6),
         "median_dbfs": round(median, 2),
-        "drop_limit_dbfs": round(limit, 2),
-        "min_run_ms": 50.0,
-        "dip_runs": runs,
+        "threshold_dbfs": round(threshold, 2),
+        "runs": runs,
     }
 
 
@@ -206,7 +306,7 @@ def main() -> int:
     )
     backend.open(FS)
 
-    results = []
+    clock_rows = []
     for index, level in enumerate(LEVELS, start=1):
         rig = m.Rig(backend, cfg, fs=FS, edge_protect=True)
         onset_trace = {}
@@ -221,9 +321,9 @@ def main() -> int:
         row = {
             "index": index,
             "level_dbfs": level,
-            "edge_protect": rig.edge_protect_enabled,
+            "edge_protect": True,
             "blocks": rig.blocks,
-            "settle_s_clock": 0.4,
+            "clock_settle_s": 0.4,
             "lead_s": rig.edge_protect_lead_s,
             "tail_s": rig.edge_protect_tail_s,
         }
@@ -261,7 +361,6 @@ def main() -> int:
                 "capture": {"path": str(cpath), "frames": len(capture),
                             "sha256": sha256_file(cpath)},
             }
-
             row["onset"] = onset_trace or None
             window_start = None
             if "offset_frames" in onset_trace:
@@ -272,33 +371,25 @@ def main() -> int:
                     "frames": int(round(rig.blocks * rig.n)),
                     "end_s": round((window_start + rig.blocks * rig.n) / FS, 6),
                 }
-
-            # Clock pilot is 1 kHz; fit at 1 kHz for a time-local envelope.
             db = tone_envelope_2ms(capture, FS, 1000.0)
             row["envelope_2ms"] = {
                 "resolution_ms": 2.0,
-                "channels": {},
+                "channels": {
+                    name: {
+                        "dip_analysis": dip_runs(
+                            db, FS, window_start, int(round(rig.blocks * rig.n)), ch
+                        ),
+                        "median_full_capture_dbfs": round(float(np.median(db[:, ch])), 2),
+                        "min_full_capture_dbfs": round(float(np.min(db[:, ch])), 2),
+                    }
+                    for ch, name in ((0, "L"), (1, "R"))
+                },
             }
-            for ch, name in ((0, "L"), (1, "R")):
-                profile = dip_runs(
-                    db, FS, window_start,
-                    int(round(rig.blocks * rig.n)), ch
-                )
-                row["envelope_2ms"]["channels"][name] = profile
-                row["envelope_2ms"]["channels"][name]["median_full_dbfs"] = round(
-                    float(np.median(db[:, ch])), 2
-                )
-                row["envelope_2ms"]["channels"][name]["min_full_dbfs"] = round(
-                    float(np.min(db[:, ch])), 2
-                )
+        clock_rows.append(row)
 
-        results.append(row)
-
-    # One protected THD capture with a non-destructive end marker.
+    # One real protected THD capture; end marker is additive and outside the
+    # 2-s analysis window. This provides a clean tail-boundary comparison.
     rig = m.Rig(backend, cfg, fs=FS, edge_protect=True)
-    thd_tag = f"{TAG}-thd-997"
-    window_path = OUT / f"{thd_tag}-window.wav"
-    thd_row = {"edge_protect": True, "tone_hz": 997.0, "level_dbfs": -30.0}
     onset_trace = {}
     original_onset = rig._onset
 
@@ -308,27 +399,35 @@ def main() -> int:
         return d
 
     rig._onset = traced_thd_onset
-    with AdditiveEndMarkerContext(backend, rig) as ctx:
+    window_path = OUT / f"{TAG}-thd-window.wav"
+    thd_row = {
+        "edge_protect": True,
+        "tone_hz": 997.0,
+        "level_dbfs": -30.0,
+        "lead_s": rig.edge_protect_lead_s,
+        "tail_s": rig.edge_protect_tail_s,
+    }
+    with MarkedThdCaptureContext(backend, rig) as ctx:
         try:
             thd = m.thd_point(
                 rig, f=997.0, level_dbfs=-30.0, capture_wav=str(window_path)
             )
             thd_row["thd"] = thd
             print(
-                f"THD edge check: L={thd['ch']['L']['thdn_pct']:.3f}% "
+                f"THD: L={thd['ch']['L']['thdn_pct']:.3f}% "
                 f"R={thd['ch']['R']['thdn_pct']:.3f}%",
                 flush=True,
             )
         except Exception as exc:
             thd_row["error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
-            print(f"THD edge check ERROR: {thd_row['error']}", flush=True)
+            print(f"THD ERROR: {thd_row['error']}", flush=True)
     rig._onset = original_onset
 
     if len(ctx.pairs) == 1:
         program, marked, capture = ctx.pairs[0]
-        ppath = OUT / f"{thd_tag}-program.wav"
-        mpath = OUT / f"{thd_tag}-marked-program.wav"
-        cpath = OUT / f"{thd_tag}-capture.wav"
+        ppath = OUT / f"{TAG}-thd-program.wav"
+        mpath = OUT / f"{TAG}-thd-marked-program.wav"
+        cpath = OUT / f"{TAG}-thd-capture.wav"
         wavfile.write(ppath, FS, program.astype(np.float32))
         wavfile.write(mpath, FS, marked.astype(np.float32))
         wavfile.write(cpath, FS, capture.astype(np.float32))
@@ -340,21 +439,91 @@ def main() -> int:
         }
         thd_row["onset"] = onset_trace or None
         if "offset_frames" in onset_trace:
-            thd_row["window_position"] = {
-                "start_s": round((onset_trace["offset_frames"] + int(0.5 * FS)) / FS, 6),
-                "length_s": 2.0,
-                "end_s": round((onset_trace["offset_frames"] + int(2.5 * FS)) / FS, 6),
+            win_start = onset_trace["offset_frames"] + int(round(rig.settle * FS))
+            win_len = int(round(rig.blocks * rig.n))
+            thd_row["window"] = {
+                "start_s": round(win_start / FS, 6),
+                "end_s": round((win_start + win_len) / FS, 6),
+                "frames": win_len,
             }
-        # Last 100 ms of capture: per-channel 2-ms 997-Hz envelope so the
-        # additive 14–18 kHz chirp cannot be mistaken for continued tone.
-        db = tone_envelope_2ms(capture, FS, 997.0)
-        thd_row["tone_envelope_2ms"] = {
-            "resolution_ms": 2.0,
-            "last_200ms_dbfs": {
-                name: np.round(db[-100:, ch], 2).tolist()
-                for ch, name in ((0, "L"), (1, "R"))
-            },
-        }
+            if window_path.exists():
+                _, window = wavfile.read(window_path)
+                sl = capture[win_start:win_start + win_len]
+                if len(sl) == len(window):
+                    diff = sl.astype(np.float64) - window.astype(np.float64)
+                    thd_row["window_slice"] = {
+                        "exact_frames": len(sl) == win_len,
+                        "max_abs_difference": float(np.max(np.abs(diff))) if diff.size else 0.0,
+                    }
+
+        # Align each capture channel to the actual submitted program using
+        # both non-periodic chirps; the periodic 997-Hz carrier is not an anchor.
+        marker_a_pos = ctx.lead_n
+        marker_b_pos = ctx.marker_b_pos
+        offsets = {}
+        marker_rows = {}
+        for ch, name in ((0, "L"), (1, "R")):
+            a_off, a_score, a_second = normalized_xcorr_match(
+                capture[:, ch], ctx.marker_a, FS
+            )
+            b_off, b_score, b_second = normalized_xcorr_match(
+                capture[:, ch], ctx.marker_b, FS
+            )
+            off_a = a_off - marker_a_pos
+            off_b = b_off - marker_b_pos
+            a_gap, b_gap = a_score - a_second, b_score - b_second
+            a_ok = a_score >= 0.5 and a_gap >= 0.05
+            b_ok = b_score >= 0.5 and b_gap >= 0.05
+            marker_rows[name] = {
+                "A_score": round(a_score, 6), "A_gap": round(a_gap, 6),
+                "A_valid": bool(a_ok), "offset_from_A_s": round(off_a / FS, 6),
+                "B_score": round(b_score, 6), "B_gap": round(b_gap, 6),
+                "B_valid": bool(b_ok), "offset_from_B_s": round(off_b / FS, 6),
+                "A_B_disagreement_ms": round(abs(off_a - off_b) * 1000.0 / FS, 3),
+            }
+            if a_ok and b_ok and abs(off_a - off_b) <= int(round(0.002 * FS)):
+                offsets[name] = int(round((off_a + off_b) / 2))
+        thd_row["marker_binding"] = marker_rows
+        thd_row["marker_binding_valid"] = len(offsets) == 2 and \
+            abs(offsets["L"] - offsets["R"]) <= int(round(0.002 * FS))
+
+        # Compute expected and captured boundaries using the SAME detector.
+        ppm_values = [
+            float(row["clock_result"]["ch"][name]["ppm"])
+            for row in clock_rows if isinstance(row.get("clock_result"), dict)
+            and row["clock_result"].get("ok")
+            for name in ("L", "R")
+        ]
+        ppm = float(np.median(ppm_values)) if ppm_values else -23.5
+        f_tone = 997.0 * (1.0 + ppm * 1e-6)
+        thd_row["boundary_frequency_hz"] = f_tone
+        p_db = tone_envelope_2ms(program, FS, f_tone)
+        c_db = tone_envelope_2ms(capture, FS, f_tone)
+        seg_start = ctx.lead_n
+        seg_end = ctx.lead_n + ctx.seg_len
+        boundary = {"resolution_ms": 2.0, "channels": {}}
+        if thd_row["marker_binding_valid"]:
+            for ch, name in ((0, "L"), (1, "R")):
+                expected = find_profile_bounds(
+                    p_db, FS, seg_start, seg_end, ch
+                )
+                measured = find_profile_bounds(
+                    c_db, FS, offsets[name] + seg_start, offsets[name] + seg_end, ch
+                )
+                item = {"submitted_program": expected, "captured_program": measured}
+                if "start_frame" in expected and "start_frame" in measured:
+                    expected_start = offsets[name] + expected["start_frame"]
+                    expected_end = offsets[name] + expected["end_frame"]
+                    item["head_loss_ms_vs_submitted_envelope"] = round(
+                        (measured["start_frame"] - expected_start) * 1000.0 / FS, 3
+                    )
+                    item["tail_loss_ms_vs_submitted_envelope"] = round(
+                        (expected_end - measured["end_frame"]) * 1000.0 / FS, 3
+                    )
+                boundary["channels"][name] = item
+        else:
+            boundary["error"] = "independent A/B markers did not validate on both channels"
+        thd_row["tone_boundaries_vs_program"] = boundary
 
     result = {
         "version": "v2.14-clock-preflight-capture",
@@ -365,19 +534,20 @@ def main() -> int:
             "adc_pcm": f"hw:{adc},0",
             "sample_rate_hz": FS,
         },
-        "order_dbfs": list(LEVELS),
+        "clock_level_order_dbfs": list(LEVELS),
         "safety_note": (
-            "Direct D10→E-MU loopback only; do not connect a high-gain DUT for this level sweep. "
-            "The results do not define a safe pilot level for arbitrary phono stages."
+            "Direct D10→E-MU loopback only; no DUT connected. This sweep does not "
+            "authorize -30 dBFS for arbitrary high-gain phono stages."
         ),
-        "results": results,
+        "clock_results": clock_rows,
         "protected_thd_tail_check": thd_row,
     }
-    outpath = OUT / f"{TAG}-results.json"
-    outpath.write_text(
+    json_path = OUT / f"{TAG}-results.json"
+    json_path.write_text(
         json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
     )
-    print(f"\nJSON: {outpath}", flush=True)
+    print(f"\nJSON: {json_path}", flush=True)
+
     close = getattr(backend, "close", None)
     if callable(close):
         close()
