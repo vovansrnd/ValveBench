@@ -159,7 +159,7 @@ def tone_envelope_2ms(cap: np.ndarray, fs: int, f_tone: float):
 
 
 def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
-                         fs: int, f_tone: float, window_start_s: float,
+                         fs: int, f_tone: float, window_start_s: float | None,
                          window_s: float, block_ms: float = 2.0) -> dict:
     """Tone-selective boundaries, dropout gaps, and measurement-window coverage."""
     db, w = tone_envelope_2ms(cap, fs, f_tone)
@@ -219,7 +219,7 @@ def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
         start_s = first * w / fs
         end_s = (last + 1) * w / fs
         window_start = window_start_s
-        window_end = window_start + window_s
+        window_end = None if window_start is None else window_start + window_s
         result["channels"][name] = {
             "floor_997_dbfs": round(floor, 2),
             "plateau_997_dbfs": round(plateau, 2),
@@ -231,9 +231,11 @@ def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
             "bins_inside_bounds": int(len(between)),
             "inactive_bins_inside_bounds": int(len(between) - np.count_nonzero(between)),
             "max_internal_gap_ms": round(max(gaps, default=0) * w * 1000.0 / fs, 3),
-            "window_start_s": round(window_start, 6),
-            "window_end_s": round(window_end, 6),
-            "window_inside_detected_tone": bool(start_s <= window_start and end_s >= window_end),
+            "window_start_s": None if window_start is None else round(window_start, 6),
+            "window_end_s": None if window_end is None else round(window_end, 6),
+            "window_inside_detected_tone": (
+                None if window_start is None else bool(start_s <= window_start and end_s >= window_end)
+            ),
         }
     return result
 
@@ -252,7 +254,6 @@ def main() -> int:
     )
     backend.open(FS)
 
-    results = []
     results = []
     for label, edge_on in CASES:
         rig = m.Rig(backend, cfg, fs=FS, edge_protect=edge_on)
@@ -418,7 +419,8 @@ def main() -> int:
 
                 # Locate the actual production window in the full capture.
                 # This self-match is ONLY a window locator, never program alignment.
-                if thd is not None and window_path.exists():
+                window_start_s = None
+                if window_path.exists():
                     _, window_samples = wavfile.read(str(window_path))
                     window_samples = np.asarray(window_samples, dtype=np.float64)
                     woff, wscore, wsecond = normalized_xcorr_match(
@@ -435,12 +437,8 @@ def main() -> int:
                         "competing_peak": round(wsecond, 6),
                     }
                 else:
-                    window_start_s = program_offset / FS + lead_n / FS + rig.settle
-                    window_end_s = window_start_s + rig.blocks * rig.n / FS
                     row["window_position"] = {
-                        "note": "predicted from Rig.run offsets; actual window WAV unavailable",
-                        "start_s": round(window_start_s, 6),
-                        "end_s": round(window_end_s, 6),
+                        "note": "no analysis window was saved; window coverage is not evaluated",
                     }
 
                 window_s = rig.blocks * rig.n / FS
