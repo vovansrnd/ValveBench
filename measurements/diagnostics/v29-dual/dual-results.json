@@ -1,0 +1,48 @@
+[
+ {
+  "repeat": 1,
+  "preflight_level_dbfs": -72.0,
+  "preflight_wall_s": 7.553,
+  "preflight_to_thd_interval_s": 0.0,
+  "marker_A_R": {
+   "global_abs": 1454238,
+   "score": 0.0057
+  },
+  "marker_B_R": {
+   "global_abs": 164538,
+   "score": 0.0037
+  },
+  "start_offset_s": 6.02416,
+  "expected_tone_start_s": 7.8042,
+  "expected_tone_end_s": 12.3542,
+  "stable997_first_s": 1.75,
+  "stable997_last_s": 6.3,
+  "stable997_span_s": 4.55,
+  "captured_s": 9.0,
+  "tone_loss_s": 0.0,
+  "pre_tone_997_db": -77.6
+ },
+ {
+  "repeat": 2,
+  "preflight_level_dbfs": -72.0,
+  "preflight_wall_s": 7.348,
+  "preflight_to_thd_interval_s": 0.0,
+  "marker_A_R": {
+   "global_abs": 1429067,
+   "score": 0.0052
+  },
+  "marker_B_R": {
+   "global_abs": 253731,
+   "score": 0.0034
+  },
+  "start_offset_s": 5.89306,
+  "expected_tone_start_s": 7.6731,
+  "expected_tone_end_s": 12.2231,
+  "stable997_first_s": 1.75,
+  "stable997_last_s": 6.25,
+  "stable997_span_s": 4.5,
+  "captured_s": 9.0,
+  "tone_loss_s": 0.05,
+  "pre_tone_997_db": -78.3
+ }
+]
