@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""v2.13 — controlled D10 edge OFF/ON A/B with non-periodic time markers.
+"""v2.13 — controlled D10 edge OFF/ON A/B with in-program chirp markers.
 
 One AlsaCli, GUI-default Rig (blocks=2, settle=0.5), ABBA order:
-OFF -> ON -> ON -> OFF. Every arm runs clock_check(-30 dBFS), then the real
-thd_point(997 Hz, -30 dBFS). -72 dBFS is intentionally excluded because it
-was shown unreliable and would confound this edge-only comparison.
+OFF -> ON -> ON -> OFF. A single clock_check(-30 dBFS) precedes the sequence,
+then each arm calls the real thd_point(997 Hz, -30 dBFS). The unreliable
+production -72 dBFS preflight is kept out of this edge-only comparison.
 
-The play_record wrapper adds two low-level, non-periodic chirp markers around
-the actual Rig.run program. They are outside the analysis window. The tone
-itself is NEVER used as an absolute timing anchor. Marker A anchors the start;
-marker B independently anchors the end. Full original program, marked
-program, full capture and production window are retained.
+No extra playback duration or pre-roll is added by the markers:
+* Marker A is a short 6.5–7.5 kHz chirp ADDED over the first 80 ms of the
+  existing tone segment. The 997-Hz tone remains present from sample zero,
+  so this does not create an artificial lead or change onset timing.
+* Marker B is a 14–18 kHz chirp occupying the final 10 ms of the segment,
+  after the 2.0-s production analysis window (the segment has 50 ms padding).
 
-Tone boundaries are determined from 2-ms RMS bins using noise measured
-outside the submitted tone segment. The analysis reports internal inactive
-bins and the largest internal gap, not just first/last activity. Sub-2-ms
-head/tail values are not interpreted as precise measurements.
+Marker A and B are non-periodic unique anchors. The 997-Hz tone itself is
+never used as an absolute time anchor. Marker peak uniqueness is checked.
+Tone boundaries are derived from a 2-ms least-squares lock-in at the measured
+997-Hz frequency; internal gaps are reported. Sub-2-ms losses are not claimed
+as resolved measurements.
 """
 
 from __future__ import annotations
@@ -42,9 +44,8 @@ FS = 192000
 OUT = ROOT / "measurements" / "diagnostics" / "v213-edge-ab"
 TAG = datetime.now().strftime("%Y%m%d-%H%M%S")
 CASES = (("OFF-1", False), ("ON-1", True), ("ON-2", True), ("OFF-2", False))
-MARKER_S = 0.080
-GAP_S = 0.150
-POST_S = 0.250
+MARKER_A_S = 0.080
+MARKER_B_S = 0.010
 
 
 def sha256_file(path: Path) -> str:
@@ -67,7 +68,7 @@ def find_card(usbid: str):
 
 
 def normalized_xcorr_match(arr: np.ndarray, tmpl: np.ndarray, fs: int):
-    """Return best offset/score and strongest competing peak outside marker lobe."""
+    """Best normalized correlation and strongest separated competing peak."""
     arr = np.asarray(arr, dtype=np.float64)
     tmpl = np.asarray(tmpl, dtype=np.float64)
     n, mm = len(arr), len(tmpl)
@@ -90,34 +91,42 @@ def normalized_xcorr_match(arr: np.ndarray, tmpl: np.ndarray, fs: int):
 
 
 class MarkedCaptureCtx:
-    """Wrap exactly one play_record; add markers outside the generated program."""
+    """Overlay unique markers in settle/padding without changing program length."""
 
-    def __init__(self, backend, fs: int):
+    def __init__(self, backend, rig, fs: int):
         self.backend = backend
+        self.rig = rig
         self.fs = int(fs)
         self.pairs = []
-        self.marker_a_mono = chirp(fs, MARKER_S, 6500.0, 7500.0, level_dbfs=-30.0)
-        self.marker_b_mono = chirp(fs, MARKER_S, 10500.0, 11500.0, level_dbfs=-30.0)
+        self.marker_a_mono = chirp(fs, MARKER_A_S, 6500.0, 7500.0, level_dbfs=-30.0)
+        self.marker_b_mono = chirp(fs, MARKER_B_S, 14000.0, 18000.0, level_dbfs=-30.0)
         self.marker_a = np.column_stack((self.marker_a_mono, self.marker_a_mono))
         self.marker_b = np.column_stack((self.marker_b_mono, self.marker_b_mono))
-        self.gap = np.zeros((int(round(GAP_S * fs)), 2), dtype=np.float64)
-        self.post = np.zeros((int(round(POST_S * fs)), 2), dtype=np.float64)
-        self.prefix_frames = len(self.marker_a) + len(self.gap)
         self._orig = backend.play_record
+        self.lead_n = int(round(rig.edge_protect_lead_s * fs)) if rig.edge_protect_enabled else 0
+        self.seg_len = int(round((rig.settle + rig.blocks * rig.n / fs + 0.05) * fs))
+        self.marker_b_pos = self.lead_n + self.seg_len - len(self.marker_b)
 
     def __enter__(self):
         ctx = self
 
         def wrapped(out, *args, **kwargs):
-            original_program = np.asarray(out, dtype=np.float64).copy()
-            marked_program = np.concatenate(
-                [ctx.marker_a, ctx.gap, original_program, ctx.gap, ctx.marker_b, ctx.post],
-                axis=0,
-            )
-            capture = ctx._orig(marked_program, *args, **kwargs)
+            original = np.asarray(out, dtype=np.float64).copy()
+            marked = original.copy()
+            a0 = ctx.lead_n
+            a1 = a0 + len(ctx.marker_a)
+            b0 = ctx.marker_b_pos
+            b1 = b0 + len(ctx.marker_b)
+            if a1 > len(marked) or b0 < a1 or b1 > len(marked):
+                raise RuntimeError("marker positions do not fit the submitted Rig.run program")
+            # Marker A is additive: the 997-Hz tone stays intact at onset.
+            marked[a0:a1] += ctx.marker_a
+            # Marker B replaces only the final 10 ms, after the production window.
+            marked[b0:b1] = ctx.marker_b
+            capture = ctx._orig(marked, *args, **kwargs)
             ctx.pairs.append((
-                original_program,
-                marked_program.copy(),
+                original,
+                marked.copy(),
                 np.asarray(capture, dtype=np.float64).copy(),
             ))
             return capture
@@ -129,47 +138,50 @@ class MarkedCaptureCtx:
         self.backend.play_record = self._orig
 
 
-def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
-                         fs: int, settle_s: float, window_s: float,
-                         block_ms: float = 2.0) -> dict:
-    """Per-channel tone boundaries and internal gaps at block_ms resolution."""
-    w = max(1, int(round(block_ms * 1e-3 * fs)))
+def tone_envelope_2ms(cap: np.ndarray, fs: int, f_tone: float):
+    """Per-2-ms, per-channel LSQ amplitude of f_tone; high-frequency markers reject."""
+    w = int(round(0.002 * fs))
     n = len(cap) // w
-    if n < 8:
-        return {"error": "capture too short", "resolution_ms": block_ms}
-    x = np.asarray(cap[:n * w], dtype=np.float64).reshape(n, w, 2)
-    rms = np.sqrt(np.mean(x * x, axis=1)) * np.sqrt(2.0)
-    db = 20.0 * np.log10(np.maximum(rms, 1e-15))
-    centers = (np.arange(n) + 0.5) * w
+    blocks = np.asarray(cap[:n * w], dtype=np.float64).reshape(n, w, 2)
+    tt = np.arange(w, dtype=np.float64) / fs
+    design = np.column_stack((
+        np.sin(2.0 * np.pi * f_tone * tt),
+        np.cos(2.0 * np.pi * f_tone * tt),
+        np.ones(w),
+    ))
+    projection = np.linalg.pinv(design)
+    result = {}
+    for c, name in ((0, "L"), (1, "R")):
+        coef = projection @ blocks[:, :, c].T
+        amp = np.hypot(coef[0], coef[1])
+        result[name] = 20.0 * np.log10(np.maximum(amp, 1e-15))
+    return result, w
+
+
+def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
+                         fs: int, f_tone: float, settle_s: float,
+                         window_s: float, block_ms: float = 2.0) -> dict:
+    """Tone-selective boundaries, dropout gaps, and measurement-window coverage."""
+    db, w = tone_envelope_2ms(cap, fs, f_tone)
+    centers = (np.arange(len(db["L"])) + 0.5) * w
     segment_end = segment_offset + seg_len
     outside = (centers < segment_offset - w) | (centers >= segment_end + w)
-    if np.count_nonzero(outside) >= 25:
-        floor_db = np.median(db[outside], axis=0)
-        floor_source = "outside_segment_median"
-    else:
-        floor_db = np.percentile(db, 20, axis=0)
-        floor_source = "capture_20th_percentile_fallback"
-
-    plateau = (centers >= segment_offset + 0.2 * seg_len) & (
-        centers < segment_offset + 0.8 * seg_len
-    )
-    if not np.any(plateau):
-        return {"error": "no plateau bins", "resolution_ms": block_ms}
-
-    result = {
-        "resolution_ms": block_ms,
-        "floor_source": floor_source,
-        "sustain_ms": 50.0,
-        "channels": {},
-    }
-    run_min = max(1, int(round(0.050 * fs / w)))
     expected = (centers >= segment_offset) & (centers < segment_end)
     inside_idx = np.where(expected)[0]
-    for c, name in ((0, "L"), (1, "R")):
-        floor = float(floor_db[c])
-        plateau_level = float(np.median(db[plateau, c]))
-        threshold = max(floor + 12.0, plateau_level - 20.0)
-        active = db[:, c] > threshold
+    if len(inside_idx) < 8:
+        return {"error": "segment outside capture", "resolution_ms": block_ms}
+
+    result = {"resolution_ms": block_ms, "sustain_ms": 50.0, "channels": {}}
+    run_min = max(1, int(round(0.050 * fs / w)))
+    for name in ("L", "R"):
+        values = db[name]
+        floor = float(np.median(values[outside])) if np.count_nonzero(outside) >= 25 \
+            else float(np.percentile(values, 20))
+        plateau_mask = (centers >= segment_offset + 0.2 * seg_len) & \
+                       (centers < segment_offset + 0.8 * seg_len)
+        plateau = float(np.median(values[plateau_mask]))
+        threshold = max(floor + 12.0, plateau - 20.0)
+        active = values > threshold
         mask = active[inside_idx]
 
         first = None
@@ -177,7 +189,6 @@ def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
             if mask[j] and np.count_nonzero(mask[j:j + run_min]) >= int(np.ceil(0.9 * run_min)):
                 first = int(inside_idx[j])
                 break
-
         last = None
         for j in range(len(mask) - 1, run_min - 2, -1):
             lo = j - run_min + 1
@@ -187,33 +198,32 @@ def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
 
         if first is None or last is None or last < first:
             result["channels"][name] = {
-                "error": "no sustained tone region",
-                "floor_dbfs": round(floor, 2),
-                "plateau_dbfs": round(plateau_level, 2),
-                "threshold_dbfs": round(threshold, 2),
+                "error": "no sustained 997-Hz region",
+                "floor_997_dbfs": round(floor, 2),
+                "plateau_997_dbfs": round(plateau, 2),
+                "threshold_997_dbfs": round(threshold, 2),
             }
             continue
 
         between = active[first:last + 1]
-        gaps = []
-        gap = 0
+        gaps, current_gap = [], 0
         for value in between:
             if not value:
-                gap += 1
-            elif gap:
-                gaps.append(gap)
-                gap = 0
-        if gap:
-            gaps.append(gap)
+                current_gap += 1
+            elif current_gap:
+                gaps.append(current_gap)
+                current_gap = 0
+        if current_gap:
+            gaps.append(current_gap)
 
         start_s = first * w / fs
         end_s = (last + 1) * w / fs
         window_start = segment_offset / fs + settle_s
         window_end = window_start + window_s
         result["channels"][name] = {
-            "floor_dbfs": round(floor, 2),
-            "plateau_dbfs": round(plateau_level, 2),
-            "threshold_dbfs": round(threshold, 2),
+            "floor_997_dbfs": round(floor, 2),
+            "plateau_997_dbfs": round(plateau, 2),
+            "threshold_997_dbfs": round(threshold, 2),
             "tone_start_s": round(start_s, 6),
             "tone_end_s": round(end_s, 6),
             "tone_span_s": round(end_s - start_s, 6),
@@ -241,8 +251,28 @@ def main() -> int:
         out_map=cfg["out_map"],
     )
     backend.open(FS)
-    results = []
 
+    # A single reliable preflight before ABBA. This preserves the real
+    # preflight→THD state transition without repeating the questionable -72
+    # pilot before every arm.
+    preflight_rig = m.Rig(backend, cfg, fs=FS, edge_protect=False)
+    try:
+        clock = m.clock_check(preflight_rig, level_dbfs=-30.0)
+    except Exception as exc:
+        clock = {"error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    print(f"initial clock_check -30: {clock.get('ok', 'exception')}", flush=True)
+
+    # Use the measured DAC/ADC drift to tune the narrowband 2-ms lock-in.
+    ppm_values = []
+    if isinstance(clock, dict) and isinstance(clock.get("ch"), dict):
+        ppm_values = [
+            float(v["ppm"]) for v in clock["ch"].values()
+            if isinstance(v, dict) and np.isfinite(float(v.get("ppm", float("nan"))))
+        ]
+    ppm = float(np.median(ppm_values)) if ppm_values else -23.5
+    tone_f = 997.0 * (1.0 + ppm * 1e-6)
+
+    results = []
     for label, edge_on in CASES:
         rig = m.Rig(backend, cfg, fs=FS, edge_protect=edge_on)
         print(
@@ -258,34 +288,20 @@ def main() -> int:
             "settle_s": rig.settle,
             "lead_s": rig.edge_protect_lead_s if edge_on else 0.0,
             "tail_s": rig.edge_protect_tail_s if edge_on else 0.0,
+            "clock_preflight_before_abba": clock,
+            "tone_frequency_for_boundary_hz": tone_f,
         }
-
-        # The known reliable level is identical in both arms. Do not use -72:
-        # its unreliable detection was already established separately.
-        try:
-            ck = m.clock_check(rig, level_dbfs=-30.0)
-            row["clock_check_minus30"] = ck
-            print(
-                f"clock_check -30: ok={ck.get('ok')} "
-                f"ppm={ {c: round(ck['ch'][c]['ppm'], 2) for c in ck['ch']} }",
-                flush=True,
-            )
-        except Exception as exc:
-            row["clock_check_minus30"] = {
-                "error": f"{type(exc).__name__}: {str(exc)[:160]}"
-            }
-            print(f"clock_check -30 ERROR: {row['clock_check_minus30']['error']}", flush=True)
 
         window_path = OUT / f"{TAG}-{label}-window.wav"
         thd = None
-        with MarkedCaptureCtx(backend, FS) as ctx:
+        with MarkedCaptureCtx(backend, rig, FS) as ctx:
             try:
                 thd = m.thd_point(
                     rig, f=997.0, level_dbfs=-30.0, capture_wav=str(window_path)
                 )
                 row["thd"] = thd
             except Exception as exc:
-                # Keep the full capture even when the unprotected arm fails.
+                # Preserve the full capture even if the OFF arm fails.
                 row["measurement_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
                 print(f"thd_point ERROR: {row['measurement_error']}", flush=True)
 
@@ -300,97 +316,92 @@ def main() -> int:
             wavfile.write(marked_path, FS, marked.astype(np.float32))
             wavfile.write(capture_path, FS, capture.astype(np.float32))
 
-            seg_len = int(round((rig.settle + rig.blocks * rig.n / FS + 0.05) * FS))
-            lead_n = int(round(rig.edge_protect_lead_s * FS)) if edge_on else 0
-            if lead_n + seg_len > len(original):
-                row["capture_analysis_error"] = "tone segment bounds exceed original program"
+            seg_len = ctx.seg_len
+            lead_n = ctx.lead_n
+            marker_a_pos = lead_n
+            marker_b_pos = lead_n + seg_len - len(ctx.marker_b)
+            binding = {}
+            offsets_a = {}
+            offsets_b = {}
+
+            for c, name in ((0, "L"), (1, "R")):
+                a_off, a_score, a_second = normalized_xcorr_match(
+                    capture[:, c], ctx.marker_a_mono, FS
+                )
+                b_off, b_score, b_second = normalized_xcorr_match(
+                    capture[:, c], ctx.marker_b_mono, FS
+                )
+                a_gap = a_score - a_second
+                b_gap = b_score - b_second
+                a_valid = a_score >= 0.50 and a_gap >= 0.05
+                b_valid = b_score >= 0.75 and b_gap >= 0.05
+                offset_a = a_off - marker_a_pos
+                offset_b = b_off - marker_b_pos
+                if a_valid:
+                    offsets_a[name] = offset_a
+                if b_valid:
+                    offsets_b[name] = offset_b
+                binding[name] = {
+                    "marker_a_offset_s": round(a_off / FS, 6),
+                    "marker_a_score": round(a_score, 6),
+                    "marker_a_competitor": round(a_second, 6),
+                    "marker_a_peak_gap": round(a_gap, 6),
+                    "marker_a_valid": bool(a_valid),
+                    "program_offset_from_a_s": round(offset_a / FS, 6),
+                    "marker_b_offset_s": round(b_off / FS, 6),
+                    "marker_b_score": round(b_score, 6),
+                    "marker_b_competitor": round(b_second, 6),
+                    "marker_b_peak_gap": round(b_gap, 6),
+                    "marker_b_valid": bool(b_valid),
+                    "program_offset_from_b_s": round(offset_b / FS, 6),
+                }
+
+            row["unique_marker_binding"] = binding
+            common_offsets = [
+                v for name in ("L", "R")
+                for v in (offsets_a.get(name), offsets_b.get(name))
+                if v is not None
+            ]
+            if not common_offsets:
+                row["capture_analysis_error"] = "no unique chirp marker matched"
             else:
-                marker_a = ctx.marker_a_mono
-                marker_b = ctx.marker_b_mono
-                gap_n = len(ctx.gap)
-                marker_b_program_pos = ctx.prefix_frames + len(original) + gap_n
-                binding = {"marker_a_s": MARKER_S, "marker_b_s": MARKER_S, "gap_s": GAP_S}
+                program_offset = int(round(float(np.median(common_offsets))))
+                row["program_offset_s"] = round(program_offset / FS, 6)
+                row["marker_anchor_disagreement_ms"] = {
+                    name: round(abs(offsets_a[name] - offsets_b[name]) * 1000.0 / FS, 3)
+                    for name in ("L", "R") if name in offsets_a and name in offsets_b
+                }
+                window_s = rig.blocks * rig.n / FS
+                profile = capture_tone_profile(
+                    capture, program_offset + lead_n, seg_len, FS,
+                    tone_f, rig.settle, window_s,
+                )
+                row["capture_analysis"] = profile
 
-                offsets_a = {}
-                offsets_b = {}
-                for c, name in ((0, "L"), (1, "R")):
-                    a_off, a_score, a_second = normalized_xcorr_match(
-                        capture[:, c], marker_a, FS
-                    )
-                    b_off, b_score, b_second = normalized_xcorr_match(
-                        capture[:, c], marker_b, FS
-                    )
-                    a_gap = a_score - a_second
-                    b_gap = b_score - b_second
-                    a_valid = a_score >= 0.75 and a_gap >= 0.05
-                    b_valid = b_score >= 0.75 and b_gap >= 0.05
-                    offset_a = a_off + ctx.prefix_frames
-                    offset_b = b_off - marker_b_program_pos
-                    if a_valid:
-                        offsets_a[name] = offset_a
-                    if b_valid:
-                        offsets_b[name] = offset_b
-                    binding[name] = {
-                        "marker_a_capture_s": round(a_off / FS, 6),
-                        "marker_a_score": round(a_score, 6),
-                        "marker_a_competitor": round(a_second, 6),
-                        "marker_a_peak_gap": round(a_gap, 6),
-                        "marker_a_valid": bool(a_valid),
-                        "program_offset_from_a_s": round(offset_a / FS, 6),
-                        "marker_b_capture_s": round(b_off / FS, 6),
-                        "marker_b_score": round(b_score, 6),
-                        "marker_b_competitor": round(b_second, 6),
-                        "marker_b_peak_gap": round(b_gap, 6),
-                        "marker_b_valid": bool(b_valid),
-                        "program_offset_from_b_s": round(offset_b / FS, 6),
-                    }
-
-                row["marker_binding"] = binding
-                common_offsets = [
-                    v for channel in ("L", "R")
-                    for v in (offsets_a.get(channel), offsets_b.get(channel))
-                    if v is not None
-                ]
-                if not common_offsets:
-                    row["capture_analysis_error"] = "neither chirp marker had a unique valid match"
-                else:
-                    program_offset = int(round(float(np.median(common_offsets))))
-                    row["program_offset_s"] = round(program_offset / FS, 6)
-                    row["marker_anchor_disagreement_ms"] = {
-                        ch: round(abs(offsets_a[ch] - offsets_b[ch]) * 1000.0 / FS, 3)
-                        for ch in ("L", "R") if ch in offsets_a and ch in offsets_b
-                    }
-
-                    window_s = rig.blocks * rig.n / FS
-                    profile = capture_tone_profile(
-                        capture, program_offset + lead_n, seg_len, FS,
-                        rig.settle, window_s,
-                    )
-                    row["capture_analysis"] = profile
-                    for ch in ("L", "R"):
-                        info = profile.get("channels", {}).get(ch, {})
-                        if not info or "tone_start_s" not in info:
-                            continue
-                        # Start loss is measured from the END marker anchor;
-                        # tail loss is measured from the START marker anchor.
-                        if ch in offsets_b:
-                            expected_start = (offsets_b[ch] + lead_n) / FS
-                            info["head_loss_ms_estimate"] = round(
-                                (info["tone_start_s"] - expected_start) * 1000.0, 3
-                            )
-                            info["head_anchor"] = "marker_B"
-                        else:
-                            info["head_loss_ms_estimate"] = None
-                            info["head_anchor"] = None
-                        if ch in offsets_a:
-                            expected_end = (offsets_a[ch] + lead_n + seg_len) / FS
-                            info["tail_loss_ms_estimate"] = round(
-                                (expected_end - info["tone_end_s"]) * 1000.0, 3
-                            )
-                            info["tail_anchor"] = "marker_A"
-                        else:
-                            info["tail_loss_ms_estimate"] = None
-                            info["tail_anchor"] = None
+                for name in ("L", "R"):
+                    info = profile.get("channels", {}).get(name, {})
+                    if not info or "tone_start_s" not in info:
+                        continue
+                    if name in offsets_b:
+                        expected_start = (offsets_b[name] + lead_n) / FS
+                        info["head_loss_ms_estimate"] = round(
+                            (info["tone_start_s"] - expected_start) * 1000.0, 3
+                        )
+                        info["head_anchor"] = "marker_B"
+                    else:
+                        info["head_loss_ms_estimate"] = None
+                        info["head_anchor"] = None
+                    if name in offsets_a:
+                        expected_end = (
+                            offsets_a[name] + lead_n + seg_len - len(ctx.marker_b)
+                        ) / FS
+                        info["tail_loss_ms_estimate"] = round(
+                            (expected_end - info["tone_end_s"]) * 1000.0, 3
+                        )
+                        info["tail_anchor"] = "marker_A"
+                    else:
+                        info["tail_loss_ms_estimate"] = None
+                        info["tail_anchor"] = None
 
             row["files"] = {}
             for key, path in (
@@ -406,14 +417,14 @@ def main() -> int:
 
             if thd is not None:
                 row["thd_summary"] = {
-                    ch: {
-                        "thdn_pct": thd["ch"][ch].get("thdn_pct"),
-                        "thd_pct": thd["ch"][ch].get("thd_pct"),
-                        "thd_upper_pct": thd["ch"][ch].get("thd_upper_pct"),
-                        "level_dbfs": thd["ch"][ch].get("level_dbfs"),
-                        "noise_dbfs": thd["ch"][ch].get("noise_dbfs"),
+                    name: {
+                        "thdn_pct": thd["ch"][name].get("thdn_pct"),
+                        "thd_pct": thd["ch"][name].get("thd_pct"),
+                        "thd_upper_pct": thd["ch"][name].get("thd_upper_pct"),
+                        "level_dbfs": thd["ch"][name].get("level_dbfs"),
+                        "noise_dbfs": thd["ch"][name].get("noise_dbfs"),
                     }
-                    for ch in ("L", "R") if ch in thd.get("ch", {})
+                    for name in ("L", "R") if name in thd.get("ch", {})
                 }
 
         results.append(row)
@@ -427,15 +438,15 @@ def main() -> int:
             "adc_pcm": f"hw:{adc},0",
             "sample_rate_hz": FS,
         },
-        "order": [x[0] for x in CASES],
+        "order": [name for name, _ in CASES],
         "notes": [
             "ABBA order: OFF, ON, ON, OFF.",
-            "Each arm uses the real clock_check(-30 dBFS) and thd_point(997 Hz, -30 dBFS).",
-            "The known unreliable -72 dBFS production preflight is excluded from this controlled edge-only comparison.",
-            "Absolute binding uses two non-periodic chirp markers, not the periodic 997-Hz tone or capture_wav self-correlation.",
-            "Marker A anchors the program start; marker B independently anchors the program end.",
-            "2-ms boundary uncertainty applies; sub-2-ms loss values are only estimates, not resolved measurements.",
-            "Internal inactive bins and maximum internal gap are recorded.",
+            "One real clock_check(-30 dBFS) precedes the four thd_point arms.",
+            "No extra lead/post-roll duration is added by timing markers.",
+            "Marker A is superimposed on the initial 80 ms; marker B replaces the final 10 ms, outside the 2-s measurement window.",
+            "Absolute timing uses non-periodic chirps with peak-uniqueness checks, not the periodic 997-Hz tone.",
+            "2-ms boundary uncertainty applies; sub-2-ms head/tail values are estimates only.",
+            "Tone-selective 2-ms LSQ rejects the high-frequency markers and reports internal dropouts.",
         ],
         "results": results,
     }
