@@ -122,6 +122,12 @@ class Rig:
         self.edge_protect_enabled = bool(edge_protect)
         self.edge_protect_lead_s = 1.5
         self.edge_protect_tail_s = 0.6
+        # межканальный допуск dead-channel детекции (v2.12): канал считается
+        # молчащим, если его уровень относительно другого активного канала
+        # ниже ожидаемого (из поданных амплитуд) более чем на этот допуск.
+        # Относительная проверка — без абсолютных порогов уровня; легитимный
+        # дисбаланс каналов DUT до 30 дБ не бракуется
+        self.dead_channel_gap_db = 30.0
 
     def open(self):
         self.be.open(self.fs)
@@ -196,28 +202,50 @@ class Rig:
         # проверка: провал ≥12 дБ ниже медианы окна на ≥50 мс; без
         # абсолютных порогов уровня — тихие DUT не отбрасываются)
         for wi, w in enumerate(wins):
-            reason = self._window_stability_reason(w)
+            reason = self._window_stability_reason(w, segs[wi][0], segs[wi][1])
             if reason:
                 raise MeasureError(f"сегмент {wi + 1}: {reason} — "
                                    f"недостаточно устойчивого сигнала для анализа")
         return wins, warns
 
-    def _window_stability_reason(self, win):
-        """None если окно устойчиво; строка-причина при провале ≥12 дБ ниже
-        медианы СВОЕГО канала на ≥50 мс (относительная проверка, без
-        абсолютных порогов уровня). Проверка ПОКАНАЛЬНАЯ (v2.11): падение
-        одного канала не маскируется более громким другим — каналы
-        анализируются раздельно, и достаточность сигнала проверяется
-        раздельно; причина называет канал."""
+    def _window_stability_reason(self, win, tones_l=(), tones_r=()):
+        """None если окно устойчиво; строка-причина при отказе. Проверка
+        ПОКАНАЛЬНАЯ (v2.11/v2.12), три уровня — все относительные, без
+        абсолютных порогов уровня (тихие DUT не отбрасываются):
+
+        (а) временной провал канала ≥12 дБ ниже медианы СВОЕГО канала
+            на ≥50 мс — падение одного канала не маскируется другим;
+        (б) полный цифровой ноль канала, в который ПОДАН тон
+            (структурная проверка: канал с поданным тоном молчит целиком —
+            его собственная медиана тоже нулевая, провал (а) не сработает);
+        (в) межканальное ожидание: если тон подан в ОБА канала, измеренное
+            отношение уровней не должно расходиться с ожидаемым (из поданных
+            амплитуд) более чем на dead_channel_gap_db — иначе более тихий
+            канал не получает сигнал (аналогово-мертвый канал обнаруживается
+            относительно живого).
+
+        Намеренно незадействованный канал (пустой список тонов) не
+        бракуется — маршруты L-only/R-only работают."""
         w = int(round(0.002 * self.fs))
         n = len(win) // w * w
         if n < w * 4:
             return None
         run_min = max(1, int(round(0.05 * self.fs / w)))   # 50 мс в кадрах 2 мс
-        reason = None
-        for c, name in ((0, "L"), (1, "R")):
+        names = ("L", "R")
+        active = (bool(tones_l), bool(tones_r))
+        # (б) цифровой ноль канала с поданным тоном
+        for c in (0, 1):
+            if active[c] and float(np.max(np.abs(win[:, c]))) < 1e-12:
+                return (f"канал {names[c]}: тон подан, но канал полностью "
+                        f"молчит (цифровой ноль)")
+        # (а) временные провалы — только для активных каналов
+        med_db = []
+        for c in (0, 1):
             rms = np.sqrt(np.mean(win[:n, c].reshape(-1, w) ** 2, axis=1)) * np.sqrt(2)
             db = 20 * np.log10(np.clip(rms, 1e-12, None))
+            med_db.append(db)
+            if not active[c]:
+                continue
             median = float(np.median(db))
             drop_limit = median - 12.0
             i = 0
@@ -226,14 +254,32 @@ class Rig:
                     j = i
                     while j < len(db) and db[j] < drop_limit:
                         j += 1
-                    if (j - i) >= run_min and reason is None:
-                        reason = (f"канал {name}: провал "
-                                  f"{(median - float(np.max(db[i:j]))):.1f} дБ "
-                                  f"длительностью {(j - i) * w / self.fs:.2f} с")
+                    if (j - i) >= run_min:
+                        return (f"канал {names[c]}: провал "
+                                f"{(median - float(np.max(db[i:j]))):.1f} дБ "
+                                f"длительностью {(j - i) * w / self.fs:.2f} с")
                     i = j
                 else:
                     i += 1
-        return reason
+        # (в) межканальное ожидание — оба канала активны
+        if active[0] and active[1]:
+            def submitted_level_db(tones):
+                s = sum(a * a for _, a in tones)
+                return 20 * math.log10(max(math.sqrt(s), 1e-12))
+            expected_diff = submitted_level_db(tones_l) - submitted_level_db(tones_r)
+            measured_diff = float(np.median(med_db[0])) - float(np.median(med_db[1]))
+            gap = self.dead_channel_gap_db
+            if measured_diff < expected_diff - gap:
+                # L−R существенно ниже ожидаемого: L слишком тихий
+                return (f"канал L: уровень ниже ожидаемого относительно R на "
+                        f"{(expected_diff - measured_diff):.1f} дБ — канал не "
+                        f"получает сигнал")
+            if measured_diff > expected_diff + gap:
+                # L−R существенно выше ожидаемого: R слишком тихий
+                return (f"канал R: уровень ниже ожидаемого относительно L на "
+                        f"{(measured_diff - expected_diff):.1f} дБ — канал не "
+                        f"получает сигнал")
+        return None
 
     def _onset(self, rec, tone_hz=None):
         if tone_hz is not None:

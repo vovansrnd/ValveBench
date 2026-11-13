@@ -45,11 +45,17 @@ class ScriptedHW:
     noise_dbfs: белый шум по обоим каналам;
     dropout: (ch, rel_to_tone_s, dur_s) — цифровой ноль канала ch,
         отсчёт от НАЧАЛА ТОНА в программе (обнаруживается по факту);
+    dead_channel: 0/1 — канал полностью цифровой ноль на ВСЁМ захвате
+        (постоянное отключение канала);
+    dead_channel_noise: (ch, level_dbfs) — канал заменён аналоговым полем
+        (белый шум уровня level) на всём захвате — «отцеплённый кабель»:
+        не цифровой ноль, тон отсутствует;
     gain: (gL, gR) — поканальный gain DUT.
     """
 
     def __init__(self, pre_s=0.0, pre_junk=None, tail_cut_s=0.0, ppm=0.0,
-                 click=None, noise_dbfs=None, dropout=None, gain=(1.0, 1.0)):
+                 click=None, noise_dbfs=None, dropout=None, gain=(1.0, 1.0),
+                 dead_channel=None, dead_channel_noise=None):
         self.fs = FS
         self.pre_s = pre_s
         self.pre_junk = pre_junk
@@ -59,6 +65,8 @@ class ScriptedHW:
         self.noise_dbfs = noise_dbfs
         self.dropout = dropout
         self.gain = gain
+        self.dead_channel = dead_channel
+        self.dead_channel_noise = dead_channel_noise
         self.notes = []
         self.programs = []
 
@@ -116,6 +124,13 @@ class ScriptedHW:
             i0 = pre_n + tone0 + int(round(rel_s * self.fs))
             mm = int(dur_s * self.fs)
             rec[i0:i0 + mm, ch] = 0.0
+        # постоянное отключение канала: цифровой ноль или аналоговое поле
+        if self.dead_channel is not None:
+            rec[:, self.dead_channel] = 0.0
+        if self.dead_channel_noise is not None:
+            ch, lvl = self.dead_channel_noise
+            rng = np.random.default_rng(20262)
+            rec[:, ch] = dsp.dbfs_to_amp(lvl) * rng.standard_normal(len(rec))
         return rec
 
 
@@ -305,6 +320,164 @@ def test_no_dropout_passes():
     wins, warns = rig.run([([(k, a)], [(k, a)], None)])
     got = demod_amp_dbfs(wins[0][:, 0], FS, 1000.0)
     assert abs(got - TONE_DBFS) < 0.5
+
+
+# ------------------------------------------------- v2.12 (ревизия v2.11)
+
+def test_dead_channel_l_detected():
+    """Постоянно отключённый L (цифровой ноль) при тоне в ОБА канала →
+    отказ с именем L (собственная медиана молчащего канала тоже нулевая —
+    временная проверка (а) не сработала бы; ловит структурная (б))."""
+    hw = ScriptedHW(dead_channel=0)
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "канал L" in str(exc), f"причина не называет канал L: {exc}"
+        return
+    raise AssertionError("молчащий L не обнаружен (rig.run прошёл молча)")
+
+
+def test_dead_channel_r_detected():
+    """Постоянно отключённый R (цифровой ноль) при тоне в ОБА канала →
+    отказ с именем R."""
+    hw = ScriptedHW(dead_channel=1)
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "канал R" in str(exc), f"причина не называет канал R: {exc}"
+        return
+    raise AssertionError("молчащий R не обнаружен (rig.run прошёл молча)")
+
+
+def test_dead_channel_analog_l_detected():
+    """«Отцеплённый кабель»: L заменён аналоговым полем (−80 дБФС, НЕ
+    цифровой ноль) при тоне −30 в оба канала → межканальная проверка (в)
+    обнаруживает отсутствие сигнала в L относительно R."""
+    hw = ScriptedHW(dead_channel_noise=(0, -80.0))
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "канал L" in str(exc), f"причина не называет канал L: {exc}"
+        return
+    raise AssertionError("аналогово-мёртвый L не обнаружен")
+
+
+def test_route_l_only_passes():
+    """Маршрут L-only: тон подан только в L, R намеренно молчит —
+    незадействованный канал НЕ бракуется, измерение проходит."""
+    hw = ScriptedHW()
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    wins, warns = rig.run([([(k, a)], [], None)])
+    got = demod_amp_dbfs(wins[0][:, 0], FS, 1000.0)
+    assert abs(got - TONE_DBFS) < 0.5
+
+
+def test_route_r_only_passes():
+    """Маршрут R-only: тон подан только в R, L намеренно молчит."""
+    hw = ScriptedHW()
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    wins, warns = rig.run([([], [(k, a)], None)])
+    got = demod_amp_dbfs(wins[0][:, 1], FS, 1000.0)
+    assert abs(got - TONE_DBFS) < 0.5
+
+
+def test_gain_imbalance_within_tolerance_passes():
+    """Легитимный дисбаланс DUT (R на 6 дБ тише) НЕ бракуется межканальной
+    проверкой (допуск 30 дБ) — Gain Match измеряет большой ΔG как результат."""
+    hw = ScriptedHW(gain=(1.0, 0.25))   # R тише на 12 дБ — вдвое больше, чем
+    rig = make_rig(hw, edge_protect=True)   # в старом тесте, но < 30 дБ
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    wins, warns = rig.run([([(k, a)], [(k, a)], None)])
+    got_r = demod_amp_dbfs(wins[0][:, 1], FS, 1000.0)
+    assert abs(got_r - (TONE_DBFS - 12.0)) < 0.5
+
+
+def test_tail_cut_survives():
+    """Потеря части внешнего хвоста (0.5 с из защитных 0.6) с включённой
+    защитой: измерительное окно не затронуто, измерение проходит."""
+    hw = ScriptedHW(tail_cut_s=0.5)
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    wins, warns = rig.run([([(k, a)], [(k, a)], None)])
+    got = demod_amp_dbfs(wins[0][:, 1], FS, 1000.0)
+    assert abs(got - TONE_DBFS) < 0.5
+
+
+def test_tail_cut_excessive_fails():
+    """Обрезка 1.0 с > защитных 0.6+0.05: захват короче программы →
+    явный отказ «захват оборвался»."""
+    hw = ScriptedHW(tail_cut_s=1.0)
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "короче" in str(exc) or "обрыв" in str(exc), \
+            f"неожиданная причина: {exc}"
+        return
+    raise AssertionError("обрезка 1.0 с не привела к отказу")
+
+
+def test_tail_cut_unprotected_fails():
+    """Без защиты обрезка 0.3 с съедает запас сегмента (0.05) и заходит в
+    измерительное окно → явный отказ (значение защиты наглядно)."""
+    hw = ScriptedHW(tail_cut_s=0.3)
+    rig = make_rig(hw, edge_protect=False)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError:
+        return
+    raise AssertionError("без защиты обрезка 0.3 с прошла незамеченной")
+
+
+def test_edge_protect_default_off():
+    """Структурная проверка (ревизия v2.11): Rig без передачи параметра
+    создаётся с ВЫКЛЮЧЕННОЙ edge-защитой (явная политика включения)."""
+    rig = m.Rig(ScriptedHW(), calib.Calibration(), fs=FS)
+    assert rig.edge_protect_enabled is False, \
+        "Rig() по умолчанию должен создавать БЕЗ edge-защиты (v2.11)"
+
+
+def test_gain_match_series_delta_g():
+    """Фактический расчёт Gain Match (ревизия v2.11, п.5): двухшаговая
+    серия — loopback-референс, затем DUT с R на 6.02 дБ тише; проверяются
+    уровни G-компонент (L −30/R −36.02) и ΔG после вычитания коррекции."""
+    from valvebench import gainmatch
+    freqs = (987.0, 1123.0)
+    hw_lb = ScriptedHW()
+    rig_lb = make_rig(hw_lb, edge_protect=True)
+    lb = gainmatch.measure_series(rig_lb, frequencies=freqs, level_dbfs=-30.0,
+                                  repeats=2, purpose="loopback")
+    assert lb["purpose"] == "loopback"
+    for row in lb["rows"]:
+        assert abs(row["delta_adc_db"]) < 0.1, \
+            f"loopback ΔG на {row['requested_frequency_hz']} Гц: {row['delta_adc_db']:.3f}"
+    ref = gainmatch.build_loopback_reference(lb)
+
+    hw_dut = ScriptedHW(gain=(1.0, 0.5))   # R тише ровно на 20lg(0.5)=6.02 дБ
+    rig_dut = make_rig(hw_dut, edge_protect=True)
+    dut = gainmatch.measure_series(rig_dut, frequencies=freqs, level_dbfs=-30.0,
+                                   repeats=1, purpose="dut", reference=ref)
+    for row in dut["rows"]:
+        f = row["requested_frequency_hz"]
+        lv_l = row["channels"]["L"]["level_dbfs"]
+        lv_r = row["channels"]["R"]["level_dbfs"]
+        assert abs(lv_l - (-30.0)) < 0.3, f"{f} Гц: уровень L {lv_l:.2f}"
+        assert abs(lv_r - (-36.02)) < 0.3, f"{f} Гц: уровень R {lv_r:.2f}"
+        assert abs(row["delta_adc_db"] - 6.02) < 0.3, \
+            f"{f} Гц: ΔG(L−R) {row['delta_adc_db']:.3f}"
+        assert row["delta_gain_db"] is not None, "ΔG после коррекции не вычислен"
+        assert abs(row["delta_gain_db"] - 6.02) < 0.3, \
+            f"{f} Гц: скорректированный ΔG {row['delta_gain_db']:.3f}"
 
 
 if __name__ == "__main__":
