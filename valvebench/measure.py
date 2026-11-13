@@ -102,7 +102,7 @@ class Rig:
     """Стенд: бэкенд + калибровка + параметры когерентного окна."""
 
     def __init__(self, backend, cal=None, fs=96000, df=1.0, blocks=2, settle=0.5,
-                 edge_protect=True):
+                 edge_protect=False):
         self.be = backend
         self.cal = cal or Calibration()
         self.fs = int(fs)
@@ -112,11 +112,13 @@ class Rig:
         self.n = int(round(self.fs / df))
         self.progress = lambda msg: None      # GUI подменяет
         self.cancel = False
-        # edge-защита (candidate, ветка diagnostics/d10-full-capture, v2.10):
-        # D10-класс ЦАПов теряет ~0.22 с головы и ~0.19 с хвоста потока
-        # (измерено v2.6 на реальном железе). Тишина у краёв программы
-        # переводит потерю в неслышимую зону. Хвост 0.6 с дополнительно
-        # делает пост-потоковое состояние тихим (реплика хвоста = тишина).
+        # edge-защита (candidate, ветка diagnostics/d10-full-capture; v2.11 —
+        # по умолчанию ВЫКЛЮЧЕНА: явная политика включения — универсальное
+        # включение затрагивало бы все карты, симулятор и все измерения).
+        # Некоторые ЦАПы (D10-класс) теряют начало и конец потока; тишина у
+        # краёв программы переводит потерю в неслышимую зону. Значения 1.5/0.6 с
+        # эмпирически достаточны (v2.7–v2.10); точная величина потери не
+        # установлена (декомпозиция v2.6 дисквалифицирована ревизией).
         self.edge_protect_enabled = bool(edge_protect)
         self.edge_protect_lead_s = 1.5
         self.edge_protect_tail_s = 0.6
@@ -180,10 +182,6 @@ class Rig:
         # (узкополосный поиск не нашёл тон) не теряется
         warns = list(self.be.notes)
         wins, pos = [], d
-        # notes копируются ПОСЛЕ onset: предупреждение о широкополосном fallback
-        # (узкополосный поиск не нашёл тон) не теряется
-        warns = list(self.be.notes)
-        wins = []
         for (ln, s_n) in meta:
             a = pos + s_n
             b = a + self.blocks * self.n
@@ -206,30 +204,36 @@ class Rig:
 
     def _window_stability_reason(self, win):
         """None если окно устойчиво; строка-причина при провале ≥12 дБ ниже
-        медианы окна на ≥50 мс (относительная проверка, без абсолютных
-        порогов уровня)."""
+        медианы СВОЕГО канала на ≥50 мс (относительная проверка, без
+        абсолютных порогов уровня). Проверка ПОКАНАЛЬНАЯ (v2.11): падение
+        одного канала не маскируется более громким другим — каналы
+        анализируются раздельно, и достаточность сигнала проверяется
+        раздельно; причина называет канал."""
         w = int(round(0.002 * self.fs))
         n = len(win) // w * w
         if n < w * 4:
             return None
-        rms = np.sqrt(np.mean(win[:n].reshape(-1, w, 2) ** 2, axis=1)).max(axis=1) * np.sqrt(2)
-        db = 20 * np.log10(np.clip(rms, 1e-12, None))
-        median = float(np.median(db))
-        drop_limit = median - 12.0
-        run_min = int(round(0.05 * self.fs / w))
-        i = 0
-        while i < len(db):
-            if db[i] < drop_limit:
-                j = i
-                while j < len(db) and db[j] < drop_limit:
-                    j += 1
-                if (j - i) * w / self.fs >= 0.05:
-                    return (f"провал {(median - float(np.max(db[i:j]))):.1f} дБ "
-                            f"длительностью {(j - i) * w / self.fs:.2f} с")
-                i = j
-            else:
-                i += 1
-        return None
+        run_min = max(1, int(round(0.05 * self.fs / w)))   # 50 мс в кадрах 2 мс
+        reason = None
+        for c, name in ((0, "L"), (1, "R")):
+            rms = np.sqrt(np.mean(win[:n, c].reshape(-1, w) ** 2, axis=1)) * np.sqrt(2)
+            db = 20 * np.log10(np.clip(rms, 1e-12, None))
+            median = float(np.median(db))
+            drop_limit = median - 12.0
+            i = 0
+            while i < len(db):
+                if db[i] < drop_limit:
+                    j = i
+                    while j < len(db) and db[j] < drop_limit:
+                        j += 1
+                    if (j - i) >= run_min and reason is None:
+                        reason = (f"канал {name}: провал "
+                                  f"{(median - float(np.max(db[i:j]))):.1f} дБ "
+                                  f"длительностью {(j - i) * w / self.fs:.2f} с")
+                    i = j
+                else:
+                    i += 1
+        return reason
 
     def _onset(self, rec, tone_hz=None):
         if tone_hz is not None:

@@ -1,0 +1,505 @@
+{
+ "rig": {
+  "blocks": 2,
+  "settle": 0.5,
+  "edge_protect": true,
+  "lead_s": 1.5,
+  "tail_s": 0.6
+ },
+ "clock_72": {
+  "kind": "clock",
+  "test_level_dbfs": -72.0,
+  "warnings": [
+   "L: сдвиг тона -0.0197 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+   "L: тон некогерентен окну (сдвиг -0.0197 бина; допуск ±0.002)",
+   "R: сдвиг тона -0.0231 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+   "R: тон некогерентен окну (сдвиг -0.0231 бина; допуск ±0.002)"
+  ],
+  "ch": {
+   "L": {
+    "f0": 999.9803342091739,
+    "ppm": -19.66579082612885,
+    "level_dbfs": -78.98851301129325,
+    "noise_dbfs": -82.51506806784919,
+    "snr_db": 31.575148901474268,
+    "local_noise_dbfs": -110.56366191276753,
+    "coh_err_bins": -0.01966579082613862,
+    "clock_ok": true,
+    "signal_ok": true,
+    "coherent": false
+   },
+   "R": {
+    "f0": 999.9768839458195,
+    "ppm": -23.116054180483125,
+    "level_dbfs": -78.75843806769487,
+    "noise_dbfs": -98.30229390254988,
+    "snr_db": 47.62465340800468,
+    "local_noise_dbfs": -126.38309147569954,
+    "coh_err_bins": -0.02311605418049112,
+    "clock_ok": true,
+    "signal_ok": true,
+    "coherent": false
+   }
+  },
+  "clock_channel_spread_ppm": 3.450263354354277,
+  "clock_ppm_ok": true,
+  "clock_consistent": true,
+  "clock_ok": true,
+  "signal_ok": true,
+  "coherent": false,
+  "ok": true
+ },
+ "clock_30": {
+  "kind": "clock",
+  "test_level_dbfs": -30.0,
+  "warnings": [
+   "L: сдвиг тона -0.0235 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+   "L: тон некогерентен окну (сдвиг -0.0235 бина; допуск ±0.002)",
+   "R: сдвиг тона -0.0235 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+   "R: тон некогерентен окну (сдвиг -0.0235 бина; допуск ±0.002)"
+  ],
+  "ch": {
+   "L": {
+    "f0": 999.9764547774809,
+    "ppm": -23.54522251912794,
+    "level_dbfs": -37.17173949557766,
+    "noise_dbfs": -80.74394681255714,
+    "snr_db": 71.70841719892238,
+    "local_noise_dbfs": -108.88015669450004,
+    "coh_err_bins": -0.02354522251914659,
+    "clock_ok": true,
+    "signal_ok": true,
+    "coherent": false
+   },
+   "R": {
+    "f0": 999.9764507303578,
+    "ppm": -23.549269642209048,
+    "level_dbfs": -36.79572322087114,
+    "noise_dbfs": -96.68005046101337,
+    "snr_db": 88.6969565618496,
+    "local_noise_dbfs": -125.49267978272073,
+    "coh_err_bins": -0.02354926964221704,
+    "clock_ok": true,
+    "signal_ok": true,
+    "coherent": false
+   }
+  },
+  "clock_channel_spread_ppm": 0.004047123081107884,
+  "clock_ppm_ok": true,
+  "clock_consistent": true,
+  "clock_ok": true,
+  "signal_ok": true,
+  "coherent": false,
+  "ok": true
+ },
+ "thd": {
+  "kind": "thd",
+  "f": 997.0,
+  "level_dbfs": -30.0,
+  "warnings": [
+   "L: сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+   "R: сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+  ],
+  "ch": {
+   "L": {
+    "f0": 996.9764489748974,
+    "n": 192000,
+    "blocks": 2,
+    "coh_err_bins": -0.02355102510261986,
+    "phase_coherence": null,
+    "phase_spread_deg": null,
+    "level_dbfs": -37.171865991497015,
+    "rms": 0.00979245766324253,
+    "harmonics": [
+     {
+      "h": 2,
+      "f": 1993.9528979497948,
+      "dbc": -71.05732093158639,
+      "pct": 0.027998447682062014,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -71.05732093158639,
+      "floor_dbc": -80.45012971573419,
+      "random_floor_dbc": -80.45012971573419,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 9.392808784147798,
+      "phase_coherence": null
+     },
+     {
+      "h": 3,
+      "f": 2990.9293469246923,
+      "dbc": -79.62453794914505,
+      "pct": 0.010441745469639737,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -79.62453794914505,
+      "floor_dbc": -80.00113490175252,
+      "random_floor_dbc": -80.00113490175252,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 0.376596952607472,
+      "phase_coherence": null
+     },
+     {
+      "h": 4,
+      "f": 3987.9057958995895,
+      "dbc": -81.53350811260387,
+      "pct": 0.008381554906560734,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -81.53350811260387,
+      "floor_dbc": -81.47928231877707,
+      "random_floor_dbc": -81.47928231877707,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -0.05422579382679479,
+      "phase_coherence": null
+     },
+     {
+      "h": 5,
+      "f": 4984.882244874487,
+      "dbc": -85.52679572432754,
+      "pct": 0.005292492043389402,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -85.52679572432754,
+      "floor_dbc": -87.05828276481458,
+      "random_floor_dbc": -87.05828276481458,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 1.5314870404870398,
+      "phase_coherence": null
+     },
+     {
+      "h": 6,
+      "f": 5981.8586938493845,
+      "dbc": -85.491031301139,
+      "pct": 0.005314328971748078,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -85.491031301139,
+      "floor_dbc": -88.00513155651683,
+      "random_floor_dbc": -88.00513155651683,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 2.514100255377823,
+      "phase_coherence": null
+     },
+     {
+      "h": 7,
+      "f": 6978.835142824281,
+      "dbc": -89.31062724065475,
+      "pct": 0.0034234866445323796,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -89.31062724065475,
+      "floor_dbc": -88.37519174172468,
+      "random_floor_dbc": -88.37519174172468,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -0.9354354989300955,
+      "phase_coherence": null
+     },
+     {
+      "h": 8,
+      "f": 7975.811591799179,
+      "dbc": -88.17167635791455,
+      "pct": 0.003903158451239729,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -88.17167635791455,
+      "floor_dbc": -86.10187520783256,
+      "random_floor_dbc": -86.10187520783256,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -2.069801150081993,
+      "phase_coherence": null
+     },
+     {
+      "h": 9,
+      "f": 8972.788040774076,
+      "dbc": -91.3248276322088,
+      "pct": 0.0027149298867785708,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -91.3248276322088,
+      "floor_dbc": -90.71568251565941,
+      "random_floor_dbc": -90.71568251565941,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -0.6091451165493996,
+      "phase_coherence": null
+     }
+    ],
+    "line_mode": "bh-power-floor-gated",
+    "line_floor_dbc": -83.66111776063896,
+    "thd_pct": 0.0,
+    "thd_db": -360.0,
+    "thd_upper_pct": 0.0324618529839225,
+    "thd_upper_db": -69.7725338690472,
+    "thd_bound": true,
+    "thd_partial": false,
+    "thdn_pct": 0.49816608110229793,
+    "thdn_db": -46.0525169166239,
+    "noise_dbc": -46.07099710090519,
+    "noise_dbfs": -83.2428630924022,
+    "local_noise_dbfs": -110.95793705473794,
+    "local_snr_db": 73.78607106324094,
+    "hum": [
+     {
+      "f": 50.0,
+      "dbfs": -105.84677403999171,
+      "dbc": -68.6749080484947
+     },
+     {
+      "f": 100.0,
+      "dbfs": -106.96231250410725,
+      "dbc": -69.79044651261023
+     },
+     {
+      "f": 150.0,
+      "dbfs": -109.95086678982585,
+      "dbc": -72.77900079832884
+     },
+     {
+      "f": 200.0,
+      "dbfs": -109.53486600596227,
+      "dbc": -72.36300001446526
+     },
+     {
+      "f": 250.0,
+      "dbfs": -110.06736087393253,
+      "dbc": -72.89549488243553
+     },
+     {
+      "f": 300.0,
+      "dbfs": -100.8022601797932,
+      "dbc": -63.63039418829619
+     }
+    ],
+    "warnings": [
+     "сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+    ],
+    "freq": "[0.0000e+00 1.0000e+00 2.0000e+00 ... 9.5998e+04 9.5999e+04 9.6000e+04]",
+    "spec_db": "[-126.18284965 -116.02287095 -113.55075849 ... -123.43637322 -120.56141626\n -120.95381241]",
+    "info": {
+     "dut_in_v": null,
+     "out_v": null,
+     "gain_db": null
+    }
+   },
+   "R": {
+    "f0": 996.9763929265248,
+    "n": 192000,
+    "blocks": 2,
+    "coh_err_bins": -0.023607073475204743,
+    "phase_coherence": null,
+    "phase_spread_deg": null,
+    "level_dbfs": -36.795256803121454,
+    "rms": 0.010226385544408143,
+    "harmonics": [
+     {
+      "h": 2,
+      "f": 1993.9527858530496,
+      "dbc": -86.33727790886327,
+      "pct": 0.004820988600349713,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -86.33727790886327,
+      "floor_dbc": -95.06804892386738,
+      "random_floor_dbc": -95.06804892386738,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 8.730771015004102,
+      "phase_coherence": null
+     },
+     {
+      "h": 3,
+      "f": 2990.9291787795746,
+      "dbc": -92.7941926250338,
+      "pct": 0.002292399836170756,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -92.7941926250338,
+      "floor_dbc": -95.01317327296033,
+      "random_floor_dbc": -95.01317327296033,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 2.218980647926529,
+      "phase_coherence": null
+     },
+     {
+      "h": 4,
+      "f": 3987.905571706099,
+      "dbc": -95.33119669956699,
+      "pct": 0.0017117493239716646,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -95.33119669956699,
+      "floor_dbc": -95.08778688402228,
+      "random_floor_dbc": -95.08778688402228,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -0.24340981554471622,
+      "phase_coherence": null
+     },
+     {
+      "h": 5,
+      "f": 4984.881964632624,
+      "dbc": -98.79950402492099,
+      "pct": 0.001148219184365569,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -98.79950402492099,
+      "floor_dbc": -99.613488951272,
+      "random_floor_dbc": -99.613488951272,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 0.8139849263510179,
+      "phase_coherence": null
+     },
+     {
+      "h": 6,
+      "f": 5981.858357559149,
+      "dbc": -97.67029542761391,
+      "pct": 0.0013076310625441089,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -97.67029542761391,
+      "floor_dbc": -99.65643856387464,
+      "random_floor_dbc": -99.65643856387464,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 1.9861431362607518,
+      "phase_coherence": null
+     },
+     {
+      "h": 7,
+      "f": 6978.834750485674,
+      "dbc": -99.1006564772553,
+      "pct": 0.0011090909872893582,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -99.1006564772553,
+      "floor_dbc": -101.1055780961951,
+      "random_floor_dbc": -101.1055780961951,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": 2.0049216189398247,
+      "phase_coherence": null
+     },
+     {
+      "h": 8,
+      "f": 7975.811143412198,
+      "dbc": -100.73585589598383,
+      "pct": 0.0009187708444881412,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -100.73585589598383,
+      "floor_dbc": -98.9487793917468,
+      "random_floor_dbc": -98.9487793917468,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -1.787076504237025,
+      "phase_coherence": null
+     },
+     {
+      "h": 9,
+      "f": 8972.787536338723,
+      "dbc": -103.02045686342916,
+      "pct": 0.0007062804041048301,
+      "bound": true,
+      "credible": false,
+      "raw_dbc": -103.02045686342916,
+      "floor_dbc": -101.15209761664045,
+      "random_floor_dbc": -101.15209761664045,
+      "stable_spur_floor_dbc": null,
+      "stable_spur_floor_dbfs": null,
+      "margin_db": -1.8683592467887309,
+      "phase_coherence": null
+     }
+    ],
+    "line_mode": "bh-power-floor-gated",
+    "line_floor_dbc": -97.46047018264082,
+    "thd_pct": 0.0,
+    "thd_db": -360.0,
+    "thd_upper_pct": 0.0060851026963199915,
+    "thd_upper_db": -84.31464175847708,
+    "thd_bound": true,
+    "thd_partial": false,
+    "thdn_pct": 0.07896579892619288,
+    "thdn_db": -62.05121932703885,
+    "noise_dbc": -62.07708565278494,
+    "noise_dbfs": -98.87234245590639,
+    "local_noise_dbfs": -126.66917764465359,
+    "local_snr_db": 89.87392084153214,
+    "hum": [
+     {
+      "f": 50.0,
+      "dbfs": -124.74063656590731,
+      "dbc": -87.94537976278585
+     },
+     {
+      "f": 100.0,
+      "dbfs": -123.44661995195958,
+      "dbc": -86.65136314883812
+     },
+     {
+      "f": 150.0,
+      "dbfs": -127.13282575404378,
+      "dbc": -90.33756895092233
+     },
+     {
+      "f": 200.0,
+      "dbfs": -125.84215558030124,
+      "dbc": -89.04689877717979
+     },
+     {
+      "f": 250.0,
+      "dbfs": -126.71998624892925,
+      "dbc": -89.92472944580781
+     },
+     {
+      "f": 300.0,
+      "dbfs": -117.38628185723066,
+      "dbc": -80.5910250541092
+     }
+    ],
+    "warnings": [
+     "сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+    ],
+    "freq": "[0.0000e+00 1.0000e+00 2.0000e+00 ... 9.5998e+04 9.5999e+04 9.6000e+04]",
+    "spec_db": "[-136.17216966 -129.6400341  -126.77770413 ... -128.59794882 -121.4464211\n -119.54787672]",
+    "info": {
+     "dut_in_v": null,
+     "out_v": null,
+     "gain_db": null
+    }
+   }
+  },
+  "capture_wav": "/opt/MyApps/Adudio/ValveBench-git/measurements/diagnostics/v211/thd-window-233029.wav",
+  "capture_format": "IEEE float32 WAV",
+  "capture_sample_rate_hz": 192000
+ },
+ "full_capture_analysis": {
+  "submitted_program_s": 4.65,
+  "captured_s": 7.0,
+  "submitted_tone_span_s": 2.55,
+  "stable997_first_s": 1.925,
+  "stable997_last_s": 4.325,
+  "stable997_span_s": 2.4,
+  "stable997_windows": 49,
+  "lsq_windows_total": 136,
+  "min_A997_in_stable": -39.9,
+  "window_offset_frames": 452160,
+  "window_offset_s": 2.355,
+  "window_xcorr_score": 1.0,
+  "window_start_s": 2.355,
+  "window_end_s": 4.355,
+  "window_inside_stable": true,
+  "tone_loss_s": 0.15,
+  "stream_activity_first_s": 1.855,
+  "head_split_caveat": "старт aplay внутри захвата неизвестен — суммарная потеря тона и покрытие окна фиксируются как основные величины"
+ }
+}

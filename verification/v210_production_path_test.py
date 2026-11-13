@@ -49,11 +49,12 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     cfg = calib.Calibration()
     # GUI-дефолты: m.Rig(be, cal, fs=self.rig_fs()) → blocks=2, settle=0.5
-    # edge-защита candidate: включена по умолчанию на диагностической ветке
+    # edge-защита candidate: v2.11 — по умолчанию ВЫКЛЮЧЕНА (явная политика),
+    # диагностический прогон включает её ЯВНО
     be = AlsaCli(hw_out=hw_dac, hw_in=hw_adc,
                  in_map=cfg["in_map"], out_map=cfg["out_map"])
     be.open(FS)
-    rig = m.Rig(be, cfg, fs=FS)   # blocks=2, settle=0.5 — GUI-дефолты
+    rig = m.Rig(be, cfg, fs=FS, edge_protect=True)
     print(f"Rig: blocks={rig.blocks} settle={rig.settle} edge_protect="
           f"{rig.edge_protect_enabled} lead={rig.edge_protect_lead_s} "
           f"tail={rig.edge_protect_tail_s}", flush=True)
@@ -66,11 +67,13 @@ def main():
         # 1) production clock_check на −72 dBFS (как в приложении по умолчанию)
         try:
             ck72 = m.clock_check(rig, level_dbfs=-72.0)
-            r["clock_72"] = {"ok": ck72.get("ok"),
-                             "ppm": {c: ck72["ch"][c]["ppm"] for c in ck72["ch"]},
-                             "levels": {c: ck72["ch"][c]["level_dbfs"] for c in ck72["ch"]},
-                             "warnings": ck72.get("warnings", [])}
-            print(f"  clock_check −72 dBFS: ok={ck72.get('ok')} ppm={r['clock_72']['ppm']}",
+            # v2.11: ПОЛНЫЙ набор диагностических флагов в JSON —
+            # signal_ok/clock_ok/clock_consistent/coherent отдельно от ok,
+            # локальный SNR, шум и coh_err по каналам (замечание ревизии v2.10)
+            r["clock_72"] = ck72
+            print(f"  clock_check −72 dBFS: ok={ck72.get('ok')} "
+                  f"signal_ok={ck72.get('signal_ok')} coherent={ck72.get('coherent')} "
+                  f"ppm={ {c: ck72['ch'][c]['ppm'] for c in ck72['ch']} }",
                   flush=True)
         except Exception as exc:
             r["clock_72"] = {"error": f"{type(exc).__name__}: {str(exc)[:80]}"}
@@ -79,10 +82,10 @@ def main():
         # 2) production clock_check на −30 dBFS (диагностический уровень)
         try:
             ck30 = m.clock_check(rig, level_dbfs=-30.0)
-            r["clock_30"] = {"ok": ck30.get("ok"),
-                             "ppm": {c: ck30["ch"][c]["ppm"] for c in ck30["ch"]},
-                             "levels": {c: ck30["ch"][c]["level_dbfs"] for c in ck30["ch"]}}
-            print(f"  clock_check −30 dBFS: ok={ck30.get('ok')} ppm={r['clock_30']['ppm']}",
+            r["clock_30"] = ck30   # полный набор флагов (v2.11)
+            print(f"  clock_check −30 dBFS: ok={ck30.get('ok')} "
+                  f"signal_ok={ck30.get('signal_ok')} coherent={ck30.get('coherent')} "
+                  f"ppm={ {c: ck30['ch'][c]['ppm'] for c in ck30['ch']} }",
                   flush=True)
         except Exception as exc:
             r["clock_30"] = {"error": f"{type(exc).__name__}: {str(exc)[:80]}"}
