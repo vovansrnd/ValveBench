@@ -47,7 +47,7 @@ def test_nonzero_loopback_correction_is_subtracted():
         purpose="dut", reference=reference
     )
 
-    expected_dut_delta = 20.0 * __import__("math").log10(1.0 / 0.4)
+    expected_dut_delta = 20.0 * math.log10(1.0 / 0.4)
     expected_corrected = 20.0 * __import__("math").log10(2.0)
     for row in dut["rows"]:
         assert abs(row["delta_adc_db"] - expected_dut_delta) < 0.15, (
@@ -72,7 +72,7 @@ def test_analog_dead_r_detected():
     """Mirror of the L cable-disconnect test: R has only analog noise."""
     hw = ScriptedHW(dead_channel_noise=(1, -80.0))
     rig = make_rig(hw, edge_protect=True)
-    from valvebench import dsp, measure as m
+    from valvebench import measure as m
     k, a = rig.amp_tone(1000.0, -30.0)
     try:
         rig.run([([(k, a)], [(k, a)], None)])
