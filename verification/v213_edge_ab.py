@@ -77,7 +77,7 @@ def capture_tone_profile(cap: np.ndarray, offset: int, seg_len: int, fs: int,
     outside = (centers < offset - w) | (centers >= seg_end + w)
     # Avoid classifying an empty/short margin as a meaningful floor.
     if np.count_nonzero(outside) < max(10, int(0.05 * fs / w)):
-        floor_db = float(np.percentile(db, 20, axis=0).mean())
+        floor_db = np.percentile(db, 20, axis=0)
         floor_source = "capture_p20_fallback"
     else:
         floor_db = np.median(db[outside], axis=0)
