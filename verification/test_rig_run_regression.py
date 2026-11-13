@@ -53,13 +53,14 @@ class ScriptedHW:
     gain: (gL, gR) — поканальный gain DUT.
     """
 
-    def __init__(self, pre_s=0.0, pre_junk=None, tail_cut_s=0.0, ppm=0.0,
+    def __init__(self, pre_s=0.0, pre_junk=None, tail_cut_s=0.0, tail_silence_s=0.0, ppm=0.0,
                  click=None, noise_dbfs=None, dropout=None, gain=(1.0, 1.0),
                  dead_channel=None, dead_channel_noise=None):
         self.fs = FS
         self.pre_s = pre_s
         self.pre_junk = pre_junk
         self.tail_cut_s = tail_cut_s
+        self.tail_silence_s = tail_silence_s
         self.ppm = ppm
         self.click = click
         self.noise_dbfs = noise_dbfs
@@ -108,9 +109,15 @@ class ScriptedHW:
             else:
                 pre = np.zeros((pre_n, 2))
             rec = np.concatenate([pre, rec])
-        # потеря хвоста потока
+        # Потеря хвоста потока двумя моделями:
+        # tail_cut_s — обрыв самого capture массива;
+        # tail_silence_s — playback output перестал обновляться, но arecord
+        # продолжает писать полную длину (реалистичнее для ALSA duplex).
         if self.tail_cut_s > 0:
             rec = rec[:len(rec) - int(round(self.tail_cut_s * self.fs))]
+        if self.tail_silence_s > 0:
+            cut = min(len(rec), int(round(self.tail_silence_s * self.fs)))
+            rec[-cut:] = 0.0
         # белый шум
         if self.noise_dbfs is not None:
             rng = np.random.default_rng(20261)
@@ -478,6 +485,46 @@ def test_gain_match_series_delta_g():
         assert row["delta_gain_db"] is not None, "ΔG после коррекции не вычислен"
         assert abs(row["delta_gain_db"] - 6.02) < 0.3, \
             f"{f} Гц: скорректированный ΔG {row['delta_gain_db']:.3f}"
+
+
+def test_tail_playback_silence_inside_window_fails():
+    """Playback обрывается, но capture продолжается нулями: 1.0 с из конца
+    защищённой программы заходит на 350 мс в production-окно → явный отказ
+    по поканальной устойчивости, а не потому что WAV короче."""
+    hw = ScriptedHW(tail_silence_s=1.0)
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "канал L" in str(exc) or "канал R" in str(exc), str(exc)
+        assert "провал" in str(exc), str(exc)
+        return
+    raise AssertionError("silenced playback tail inside the measurement window passed")
+
+
+def test_tail_playback_silence_outside_window_passes():
+    """Потеря 0.5 с playback в конце защищённого хвоста при продолжающемся
+    capture не затрагивает окно [settle, settle+2.0] — тест должен пройти."""
+    hw = ScriptedHW(tail_silence_s=0.5)
+    rig = make_rig(hw, edge_protect=True)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    wins, _ = rig.run([([(k, a)], [(k, a)], None)])
+    got = demod_amp_dbfs(wins[0][:, 1], FS, 1000.0)
+    assert abs(got - TONE_DBFS) < 0.5, f"tail-silence outside window: {got:.1f}"
+
+
+def test_tail_playback_silence_unprotected_fails():
+    """Без edge: 0.3 с тишины в конце всё ещё отрезает 250 мс окна."""
+    hw = ScriptedHW(tail_silence_s=0.3)
+    rig = make_rig(hw, edge_protect=False)
+    (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "провал" in str(exc) or "короче" in str(exc), str(exc)
+        return
+    raise AssertionError("unprotected playback tail silence passed")
 
 
 if __name__ == "__main__":
