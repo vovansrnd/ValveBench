@@ -10,6 +10,7 @@ itself has 1.0/0.8 channel gain. The DUT adds another 0.5 factor to R. Expected:
 """
 
 from pathlib import Path
+import math
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +28,7 @@ def test_nonzero_loopback_correction_is_subtracted():
     loopback = gainmatch.measure_series(
         rig, frequencies=freqs, level_dbfs=-30.0, repeats=2, purpose="loopback"
     )
-    expected_correction = 20.0 * __import__("math").log10(1.0 / 0.8)
+    expected_correction = 20.0 * math.log10(1.0 / 0.8)
     for row in loopback["rows"]:
         assert abs(row["delta_adc_db"] - expected_correction) < 0.15, (
             row["requested_frequency_hz"], row["delta_adc_db"], expected_correction
@@ -67,5 +68,21 @@ def test_nonzero_loopback_correction_is_subtracted():
     )
 
 
+def test_analog_dead_r_detected():
+    """Mirror of the L cable-disconnect test: R has only analog noise."""
+    hw = ScriptedHW(dead_channel_noise=(1, -80.0))
+    rig = make_rig(hw, edge_protect=True)
+    from valvebench import dsp, measure as m
+    k, a = rig.amp_tone(1000.0, -30.0)
+    try:
+        rig.run([([(k, a)], [(k, a)], None)])
+    except m.MeasureError as exc:
+        assert "канал R" in str(exc), f"wrong channel in diagnostic: {exc}"
+        print("PASS analog-dead R: failure identifies channel R")
+        return
+    raise AssertionError("analog-dead R was not detected")
+
+
 if __name__ == "__main__":
     test_nonzero_loopback_correction_is_subtracted()
+    test_analog_dead_r_detected()
