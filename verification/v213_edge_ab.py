@@ -159,7 +159,7 @@ def tone_envelope_2ms(cap: np.ndarray, fs: int, f_tone: float):
 
 
 def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
-                         fs: int, f_tone: float, settle_s: float,
+                         fs: int, f_tone: float, window_start_s: float,
                          window_s: float, block_ms: float = 2.0) -> dict:
     """Tone-selective boundaries, dropout gaps, and measurement-window coverage."""
     db, w = tone_envelope_2ms(cap, fs, f_tone)
@@ -218,7 +218,7 @@ def capture_tone_profile(cap: np.ndarray, segment_offset: int, seg_len: int,
 
         start_s = first * w / fs
         end_s = (last + 1) * w / fs
-        window_start = segment_offset / fs + settle_s
+        window_start = window_start_s
         window_end = window_start + window_s
         result["channels"][name] = {
             "floor_997_dbfs": round(floor, 2),
@@ -360,24 +360,93 @@ def main() -> int:
                 }
 
             row["unique_marker_binding"] = binding
-            common_offsets = [
-                v for name in ("L", "R")
-                for v in (offsets_a.get(name), offsets_b.get(name))
-                if v is not None
-            ]
-            if not common_offsets:
-                row["capture_analysis_error"] = "no unique chirp marker matched"
-            else:
-                program_offset = int(round(float(np.median(common_offsets))))
-                row["program_offset_s"] = round(program_offset / FS, 6)
-                row["marker_anchor_disagreement_ms"] = {
-                    name: round(abs(offsets_a[name] - offsets_b[name]) * 1000.0 / FS, 3)
-                    for name in ("L", "R") if name in offsets_a and name in offsets_b
+            anchor_quality = {}
+            channel_offsets = {}
+            for name in ("L", "R"):
+                if name not in offsets_a or name not in offsets_b:
+                    anchor_quality[name] = {
+                        "valid": False,
+                        "reason": "both unique markers are required on this channel",
+                    }
+                    continue
+                disagreement_ms = abs(offsets_a[name] - offsets_b[name]) * 1000.0 / FS
+                channel_offsets[name] = int(round((offsets_a[name] + offsets_b[name]) / 2))
+                anchor_quality[name] = {
+                    "valid": bool(disagreement_ms <= 2.0),
+                    "A_B_disagreement_ms": round(disagreement_ms, 3),
                 }
+
+            lr_a_ms = (
+                abs(offsets_a["L"] - offsets_a["R"]) * 1000.0 / FS
+                if "L" in offsets_a and "R" in offsets_a else None
+            )
+            lr_b_ms = (
+                abs(offsets_b["L"] - offsets_b["R"]) * 1000.0 / FS
+                if "L" in offsets_b and "R" in offsets_b else None
+            )
+            anchors_valid = (
+                len(channel_offsets) == 2
+                and all(anchor_quality[ch]["valid"] for ch in ("L", "R"))
+                and lr_a_ms is not None and lr_a_ms <= 2.0
+                and lr_b_ms is not None and lr_b_ms <= 2.0
+            )
+            row["program_alignment_quality"] = {
+                "valid": bool(anchors_valid),
+                "max_A_B_disagreement_ms": max(
+                    (anchor_quality[ch].get("A_B_disagreement_ms", float("inf"))
+                     for ch in ("L", "R")),
+                    default=None,
+                ),
+                "L_R_A_anchor_disagreement_ms": None if lr_a_ms is None else round(lr_a_ms, 3),
+                "L_R_B_anchor_disagreement_ms": None if lr_b_ms is None else round(lr_b_ms, 3),
+                "tolerance_ms": 2.0,
+                "per_channel": anchor_quality,
+            }
+
+            if not anchors_valid:
+                row["capture_analysis_error"] = (
+                    "chirp anchors are not mutually consistent within 2 ms; "
+                    "do not report absolute tone-loss bounds"
+                )
+            else:
+                program_offset = int(round(float(np.median(list(channel_offsets.values())))))
+                row["program_offset_s"] = round(program_offset / FS, 6)
+                row["channel_program_offsets_s"] = {
+                    name: round(channel_offsets[name] / FS, 6)
+                    for name in ("L", "R")
+                }
+
+                # Locate the actual production window in the full capture.
+                # This self-match is ONLY a window locator, never program alignment.
+                if thd is not None and window_path.exists():
+                    _, window_samples = wavfile.read(str(window_path))
+                    window_samples = np.asarray(window_samples, dtype=np.float64)
+                    woff, wscore, wsecond = normalized_xcorr_match(
+                        capture[:, 1], window_samples[:, 1], FS
+                    )
+                    window_start_s = woff / FS
+                    window_end_s = (woff + len(window_samples)) / FS
+                    row["window_position"] = {
+                        "note": "window-to-capture self-match; locator only, not program alignment",
+                        "offset_frames": int(woff),
+                        "start_s": round(window_start_s, 6),
+                        "end_s": round(window_end_s, 6),
+                        "score": round(wscore, 6),
+                        "competing_peak": round(wsecond, 6),
+                    }
+                else:
+                    window_start_s = program_offset / FS + lead_n / FS + rig.settle
+                    window_end_s = window_start_s + rig.blocks * rig.n / FS
+                    row["window_position"] = {
+                        "note": "predicted from Rig.run offsets; actual window WAV unavailable",
+                        "start_s": round(window_start_s, 6),
+                        "end_s": round(window_end_s, 6),
+                    }
+
                 window_s = rig.blocks * rig.n / FS
                 profile = capture_tone_profile(
                     capture, program_offset + lead_n, seg_len, FS,
-                    tone_f, rig.settle, window_s,
+                    tone_f, window_start_s, window_s,
                 )
                 row["capture_analysis"] = profile
 
@@ -385,26 +454,19 @@ def main() -> int:
                     info = profile.get("channels", {}).get(name, {})
                     if not info or "tone_start_s" not in info:
                         continue
-                    if name in offsets_b:
-                        expected_start = (offsets_b[name] + lead_n) / FS
-                        info["head_loss_ms_estimate"] = round(
-                            (info["tone_start_s"] - expected_start) * 1000.0, 3
-                        )
-                        info["head_anchor"] = "marker_B"
-                    else:
-                        info["head_loss_ms_estimate"] = None
-                        info["head_anchor"] = None
-                    if name in offsets_a:
-                        expected_end = (
-                            offsets_a[name] + lead_n + seg_len - len(ctx.marker_b)
-                        ) / FS
-                        info["tail_loss_ms_estimate"] = round(
-                            (expected_end - info["tone_end_s"]) * 1000.0, 3
-                        )
-                        info["tail_anchor"] = "marker_A"
-                    else:
-                        info["tail_loss_ms_estimate"] = None
-                        info["tail_anchor"] = None
+                    expected_start = (offsets_b[name] + lead_n) / FS
+                    expected_end = (
+                        offsets_a[name] + lead_n + seg_len - len(ctx.marker_b)
+                    ) / FS
+                    info["head_loss_ms_estimate"] = round(
+                        (info["tone_start_s"] - expected_start) * 1000.0, 3
+                    )
+                    info["head_anchor"] = "marker_B"
+                    info["tail_loss_ms_estimate"] = round(
+                        (expected_end - info["tone_end_s"]) * 1000.0, 3
+                    )
+                    info["tail_anchor"] = "marker_A"
+
 
             row["files"] = {}
             for key, path in (
@@ -447,7 +509,8 @@ def main() -> int:
             "Each ABBA arm performs clock_check(-30 dBFS) on the same Rig immediately before thd_point, matching GUI job cadence.",
             "No extra lead/post-roll duration is added by timing markers.",
             "Marker A is superimposed on the initial 80 ms; marker B replaces the final 10 ms, outside the 2-s measurement window.",
-            "Absolute timing uses non-periodic chirps with peak-uniqueness checks, not the periodic 997-Hz tone.",
+            "Absolute timing uses non-periodic chirps; both anchors and L/R offsets must agree within 2 ms or absolute loss estimates are withheld.",
+            "The capture_wav-to-full-capture match locates the actual analysis window only; it is never used as program alignment.",
             "2-ms boundary uncertainty applies; sub-2-ms head/tail values are estimates only.",
             "Tone-selective 2-ms LSQ rejects the high-frequency markers and reports internal dropouts.",
         ],
