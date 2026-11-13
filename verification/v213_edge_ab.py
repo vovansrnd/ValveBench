@@ -298,16 +298,31 @@ def main() -> int:
 
         window_path = OUT / f"{TAG}-{label}-window.wav"
         thd = None
-        with MarkedCaptureCtx(backend, rig, FS) as ctx:
-            try:
-                thd = m.thd_point(
-                    rig, f=997.0, level_dbfs=-30.0, capture_wav=str(window_path)
-                )
-                row["thd"] = thd
-            except Exception as exc:
-                # Preserve the full capture even if the OFF arm fails.
-                row["measurement_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
-                print(f"thd_point ERROR: {row['measurement_error']}", flush=True)
+        onset_trace = {}
+        original_onset = rig._onset
+
+        def traced_onset(rec, tone_hz=None):
+            d = original_onset(rec, tone_hz=tone_hz)
+            onset_trace["offset_frames"] = int(d)
+            return d
+
+        # Observe the exact onset index used by Rig.run to slice the production
+        # window. This avoids using capture_wav autocorrelation as a fake
+        # independent time anchor.
+        rig._onset = traced_onset
+        try:
+            with MarkedCaptureCtx(backend, rig, FS) as ctx:
+                try:
+                    thd = m.thd_point(
+                        rig, f=997.0, level_dbfs=-30.0, capture_wav=str(window_path)
+                    )
+                    row["thd"] = thd
+                except Exception as exc:
+                    # Preserve the full capture even if the OFF arm fails.
+                    row["measurement_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+                    print(f"thd_point ERROR: {row['measurement_error']}", flush=True)
+        finally:
+            rig._onset = original_onset
 
         if len(ctx.pairs) != 1:
             row["capture_error"] = f"expected one play_record, got {len(ctx.pairs)}"
@@ -432,29 +447,49 @@ def main() -> int:
                     for name in ("L", "R")
                 }
 
-                # Locate the actual production window in the full capture.
-                # This self-match is ONLY a window locator, never program alignment.
+                # The actual analysis-window index comes directly from the
+                # production Rig._onset call observed above, plus the segment's
+                # unchanged settle offset. Verify the saved WAV equals that slice.
                 window_start_s = None
-                if window_path.exists():
-                    _, window_samples = wavfile.read(str(window_path))
-                    window_samples = np.asarray(window_samples, dtype=np.float64)
-                    woff, wscore, wsecond = normalized_xcorr_match(
-                        capture[:, 1], window_samples[:, 1], FS
+                window_start_frames = None
+                window_len_frames = rig.blocks * rig.n
+                if "offset_frames" in onset_trace:
+                    window_start_frames = (
+                        onset_trace["offset_frames"] + int(round(rig.settle * FS))
                     )
-                    window_start_s = woff / FS
-                    window_end_s = (woff + len(window_samples)) / FS
+                    window_start_s = window_start_frames / FS
                     row["window_position"] = {
-                        "note": "window-to-capture self-match; locator only, not program alignment",
-                        "offset_frames": int(woff),
+                        "source": "traced production Rig._onset + segment settle",
+                        "onset_offset_frames": onset_trace["offset_frames"],
+                        "window_start_frames": window_start_frames,
+                        "window_length_frames": window_len_frames,
                         "start_s": round(window_start_s, 6),
-                        "end_s": round(window_end_s, 6),
-                        "score": round(wscore, 6),
-                        "competing_peak": round(wsecond, 6),
+                        "end_s": round((window_start_frames + window_len_frames) / FS, 6),
                     }
+                    if window_path.exists():
+                        _, window_samples = wavfile.read(str(window_path))
+                        expected_slice = capture[
+                            window_start_frames:window_start_frames + window_len_frames
+                        ]
+                        if len(expected_slice) == len(window_samples):
+                            delta = expected_slice.astype(np.float64) - window_samples.astype(np.float64)
+                            row["window_slice_verification"] = {
+                                "frames_equal": len(expected_slice) == window_len_frames,
+                                "max_abs_difference": float(np.max(np.abs(delta))) if delta.size else 0.0,
+                                "rms_difference": float(np.sqrt(np.mean(delta * delta))) if delta.size else 0.0,
+                                "note": "capture_wav is checked against the exact sample slice selected by Rig.run",
+                            }
+                        else:
+                            row["window_slice_verification"] = {
+                                "frames_equal": False,
+                                "capture_slice_frames": len(expected_slice),
+                                "window_wav_frames": len(window_samples),
+                            }
                 else:
                     row["window_position"] = {
-                        "note": "no analysis window was saved; window coverage is not evaluated",
+                        "note": "Rig.run did not return an onset index; actual window position unavailable",
                     }
+
 
                 window_s = rig.blocks * rig.n / FS
                 profile = capture_tone_profile(
@@ -546,7 +581,7 @@ def main() -> int:
             "No extra lead/post-roll duration is added by timing markers.",
             "Marker A is superimposed on the initial 80 ms; marker B replaces the final 10 ms, outside the 2-s measurement window.",
             "Absolute timing uses non-periodic chirps; both anchors and L/R offsets must agree within 2 ms or absolute loss estimates are withheld.",
-            "The capture_wav-to-full-capture match locates the actual analysis window only; it is never used as program alignment.",
+            "The actual analysis-window position is traced from Rig._onset + the production settle offset, then verified against the exact full-capture slice.",
             "2-ms boundary uncertainty applies; sub-2-ms head/tail values are estimates only.",
             "Tone-selective 2-ms LSQ rejects the high-frequency markers and reports internal dropouts.",
         ],
