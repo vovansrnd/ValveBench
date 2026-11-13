@@ -1,0 +1,262 @@
+{
+ "cond": "L1.5_T0_r1",
+ "lead_s": 1.5,
+ "trailing_s": 0.0,
+ "fmt": {
+  "fmt_out": "S32_LE",
+  "fmt_in": "S24_3LE",
+  "ch_out": 2,
+  "ch_in": 2,
+  "buffer_ms": 100
+ },
+ "observer": [
+  {
+   "cmd": [
+    "arecord",
+    "-q",
+    "-D",
+    "hw:3,0",
+    "-t",
+    "raw",
+    "-f",
+    "S24_3LE",
+    "-r",
+    "192000",
+    "-c",
+    "2",
+    "-d",
+    "10"
+   ],
+   "stderr_file": "stderr_arecord_0.txt",
+   "rc": 0
+  },
+  {
+   "cmd": [
+    "aplay",
+    "-q",
+    "-D",
+    "hw:2,0",
+    "-t",
+    "raw",
+    "-f",
+    "S32_LE",
+    "-r",
+    "192000",
+    "-c",
+    "2",
+    "--buffer-time=100000"
+   ],
+   "rc": 0
+  },
+  {
+   "cmd": [
+    "aplay",
+    "-q",
+    "-D",
+    "hw:2,0",
+    "-t",
+    "raw",
+    "-f",
+    "S32_LE",
+    "-r",
+    "192000",
+    "-c",
+    "2",
+    "--buffer-time=100000"
+   ],
+   "rc": 0
+  }
+ ],
+ "events": {
+  "marker_A_L": {
+   "global_abs": 356331,
+   "score": 0.9935,
+   "maxima": [
+    [
+     356331,
+     0.994
+    ]
+   ]
+  },
+  "marker_B_L": {
+   "global_abs": 1274112,
+   "score": 0.9988,
+   "maxima": [
+    [
+     1274112,
+     0.999
+    ]
+   ]
+  },
+  "marker_A_R": {
+   "global_abs": 356330,
+   "score": 0.9965,
+   "maxima": [
+    [
+     356330,
+     0.996
+    ]
+   ]
+  },
+  "marker_B_R": {
+   "global_abs": 1274112,
+   "score": 0.9994,
+   "maxima": [
+    [
+     1274112,
+     0.999
+    ]
+   ]
+  },
+  "expected_abs": {
+   "marker_A": 356330,
+   "tone_start": 400490,
+   "tone_end": 1274090,
+   "marker_B": 1274090
+  },
+  "start_offset_s": 0.30589,
+  "marker_B_residual_ms": -0.11,
+  "chunk_class_997_1000": [
+   {
+    "t": 0.0,
+    "f997_db": -29.5,
+    "f1000_db": -29.5
+   },
+   {
+    "t": 0.5,
+    "f997_db": -38.7,
+    "f1000_db": -32.0
+   },
+   {
+    "t": 1.0,
+    "f997_db": -33.4,
+    "f1000_db": -30.4
+   },
+   {
+    "t": 1.5,
+    "f997_db": -39.3,
+    "f1000_db": -40.3
+   },
+   {
+    "t": 2.0,
+    "f997_db": 49.3,
+    "f1000_db": 49.2
+   },
+   {
+    "t": 2.5,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 3.0,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 3.5,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 4.0,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 4.5,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 5.0,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 5.5,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 6.0,
+    "f997_db": 49.5,
+    "f1000_db": 49.3
+   },
+   {
+    "t": 6.5,
+    "f997_db": 31.0,
+    "f1000_db": 31.0
+   },
+   {
+    "t": 7.0,
+    "f997_db": -34.2,
+    "f1000_db": -32.5
+   },
+   {
+    "t": 7.5,
+    "f997_db": -37.5,
+    "f1000_db": -26.6
+   },
+   {
+    "t": 8.0,
+    "f997_db": -34.9,
+    "f1000_db": -30.3
+   },
+   {
+    "t": 8.5,
+    "f997_db": -30.7,
+    "f1000_db": -26.4
+   },
+   {
+    "t": 9.0,
+    "f997_db": -30.0,
+    "f1000_db": -30.6
+   }
+  ],
+  "tone_env": {
+   "tone_first_above_minus45": 401228,
+   "drops": {
+    "below_45": {
+     "frame": null,
+     "t_s": null,
+     "rel_expected_tone_end_s": null,
+     "rel_markerB_s": null
+    },
+    "below_55": {
+     "frame": null,
+     "t_s": null,
+     "rel_expected_tone_end_s": null,
+     "rel_markerB_s": null
+    },
+    "below_65": {
+     "frame": null,
+     "t_s": null,
+     "rel_expected_tone_end_s": null,
+     "rel_markerB_s": null
+    }
+   }
+  },
+  "pre_tone_max_env997_db": -81.4,
+  "production_replay": {
+   "onset": 400320,
+   "onset_s": 2.085,
+   "window": [
+    496320,
+    1264320
+   ],
+   "blocks_full": 4,
+   "analyzed_frames": 768000,
+   "thdn": {
+    "L": {
+     "thdn_pct": 1.0,
+     "residual_dbfs": -77.2
+    },
+    "R": {
+     "thdn_pct": 0.155,
+     "residual_dbfs": -93.0
+    }
+   },
+   "window_inside_tone": true
+  }
+ }
+}

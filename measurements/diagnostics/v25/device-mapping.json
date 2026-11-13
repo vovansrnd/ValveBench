@@ -1,0 +1,24 @@
+{
+ "mapping": {
+  "D10": {
+   "usbid": "152a:85dd",
+   "card": 2,
+   "hw": "hw:2,0"
+  },
+  "E-MU": {
+   "usbid": "041e:3f04",
+   "card": 3,
+   "hw": "hw:3,0"
+  }
+ },
+ "stream0": {
+  "152a:85dd": {
+   "card": 2,
+   "content": "Speed Dragon SMSL D10 at usb-0000:00:14.0-1, high speed : USB Audio\n\nPlayback:\n  Status: Stop\n  Interface 2\n    Altset 1\n    Format: S16_LE\n    Channels: 2\n    Endpoint: 0x03 (3 OUT) (ASYNC)\n    Rates: 44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000\n    Data packet interval: 125 us\n    Bits: 16\n    Channel map: FL FR\n    Sync Endpoint: 0x84 (4 IN)\n    Sync EP Interface: 2\n    Sync EP Altset: 1\n    Implicit Feedback Mode: No\n  Interface 2\n    Altset 2\n    Format: S24_3LE\n    Channels: 2\n    Endpoint: 0x03 (3 OUT) (ASYNC)\n    Rates: 44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000\n    Data packet interval: 125 us\n    Bits: 24\n    Channel map: FL FR\n    Sync Endpoint: 0x84 (4 IN)\n    Sync EP Interface: 2\n    Sync EP Altset: 2\n    Implicit Feedback Mode: No\n  Interface 2\n    Altset 3\n    Format: S32_LE\n    Channels: 2\n    Endpoint: 0x03 (3 OUT) (ASYNC)\n    Rates: 44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000\n    Data packet interval: 125 us\n    Bits: 32\n    Channel map: FL FR\n    Sync Endpoint: 0x84 (4 IN)\n    Sync EP Interface: 2\n    Sync EP Altset: 3\n    Implicit Feedback Mode: No\n  Interface 2\n    Altset 4\n    Format: DSD_U32_BE\n    Channels: 2\n    Endpoint: 0x03 (3 OUT) (ASYNC)\n    Rates: 44100, 48000, 88200, 96000, 176400, 192000, 352800, 384000\n    Data packet interval: 125 us\n    Bits: 32\n    DSD raw: DOP=0, bitrev=0\n    Channel map: FL FR\n    Sync Endpoint: 0x84 (4 IN)\n    Sync EP Interface: 2\n    Sync EP Altset: 4\n    Implicit Feedback M"
+  },
+  "041e:3f04": {
+   "card": 3,
+   "content": "E-MU Systems, Inc. E-MU 0404 | USB at usb-0000:00:14.0-2, high speed : USB Audio\n\nPlayback:\n  Status: Stop\n  Interface 1\n    Altset 1\n    Format: S24_3LE\n    Channels: 2\n    Endpoint: 0x01 (1 OUT) (ASYNC)\n    Rates: 44100\n    Data packet interval: 1000 us\n    Bits: 24\n    Channel map: FL FR\n    Sync Endpoint: 0x81 (1 IN)\n    Sync EP Interface: 1\n    Sync EP Altset: 1\n    Implicit Feedback Mode: No\n  Interface 1\n    Altset 2\n    Format: S24_3LE\n    Channels: 2\n    Endpoint: 0x01 (1 OUT) (ASYNC)\n    Rates: 44100\n    Data packet interval: 500 us\n    Bits: 24\n    Channel map: FL FR\n    Sync Endpoint: 0x81 (1 IN)\n    Sync EP Interface: 1\n    Sync EP Altset: 2\n    Implicit Feedback Mode: No\n  Interface 1\n    Altset 3\n    Format: S24_3LE\n    Channels: 2\n    Endpoint: 0x01 (1 OUT) (ASYNC)\n    Rates: 48000\n    Data packet interval: 1000 us\n    Bits: 24\n    Channel map: FL FR\n    Sync Endpoint: 0x81 (1 IN)\n    Sync EP Interface: 1\n    Sync EP Altset: 3\n    Implicit Feedback Mode: No\n  Interface 1\n    Altset 4\n    Format: S24_3LE\n    Channels: 2\n    Endpoint: 0x01 (1 OUT) (ASYNC)\n    Rates: 48000\n    Data packet interval: 500 us\n    Bits: 24\n    Channel map: FL FR\n    Sync Endpoint: 0x81 (1 IN)\n    Sync EP Interface: 1\n    Sync EP Altset: 4\n    Implicit Feedback Mode: No\n  Interface 1\n    Altset 5\n    Format: S24_3LE\n    Channels: 2\n    Endpoint: 0x01 (1 OUT) (ASYNC)\n    Rates: 88200\n    Data packet interval: 1000 us\n    Bits: 24\n    Channel map: FL FR\n    Sync Endpoint: 0x81 (1 IN)\n   "
+  }
+ }
+}
