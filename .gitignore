@@ -10,3 +10,4 @@ measurements/diagnostics/v25/*.bin
 # пакет независимого аудита (WAV и архив передаются вне git)
 /AUDITOR-PACKAGE.tar.gz
 /AUDITOR-PACKAGE/wav/
+/AUDITOR-PACKAGE/code/

@@ -26,13 +26,58 @@
 AUDITOR-PACKAGE/
 ├── README.md                  ← этот файл
 ├── AUDIT-BRIEF.md             ← готовое задание независимому аудитору
-├── MANIFEST.json              ← машинный манифест (SHA256, метаданные)
+├── CODE-REVISION.txt          ← происхождение и точный состав среза кода
+├── MANIFEST.json              ← машинный манифест данных (SHA256, метаданные)
 ├── MANIFEST.md                ← человекочитаемая таблица + SHA256
-├── MANIFEST.sha256            ← для `sha256sum -c`
+├── MANIFEST.sha256            ← для `sha256sum -c` (данные пакета)
+├── MANIFEST-CODE.sha256       ← для `sha256sum -c` (код, пути от code/)
+├── code/                      ← ПОЛНЫЙ КОД ревизии 02e9591d (без .git/кэшей)
 ├── wav/                       ← 14 WAV: 7 стереозахватов clock + 7 поданных программ
 ├── json/                      ← исходный JSON v2.14 + результаты офлайна v2.16/v2.17
 └── reports/                   ← отчёты v2.14 / v2.16 (исправленный) / v2.17
 ```
+
+## Код (code/) — предмет аудита
+
+`code/` — точное дерево ревизии **`02e9591d`** (`coordinator/v217-clock-estimator-stability`),
+извлечённое `git archive` — только отслеживаемые файлы: без `.git`, без
+`__pycache__`, без `*.pyc`, без WAV. Проверка подлинности:
+`sha256sum -c MANIFEST-CODE.sha256` (из каталога `code/`). Единственное
+отличие от полного дерева — удалён `code/measurements/` (99 МБ бинарных
+артефактов ранних диагностик v2.1–v2.3, к аудиту не относятся); см.
+`CODE-REVISION.txt`.
+
+Файлы первоочередного просмотра (по заданию координатора):
+
+| Файл в code/ | Предмет |
+|---|---|
+| `valvebench/dsp.py` | `analyze_tone`, оценка `f0`, спектральный центроид — **главный предмет аудита** |
+| `valvebench/measure.py` | `Rig.run`, onset, `clock_check`, `capture_clock_ppm`, resampling |
+| `valvebench/cli.py` | `split_clock_preflight`, повтор на другом уровне |
+| `verification/v216_clock_offline_gate.py` | R-only onset и полный clock-gate |
+| `verification/v217_clock_estimator_stability.py` | скользящий анализ ppm |
+| `verification/test_split_clock_preflight.py` | логика clock-гейтов (FakeRig) |
+| `verification/test_capture_timebase_resampling.py` | коррекция временной базы |
+
+Проверки, которые аудитор может запустить офлайн из `code/` (данные уже в
+пакете):
+
+```bash
+python3 -m py_compile valvebench/dsp.py valvebench/measure.py valvebench/cli.py
+python3 verification/test_rig_run_regression.py          # 24/24
+python3 verification/test_gainmatch_nonzero_loopback_correction.py   # 2/2
+python3 - <<'PY'                                          # selftest 106/106
+import sys; sys.path.insert(0, '.')
+from valvebench.selftest import run_selftest, format_selftest
+r = run_selftest(); print(format_selftest(r))
+raise SystemExit(0 if r["passed"] == r["total"] else 1)
+PY
+python3 verification/test_ui_workflow_contracts.py        # 23/23
+```
+
+Для воспроизведения v2.16/v2.17 офлайн: сложить захваты из `wav/` и
+`json/20261114-004425-results.json` в один каталог и передать его как
+`--source-wav-dir` соответствующему скрипту.
 
 ### Захваты (обязательный минимум по заданию координатора)
 
