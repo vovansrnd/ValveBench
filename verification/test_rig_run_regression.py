@@ -516,7 +516,7 @@ def test_tail_playback_silence_outside_window_passes():
 
 def test_tail_playback_silence_unprotected_fails():
     """Без edge: 0.3 с тишины в конце всё ещё отрезает 250 мс окна."""
-    hw = ScriptedHW(tail_silence_s=0.3)
+    hw = ScriptedHW(pre_s=0.5, tail_silence_s=0.3)
     rig = make_rig(hw, edge_protect=False)
     (k, a), _ = tone_seg(rig, 1000.0, TONE_DBFS)
     try:
