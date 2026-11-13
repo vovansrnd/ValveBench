@@ -424,3 +424,69 @@ Use the real `AlsaCli.play_record()`; no production changes, no PR #4 changes, n
 A 1.5 s leading-silence workaround may be proposed for a production patch only after the marker-anchored 2×2 AlsaCli test repeats successfully, the pre-tone interval is demonstrably quiet, and the production four-second window is fully inside the received stable tone with margin. The 0.6 s trailing silence may be retained to make the post-stream state quiet, but it is not currently the fix for the missing/late programme content.
 
 No production patch is approved yet. Keep the work on `diagnostics/d10-full-capture`. The existing onset detector and THD analysis remain unchanged. PR #4 remains untouched.
+
+
+## 14. Coordinator review of v2.5 and required v2.6 (13 Nov 2026)
+
+Reviewed commit `ced046b`, `verification/v25_marker_anchored.py`, all eight per-run JSON files, summary, device mapping, report appendix, and committed stderr files. No production changes or PR #4 changes are approved.
+
+### 14.1 What is now supported
+
+- The physical mapping is internally consistent for these runs: D10 USB `152a:85dd` = card 2 / `hw:2,0`; E-MU USB `041e:3f04` = card 3 / `hw:3,0`. The observed aplay/arecord commands target the corresponding endpoints.
+- All four lead=1.5 s runs have strong A and B marker detections (scores about 0.993–0.9998); B follows A by the programmed interval within the expected small clock/start jitter.
+- Before the tone, the measured residual is around −80 to −81.6 dBFS in those lead=1.5 s runs.
+- In all four lead=1.5 s runs, the unchanged production onset plus 0.5 s settle selects a four-second / four-full-block window which is inside the tone interval derived from the valid A anchor and known programme frame positions. This is the strongest result in v2.5 and makes the 1.5 s leading-silence workaround promising.
+- Lead=0 runs repeatedly fail to detect chirp A (scores about 0.009–0.013) while chirp B is detected strongly. The pre-tone 997-Hz demod value is high (about −36.7 dBFS), consistent with residual preflight content, but the present frequency analysis does not yet identify whether that content is the old 1 kHz preflight or the new 997 Hz test tone.
+
+### 14.2 Important correction: 0.354–0.369 s is not a measured head truncation
+
+For lead=0, the script calculates `start_offset_s` from the global maximum of marker A even when marker A's score is about 0.01 and the maximum is just noise. All derived `expected_abs`, `start_offset_s`, `marker_B_residual_ms`, `tone_first`, and `window_inside_tone` fields in those lead=0 JSON records are therefore invalid.
+
+The report's claimed “D10 begins rendering at programme position 0.354–0.369 s” is also not established. It is obtained by subtracting the programme marker-B position from the absolute capture time of B while omitting the 50 ms backend pad and the capture-to-program start offset. Numerically it is approximately the normal program start offset (~0.304–0.313 s) plus the 50 ms pad. It is not a measurement of discarded source frames. The report's exact “first 0.354–0.369 s of stream was lost” conclusion is withdrawn pending v2.6.
+
+The correct way to reconstruct the lead=0 timeline offline is to use the **valid marker B** as the anchor. Given the exact source-frame separation between B and A/tone, derive the expected A and tone frames backwards from B. Do not use the invalid global A noise maximum as a timing anchor. At the expected A frame, evaluate the normalized correlation score locally (not only the global maximum over the whole recording).
+
+### 14.3 Frequency discrimination is currently inadequate for lead=0
+
+Two aspects of the current analysis cannot distinguish the previous 1 kHz preflight tone from the 997 Hz test tone:
+
+- `demod_env(..., 997, win_s=0.001)` uses a 1 ms window. A 3 Hz difference between 997 and 1000 Hz is far too small to reject the 1 kHz tone over such a short window.
+- The chunk-FFT masks overlap: `991 < f < 999` and `996 < f < 1004` share bins 996–999 Hz. The FFT magnitude is also not normalized to a meaningful dBFS value.
+
+Therefore `pre_tone_max_env997_db = -36.7` cannot by itself be identified as residual 1 kHz rather than current 997 Hz. Use sufficiently long windows and a frequency-selective method that explicitly separates both tones (e.g. joint least-squares sinusoid fitting at the measured 997-Hz and 1-kHz frequencies, with measured clock ppm applied; or a non-overlapping, suitably high-resolution spectral estimate). Report fitted amplitudes in dBFS per window and show the frequency-fit residual.
+
+### 14.4 Other v2.5 script / artifact defects to correct
+
+1. `PRE_TONE = 1.0` is unused. The preflight is created with `Rig._seg` for a Rig configured with four one-second blocks and 0.4 s settle; its actual programme length is 4.45 s, not 1.0 s. State and log the real preflight duration and frame count. Keep it identical across conditions.
+2. Repeat labels are not per-condition repeats: `r{1 if idx < 4 else 2}` labels both occurrences in each A-B-B-A half identically. Use a per-condition counter.
+3. WAV/PCM filenames are based on `cond`, not the unique run index. The repeated occurrences of a condition overwrite each other's `v25-stimulus-*.wav`, `v25-capture-*.wav`, and `v25-pcm-*.bin`. The stderr filenames are similarly reused by each new observer instance. Preserve every run under a unique run-indexed filename/directory.
+4. The report says stderr and commands are saved in observer JSON. Confirm that each per-run JSON refers to that run's unique stderr file, not a shared filename later overwritten. Empty stderr is a valid result, but the saved logs must remain per-run.
+5. The 1.5 s idle is added after `be.play_record(preflight)`. The real `play_record` itself waits for `arecord` to finish after aplay ends, so this introduces an additional 1.5 s beyond the production sequence. Log actual times from aplay start/end to the next aplay start; compare the test cadence with the real clock-check → THD sequence before assuming the workaround transfers unchanged.
+
+### 14.5 Required v2.6 — offline reconstruction first, minimal repeat only if raw files were overwritten
+
+Do not change production code or PR #4. Do not perform a new hardware run unless needed because repeated raw captures were overwritten.
+
+1. From each lead=0 JSON, use the high-confidence marker B frame and the exact programme positions to derive:
+   - expected marker A frame;
+   - expected tone start and end frames;
+   - expected analysis-window frame bounds.
+   Use `offset_from_B = detected_B_abs - (marker_B_source_frame + PAD)` only as the capture/program alignment estimate; do not call it lost head. Cross-check this offset against the adjacent lead=1.5 run(s) and state the residual/jitter.
+2. Compute the normalized correlation at the exact expected A frame (and a small justified search tolerance around it). Report the local score and the nearest competing peak. Confirm whether A really is absent at the programme-expected position.
+3. With B as the anchor, analyze the lead=0 997-Hz tone interval. Separate actual 997-Hz signal from residual 1-kHz preflight using long-window joint sinusoidal least squares / equivalent non-overlapping method at measured frequencies. Evaluate the start, stable middle, final 1 s and post-tone interval. Report per-window amplitudes and residuals in dBFS; apply the measured clock ppm.
+4. Re-evaluate the actual production window from the valid B-derived timeline. Report whether it intersects old preflight, stable 997-Hz signal, the terminal fade, or post-tone content. Do not use any lead=0 `window_inside_tone` flag from the existing JSON; it was derived from the failed A anchor.
+5. For lead=1.5, retain the already-valid A/B timing and four-block-window result, but report exact per-run margins in frames/ms from window end to measured tone end.
+6. Correct preflight duration metadata, repeat labels, unique artifact paths, and per-run stderr references. Produce a script that reproduces the full summary offline from the saved unique raw captures. Identify which repeated raw captures were overwritten by v2.5; do not imply eight raw captures exist if only four were retained.
+7. If not all necessary lead=0 raw captures remain, perform only the missing lead=0/lead=1.5 marker-anchored runs with the exact production cadence (clock preflight then THD test; no extra 1.5 s idle unless that delay is also in the real application). Keep the preflight waveform and duration identical to the real clock check. Use interleaved conditions and unique output names.
+8. Update the report: preserve the valid lead=1.5 finding; withdraw the unsupported 0.354–0.369 s head-loss claim; explicitly distinguish “marker A absent” from “0.36 s of source frames dropped”.
+
+### 14.6 Decision gate
+
+Current decision: **1.5 s leading silence is a promising workaround and has passed four marker-valid captures, but production approval is withheld until v2.6 confirms what happens to the 997-Hz signal and the real application cadence is reproduced.** The present evidence does not justify a claim that exactly 0.354–0.369 s of source frames are discarded.
+
+If v2.6 confirms that a 1.5 s leading silence reliably clears stale preflight content and the full production analysis window remains inside stable 997-Hz tone using the actual app sequence, a minimal guarded production patch can be proposed:
+- prepend the verified leading-silence preamble to the measurement playback programme (not blindly to unrelated backend playback);
+- optionally append a verified 0.6 s zero tail for a quiet post-stream state;
+- explicitly reject an analysis result when the requested number of full stable analysis blocks is unavailable; never silently shorten the window.
+
+The L/R residual asymmetry is still a separate open issue. The D10 cable has not been physically disconnected from the E-MU inputs, so its source is not isolated. Do not delay the timing decision on that separate control, but do not attribute the asymmetry to either device.
