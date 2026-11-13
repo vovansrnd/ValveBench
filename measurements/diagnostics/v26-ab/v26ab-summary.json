@@ -1,0 +1,238 @@
+{
+ "fs": 192000,
+ "order": [
+  "L0",
+  "L1.5",
+  "L1.5",
+  "L0",
+  "L0",
+  "L1.5",
+  "L1.5",
+  "L0"
+ ],
+ "results": [
+  {
+   "run": 1,
+   "cond": "L0",
+   "lead_s": 0.0,
+   "preflight_duration_s": 7.654,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 7.0,
+   "plateau_start_s": 0.8353,
+   "plateau_len_s": 4.0646,
+   "submitted_tone_end_s": 5.3753,
+   "tone_last_above45_s": 4.8999,
+   "tone_loss_s": 0.4754,
+   "chirpA": {
+    "L": {
+     "global_abs": 1043636,
+     "score": 0.0231,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1043608,
+     "score": 0.0072,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1344000
+  },
+  {
+   "run": 2,
+   "cond": "L1.5",
+   "lead_s": 1.5,
+   "preflight_duration_s": 7.209,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 9.0,
+   "plateau_start_s": 1.8599,
+   "plateau_len_s": 4.5416,
+   "submitted_tone_end_s": 7.8999,
+   "tone_last_above45_s": 6.4015,
+   "tone_loss_s": 1.4984,
+   "chirpA": {
+    "L": {
+     "global_abs": 1229793,
+     "score": 0.0216,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1613577,
+     "score": 0.0076,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1728000
+  },
+  {
+   "run": 3,
+   "cond": "L1.5",
+   "lead_s": 1.5,
+   "preflight_duration_s": 7.298,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 9.0,
+   "plateau_start_s": 1.8538,
+   "plateau_len_s": 4.5416,
+   "submitted_tone_end_s": 7.8938,
+   "tone_last_above45_s": 6.3954,
+   "tone_loss_s": 1.4984,
+   "chirpA": {
+    "L": {
+     "global_abs": 1306737,
+     "score": 0.0264,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1306708,
+     "score": 0.0082,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1728000
+  },
+  {
+   "run": 4,
+   "cond": "L0",
+   "lead_s": 0.0,
+   "preflight_duration_s": 7.204,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 7.0,
+   "plateau_start_s": 0.8363,
+   "plateau_len_s": 4.0646,
+   "submitted_tone_end_s": 5.3763,
+   "tone_last_above45_s": 4.9009,
+   "tone_loss_s": 0.4754,
+   "chirpA": {
+    "L": {
+     "global_abs": 1254711,
+     "score": 0.0208,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1054923,
+     "score": 0.0061,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1344000
+  },
+  {
+   "run": 5,
+   "cond": "L0",
+   "lead_s": 0.0,
+   "preflight_duration_s": 7.264,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 7.0,
+   "plateau_start_s": 0.835,
+   "plateau_len_s": 4.0646,
+   "submitted_tone_end_s": 5.375,
+   "tone_last_above45_s": 4.8996,
+   "tone_loss_s": 0.4754,
+   "chirpA": {
+    "L": {
+     "global_abs": 1232880,
+     "score": 0.0201,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1040194,
+     "score": 0.0068,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1344000
+  },
+  {
+   "run": 6,
+   "cond": "L1.5",
+   "lead_s": 1.5,
+   "preflight_duration_s": 7.192,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 9.0,
+   "plateau_start_s": 1.8577,
+   "plateau_len_s": 4.5416,
+   "submitted_tone_end_s": 7.8977,
+   "tone_last_above45_s": 6.3993,
+   "tone_loss_s": 1.4984,
+   "chirpA": {
+    "L": {
+     "global_abs": 1438034,
+     "score": 0.0266,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1700937,
+     "score": 0.0081,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1728000
+  },
+  {
+   "run": 7,
+   "cond": "L1.5",
+   "lead_s": 1.5,
+   "preflight_duration_s": 7.614,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 9.0,
+   "plateau_start_s": 1.8584,
+   "plateau_len_s": 4.5416,
+   "submitted_tone_end_s": 7.8984,
+   "tone_last_above45_s": 6.4,
+   "tone_loss_s": 1.4984,
+   "chirpA": {
+    "L": {
+     "global_abs": 1689576,
+     "score": 0.0252,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1689602,
+     "score": 0.0083,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1728000
+  },
+  {
+   "run": 8,
+   "cond": "L0",
+   "lead_s": 0.0,
+   "preflight_duration_s": 7.195,
+   "preflight_to_thd_interval_s": 0.0,
+   "captured_s": 7.0,
+   "plateau_start_s": 0.8349,
+   "plateau_len_s": 4.0646,
+   "submitted_tone_end_s": 5.3749,
+   "tone_last_above45_s": 4.8995,
+   "tone_loss_s": 0.4754,
+   "chirpA": {
+    "L": {
+     "global_abs": 1310559,
+     "score": 0.0225,
+     "n_maxima": 1
+    },
+    "R": {
+     "global_abs": 1310530,
+     "score": 0.0073,
+     "n_maxima": 1
+    }
+   },
+   "rec_frames": 1344000
+  }
+ ],
+ "corrected_losses": {
+  "L0": [
+   0.4854,
+   0.4854,
+   0.4854,
+   0.4854
+  ],
+  "L1.5": [
+   0.0084,
+   0.0084,
+   0.0084,
+   0.0084
+  ],
+  "note": "\u043f\u043e\u0442\u0435\u0440\u044f = 4.55 \u2212 \u043f\u043b\u0430\u0442\u043e; \u043f\u043b\u0430\u0442\u043e-\u0441\u0442\u0430\u0440\u0442 = \u0441\u0442\u0430\u0440\u0442 \u0442\u043e\u043d\u0430 (env997 \u043f\u043e\u0434\u043d\u0438\u043c\u0430\u0435\u0442\u0441\u044f \u043d\u0430 \u0442\u043e\u043d\u0435)"
+ }
+}

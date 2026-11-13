@@ -28,31 +28,23 @@ F_TONE = 997.0 * (1 + MEASURED_PPM * 1e-6)   # 996.9766 Гц — тон в за�
 F_PREFLIGHT = 1000.0 * (1 + MEASURED_PPM * 1e-6)  # 999.9765 Гц — остаток
 
 DIAG = ROOT / "measurements" / "diagnostics"
-# (cond-файл, lead_s, trailing_s, run_json, тон_с) — SRC-кадры считаются
-# из структуры программы каждого дерева (build_program эквивалент):
-#  * v21-baseline (timing_probe): lead 1.0 с всегда, тон 2.0 с, tail 1.0
-#  * v25-захваты: lead 0/1.5, тон 4.55, [trailing], tail 1.0
+# (cond-файл, lead_s, trailing_s, run_json) — все четыре захвата являются
+# v2.5-программами: [lead][chirp A 0.08][gap 0.15][тон 4.55][trailing]
+# [chirp B 0.08][tail 1.0]. SRC-кадры считаются из этой структуры
+# (v2.6-исправление: прежняя «probe»-модель 2-с тона была ошибочна —
+# замечание координатора §«L0_T0_r1»).
 CASES = [
-    ("L0_T0_r1", 0.0, 0.0, "v25-run-4-L0_T0_r1.json", 2.0, "probe"),
-    ("L1.5_T0_r1", 1.5, 0.0, "v25-run-3-L1.5_T0_r1.json", 4.55, "v25"),
-    ("L0_T0.6_r2", 0.0, 0.6, "v25-run-8-L0_T0.6_r2.json", 4.55, "v25"),
-    ("L1.5_T0.6_r2", 1.5, 0.6, "v25-run-7-L1.5_T0.6_r2.json", 4.55, "v25"),
+    ("L0_T0_r1", 0.0, 0.0, "v25-run-4-L0_T0_r1.json"),
+    ("L1.5_T0_r1", 1.5, 0.0, "v25-run-3-L1.5_T0_r1.json"),
+    ("L0_T0.6_r2", 0.0, 0.6, "v25-run-8-L0_T0.6_r2.json"),
+    ("L1.5_T0.6_r2", 1.5, 0.6, "v25-run-7-L1.5_T0.6_r2.json"),
 ]
 
 
-def src_frames(kind, tone_s, lead_s, trailing_s):
-    """Кадры маркеров/тона в СВОЕЙ программе (детерминированно)."""
-    if kind == "probe":
-        mA = int(1.0 * FS)                       # после lead 1.0 с
-        tone_start = mA + int(0.08 * FS) + int(0.15 * FS)
-        tone_end = tone_start + int(round(tone_s * FS))
-        mB = tone_end                            # маркер Б вплотную (trailing=0)
-        return {"marker_A_start": mA, "tone_start": tone_start,
-                "tone_end": tone_end, "marker_B_start": mB}
-    mB = 0
-    mA = int(1.0 * FS) if lead_s == 0 else int(1.5 * FS)
-    # v25: lead 0/1.5 → lead_end; chirp A 0.08; gap 0.15; tone; [trailing]; chirp B
-    lead_frames = int(1.0 * FS) if lead_s == 0 else int(1.5 * FS)
+def src_frames(tone_s, lead_s, trailing_s):
+    """Кадры программы v2.5 (как в build_program — детерминированно):
+    [lead][chirp A 0.08][gap 0.15][тон 4.55][trailing][chirp B 0.08][tail]"""
+    lead_frames = int(round(lead_s * FS))
     mA = lead_frames
     tone_start = mA + int(0.08 * FS) + int(0.15 * FS)
     tone_end = tone_start + int(round(tone_s * FS))
@@ -124,7 +116,7 @@ def main():
     results = []
     offsets_from_B = []
     print("=== Реконструкция таймлайна от валидного маркера B (§14.5.1-2) ===")
-    for cond, lead_s, trail_s, run_json, tone_s, kind in CASES:
+    for cond, lead_s, trail_s, run_json in CASES:
         cap_path = DIAG / "v25" / f"v25-capture-{cond}.wav"
         if not cap_path.exists():
             print(f"ПРОПУСК {cond}: capture не сохранился")
@@ -132,7 +124,7 @@ def main():
         fsx, cap = wavfile.read(cap_path)
         cap = cap.astype(np.float64)
         run = json.load(open(DIAG / "v25" / run_json))
-        src = src_frames(kind, tone_s, lead_s, trail_s)
+        src = src_frames(4.55, lead_s, trail_s)
 
         # маркер B: перепроверка валидированным детектором
         mb = marker_detect(cap[:, 1], chirp(FS, 0.08, 10500, 11500))
@@ -153,10 +145,13 @@ def main():
                        if abs(p - exp_A) > 500]
         competitors.sort(key=lambda t: -t[1])
 
-        # ожидаемые кадры тона (назад от Б, по структуре своей программы)
+        # ожидаемые кадры тона (назад от Б, по структуре своей программы):
+        # маркер Б начинается СРАЗУ после trailing-тишины →
+        # tone_end = B_abs − trailing; БЕЗ вычитания длины маркера (0.08 с) —
+        # v2.6-ошибка, найденная координатором
         tail_before_B = int(round(trail_s * FS))
-        exp_tone_end = B_abs - int(0.08 * FS) - tail_before_B
-        exp_tone_start = exp_tone_end - int(round(tone_s * FS))
+        exp_tone_end = B_abs - tail_before_B
+        exp_tone_start = exp_tone_end - int(round(4.55 * FS))
 
         # production onset (unchanged)
         be = SimBackend()
@@ -200,6 +195,9 @@ def main():
                 "win_997_max_dbfs": win_997_max,
                 "win_1000_max_dbfs": win_1000_max,
             },
+            "fadeout_start_abs": int(exp_tone_end - int(0.01 * FS)),
+            "window_end_to_fadeout_margin_s": round(
+                (exp_tone_end - int(0.01 * FS) - old_w1) / FS, 4),
             "tone_997_first_last_chunk_s": [first_997, last_997],
             "joint_lsq_profile": prof,
         }

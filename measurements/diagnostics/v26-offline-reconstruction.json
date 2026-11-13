@@ -6,19 +6,19 @@
   "marker_B_abs": 985721,
   "marker_B_score": 0.9974,
   "marker_B_maxima_count": 1,
-  "offset_from_B_frames": 355961,
-  "offset_from_B_s": 1.85396,
-  "expected_marker_A_abs": 557561,
-  "local_score_at_expected_A": 0.0,
-  "local_max_frame_near_A": 557508,
+  "offset_from_B_frames": 58361,
+  "offset_from_B_s": 0.30396,
+  "expected_marker_A_abs": 67961,
+  "local_score_at_expected_A": 0.006,
+  "local_max_frame_near_A": 68045,
   "marker_A_present": false,
   "nearest_competitor": null,
   "expected_tone_abs": [
-   586361,
-   970361
+   112121,
+   985721
   ],
   "production_onset_frame": 138240,
-  "onset_vs_expected_tone_start_s": -2.334,
+  "onset_vs_expected_tone_start_s": 0.136,
   "production_window": [
    234240,
    1002240
@@ -28,6 +28,8 @@
    "win_997_max_dbfs": -37.2,
    "win_1000_max_dbfs": -53.4
   },
+  "fadeout_start_abs": 983801,
+  "window_end_to_fadeout_margin_s": -0.096,
   "tone_997_first_last_chunk_s": [
    0.7,
    5.2
@@ -1076,11 +1078,11 @@
   "marker_A_present": true,
   "nearest_competitor": null,
   "expected_tone_abs": [
-   384767,
-   1258367
+   400127,
+   1273727
   ],
   "production_onset_frame": 399360,
-  "onset_vs_expected_tone_start_s": 0.076,
+  "onset_vs_expected_tone_start_s": -0.004,
   "production_window": [
    495360,
    1263360
@@ -1090,6 +1092,8 @@
    "win_997_max_dbfs": -37.2,
    "win_1000_max_dbfs": -53.3
   },
+  "fadeout_start_abs": 1271807,
+  "window_end_to_fadeout_margin_s": 0.044,
   "tone_997_first_last_chunk_s": [
    2.05,
    6.7
@@ -2250,19 +2254,19 @@
   "marker_B_abs": 1101235,
   "marker_B_score": 0.9946,
   "marker_B_maxima_count": 1,
-  "offset_from_B_frames": -133325,
-  "offset_from_B_s": -0.6944,
+  "offset_from_B_frames": 58675,
+  "offset_from_B_s": 0.3056,
   "expected_marker_A_abs": 68275,
   "local_score_at_expected_A": 0.01,
   "local_max_frame_near_A": 68304,
   "marker_A_present": false,
   "nearest_competitor": null,
   "expected_tone_abs": [
-   97075,
-   970675
+   112435,
+   986035
   ],
   "production_onset_frame": 138240,
-  "onset_vs_expected_tone_start_s": 0.2144,
+  "onset_vs_expected_tone_start_s": 0.1344,
   "production_window": [
    234240,
    1002240
@@ -2272,6 +2276,8 @@
    "win_997_max_dbfs": -37.2,
    "win_1000_max_dbfs": -53.4
   },
+  "fadeout_start_abs": 984115,
+  "window_end_to_fadeout_margin_s": -0.0944,
   "tone_997_first_last_chunk_s": [
    0.7,
    5.2
@@ -3320,11 +3326,11 @@
   "marker_A_present": true,
   "nearest_competitor": null,
   "expected_tone_abs": [
-   384595,
-   1258195
+   399955,
+   1273555
   ],
   "production_onset_frame": 399360,
-  "onset_vs_expected_tone_start_s": 0.0769,
+  "onset_vs_expected_tone_start_s": -0.0031,
   "production_window": [
    495360,
    1263360
@@ -3334,6 +3340,8 @@
    "win_997_max_dbfs": -37.2,
    "win_1000_max_dbfs": -53.3
   },
+  "fadeout_start_abs": 1271635,
+  "window_end_to_fadeout_margin_s": 0.0431,
   "tone_997_first_last_chunk_s": [
    2.05,
    6.7
