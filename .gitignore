@@ -4,3 +4,5 @@ measurements/**/*.wav
 measurements/diagnostics/v24-ab/*.npy
 measurements/diagnostics/v24-ab/*.bin
 measurements/diagnostics/v24-ab/*.raw
+measurements/diagnostics/v25/*.wav
+measurements/diagnostics/v25/*.bin
