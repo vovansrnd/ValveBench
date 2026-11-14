@@ -548,3 +548,84 @@ No production fixes, PRs or hardware tests in this stage. After v2.18.1 is indep
 
 v2.18 establishes the direction (centroid is too noisy at low levels; LSQ is the leading candidate; capture #1 loses signal head, not tail) but does **not** yet establish a calibrated `sigma_pred`, a fully independent real-noise Monte-Carlo distribution, or the cold-start mechanism. No production release or clock-gate policy change is approved until v2.18.1 closes the evidence defects and the coordinator reviews the corrected artifacts.
 
+
+
+## 16. Coordinator review of v2.18.1 — commit 8d8b040 (14 Nov 2026)
+
+### 16.1 Repository status
+
+- Agent branch: `agent/v2181-clock-estimator-evidence-repair`, HEAD `8d8b040969a9a872941ecfe502975f45419d4186`.
+- Parent is exactly `753dfe1ef96729bbe8808e85314e4d37372b406c`, the coordinator review base.
+- Compare confirms one commit ahead, zero behind, 32 changed files. Changes are under `measurements/diagnostics/v218-clock-estimator-independent-reproduction/`; the modified `v218_estimators_real.py` is also a diagnostic script. No production modules, main, or PR #4 were changed.
+- No playback or hardware work is evidenced. The agent followed the diagnostic-only boundary.
+
+### 16.2 Decision
+
+**v2.18.1 is not accepted as a completed evidence repair.** The report is useful and several earlier mistakes were noticed, but the committed source does not implement the model described in the report, and some result JSON is inconsistent with the committed estimator. Do not merge or use its MC/pilot conclusions to set production clock policy. No production changes are authorized.
+
+### 16.3 Blocking defect A — MC does not run the claimed white-correlated model
+
+In `v2181_montecarlo.py`:
+
+1. `run_batch()` calls `synth_pair_from_spectra()`. The `white_corr_pair()` function (the only implementation matching the report's “white correlated equivalent”, −80/−96 dBFS and rho≈0.97 description) is never called. The saved 500-trial summary is therefore not evidence from the claimed white model. It is generated from the quiet-window PSD/cross-PSD model.
+2. In `synth_pair_from_spectra()`, the target spectrum grid is calculated as `FS / n`, with global `FS=192000`, although synthesis is called at `fs=48000` with `n=96000`. The interpolation grid is therefore 2 Hz/bin instead of the actual 0.5 Hz/bin. The source PSD is sampled at the wrong frequencies (factor four relative to the actual synthesized frequency).
+3. The Fourier amplitude scale uses `FS * n` instead of `fs * n`. The synthesizer must use the actual synthesis rate consistently.
+4. `normalize_pair_to_band()` calculates its target from the integrated PSD only over 900–1100 Hz, but divides by `np.var(nL)` / `np.var(nR)`, which are full-band time-domain variances. That sets total broadband variance to the narrow-band target; it does not normalize the noise power in the 900–1100 Hz band. Use a measured band-limited variance or correct per-bin PSD scaling; do not mix narrow-band power with full-band variance.
+5. `verify_synthesis()` sets `bins = arange(...)` and then treats those integer bin indices as Hz, although `df_bins=fs_syn/n` is calculated separately and never applied. Its band labels are consequently wrong. Its PSD estimate `2/n²·|FFT|²` also lacks the required sampling-rate normalization; compare one-sided PSD using the correct frequency axis and units. Bands above the 24 kHz Nyquist limit of the 48 kHz synthesizer cannot be validated by that signal.
+6. The saved verification itself does not show a match in the key 900–1100 Hz band: measured gamma²=0.784, synthesized gamma²=0.971; the report must not describe this as a successful match. The 2–8 kHz and higher-band coherence also differs materially.
+
+The report's claimed 12× sigma difference being “explained” by +13.6 dB of D10 during-tone noise is not established. It compares a production aggregate in dBFS with a quiet-window spectral-density figure in dBFS/Hz-equivalent, without demonstrating integration over the same bandwidth and identical estimator bins. In addition, the current MC's band normalization and frequency-axis defects can change the noise level seen by the estimator. Recompute apples-to-apples noise power before attributing the sigma ratio to D10.
+
+### 16.4 Blocking defect B — pilot LSQ errors use the wrong nominal frequency
+
+- `v218_estimators_real.py:ppm_of()` is hard-coded as `(f / 1000 - 1)·1e6`.
+- `v2181_lsq_pilots.py` calls `ppm_of(f_est)` for 997, 1000 and 1013 Hz. The error must be computed relative to the tested pilot: `(f_est / pilot - 1)·1e6 - PPM_TRUE`.
+- Therefore the reported LSQ biases near −3000 ppm for 997 Hz and +13000 ppm for 1013 Hz are nominal-frequency offsets, not estimator bias. The claimed Dirichlet-side-lobe failure at 1013 Hz is unsupported.
+- There is an additional reproducibility mismatch: the saved 997 Hz / −30 dBFS LSQ summary corresponds to an estimated frequency around 868 Hz, while the committed `est_lsq()` searches only within ±2 Hz of 997 Hz and refines within ±0.15 Hz. That result cannot be produced by the committed function. Treat the pilot JSON as stale or generated by a different code revision until a rerun proves otherwise.
+- Rerun all pilot cells with per-trial raw `f_est`, correct pilot-relative ppm, and a record of the exact script hash. Report measured mains-line power integrated across the line's spectral lobe; do not compare a dBFS/Hz bin value directly with pilot dBFS.
+
+### 16.5 Sigma prediction — analytic correction is plausible, calibration is not yet accepted
+
+For Gaussian residuals with known unit variance after correct whitening, the derivation `var(f̂)=2/RSS''` is correct. The code's `var_f=step²/denom` together with the caller's `sqrt(2·var_f)` applies the factor of two. This supports the analytical correction to the v2.18 formula.
+
+However:
+- the current GLS whitens only the instantaneous 2×2 L/R covariance estimated from residuals; it does not whiten the temporal/frequency colour of the noise. A scalar per-sample covariance is not the full frequency-local cross-spectral model already identified as necessary;
+- the aggregate coverage calculation compares every error with the mean predicted sigma, rather than each trial's own predicted sigma. Per-trial sigma values are saved, so compute coverage as `abs(error_i) <= sigma_pred_i` and similarly for 2σ;
+- the underlying MC noise model is currently defective (16.3).
+
+Thus the factor-two derivation is accepted conditionally; “sigma_pred calibrated” is not accepted as a real-noise or production result. At most it is a provisional result within a corrected, explicitly stated simulation model.
+
+### 16.6 Tone bounds — useful observation, schedule still provisional
+
+The re-analysis finds capture #1 crossing the chosen threshold near 2.225 s and ending near 4.300 s, while the six comparison captures begin near 1.85–1.86 s and end near 4.30 s. This supports the observed early-capture anomaly and the absence of a comparable tail loss.
+
+But the script defines the expected start as the median of those same six “normal” received onsets, fixes the tone duration at 2.45 s, and hard-codes the per-capture production onsets. The assertions validate those chosen bounds; they do not independently reconstruct the source programme timeline from the actual playback code/frame schedule. Keep “about 370 ms later than the normal captures” as a provisional observed difference, not an independently proven count of dropped source frames. Keep the physical mechanism unresolved.
+
+### 16.7 Resampling — analytical step accepted, interpolation claim limited
+
+The integer-length spacing `1e6/N_padded` and values 0.947/0.801/0.694 ppm for the stated padded lengths are arithmetically correct. The rounded-resample test's residuals are consistent with the half-step bound.
+
+The “fractional” comparison is a synthetic numerical demonstration using linear interpolation (`np.interp`), not a band-limited production resampler and not a validated production implementation. Its ±0.01 ppm result supports the possibility of removing length quantization, not yet a production patch. No change to `resample_capture_timebase()` is authorized.
+
+### 16.8 Reproducibility
+
+The manifest records hashes and WAV metadata, but the WAVs and AUDITOR-PACKAGE are not present in the pushed v2.18.1 branch. The report points to an absolute local path under `/opt/MyApps/Adudio/`; GitHub readers cannot retrieve that package from the branch. Preserve the archive at a known shared/downloadable location or provide the package to the coordinator. The manifest's source JSON path is likewise host-specific.
+
+### 16.9 Required v2.18.2 — diagnostics only
+
+Create a new agent branch from the updated coordinator review branch. Do not touch production, main, PR #4, clock policy, pilot frequency or hardware.
+
+1. Make the main MC model match its description. Prefer two separately labelled experiments: (a) a simple white correlated proxy with explicit measured RMS per channel and a clearly defined Pearson correlation versus magnitude-squared coherence; (b) a coloured PSD/cross-PSD model only after fixing the synthesis frequency grid, sample-rate scaling, PSD normalization, band-power normalization and verification. Ensure the function actually called by `run_batch()` is the model named in the report.
+2. Validate each generated model with independent per-channel RMS, Welch PSD, cross-PSD/coherence and an explicit 900–1100 Hz band-power check. Store the measured generated noise level and model parameters in the JSON. No claim about D10 during-tone noise unless compared in identical units and bandwidth.
+3. Recompute the MC, preserve seeds and per-trial rows, and compute sigma coverage against each trial's own `sigma_pred`. State explicitly that results are model-conditional, not a measured hardware population.
+4. Fix pilot-relative ppm and rerun all 997/1000/1013 cells. Save raw per-trial frequency estimates and the exact script hash; resolve the impossible 997/−30 artifact before drawing any conclusion.
+5. Keep the factor-two derivation, but label sigma calibration as conditional on the noise/whitening assumptions. Do not describe zero-lag L/R covariance as full coloured-noise GLS.
+6. For tone bounds, independently reconstruct the expected schedule from the exact source programme and backend timing/frame counts; retain the six normal captures as a cross-check, not as the source of the expected schedule.
+7. Keep the resampling conclusion analytical/provisional; no production patch.
+8. Make the WAV package accessible to the coordinator/auditor and ensure the report identifies exact source hashes, scripts, commands and output files.
+
+Required final output: updated report with established/provisional/invalidated statuses, rerunnable scripts, per-trial data, corrected JSON, and a concise list of what changed. Commit and push the v2.18.2 diagnostic branch. No playback or hardware tests.
+
+### 16.10 Current decision gate
+
+v2.18.1 is **received, inspected, and rejected as final evidence**. It does not establish the 500-trial MC statistics for the claimed model, the 997/1013 LSQ pilot conclusions, or calibrated production sigma. It does provide useful artifacts and confirms the no-production-change boundary. Continue with v2.18.2 diagnostics; only after independent review may the coordinator design a production estimator. The current recommendation remains per-channel LSQ with explicit uncertainty and channel QC as the leading candidate, not an approved production change.
