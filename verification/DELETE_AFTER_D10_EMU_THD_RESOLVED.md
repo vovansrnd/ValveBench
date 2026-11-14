@@ -490,3 +490,61 @@ If v2.6 confirms that a 1.5 s leading silence reliably clears stale preflight co
 - explicitly reject an analysis result when the requested number of full stable analysis blocks is unavailable; never silently shorten the window.
 
 The L/R residual asymmetry is still a separate open issue. The D10 cable has not been physically disconnected from the E-MU inputs, so its source is not isolated. Do not delay the timing decision on that separate control, but do not attribute the asymmetry to either device.
+
+## 15. Coordinator review of clock estimator audit and v2.18 reproduction (14 Nov 2026)
+
+### 15.1 Revisions and evidence
+
+- Auditor target: code revision `02e9591d807a73e4d1229a1377be1137c79df36c` (`coordinator/v217-clock-estimator-stability`).
+- Agent reproduction: `0b6853be8dc7fc4e9d4d6f60472328ff3f97e232` (`agent/v218-clock-estimator-independent-reproduction`).
+- v2.18 is diagnostic-only: five Python scripts and JSON/report artifacts were added; production files were not changed; no playback or hardware runs were performed.
+- The full auditor report is now preserved at `measurements/diagnostics/v218-clock-estimator-independent-reproduction/AUDITOR-REPORT-v218.md`. The v2.18 agent did not receive this document and therefore reproduced the coordinator's summary rather than the auditor's exact 42-window/PSD/seed procedure.
+
+### 15.2 Findings accepted at the architectural level
+
+- Production clock estimation uses the seven-bin spectral centroid in `dsp.analyze_tone()`. Current `clock_check` requires both channel SNR >=20 dB, |L-R ppm| <=5 ppm and |ppm| <=100; `capture_clock_ppm()` then takes an unweighted mean of L/R.
+- The auditor's conclusion that the centroid is statistically inefficient at low pilot levels is supported by v2.18's real-noise replay: at -72 dBFS the reported empirical standard deviations are 5.884 ppm for production centroid L, 1.152 ppm for centroid R, 0.739 ppm for LSQ L and 0.129 ppm for LSQ R. These are conditional on the particular noise slices and the current v2.18 script limitations below; do not treat them as a final population uncertainty estimate.
+- L/R errors and noise can be correlated. R is cleaner in these recordings, but is not an independent clock reference. Do not infer that a stable R value independently proves the clock.
+- The v2.17 claim of a missing ~185 ms tail is withdrawn. Whole-recording narrowband analysis in v2.18 finds the tone ending around 4.30 s in all seven captures; capture #1 begins around 2.225 s instead of ~1.85 s. This supports missing head content (~0.37-0.40 s), with the tail at the normal end. The physical mechanism is not established.
+- Integer output-length rounding in `resample_capture_timebase()` is a real design limitation for phase-sensitive consumers. It is used by `sweep` and `noise_response`; acceptable residual ppm must be derived separately for H1 amplitude, coherence, phase and group delay.
+
+### 15.3 v2.18 evidence defects to correct before accepting numerical calibration
+
+1. Report says 80 MC trials per cell; script and JSON contain 50. Correct the report or rerun with an explicitly declared count.
+2. The `real_noise` Monte-Carlo does not generate 50 independent real-noise realizations. It loads six fixed two-second quiet slices, then cycles them. Since each slice length equals the requested segment, the random start offset is always zero. The 50 results are repeated conditions with varying tone phase, not 50 independent noise samples. Treat the current sigma/max statistics as conditional demonstrations only. Re-run with a documented independent-noise method (independent quiet windows or PSD/cross-PSD-generated colored noise) and preserve every seed and per-trial estimate.
+3. The MC path downsamples to 48 kHz before calling `est_lsq()`, which itself downsamples by four again. The actual LSQ fit is therefore on 12 kHz, not 48 kHz as several comments/report passages imply. Make one resampling stage explicit and consistent across methods.
+4. `est_lsq()` initializes from the production centroid and searches only +/-0.05 Hz. It is not an independent initialization and cannot be assumed to cover the full +/-100 ppm clock range. Test acquisition from independent coarse estimates and at least +/-100 ppm, with spurs and low SNR.
+5. `sigma_pred` is passed through the generic `stats()` function that subtracts `PPM_TRUE`, producing misleading JSON fields (`bias` about 23.5). Save uncertainty statistics separately: mean/median, spread, predicted-vs-empirical ratio, and empirical coverage of 1σ/2σ intervals.
+6. The profile-curvature variance formula in `est_joint()` needs a derivation review. For Gaussian residuals with objective RSS, likelihood curvature may require a factor of two relative to the current `1/RSS''` expression. The observed predicted/empirical sigma ratio (~0.16/~0.23) is close to 1/sqrt(2); do not claim calibrated uncertainty until the derivation and coverage test agree.
+7. `v218_tone_bounds.py` uses the observed anomalous onset for capture #1 as the expected programme start. Consequently its JSON reports `head_loss_ms=-25` and `tail_loss_ms=400`, opposite to the narrative. Separate observed onset from expected source-programme start (~1.85 s), regenerate boundary JSON and make all head/tail fields consistent with the exact source frame schedule.
+8. The resampling diagnostic reports max-minus-min residual across a sampled ppm grid as a "step". Calculate the analytical 1/padded_frames quantization step and verify transition points directly.
+9. Research scripts use absolute source paths under `/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic`; selected source WAVs are not in GitHub. Make input paths configurable and provide a reproducible source-data package/manifest with hashes, or explicitly state the data dependency and provide the archive to the auditor.
+
+### 15.4 Current decisions — no production patch yet
+
+- Do not retain the current unweighted mean of two centroid estimates as a trusted clock correction at -72/-66 dBFS.
+- Do not change to hard-coded R-only yet. Treat the next production candidate as a per-channel LSQ estimator that returns frequency/ppm, uncertainty, tone presence, SNR and window validity. Choose the most informative valid channel (not a fixed L or R channel); preserve independent QC for both channels. A weighted joint estimate is deferred until a frequency-local cross-spectral covariance model is validated.
+- The 20 dB SNR and 5 ppm spread gates are not accuracy guarantees. Replace/augment them with uncertainty-based consumer-specific acceptance criteria after those criteria are derived and tested. Do not adopt the auditor's 0.3/0.1 ppm values as final requirements without consumer analysis.
+- Fix tone timing as a separate workstream: determine real stable tone bounds, require the entire estimator window plus margins to lie inside the received tone, and reject short/truncated windows. Do not silently shorten analysis.
+- Keep the current pilot level and safety policy. v2.14/v2.18 low-level/level-sweep evidence is direct D10->E-MU loopback without a DUT. It does not authorize higher levels through a phono preamp.
+- No claim is made yet about the physical cause of the first-open start loss. Any hardware reproduction must use the exact production sequence and marker-anchored timing; do not infer dropped source frames from a weak/missing marker alone.
+
+### 15.5 Required next stage — v2.18.1 evidence repair (diagnostics only)
+
+Create a separate agent branch from the coordinator review branch. Do not touch production modules and do not run playback.
+
+1. Correct trial-count documentation to match the saved data; make the actual number and effective number of independent noise records explicit.
+2. Rebuild the real-noise experiment using multiple independent noise windows or a documented colored-noise/cross-PSD generator. Preserve all seeds and per-trial raw estimates. Do not call repeated reuse of six fixed slices 50 independent trials.
+3. Fix LSQ decimation so the actual fit rate is stated and identical across comparisons. Make initialization independent of the centroid and test a true +/-100 ppm search domain.
+4. Re-derive profile-likelihood sigma mathematically; test against Monte Carlo coverage. Correct the factor if required. Store `sigma_pred` with its own schema, not `stats()` intended for ppm estimates.
+5. Separate `observed_onset` from `expected_program_start/end`; regenerate `v218-tone-bounds.json`. Assert that the index-1 expected start is around 1.85 s and expected end around 4.30 s, and that the head/tail loss fields match those boundaries.
+6. Recompute resampling quantization using exact integer-length transitions and record residuals after correction for 5–7 s captures.
+7. Make every script accept a source-data directory argument. Provide a manifest for the seven WAVs (SHA256, sample rate, channels, frames, level). Make the WAV package available to the coordinator/auditor; do not commit huge files without checking their total size first.
+8. Update the report so each conclusion is labelled as established, provisional or unverified. Keep the auditor's original document alongside the v2.18 files.
+
+No production fixes, PRs or hardware tests in this stage. After v2.18.1 is independently reviewed, the coordinator will implement the production estimator and tests on a dedicated coordinator branch. Hardware agent will then run the agreed direct-loopback verification; no raised pilot level through DUT is authorized.
+
+### 15.6 Decision gate
+
+v2.18 establishes the direction (centroid is too noisy at low levels; LSQ is the leading candidate; capture #1 loses signal head, not tail) but does **not** yet establish a calibrated `sigma_pred`, a fully independent real-noise Monte-Carlo distribution, or the cold-start mechanism. No production release or clock-gate policy change is approved until v2.18.1 closes the evidence defects and the coordinator reviews the corrected artifacts.
+
