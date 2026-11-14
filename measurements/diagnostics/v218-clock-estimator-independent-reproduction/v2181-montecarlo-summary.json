@@ -1,0 +1,192 @@
+{
+ "noise_model": {
+  "windows": 129,
+  "source": "7 захватов v2.14, тихие окна 0.25 с",
+  "synthesis_method": "условное разложение по L: gR = S_LR/S_LL (комплексный), S_iR = S_RR−|S_LR|²/S_LL; сглаживание γ² ±10 Гц (дисперсия per-bin оценки)",
+  "synthesis_verification": {
+   "bands": [
+    {
+     "band_hz": [
+      900,
+      1100
+     ],
+     "gamma2_measured": 0.784,
+     "gamma2_synthesized": 0.971,
+     "psd_shape_dev_db_L": -4.78
+    },
+    {
+     "band_hz": [
+      100,
+      500
+     ],
+     "gamma2_measured": 0.967,
+     "gamma2_synthesized": 0.951,
+     "psd_shape_dev_db_L": 0.6
+    },
+    {
+     "band_hz": [
+      500,
+      2000
+     ],
+     "gamma2_measured": 0.948,
+     "gamma2_synthesized": 0.938,
+     "psd_shape_dev_db_L": -2.98
+    },
+    {
+     "band_hz": [
+      2000,
+      8000
+     ],
+     "gamma2_measured": 0.864,
+     "gamma2_synthesized": 0.699,
+     "psd_shape_dev_db_L": -2.78
+    },
+    {
+     "band_hz": [
+      8000,
+      30000
+     ],
+     "gamma2_measured": 0.536,
+     "gamma2_synthesized": 0.47,
+     "psd_shape_dev_db_L": 6.26
+    },
+    {
+     "band_hz": [
+      30000,
+      80000
+     ],
+     "gamma2_measured": 0.274,
+     "gamma2_synthesized": 0.03,
+     "psd_shape_dev_db_L": 7.54
+    }
+   ],
+   "check_trials": 40,
+   "method": "прямой per-bin rfft; когерентность — per-bin среднее (метрика измеренного ансамбля)"
+  }
+ },
+ "trials_per_cell": 500,
+ "base_seed": 218100,
+ "ppm_true": -23.5,
+ "summary": [
+  {
+   "level_dbfs": -72.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.001,
+     "sigma_ppm": 0.503,
+     "max_abs_ppm": 1.722
+    },
+    "prod_R": {
+     "bias_ppm": 0.001,
+     "sigma_ppm": 0.156,
+     "max_abs_ppm": 0.568
+    },
+    "lsq_L": {
+     "bias_ppm": -0.006,
+     "sigma_ppm": 0.156,
+     "max_abs_ppm": 0.513
+    },
+    "lsq_R": {
+     "bias_ppm": -0.0,
+     "sigma_ppm": 0.047,
+     "max_abs_ppm": 0.147
+    },
+    "joint_gls": {
+     "bias_ppm": -0.004,
+     "sigma_ppm": 0.098,
+     "max_abs_ppm": 0.309
+    }
+   },
+   "sigma_pred_stats": {
+    "mean_pred_ppm": 0.123,
+    "median_pred_ppm": 0.123,
+    "actual_sigma_ppm": 0.098,
+    "pred_over_actual": 1.26,
+    "coverage_1sigma": 0.814,
+    "coverage_2sigma": 0.984,
+    "derivation": "logL = −RSS/(2σ²) → FI = RSS''/(2σ²) → var(f̂) = 2σ²/RSS''; whitened σ=1 → var = 2·step²/denom; в v2.18 множитель 2 был пропущен"
+   }
+  },
+  {
+   "level_dbfs": -66.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.023,
+     "sigma_ppm": 0.258,
+     "max_abs_ppm": 0.695
+    },
+    "prod_R": {
+     "bias_ppm": 0.005,
+     "sigma_ppm": 0.078,
+     "max_abs_ppm": 0.236
+    },
+    "lsq_L": {
+     "bias_ppm": 0.006,
+     "sigma_ppm": 0.076,
+     "max_abs_ppm": 0.282
+    },
+    "lsq_R": {
+     "bias_ppm": 0.002,
+     "sigma_ppm": 0.023,
+     "max_abs_ppm": 0.087
+    },
+    "joint_gls": {
+     "bias_ppm": 0.003,
+     "sigma_ppm": 0.047,
+     "max_abs_ppm": 0.179
+    }
+   },
+   "sigma_pred_stats": {
+    "mean_pred_ppm": 0.062,
+    "median_pred_ppm": 0.062,
+    "actual_sigma_ppm": 0.047,
+    "pred_over_actual": 1.317,
+    "coverage_1sigma": 0.828,
+    "coverage_2sigma": 0.99,
+    "derivation": "logL = −RSS/(2σ²) → FI = RSS''/(2σ²) → var(f̂) = 2σ²/RSS''; whitened σ=1 → var = 2·step²/denom; в v2.18 множитель 2 был пропущен"
+   }
+  },
+  {
+   "level_dbfs": -60.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.001,
+     "sigma_ppm": 0.131,
+     "max_abs_ppm": 0.434
+    },
+    "prod_R": {
+     "bias_ppm": 0.001,
+     "sigma_ppm": 0.039,
+     "max_abs_ppm": 0.148
+    },
+    "lsq_L": {
+     "bias_ppm": 0.001,
+     "sigma_ppm": 0.039,
+     "max_abs_ppm": 0.121
+    },
+    "lsq_R": {
+     "bias_ppm": 0.001,
+     "sigma_ppm": 0.012,
+     "max_abs_ppm": 0.034
+    },
+    "joint_gls": {
+     "bias_ppm": 0.0,
+     "sigma_ppm": 0.024,
+     "max_abs_ppm": 0.071
+    }
+   },
+   "sigma_pred_stats": {
+    "mean_pred_ppm": 0.031,
+    "median_pred_ppm": 0.031,
+    "actual_sigma_ppm": 0.024,
+    "pred_over_actual": 1.293,
+    "coverage_1sigma": 0.798,
+    "coverage_2sigma": 0.994,
+    "derivation": "logL = −RSS/(2σ²) → FI = RSS''/(2σ²) → var(f̂) = 2σ²/RSS''; whitened σ=1 → var = 2·step²/denom; в v2.18 множитель 2 был пропущен"
+   }
+  }
+ ]
+}

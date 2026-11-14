@@ -1,0 +1,76 @@
+{
+ "files": [
+  {
+   "index": 1,
+   "file": "20261114-004425-clock-01--72dB-capture.wav",
+   "level_dbfs": -72.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "2f490d3756c268b394681c76226cc775819ca94af333772a57ad89c60904531e"
+  },
+  {
+   "index": 2,
+   "file": "20261114-004425-clock-02--66dB-capture.wav",
+   "level_dbfs": -66.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "bc8ba1db6a54e51a6e7b7078d6a038f7dd0bde316a31c59551efa1a2ba08265d"
+  },
+  {
+   "index": 15,
+   "file": "20261114-004425-clock-15--66dB-capture.wav",
+   "level_dbfs": -66.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "6bf3d0ae6550eebc095dce45168ccd2cba9b94c6861374a8c16a27d56854ed46"
+  },
+  {
+   "index": 16,
+   "file": "20261114-004425-clock-16--72dB-capture.wav",
+   "level_dbfs": -72.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "c829013fe8f064c60063050b09127f829b6b49e417ac346cf48aad6dbc7da5f1"
+  },
+  {
+   "index": 3,
+   "file": "20261114-004425-clock-03--60dB-capture.wav",
+   "level_dbfs": -60.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "55fe042cc1088964574476a5d99dbce1aa06f007349df82959463a3296c70e37"
+  },
+  {
+   "index": 4,
+   "file": "20261114-004425-clock-04--54dB-capture.wav",
+   "level_dbfs": -54.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "c30c5eeff69b8eabfa75c6d88582e95147ffdf0d98d9755a97539dcd9f0ed302"
+  },
+  {
+   "index": 8,
+   "file": "20261114-004425-clock-08--30dB-capture.wav",
+   "level_dbfs": -30.0,
+   "sample_rate_hz": 192000,
+   "channels": 2,
+   "frames": 1344000,
+   "bytes": 10752058,
+   "sha256": "b4d43911870c8bca1f3c57c216a722281c160e6671ec6152cf1cf4b19d103ebd"
+  }
+ ],
+ "source_json": "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/diagnostics/v214-clock-diagnostic/20261114-004425-results.json",
+ "source_json_sha256": "bdbe2d829e9be13cae3eb77c0c56c08374477be6109c9f5e3f5475c4bd1f21b4"
+}

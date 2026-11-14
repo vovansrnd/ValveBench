@@ -1,0 +1,129 @@
+{
+ "schedule": {
+  "start_s": 1.855,
+  "end_s": 4.305,
+  "anchor": "медиана onset шести нормальных захватов; timeline backend.py:574 (sleep 0.30) + pad 0.05 + lead 1.5"
+ },
+ "results": [
+  {
+   "index": 1,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 2.225,
+   "measured_end_s": 4.3,
+   "head_loss_ms": 370.0,
+   "tail_loss_ms": 5.0,
+   "production_window_s": [
+    2.65,
+    4.65
+   ],
+   "window_overrun_past_tone_end_ms": 350.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -78.8,
+   "floor_dbfs": -114.6
+  },
+  {
+   "index": 2,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 1.86,
+   "measured_end_s": 4.305,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0,
+   "production_window_s": [
+    2.255,
+    4.255
+   ],
+   "window_overrun_past_tone_end_ms": -50.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -72.7,
+   "floor_dbfs": -115.2
+  },
+  {
+   "index": 15,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 1.85,
+   "measured_end_s": 4.295,
+   "head_loss_ms": -5.0,
+   "tail_loss_ms": 10.0,
+   "production_window_s": [
+    2.245,
+    4.245
+   ],
+   "window_overrun_past_tone_end_ms": -50.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -72.8,
+   "floor_dbfs": -120.5
+  },
+  {
+   "index": 16,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 1.855,
+   "measured_end_s": 4.3,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0,
+   "production_window_s": [
+    2.255,
+    4.255
+   ],
+   "window_overrun_past_tone_end_ms": -45.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -78.8,
+   "floor_dbfs": -118.2
+  },
+  {
+   "index": 3,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 1.855,
+   "measured_end_s": 4.3,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0,
+   "production_window_s": [
+    2.25,
+    4.25
+   ],
+   "window_overrun_past_tone_end_ms": -50.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -66.8,
+   "floor_dbfs": -114.7
+  },
+  {
+   "index": 4,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 1.855,
+   "measured_end_s": 4.3,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0,
+   "production_window_s": [
+    2.255,
+    4.255
+   ],
+   "window_overrun_past_tone_end_ms": -45.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -60.8,
+   "floor_dbfs": -115.5
+  },
+  {
+   "index": 8,
+   "schedule_start_s": 1.855,
+   "schedule_end_s": 4.305,
+   "measured_start_s": 1.86,
+   "measured_end_s": 4.305,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0,
+   "production_window_s": [
+    2.26,
+    4.26
+   ],
+   "window_overrun_past_tone_end_ms": -45.0,
+   "assertions": "PASS",
+   "tone_level_dbfs": -36.8,
+   "floor_dbfs": -117.4
+  }
+ ],
+ "assertions": "все PASS (голова №1 350–420 мс, хвост ≤15 мс; остальные ≤15 мс; вылет окна №1 350–370 мс)"
+}

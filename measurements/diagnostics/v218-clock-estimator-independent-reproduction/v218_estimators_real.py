@@ -87,26 +87,40 @@ def est_phase_slope(seg, fs, f_nom):
     return f_nom + k1 / (2 * np.pi), amp
 
 
-def est_lsq(seg, fs, f_nom, nblock=N):
-    """Нелинейный МНК-фит синусоиды: старт — фазовый наклон; уточнение —
-    минимизация RSS по сетке ±0.05 Гц (шаг 0.01 Гц) полным 3-параметрическим
-    МНК на децимированном сигнале (resample_poly, 48 кГц — частота 1 кГц
-    далеко от Найквиста, оценка частоты не искажается)."""
-    seg_ds = resample_poly(seg, 1, 4)          # 192k → 48k
-    fs_ds = fs / 4
-    # старт — production-центроид (робастен при любом SNR); МНК уточняет
-    # частоту независимо во временной области
-    r = dsp.analyze_tone(seg, fs, f_nom, nblock, nharm=2,
-                         band=(20.0, 20000.0), mains=50.0)
-    f0 = float(r["f0"])
-    t = np.arange(len(seg_ds)) / fs_ds
-    grid = np.linspace(f0 - 0.05, f0 + 0.05, 11)
+def est_lsq(seg, fs, f_nom, nblock=None, coarse_hz=2.0):
+    """Нелинейный МНК-фит синусоиды. v2.18.1 (замечания ревизии): грубая
+    оценка НЕЗАВИСИМА от production-центроида — пик оконной периодограммы с
+    параболическим уточнением в полосе ±coarse_hz (2 Гц — покрывает весь
+    clock-диапазон ±100 ppm = ±0.1 Гц с запасом ~20×); децимация ТОЛЬКО если
+    fs > 96 кГц (двойная децимация v2.18 устранена — фактическая частота
+    фита: 48 кГц для входа 192 кГц, либо входная fs ≤ 48 кГц как есть);
+    поиск МНК ±0.15 Гц вокруг грубой оценки (шаг 0.0125 Гц) + парабола."""
+    if fs > 96000:
+        seg = resample_poly(seg, 1, 4)
+        fs = fs / 4
+    n = len(seg)
+    t = np.arange(n) / fs
+    # --- независимая грубая оценка: пик периодограммы (Ханн) в ±coarse_hz
+    win = np.hanning(n)
+    X = np.abs(np.fft.rfft(seg * win))
+    freqs = np.fft.rfftfreq(n, 1.0 / fs)
+    band = (freqs >= f_nom - coarse_hz) & (freqs <= f_nom + coarse_hz)
+    idx_band = np.where(band)[0]
+    k = idx_band[int(np.argmax(X[idx_band]))]
+    if 0 < k < len(X) - 1:
+        y0, y1, y2 = X[k - 1], X[k], X[k + 1]
+        denom = y0 - 2 * y1 + y2
+        if denom != 0:
+            k = k + (y0 - y2) / (2 * denom)     # парабола по модулю
+    f0 = k * fs / n
+    # --- МНК-уточнение ±0.15 Гц (шаг 0.0125 Гц) + парабола
+    grid = np.linspace(f0 - 0.15, f0 + 0.15, 25)
     rss = []
     for f in grid:
         D = np.column_stack([np.sin(2 * np.pi * f * t),
                              np.cos(2 * np.pi * f * t), np.ones(len(t))])
-        coef, *_ = np.linalg.lstsq(D, seg_ds, rcond=None)
-        rss.append(float(np.sum((seg_ds - D @ coef) ** 2)))
+        coef, *_ = np.linalg.lstsq(D, seg, rcond=None)
+        rss.append(float(np.sum((seg - D @ coef) ** 2)))
     i = int(np.argmin(rss))
     f_best = grid[i]
     if 0 < i < len(grid) - 1:      # параболическое уточнение внутри шага
