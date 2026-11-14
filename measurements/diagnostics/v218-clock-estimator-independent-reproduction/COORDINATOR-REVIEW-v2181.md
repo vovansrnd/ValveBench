@@ -74,3 +74,10 @@ No playback or hardware tests. No production changes, PRs, pilot changes or gate
 ## Current architecture direction
 
 The leading production candidate remains per-channel LSQ returning frequency/ppm, uncertainty, tone presence, SNR and window-validity/QC metadata. Preserve quality checks for both channels; choose the most informative valid channel rather than hard-coding L or R. Defer joint GLS until the frequency-local cross-spectral covariance model is validated. This is a design direction only, not production approval.
+
+
+## 7. Cross-check of the saved Monte-Carlo table
+
+The aggregate CSV contains 1500 trial rows (500 per level). Re-aggregation of the saved per-trial errors reproduces the summary JSON to rounding. For example, production-L / LSQ-L / joint-GLS standard deviations are 0.503 / 0.156 / 0.098 ppm at −72 dBFS, 0.258 / 0.076 / 0.047 ppm at −66 dBFS, and 0.131 / 0.039 / 0.024 ppm at −60 dBFS.
+
+The Markdown report table does not exactly match the JSON/CSV at −66 and −60 dBFS (for example, it lists 0.262 versus 0.258 ppm for production-L at −66 dBFS, and 0.022 versus 0.024 ppm for joint GLS at −60 dBFS). Treat the per-trial CSV and JSON as the saved numerical record; regenerate the report table mechanically from them in v2.18.2.
