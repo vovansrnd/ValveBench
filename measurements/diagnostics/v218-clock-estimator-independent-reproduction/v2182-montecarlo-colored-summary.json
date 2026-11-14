@@ -1,0 +1,143 @@
+{
+ "model": "colored",
+ "levels": [
+  {
+   "level_dbfs": -72.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.255,
+     "sigma_ppm": 10.544,
+     "max_abs_ppm": 36.417
+    },
+    "prod_R": {
+     "bias_ppm": 0.243,
+     "sigma_ppm": 11.029,
+     "max_abs_ppm": 40.675
+    },
+    "prod_mean": {
+     "bias_ppm": 0.249,
+     "sigma_ppm": 10.707,
+     "max_abs_ppm": 38.546
+    },
+    "lsq_L": {
+     "bias_ppm": 0.008,
+     "sigma_ppm": 3.236,
+     "max_abs_ppm": 10.902
+    },
+    "lsq_R": {
+     "bias_ppm": -0.054,
+     "sigma_ppm": 3.363,
+     "max_abs_ppm": 10.153
+    },
+    "joint_gls": {
+     "bias_ppm": -0.079,
+     "sigma_ppm": 3.717,
+     "max_abs_ppm": 31.045
+    }
+   },
+   "sigma_pred_stats": {
+    "n_valid": 499,
+    "mean_pred_ppm": 0.154,
+    "median_pred_ppm": 0.154,
+    "actual_sigma_ppm": 3.453,
+    "pred_over_actual": 0.045,
+    "coverage_1sigma_per_trial": 0.04,
+    "coverage_2sigma_per_trial": 0.078,
+    "note": "var(f̂) = 2σ²/RSS'' (множитель 2, вывод logL = −RSS/2σ²); покрытие per-trial; условные результаты для ПРОВЕРЕННОЙ модели шума, не для реального аппаратного шума — текущий GLS учитывает только нулевой межканальный временной сдвиг"
+   }
+  },
+  {
+   "level_dbfs": -66.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.225,
+     "sigma_ppm": 5.496,
+     "max_abs_ppm": 15.247
+    },
+    "prod_R": {
+     "bias_ppm": 0.201,
+     "sigma_ppm": 5.715,
+     "max_abs_ppm": 18.55
+    },
+    "prod_mean": {
+     "bias_ppm": 0.213,
+     "sigma_ppm": 5.567,
+     "max_abs_ppm": 16.898
+    },
+    "lsq_L": {
+     "bias_ppm": 0.114,
+     "sigma_ppm": 1.579,
+     "max_abs_ppm": 5.868
+    },
+    "lsq_R": {
+     "bias_ppm": 0.118,
+     "sigma_ppm": 1.603,
+     "max_abs_ppm": 5.962
+    },
+    "joint_gls": {
+     "bias_ppm": 0.119,
+     "sigma_ppm": 1.615,
+     "max_abs_ppm": 5.975
+    }
+   },
+   "sigma_pred_stats": {
+    "n_valid": 500,
+    "mean_pred_ppm": 0.077,
+    "median_pred_ppm": 0.077,
+    "actual_sigma_ppm": 1.615,
+    "pred_over_actual": 0.048,
+    "coverage_1sigma_per_trial": 0.042,
+    "coverage_2sigma_per_trial": 0.08,
+    "note": "var(f̂) = 2σ²/RSS'' (множитель 2, вывод logL = −RSS/2σ²); покрытие per-trial; условные результаты для ПРОВЕРЕННОЙ модели шума, не для реального аппаратного шума — текущий GLS учитывает только нулевой межканальный временной сдвиг"
+   }
+  },
+  {
+   "level_dbfs": -60.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": -0.079,
+     "sigma_ppm": 2.841,
+     "max_abs_ppm": 9.462
+    },
+    "prod_R": {
+     "bias_ppm": -0.053,
+     "sigma_ppm": 2.911,
+     "max_abs_ppm": 10.678
+    },
+    "prod_mean": {
+     "bias_ppm": -0.066,
+     "sigma_ppm": 2.856,
+     "max_abs_ppm": 10.07
+    },
+    "lsq_L": {
+     "bias_ppm": -0.036,
+     "sigma_ppm": 0.824,
+     "max_abs_ppm": 2.567
+    },
+    "lsq_R": {
+     "bias_ppm": -0.026,
+     "sigma_ppm": 0.847,
+     "max_abs_ppm": 2.373
+    },
+    "joint_gls": {
+     "bias_ppm": -0.024,
+     "sigma_ppm": 0.854,
+     "max_abs_ppm": 2.344
+    }
+   },
+   "sigma_pred_stats": {
+    "n_valid": 500,
+    "mean_pred_ppm": 0.039,
+    "median_pred_ppm": 0.039,
+    "actual_sigma_ppm": 0.854,
+    "pred_over_actual": 0.045,
+    "coverage_1sigma_per_trial": 0.036,
+    "coverage_2sigma_per_trial": 0.064,
+    "note": "var(f̂) = 2σ²/RSS'' (множитель 2, вывод logL = −RSS/2σ²); покрытие per-trial; условные результаты для ПРОВЕРЕННОЙ модели шума, не для реального аппаратного шума — текущий GLS учитывает только нулевой межканальный временной сдвиг"
+   }
+  }
+ ]
+}

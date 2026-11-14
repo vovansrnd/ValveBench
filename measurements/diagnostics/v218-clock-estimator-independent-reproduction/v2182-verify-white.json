@@ -1,0 +1,12 @@
+{
+ "model": "white_corr",
+ "rho_theory": 0.97,
+ "rho_measured_mean": 0.97,
+ "rho_measured_std": 0.0,
+ "trials": 40,
+ "floors_dbfs": [
+  -80.0,
+  -96.0
+ ],
+ "limitation": "нулевой межканальный временной сдвиг во всех бинах"
+}

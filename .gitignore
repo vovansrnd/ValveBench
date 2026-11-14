@@ -6,3 +6,6 @@ measurements/diagnostics/v24-ab/*.bin
 measurements/diagnostics/v24-ab/*.raw
 measurements/diagnostics/v25/*.wav
 measurements/diagnostics/v25/*.bin
+
+# WAV-архив v2.18.2 (передаются вместе с пакетом, не в git)
+/measurements/diagnostics/v218-clock-estimator-independent-reproduction/wav/

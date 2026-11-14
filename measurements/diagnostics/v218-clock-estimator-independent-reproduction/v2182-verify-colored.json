@@ -1,0 +1,51 @@
+{
+ "bands": [
+  {
+   "band_hz": [
+    900,
+    1100
+   ],
+   "gamma2_synthesized": 0.801,
+   "psd_L_dev_db": 11.85,
+   "psd_R_dev_db": 12.37
+  },
+  {
+   "band_hz": [
+    100,
+    500
+   ],
+   "gamma2_synthesized": 0.969,
+   "psd_L_dev_db": 11.63,
+   "psd_R_dev_db": 11.63
+  },
+  {
+   "band_hz": [
+    500,
+    2000
+   ],
+   "gamma2_synthesized": 0.949,
+   "psd_L_dev_db": 11.69,
+   "psd_R_dev_db": 11.76
+  },
+  {
+   "band_hz": [
+    2000,
+    8000
+   ],
+   "gamma2_synthesized": 0.866,
+   "psd_L_dev_db": 11.63,
+   "psd_R_dev_db": 11.63
+  },
+  {
+   "band_hz": [
+    8000,
+    24000
+   ],
+   "gamma2_synthesized": 0.58,
+   "psd_L_dev_db": 11.62,
+   "psd_R_dev_db": 11.62
+  }
+ ],
+ "check_trials": 15,
+ "nyquist_note": "полосы > 24000 кГц невалидны для 48к-синтеза"
+}
