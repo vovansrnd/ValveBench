@@ -1,0 +1,764 @@
+{
+ "results": [
+  {
+   "index": 1,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -79.2,
+     "floor_dbfs": -98.4,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -85.2,
+       "start_s": 2.255,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 400.0,
+       "tone_span_ms": 2045.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -89.2,
+       "start_s": 2.255,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 395.0,
+       "tone_span_ms": 2050.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -94.2,
+       "start_s": 2.215,
+       "end_s": 4.305,
+       "head_loss_ms": -35.0,
+       "tail_loss_ms": 395.0,
+       "tone_span_ms": 2090.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -99.2,
+       "start_s": 2.205,
+       "end_s": 4.305,
+       "head_loss_ms": -45.0,
+       "tail_loss_ms": 395.0,
+       "tone_span_ms": 2100.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -78.8,
+     "floor_dbfs": -114.6,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -84.8,
+       "start_s": 2.255,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 400.0,
+       "tone_span_ms": 2045.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -88.8,
+       "start_s": 2.24,
+       "end_s": 4.3,
+       "head_loss_ms": -10.0,
+       "tail_loss_ms": 400.0,
+       "tone_span_ms": 2060.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -93.8,
+       "start_s": 2.225,
+       "end_s": 4.3,
+       "head_loss_ms": -25.0,
+       "tail_loss_ms": 400.0,
+       "tone_span_ms": 2075.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -98.8,
+       "start_s": 2.205,
+       "end_s": 4.3,
+       "head_loss_ms": -45.0,
+       "tail_loss_ms": 400.0,
+       "tone_span_ms": 2095.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    2.25,
+    4.7
+   ],
+   "idx1_R_env_4_5s": {
+    "4.0": -79.0,
+    "4.04": -78.7,
+    "4.08": -78.9,
+    "4.12": -78.8,
+    "4.16": -78.7,
+    "4.2": -79.1,
+    "4.24": -78.8,
+    "4.28": -78.4,
+    "4.32": -106.7,
+    "4.36": -123.6,
+    "4.4": -107.0,
+    "4.44": -115.4,
+    "4.48": -108.7,
+    "4.52": -109.6,
+    "4.56": -112.9,
+    "4.6": -116.4,
+    "4.64": -115.4,
+    "4.68": -111.4,
+    "4.72": -107.5,
+    "4.76": -121.4,
+    "4.8": -111.5,
+    "4.84": -117.5,
+    "4.88": -121.0,
+    "4.92": -122.1,
+    "4.96": -118.3
+   },
+   "idx1_burst_above_-90dBFS_after_4.0s": [
+    4.0,
+    4.04,
+    4.08,
+    4.12,
+    4.16,
+    4.2,
+    4.24,
+    4.28
+   ]
+  },
+  {
+   "index": 2,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -72.9,
+     "floor_dbfs": -99.0,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -78.9,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -82.9,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -87.9,
+       "start_s": 1.86,
+       "end_s": 4.31,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": -5.0,
+       "tone_span_ms": 2450.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -92.9,
+       "start_s": 1.86,
+       "end_s": 4.31,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": -5.0,
+       "tone_span_ms": 2450.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -72.8,
+     "floor_dbfs": -115.2,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -78.8,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -82.8,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -87.8,
+       "start_s": 1.86,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -92.8,
+       "start_s": 1.86,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    1.855,
+    4.305
+   ]
+  },
+  {
+   "index": 15,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -73.1,
+     "floor_dbfs": -104.8,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -79.1,
+       "start_s": 1.85,
+       "end_s": 4.29,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -83.1,
+       "start_s": 1.85,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -88.1,
+       "start_s": 1.85,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -93.1,
+       "start_s": 1.85,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -72.8,
+     "floor_dbfs": -120.5,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -78.8,
+       "start_s": 1.85,
+       "end_s": 4.29,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -82.8,
+       "start_s": 1.85,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -87.8,
+       "start_s": 1.85,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -92.8,
+       "start_s": 1.85,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    1.845,
+    4.295
+   ]
+  },
+  {
+   "index": 16,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -79.4,
+     "floor_dbfs": -102.8,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -85.4,
+       "start_s": 1.86,
+       "end_s": 4.295,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 10.0,
+       "tone_span_ms": 2435.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -89.4,
+       "start_s": 1.85,
+       "end_s": 4.3,
+       "head_loss_ms": -5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2450.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -94.4,
+       "start_s": 1.85,
+       "end_s": 4.305,
+       "head_loss_ms": -5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2455.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -99.4,
+       "start_s": 1.85,
+       "end_s": 4.305,
+       "head_loss_ms": -5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2455.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -78.8,
+     "floor_dbfs": -118.2,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -84.8,
+       "start_s": 1.855,
+       "end_s": 4.295,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 10.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -88.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -93.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -98.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    1.855,
+    4.305
+   ]
+  },
+  {
+   "index": 3,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -67.2,
+     "floor_dbfs": -98.4,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -73.2,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 10.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -77.2,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -82.2,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -87.2,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -66.8,
+     "floor_dbfs": -114.7,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -72.8,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 10.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -76.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -81.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -86.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2445.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    1.85,
+    4.3
+   ]
+  },
+  {
+   "index": 4,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -61.2,
+     "floor_dbfs": -99.6,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -67.2,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -71.2,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -76.2,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -81.2,
+       "start_s": 1.855,
+       "end_s": 4.305,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2450.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -60.8,
+     "floor_dbfs": -115.5,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -66.8,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -70.8,
+       "start_s": 1.86,
+       "end_s": 4.3,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -75.8,
+       "start_s": 1.855,
+       "end_s": 4.3,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -80.8,
+       "start_s": 1.855,
+       "end_s": 4.305,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2450.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    1.855,
+    4.305
+   ]
+  },
+  {
+   "index": 8,
+   "windows_s": 7.0,
+   "channels": {
+    "L": {
+     "tone_level_dbfs": -37.2,
+     "floor_dbfs": -101.2,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -43.2,
+       "start_s": 1.865,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -47.2,
+       "start_s": 1.865,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -52.2,
+       "start_s": 1.86,
+       "end_s": 4.305,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -57.2,
+       "start_s": 1.86,
+       "end_s": 4.31,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2450.0
+      }
+     }
+    },
+    "R": {
+     "tone_level_dbfs": -36.8,
+     "floor_dbfs": -117.4,
+     "floor_region_s": [
+      5.6,
+      6.8
+     ],
+     "bounds_by_threshold": {
+      "tone-6dB": {
+       "threshold_dbfs": -42.8,
+       "start_s": 1.865,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-10dB": {
+       "threshold_dbfs": -46.8,
+       "start_s": 1.865,
+       "end_s": 4.305,
+       "head_loss_ms": 5.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2440.0
+      },
+      "tone-15dB": {
+       "threshold_dbfs": -51.8,
+       "start_s": 1.86,
+       "end_s": 4.305,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 5.0,
+       "tone_span_ms": 2445.0
+      },
+      "tone-20dB": {
+       "threshold_dbfs": -56.8,
+       "start_s": 1.86,
+       "end_s": 4.31,
+       "head_loss_ms": 0.0,
+       "tail_loss_ms": 0.0,
+       "tone_span_ms": 2450.0
+      }
+     }
+    }
+   },
+   "submitted_tone": [
+    1.86,
+    4.31
+   ]
+  }
+ ],
+ "summary_r_15db": [
+  {
+   "index": 1,
+   "level_dbfs": null,
+   "start_s": 2.225,
+   "end_s": 4.3,
+   "span_ms": 2075.0,
+   "head_loss_ms": -25.0,
+   "tail_loss_ms": 400.0
+  },
+  {
+   "index": 2,
+   "level_dbfs": null,
+   "start_s": 1.86,
+   "end_s": 4.305,
+   "span_ms": 2445.0,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0
+  },
+  {
+   "index": 15,
+   "level_dbfs": null,
+   "start_s": 1.85,
+   "end_s": 4.295,
+   "span_ms": 2445.0,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0
+  },
+  {
+   "index": 16,
+   "level_dbfs": null,
+   "start_s": 1.855,
+   "end_s": 4.3,
+   "span_ms": 2445.0,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0
+  },
+  {
+   "index": 3,
+   "level_dbfs": null,
+   "start_s": 1.855,
+   "end_s": 4.3,
+   "span_ms": 2445.0,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0
+  },
+  {
+   "index": 4,
+   "level_dbfs": null,
+   "start_s": 1.855,
+   "end_s": 4.3,
+   "span_ms": 2445.0,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0
+  },
+  {
+   "index": 8,
+   "level_dbfs": null,
+   "start_s": 1.86,
+   "end_s": 4.305,
+   "span_ms": 2445.0,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0
+  }
+ ]
+}

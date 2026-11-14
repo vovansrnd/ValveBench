@@ -1,0 +1,63 @@
+{
+ "noise_coherence": {
+  "windows_total": 129,
+  "coherence_1kHz_all": 0.7838,
+  "psd_diff_db_all": 8.5,
+  "per_capture": [
+   {
+    "index": 1,
+    "windows": 26,
+    "coherence_1kHz": 0.7788,
+    "psd_diff_L_minus_R_db": 7.3
+   },
+   {
+    "index": 2,
+    "windows": 15,
+    "coherence_1kHz": 0.9832,
+    "psd_diff_L_minus_R_db": 16.3
+   },
+   {
+    "index": 15,
+    "windows": 16,
+    "coherence_1kHz": 0.9776,
+    "psd_diff_L_minus_R_db": 16.3
+   },
+   {
+    "index": 16,
+    "windows": 26,
+    "coherence_1kHz": 0.751,
+    "psd_diff_L_minus_R_db": 6.8
+   },
+   {
+    "index": 3,
+    "windows": 16,
+    "coherence_1kHz": 0.9706,
+    "psd_diff_L_minus_R_db": 16.2
+   },
+   {
+    "index": 4,
+    "windows": 15,
+    "coherence_1kHz": 0.9813,
+    "psd_diff_L_minus_R_db": 16.3
+   },
+   {
+    "index": 8,
+    "windows": 15,
+    "coherence_1kHz": 0.9834,
+    "psd_diff_L_minus_R_db": 16.3
+   }
+  ]
+ },
+ "estimator_error_correlation": {
+  "trials": 200,
+  "level_dbfs": -72.0,
+  "sigma_err_prod_L": 5.931,
+  "sigma_err_prod_R": 1.074,
+  "sigma_err_lsq_L": 0.776,
+  "sigma_err_lsq_R": 0.132,
+  "corr_err_prod": 0.87,
+  "corr_err_lsq": 0.769,
+  "seed_base": 218001
+ },
+ "note": "точный список 42 окон аудитора недоступен (вложение не передано); окна тишины отобраны по документированному критерию RMS < P25+3 дБ, участки ≥ 0.35 с"
+}

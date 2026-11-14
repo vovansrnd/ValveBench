@@ -1,0 +1,705 @@
+{
+ "truth_ppm": -23.5,
+ "results": [
+  {
+   "index": 1,
+   "level_dbfs": -72.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -31.385,
+      "f0_hz": 999.9686,
+      "level_dbfs": -79.2,
+      "noise_dbfs": -79.5,
+      "carrier_local_snr_db": 26.3,
+      "coh_err_bins": -0.0314
+     },
+     "prod_R": {
+      "ppm": -23.845,
+      "f0_hz": 999.9762,
+      "level_dbfs": -79.0,
+      "noise_dbfs": -94.5,
+      "carrier_local_snr_db": 33.4,
+      "coh_err_bins": -0.0238
+     },
+     "lsq_L": {
+      "ppm": -25.137,
+      "f_hz": 999.97486
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -23.383,
+      "f_hz": 999.97662
+     },
+     "phase_R": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "joint_naive": {
+      "ppm": -23.887,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.657,
+      "var_f_hz2": 1.3e-07,
+      "rho_noise": 0.296,
+      "sigma_pred_ppm": 0.355
+     },
+     "prod_spread_ppm": 7.54
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -21.179,
+      "f0_hz": 999.9788,
+      "level_dbfs": -79.2,
+      "noise_dbfs": -80.2,
+      "carrier_local_snr_db": 27.4,
+      "coh_err_bins": -0.0212
+     },
+     "prod_R": {
+      "ppm": -22.198,
+      "f0_hz": 999.9778,
+      "level_dbfs": -78.8,
+      "noise_dbfs": -96.2,
+      "carrier_local_snr_db": 43.6,
+      "coh_err_bins": -0.0222
+     },
+     "lsq_L": {
+      "ppm": -21.029,
+      "f_hz": 999.97897
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -22.805,
+      "f_hz": 999.97719
+     },
+     "phase_R": {
+      "ppm": -22.687,
+      "amp_dbfs": -78.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -22.333,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -22.387,
+      "var_f_hz2": 4e-08,
+      "rho_noise": 0.18,
+      "sigma_pred_ppm": 0.21
+     },
+     "prod_spread_ppm": 1.019
+    }
+   }
+  },
+  {
+   "index": 2,
+   "level_dbfs": -66.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -30.698,
+      "f0_hz": 999.9693,
+      "level_dbfs": -73.1,
+      "noise_dbfs": -79.9,
+      "carrier_local_snr_db": 34.2,
+      "coh_err_bins": -0.0307
+     },
+     "prod_R": {
+      "ppm": -24.552,
+      "f0_hz": 999.9754,
+      "level_dbfs": -72.8,
+      "noise_dbfs": -95.8,
+      "carrier_local_snr_db": 50.8,
+      "coh_err_bins": -0.0246
+     },
+     "lsq_L": {
+      "ppm": -22.802,
+      "f_hz": 999.9772
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -23.281,
+      "f_hz": 999.97672
+     },
+     "phase_R": {
+      "ppm": -23.395,
+      "amp_dbfs": -72.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.155,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.176,
+      "var_f_hz2": 1e-08,
+      "rho_noise": 0.18,
+      "sigma_pred_ppm": 0.104
+     },
+     "prod_spread_ppm": 6.146
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -30.698,
+      "f0_hz": 999.9693,
+      "level_dbfs": -73.1,
+      "noise_dbfs": -79.9,
+      "carrier_local_snr_db": 34.2,
+      "coh_err_bins": -0.0307
+     },
+     "prod_R": {
+      "ppm": -24.552,
+      "f0_hz": 999.9754,
+      "level_dbfs": -72.8,
+      "noise_dbfs": -95.8,
+      "carrier_local_snr_db": 50.8,
+      "coh_err_bins": -0.0246
+     },
+     "lsq_L": {
+      "ppm": -22.802,
+      "f_hz": 999.9772
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -23.281,
+      "f_hz": 999.97672
+     },
+     "phase_R": {
+      "ppm": -23.395,
+      "amp_dbfs": -72.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.155,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.176,
+      "var_f_hz2": 1e-08,
+      "rho_noise": 0.18,
+      "sigma_pred_ppm": 0.104
+     },
+     "prod_spread_ppm": 6.146
+    }
+   }
+  },
+  {
+   "index": 15,
+   "level_dbfs": -66.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -27.812,
+      "f0_hz": 999.9722,
+      "level_dbfs": -73.1,
+      "noise_dbfs": -81.9,
+      "carrier_local_snr_db": 36.0,
+      "coh_err_bins": -0.0278
+     },
+     "prod_R": {
+      "ppm": -24.247,
+      "f0_hz": 999.9758,
+      "level_dbfs": -72.8,
+      "noise_dbfs": -97.8,
+      "carrier_local_snr_db": 52.9,
+      "coh_err_bins": -0.0242
+     },
+     "lsq_L": {
+      "ppm": -23.693,
+      "f_hz": 999.97631
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -23.77,
+      "f_hz": 999.97623
+     },
+     "phase_R": {
+      "ppm": -23.694,
+      "amp_dbfs": -72.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.748,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.749,
+      "var_f_hz2": 1e-08,
+      "rho_noise": 0.178,
+      "sigma_pred_ppm": 0.103
+     },
+     "prod_spread_ppm": 3.565
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -27.386,
+      "f0_hz": 999.9726,
+      "level_dbfs": -73.1,
+      "noise_dbfs": -81.9,
+      "carrier_local_snr_db": 35.9,
+      "coh_err_bins": -0.0274
+     },
+     "prod_R": {
+      "ppm": -24.171,
+      "f0_hz": 999.9758,
+      "level_dbfs": -72.8,
+      "noise_dbfs": -97.7,
+      "carrier_local_snr_db": 52.8,
+      "coh_err_bins": -0.0242
+     },
+     "lsq_L": {
+      "ppm": -23.512,
+      "f_hz": 999.97649
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -23.744,
+      "f_hz": 999.97626
+     },
+     "phase_R": {
+      "ppm": -23.674,
+      "amp_dbfs": -72.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.679,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.686,
+      "var_f_hz2": 1e-08,
+      "rho_noise": 0.178,
+      "sigma_pred_ppm": 0.103
+     },
+     "prod_spread_ppm": 3.215
+    }
+   }
+  },
+  {
+   "index": 16,
+   "level_dbfs": -72.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -18.722,
+      "f0_hz": 999.9813,
+      "level_dbfs": -79.5,
+      "noise_dbfs": -79.4,
+      "carrier_local_snr_db": 28.9,
+      "coh_err_bins": -0.0187
+     },
+     "prod_R": {
+      "ppm": -23.252,
+      "f0_hz": 999.9767,
+      "level_dbfs": -78.8,
+      "noise_dbfs": -95.5,
+      "carrier_local_snr_db": 45.5,
+      "coh_err_bins": -0.0233
+     },
+     "lsq_L": {
+      "ppm": -28.25,
+      "f_hz": 999.97175
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -24.454,
+      "f_hz": 999.97555
+     },
+     "phase_R": {
+      "ppm": -24.613,
+      "amp_dbfs": -78.9,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -25.409,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -25.221,
+      "var_f_hz2": 4e-08,
+      "rho_noise": 0.174,
+      "sigma_pred_ppm": 0.211
+     },
+     "prod_spread_ppm": 4.53
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -18.722,
+      "f0_hz": 999.9813,
+      "level_dbfs": -79.5,
+      "noise_dbfs": -79.4,
+      "carrier_local_snr_db": 28.9,
+      "coh_err_bins": -0.0187
+     },
+     "prod_R": {
+      "ppm": -23.252,
+      "f0_hz": 999.9767,
+      "level_dbfs": -78.8,
+      "noise_dbfs": -95.5,
+      "carrier_local_snr_db": 45.5,
+      "coh_err_bins": -0.0233
+     },
+     "lsq_L": {
+      "ppm": -28.25,
+      "f_hz": 999.97175
+     },
+     "phase_L": {
+      "ppm": null,
+      "amp_dbfs": null,
+      "valid": false
+     },
+     "lsq_R": {
+      "ppm": -24.454,
+      "f_hz": 999.97555
+     },
+     "phase_R": {
+      "ppm": -24.613,
+      "amp_dbfs": -78.9,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -25.409,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -25.221,
+      "var_f_hz2": 4e-08,
+      "rho_noise": 0.174,
+      "sigma_pred_ppm": 0.211
+     },
+     "prod_spread_ppm": 4.53
+    }
+   }
+  },
+  {
+   "index": 3,
+   "level_dbfs": -60.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -23.175,
+      "f0_hz": 999.9768,
+      "level_dbfs": -67.1,
+      "noise_dbfs": -79.7,
+      "carrier_local_snr_db": 40.1,
+      "coh_err_bins": -0.0232
+     },
+     "prod_R": {
+      "ppm": -23.362,
+      "f0_hz": 999.9766,
+      "level_dbfs": -66.8,
+      "noise_dbfs": -95.6,
+      "carrier_local_snr_db": 56.4,
+      "coh_err_bins": -0.0234
+     },
+     "lsq_L": {
+      "ppm": -23.208,
+      "f_hz": 999.97679
+     },
+     "phase_L": {
+      "ppm": -23.163,
+      "amp_dbfs": -67.1,
+      "valid": true
+     },
+     "lsq_R": {
+      "ppm": -23.454,
+      "f_hz": 999.97655
+     },
+     "phase_R": {
+      "ppm": -23.437,
+      "amp_dbfs": -66.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.389,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.395,
+      "var_f_hz2": 0.0,
+      "rho_noise": 0.176,
+      "sigma_pred_ppm": 0.052
+     },
+     "prod_spread_ppm": 0.187
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -23.038,
+      "f0_hz": 999.977,
+      "level_dbfs": -67.1,
+      "noise_dbfs": -79.6,
+      "carrier_local_snr_db": 40.1,
+      "coh_err_bins": -0.023
+     },
+     "prod_R": {
+      "ppm": -23.336,
+      "f0_hz": 999.9767,
+      "level_dbfs": -66.8,
+      "noise_dbfs": -95.6,
+      "carrier_local_snr_db": 56.3,
+      "coh_err_bins": -0.0233
+     },
+     "lsq_L": {
+      "ppm": -23.293,
+      "f_hz": 999.97671
+     },
+     "phase_L": {
+      "ppm": -23.144,
+      "amp_dbfs": -67.1,
+      "valid": true
+     },
+     "lsq_R": {
+      "ppm": -23.469,
+      "f_hz": 999.97653
+     },
+     "phase_R": {
+      "ppm": -23.436,
+      "amp_dbfs": -66.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.422,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.426,
+      "var_f_hz2": 0.0,
+      "rho_noise": 0.176,
+      "sigma_pred_ppm": 0.052
+     },
+     "prod_spread_ppm": 0.298
+    }
+   }
+  },
+  {
+   "index": 4,
+   "level_dbfs": -54.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -22.568,
+      "f0_hz": 999.9774,
+      "level_dbfs": -61.2,
+      "noise_dbfs": -80.7,
+      "carrier_local_snr_db": 49.2,
+      "coh_err_bins": -0.0226
+     },
+     "prod_R": {
+      "ppm": -23.442,
+      "f0_hz": 999.9766,
+      "level_dbfs": -60.8,
+      "noise_dbfs": -96.6,
+      "carrier_local_snr_db": 65.4,
+      "coh_err_bins": -0.0234
+     },
+     "lsq_L": {
+      "ppm": -23.446,
+      "f_hz": 999.97655
+     },
+     "phase_L": {
+      "ppm": -23.44,
+      "amp_dbfs": -61.2,
+      "valid": true
+     },
+     "lsq_R": {
+      "ppm": -23.539,
+      "f_hz": 999.97646
+     },
+     "phase_R": {
+      "ppm": -23.539,
+      "amp_dbfs": -60.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.513,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.516,
+      "var_f_hz2": 0.0,
+      "rho_noise": 0.173,
+      "sigma_pred_ppm": 0.026
+     },
+     "prod_spread_ppm": 0.874
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -22.568,
+      "f0_hz": 999.9774,
+      "level_dbfs": -61.2,
+      "noise_dbfs": -80.7,
+      "carrier_local_snr_db": 49.2,
+      "coh_err_bins": -0.0226
+     },
+     "prod_R": {
+      "ppm": -23.442,
+      "f0_hz": 999.9766,
+      "level_dbfs": -60.8,
+      "noise_dbfs": -96.6,
+      "carrier_local_snr_db": 65.4,
+      "coh_err_bins": -0.0234
+     },
+     "lsq_L": {
+      "ppm": -23.446,
+      "f_hz": 999.97655
+     },
+     "phase_L": {
+      "ppm": -23.44,
+      "amp_dbfs": -61.2,
+      "valid": true
+     },
+     "lsq_R": {
+      "ppm": -23.539,
+      "f_hz": 999.97646
+     },
+     "phase_R": {
+      "ppm": -23.539,
+      "amp_dbfs": -60.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.513,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.516,
+      "var_f_hz2": 0.0,
+      "rho_noise": 0.173,
+      "sigma_pred_ppm": 0.026
+     },
+     "prod_spread_ppm": 0.874
+    }
+   }
+  },
+  {
+   "index": 8,
+   "level_dbfs": -30.0,
+   "windows": {
+    "production_R_onset": {
+     "prod_L": {
+      "ppm": -23.68,
+      "f0_hz": 999.9763,
+      "level_dbfs": -37.2,
+      "noise_dbfs": -79.8,
+      "carrier_local_snr_db": 71.7,
+      "coh_err_bins": -0.0237
+     },
+     "prod_R": {
+      "ppm": -23.684,
+      "f0_hz": 999.9763,
+      "level_dbfs": -36.8,
+      "noise_dbfs": -95.8,
+      "carrier_local_snr_db": 88.1,
+      "coh_err_bins": -0.0237
+     },
+     "lsq_L": {
+      "ppm": -23.675,
+      "f_hz": 999.97632
+     },
+     "phase_L": {
+      "ppm": -23.679,
+      "amp_dbfs": -37.2,
+      "valid": true
+     },
+     "lsq_R": {
+      "ppm": -23.686,
+      "f_hz": 999.97631
+     },
+     "phase_R": {
+      "ppm": -23.685,
+      "amp_dbfs": -36.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.682,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.682,
+      "var_f_hz2": 0.0,
+      "rho_noise": 0.192,
+      "sigma_pred_ppm": 0.002
+     },
+     "prod_spread_ppm": 0.004
+    },
+    "fixed_reference": {
+     "prod_L": {
+      "ppm": -23.684,
+      "f0_hz": 999.9763,
+      "level_dbfs": -37.2,
+      "noise_dbfs": -79.9,
+      "carrier_local_snr_db": 71.8,
+      "coh_err_bins": -0.0237
+     },
+     "prod_R": {
+      "ppm": -23.685,
+      "f0_hz": 999.9763,
+      "level_dbfs": -36.8,
+      "noise_dbfs": -95.8,
+      "carrier_local_snr_db": 88.0,
+      "coh_err_bins": -0.0237
+     },
+     "lsq_L": {
+      "ppm": -23.676,
+      "f_hz": 999.97632
+     },
+     "phase_L": {
+      "ppm": -23.679,
+      "amp_dbfs": -37.2,
+      "valid": true
+     },
+     "lsq_R": {
+      "ppm": -23.686,
+      "f_hz": 999.97631
+     },
+     "phase_R": {
+      "ppm": -23.685,
+      "amp_dbfs": -36.8,
+      "valid": true
+     },
+     "joint_naive": {
+      "ppm": -23.682,
+      "var_f_hz2": null
+     },
+     "joint_gls": {
+      "ppm": -23.682,
+      "var_f_hz2": 0.0,
+      "rho_noise": 0.192,
+      "sigma_pred_ppm": 0.002
+     },
+     "prod_spread_ppm": 0.001
+    }
+   }
+  }
+ ]
+}
