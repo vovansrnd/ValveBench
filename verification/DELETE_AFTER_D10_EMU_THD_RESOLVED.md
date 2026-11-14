@@ -629,3 +629,109 @@ Required final output: updated report with established/provisional/invalidated s
 ### 16.10 Current decision gate
 
 v2.18.1 is **received, inspected, and rejected as final evidence**. It does not establish the 500-trial MC statistics for the claimed model, the 997/1013 LSQ pilot conclusions, or calibrated production sigma. It does provide useful artifacts and confirms the no-production-change boundary. Continue with v2.18.2 diagnostics; only after independent review may the coordinator design a production estimator. The current recommendation remains per-channel LSQ with explicit uncertainty and channel QC as the leading candidate, not an approved production change.
+
+
+## 17. Coordinator review of v2.18.2 — commit 895c6e0 (15 Nov 2026)
+
+### 17.1 Repository/scope status
+
+- Agent branch: `agent/v2182-clock-estimator-evidence-repair`, HEAD `895c6e0a2383898fd0675de9cd19f6c45c25fef1`.
+- Parent/base: `d312a23be367f22d8609d4f26a499e74f2ec4461`; GitHub compare shows one commit ahead, zero behind.
+- Changes are diagnostic scripts, reports, JSON/CSV, generated tables and a .gitignore entry. No production module, main or PR #4 was changed. No playback or hardware test is evidenced.
+- Coordinator review is saved at `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2182.md`.
+
+### 17.2 Decision
+
+**v2.18.2 is a substantial improvement, but is not accepted as final evidence.** The white/coloured generator separation and important spectral synthesis fixes are real. The source-code timeline for the 1.85 s tone start is materially better established. However, the Monte-Carlo and pilot scripts still import the old centroid-started LSQ, the actual fit rate is 12 kHz rather than 48 kHz, the coloured PSD verifier has a missing average, the 868 Hz explanation is not demonstrated, and several claims still overstate the evidence. No production changes or policy changes are approved.
+
+### 17.3 Blocking defect A — v2.18.2 imports the old LSQ estimator
+
+Both `v2182_montecarlo.py` and `v2182_pilots.py` import `est_lsq` from `v218_estimators_real.py`. That module in the v2.18.2 branch still has the v2.18 function:
+
+- it initializes from `dsp.analyze_tone()` production centroid;
+- searches only ±0.05 Hz around that centroid;
+- unconditionally performs `resample_poly(seg, 1, 4)`.
+
+The MC and pilot scripts pass 48 kHz input. Therefore the actual LSQ fit is **12 kHz**, not 48 kHz. It is still centroid-started, so it does not establish independent acquisition, ±100 ppm capture, or the claimed LSQ-vs-centroid advantage for an independent estimator.
+
+The improved independent coarse-periodogram start and conditional single decimation exist in the v2.18.1 agent branch, but were not carried forward. Port that implementation, then fix its parabolic interpolation: require a valid concave local peak and bound the interpolation offset to the adjacent-bin interval. Log coarse peak bin, adjacent magnitudes, denominator, offset, final refinement interval and actual fit rate. Refuse/flag invalid or out-of-range interpolation rather than accepting a distant extrapolation.
+
+This invalidates the v2.18.2 claims that LSQ is independently initialized, that its fit rate is 48 kHz, and that its pilot experiment measures independent LSQ robustness.
+
+### 17.4 Blocking defect B — the 868 Hz result is not proven stale
+
+The v2.18.1 independent-start estimator's coarse FFT parabolic interpolation checks only `denom != 0`; it does not require negative curvature and does not constrain the fractional-bin correction to ±0.5 bin. A selected coarse maximum at a search boundary, or a non-concave neighbouring profile, can therefore extrapolate far outside the discrete ±2 Hz interval. “The search is ±2 Hz, so 868 Hz is impossible” is not a valid argument for that function.
+
+The v2.18.2 rerun at 997/−30 uses the old centroid-started ±0.05 Hz estimator and does not adjudicate the v2.18.1 result. Reproduce the exact v2.18.1 seed/case on the exact v2.18.1 code; save the selected FFT bin, three adjacent magnitudes, denominator, interpolation offset, final refinement grid and result. Do not call the previous JSON stale until this is resolved.
+
+### 17.5 Coloured PSD verifier — generator improved, verifier accumulation bug
+
+The coloured generator now uses the target grid `fs/n`, the actual 48 kHz sample rate and one-sided synthesis scale `S·fs·n/2`. The conditional complex L/R construction is materially improved and the main MC does call the selected noise model.
+
+But `verify_colored()` accumulates 15 periodograms in `aLL/aRR/aLR` and compares those sums with a single target PSD without dividing by `n_check=15`. The saved PSD deviations are around +11.6…+12.4 dB, which is exactly the expected `10·log10(15)=11.761 dB` accumulation offset. This is a verifier bug, not a +12 dB model/unit mismatch.
+
+After averaging, the saved deviations imply approximate L/R PSD differences to target of:
+- 900–1100 Hz: +0.09 / +0.61 dB;
+- 100–500 Hz: −0.13 / −0.13 dB;
+- 500–2000 Hz: −0.07 / approximately 0.00 dB;
+- 2–8 kHz: −0.13 / −0.13 dB;
+- 8–24 kHz: −0.14 / −0.14 dB.
+
+The gamma² ratio is invariant to this common division factor, so synthesized gamma² may still be close. However, the verifier JSON saves synthesized gamma² only; the report compares it to measured values not included in that verifier artifact. Fix by averaging all accumulated spectra by `n_check`, store target and generated PSD and gamma² side-by-side for exact frequency bands and averaging method, and add explicit per-channel RMS / band-power checks. The white verifier currently checks Pearson rho but not the asserted −80/−96 dBFS channel RMS; save and assert those values too.
+
+### 17.6 MC records, interpretation and row counts
+
+There are 20 batch CSVs per model, 75 data rows per CSV (25 trials × 3 levels): **1500 rows per model, 3000 rows total**. The report's statement “2000 rows total” is incorrect; regenerate this count from the files.
+
+The batch data and summary statistics agree in the examined aggregates, but all LSQ fields inherit the centroid-started 12 kHz estimator defect in §17.3. Current results may describe the old local refinement conditional on centroid, not independent LSQ.
+
+The white model is an ideal white correlated proxy (common component + independent additions, zero delay); its sigma_pred calibration is conditional on that model and whitening assumption only. The coloured model is generated from 129 idle-D10 quiet windows and does not include the during-tone D10 noise/asymmetry. Its jGLS sigma_pred remains badly under-dispersed (pred/actual roughly 0.045; per-trial coverage roughly 0.04 at 1σ and 0.06–0.08 at 2σ). Do not use those outputs for production acceptance.
+
+### 17.7 Pilot test — ppm fixed, harmonic profile is a stress comb
+
+The v2.18.2 pilot code correctly computes the error relative to the tested pilot. This fixes the v2.18.1 nominal-frequency arithmetic.
+
+However, the test adds 40 mains harmonics (50 Hz through 2 kHz) at exactly the same amplitude for every line in a given trial. Only the 1 kHz line is cited as measured near −93 dBFS. Thus the −93 dBFS run is **not** a measured mains spectrum; it is a flat harmonic-comb stress model. Label it as such.
+
+For a realistic test, estimate/integrate each line's power separately from source WAVs, preserve the measured harmonic vector, and rerun 997/1000/1013 with that profile. Keep flat-comb stress runs separate. Save raw per-trial frequency, seed and script hash. Given the LSQ implementation defect, no pilot conclusion about independent LSQ or pilot replacement is accepted. 1013 Hz may remain a candidate for further offline testing, but production must stay at 1 kHz pending evidence.
+
+### 17.8 Schedule — arithmetic supported; distinguish the two 50 ms quantities
+
+Production code inspection confirms the expected tone start at 1.85 s relative to nominal capture launch:
+- `backend.play_record()` starts arecord, waits 0.30 s, then launches aplay;
+- it adds a 50 ms leading zero pad and a separate 50 ms trailing pad to the playback stream;
+- `Rig.run()`, when edge protection is enabled, adds a 1.5 s leading silence;
+- `Rig._seg()` includes a separate 50 ms tail reserve after the segment's tone; with settle 0.4 s and 2.0 s of analysis blocks, the segment is 2.45 s.
+
+Thus the tone onset is `0.30 + 0.05 backend-leading-pad + 1.50 edge-lead = 1.85 s`; the segment ends around 4.30 s. The program WAV check that the tone begins 1.50 s into the programme is consistent.
+
+The script/report comments currently conflate the backend leading pad with the `_seg` tail reserve, and occasionally call the 50 ms a measured D10 latency. Correct these labels. Also, the 0.30 s is measured from process launch, not an explicit timestamp of arecord's first sample; keep the exact capture timeline / mechanism provisional.
+
+The observed capture #1 onset ≈2.225 s and end ≈4.300 s versus nominal [1.850, 4.300] is a strong approximately 375 ms late-start anomaly. It does not prove the physical mechanism or exact number of source frames discarded. The production analysis window is still cross-checked using hard-coded old per-capture onset values; treat the +350 ms overrun as corroboration, not an independently reconstructed detector result.
+
+### 17.9 Resampling — analytical quantum accepted, numeric multi-tone test invalid
+
+The analytical `1e6/N_padded` quantum remains arithmetically correct. However, `v2182_resample_exact.py` synthesizes simultaneous 1, 10 and 20 kHz tones, then estimates each with a single-tone LSQ over the full multi-tone record. The residual includes cross-tone fit bias; this does not isolate resampler timebase error. Retest one tone at a time or use a properly isolated band-limited tone. Linear interpolation remains a demonstration only; no production patch is authorized.
+
+### 17.10 Source-data availability
+
+The WAV directory is ignored by Git and absent from the pushed tree. The report's local `wav/` directory is not accessible to the coordinator/auditor. Only the earlier manifest is available in the repository. Provide the capture and programme WAVs through an accessible shared archive/location with hashes and full format metadata (dtype/sample format, Fs, channels, frames).
+
+### 17.11 Required v2.18.3 — diagnostics only
+
+1. Port the independent-start LSQ from the v2.18.1 branch, fix bounded/concave parabolic interpolation, ensure conditional one-stage decimation, and log actual fit rate/coarse peak/refinement bounds.
+2. Test deterministic ±100 ppm acquisition, low SNR, all three pilot frequencies and a strong line adjacent to/outside the search interval. Reproduce the exact v2.18.1 868 Hz case and explain its parabolic values.
+3. Rerun both 500×3 MC models using the corrected estimator. Save new per-trial CSVs and summaries; state actual fit rate and per-model assumptions.
+4. Fix coloured verification by averaging over `n_check`; store target and synthesized PSD/coherence per band. Add measured white-noise channel RMS checks. Correct total row count to 3000.
+5. Rerun pilots using individually measured mains-line powers from the source WAVs; keep equal-level flat comb as a separate stress case.
+6. Correct schedule comments to distinguish backend leading/trailing pads, `_seg` tail reserve, settle/analysis offset and edge-protect lead. Keep the 1.85/4.30 timing result provisional with the process-launch timestamp caveat.
+7. Replace simultaneous multi-tone resample test with one-tone-at-a-time or band-isolated tests. Preserve analytical quantum only; no production resampler changes.
+8. Provide source WAV package in an accessible shared location with complete hashes/format metadata. Generate all report tables from corrected outputs, and record exact commands/hashes/counts.
+
+No production changes, main changes, PRs, playback, hardware or DUT measurements.
+
+### 17.12 Current decision gate
+
+v2.18.2 is **received and partially validated, but not accepted as final evidence**. Noise-model generation and timing-source analysis are materially improved; the colored PSD verifier has a missing averaging factor. The independent LSQ claim, 48 kHz fit-rate claim, pilot robustness and stale-868 explanation are not established because the old centroid-started 12 kHz estimator is still imported. Resample numeric residuals are not valid due to multi-tone fitting. No production design/patch or clock-gate policy change is authorized before independent review of v2.18.3.
+
+The leading production direction remains per-channel LSQ with frequency/ppm, uncertainty, tone presence, SNR and window-validity QC for both channels; choose the most informative valid channel rather than hard-code R-only. Defer joint GLS until its frequency-local cross-spectral covariance model is validated.
