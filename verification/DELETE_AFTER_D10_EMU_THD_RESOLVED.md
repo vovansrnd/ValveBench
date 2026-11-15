@@ -821,3 +821,62 @@ No production changes, main/PR changes, playback, hardware or DUT testing in v2.
 v2.18.3 is **partially accepted as diagnostic progress, not as final evidence**. The independent LSQ and 48 kHz fit-rate fixes are real; the MC comparison is valid within the two stated model constructions. The exact 868 Hz issue is still open because the reproduction uses the wrong historical estimator. Pilot-profile provenance and amplitude scaling, white-noise floor levels, schedule labels, resample numeric data and source-package availability remain unresolved.
 
 The production direction should now be refined: per-channel LSQ with explicit acquisition-validity, uncertainty, tone-presence, SNR and window QC remains a candidate, but **must not be blindly preferred**. The stress tests show that a narrow-window centroid can outperform full-band LSQ under strong nearby lines. Keep centroid as a separately qualified fallback or add line-aware nuisance fitting; determine that selection policy in diagnostics before production changes.
+
+
+## 19. Coordinator review of v2.18.4 — commit 4fc938e (15 Nov 2026)
+
+### 19.1 Scope and decision
+
+- Agent branch: `agent/v2184-clock-estimator-evidence-closure`, HEAD `4fc938e9b970655081bd82362336249fb32df461`.
+- Parent/base: `24b5eeab02c11cdbf9d7ffb889bc61d0ed7e8f27`; one commit ahead, zero behind.
+- The commit adds diagnostics only; compare shows no production-source changes. No playback, hardware or DUT test.
+- Full coordinator review saved at `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2184.md`.
+
+**v2.18.4 is partially accepted as diagnostic progress, not as a closed evidence package. No production approval.**
+
+### 19.2 868 Hz — historical reproduction accepted
+
+The reproduced function is the independent-start `est_lsq` at `8d8b040`, the version imported by `v2181_lsq_pilots.py`. The signal construction and seed formula for 997 Hz / −30 dBFS match the original case. The 100-trial reproduction gives 865.387–870.506 Hz, mean 868.085 Hz, sample σ 1.946 Hz; all trials are within 5 Hz of the failure cluster. Example trial 0: coarse bin 999 Hz, neighbours [1.4535, 189.8412, 379.6506], positive curvature +1.4216, unbounded shift −133.015 bins, final 865.8348 Hz. This closes the previous question about whether the saved v2.18.1 result came from the correct estimator.
+
+### 19.3 New LSQ implementation — blocking defects remain
+
+- `v2184_estimators.py` selects a maximum of `abs(rfft())`, but computes parabolic interpolation only when `curv = y[k-1] + y[k+1] - 2*y[k]` is positive. A local maximum has negative curvature; the sign test is reversed.
+- `edge_peak` is only returned as metadata; the function still returns a frequency. `est_joint` discards the status, and pilot code still scores an edge result.
+- RSS refinement has a fixed ±0.15 Hz grid but does not flag a minimum at either boundary.
+- The demonstrated 997/1000 Hz, −30 dBFS case remains biased by −127 ppm with coarse status `ok`. No post-fit residual-line QC is implemented. Return explicit validity, residual metrics and failure states; fail closed in all callers.
+
+### 19.4 White / colored Monte Carlo
+
+White generator level correction is accepted: RMS verifier reports −79.99/−96.00 dBFS against −80/−96 declared under the production metric. The 40 CSV files are 20 batches per model × 75 trial rows each = 3000 rows; sampled rows show 48 kHz fit rate. White `sigma_pred` is conservative only within the white synthetic model (pred/actual ~1.40–1.46).
+
+Colored MC supports LSQ σ ~3.17/3.34 ppm vs centroid ~10.47/10.67 ppm at −72 dBFS within this specific synthetic idle-noise construction. It correctly shows white `sigma_pred` is unusable for colored noise (pred/actual ~0.06); the known during-tone L/R asymmetry is not modeled.
+
+The claimed full colored verification is **not accepted**: report's target `gamma² model` entries are blank; verifier outputs only synthesized gamma², band-averaged PSD deviations and mean phases, not complete target/generated complex CSD and gamma² comparisons. `v2184-verify-colored-full.json` is created by script but absent from the branch.
+
+### 19.5 Pilot harmonic extraction — still under-integrates line power
+
+The code now reads WAVs rather than using a static dictionary, but `nperseg=8192` at 192 kHz gives 23.4375 Hz resolution. The ±12 Hz integration contains typically one bin and does not capture the full Hann main lobe. A same-settings numerical check on pure tones recovered only ~0.577 of 1 kHz power (−2.39 dB in inferred peak amplitude) and ~0.651 of 50 Hz power (−1.86 dB). `sqrt(2P)` is correct only after accurate line-power integration.
+
+Also: `S_LR` is calculated but unused; the pilot synthesis applies the same random line phase to L/R; only channel L is actually analysed; the JSON stores the pilot-script hash but not source WAV or estimator hashes. Rework extraction with calibrated injected-line tests; preserve full provenance and score both channels.
+
+### 19.6 Schedule — 50 ms terms remain conflated
+
+Production `backend.play_record()` explicitly builds playback data as `[pad, out, pad]`, with 50 ms zero pads at both ends, and separately waits 0.30 s before starting playback. The 50 ms term in the 1.85 s start equation is the **leading backend pre-pad**, not a measured D10 latency or a backend tail pad. The separate backend post-pad is omitted from v2.18.4's component accounting; `Rig._seg` has another independent 50 ms tail reserve. Correctly name all three, retain the 1.50 s edge lead and 0.40 s settle. The +375 ms capture-1 head-loss remains an observation with unknown physical cause.
+
+### 19.7 Resampling and data package
+
+The numerical resampling test now isolates one 1 kHz tone, resolving the previous multitone-fit contamination for that test. Fractional interpolation remains demonstration-only; 10/20 kHz impact values are analytical. No production resampler change.
+
+The commit does not contain the claimed 271 MB WAV directory; `v2183-wav-manifest.json` and `v2184-verify-colored-full.json` are absent from the branch. Local ignored files and host-specific paths are not independently reproducible. Require an accessible complete archive, SHA256 and format metadata.
+
+### 19.8 Required next iteration — diagnostics only
+
+1. Fix coarse parabola sign/validity; add off-bin, flat, convex and concave tests and RSS-boundary status.
+2. Implement post-fit residual line detection/quality gate for the −127 ppm out-of-band-line case; fail closed on invalid acquisition/fit in LSQ, pilots and joint GLS.
+3. Rework pilot line-power extraction with calibrated integrated power; preserve WAV and estimator hashes, L/R complex cross-spectrum as needed, and score both channels.
+4. Commit complete colored verification with target/generated auto-PSD, gamma² and complex CSD magnitude/phase.
+5. Correct backend leading pad, backend trailing pad and `Rig._seg` tail reserve names and schedule model.
+6. Publish all required WAVs with a complete manifest; preserve diagnostic-only scope.
+
+No production/main/PR changes, pilot or clock-gate policy changes, playback, hardware or DUT work.
+
