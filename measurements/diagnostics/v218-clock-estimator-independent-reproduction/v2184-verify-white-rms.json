@@ -1,0 +1,9 @@
+{
+ "rms_L_dbfs": -79.99,
+ "rms_R_dbfs": -96.0,
+ "declared_dbfs": [
+  -80.0,
+  -96.0
+ ],
+ "metric": "production rms_dbfs: RMS × √2 относительно полного синуса"
+}

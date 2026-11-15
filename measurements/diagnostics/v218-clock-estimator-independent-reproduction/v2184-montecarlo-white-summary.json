@@ -1,0 +1,143 @@
+{
+ "model": "white",
+ "levels": [
+  {
+   "level_dbfs": -72.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.017,
+     "sigma_ppm": 1.193,
+     "max_abs_ppm": 3.353
+    },
+    "prod_R": {
+     "bias_ppm": 0.003,
+     "sigma_ppm": 0.191,
+     "max_abs_ppm": 0.571
+    },
+    "prod_mean": {
+     "bias_ppm": 0.01,
+     "sigma_ppm": 0.69,
+     "max_abs_ppm": 1.954
+    },
+    "lsq_L": {
+     "bias_ppm": 0.022,
+     "sigma_ppm": 0.352,
+     "max_abs_ppm": 1.213
+    },
+    "lsq_R": {
+     "bias_ppm": 0.003,
+     "sigma_ppm": 0.056,
+     "max_abs_ppm": 0.197
+    },
+    "joint_gls": {
+     "bias_ppm": 0.0,
+     "sigma_ppm": 0.016,
+     "max_abs_ppm": 0.052
+    }
+   },
+   "sigma_pred_stats": {
+    "n_valid": 500,
+    "mean_pred_ppm": 0.023,
+    "actual_sigma_ppm": 0.016,
+    "pred_over_actual": 1.462,
+    "coverage_1sigma_per_trial": 0.862,
+    "coverage_2sigma_per_trial": 0.992,
+    "note": "покрытие per-trial: |err_i| ≤ σ_pred_i"
+   },
+   "edge_peak_trials": 0
+  },
+  {
+   "level_dbfs": -66.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": -0.007,
+     "sigma_ppm": 0.6,
+     "max_abs_ppm": 1.836
+    },
+    "prod_R": {
+     "bias_ppm": -0.001,
+     "sigma_ppm": 0.095,
+     "max_abs_ppm": 0.281
+    },
+    "prod_mean": {
+     "bias_ppm": -0.004,
+     "sigma_ppm": 0.346,
+     "max_abs_ppm": 1.058
+    },
+    "lsq_L": {
+     "bias_ppm": -0.003,
+     "sigma_ppm": 0.179,
+     "max_abs_ppm": 0.551
+    },
+    "lsq_R": {
+     "bias_ppm": -0.001,
+     "sigma_ppm": 0.028,
+     "max_abs_ppm": 0.085
+    },
+    "joint_gls": {
+     "bias_ppm": -0.0,
+     "sigma_ppm": 0.008,
+     "max_abs_ppm": 0.029
+    }
+   },
+   "sigma_pred_stats": {
+    "n_valid": 500,
+    "mean_pred_ppm": 0.011,
+    "actual_sigma_ppm": 0.008,
+    "pred_over_actual": 1.399,
+    "coverage_1sigma_per_trial": 0.82,
+    "coverage_2sigma_per_trial": 0.998,
+    "note": "покрытие per-trial: |err_i| ≤ σ_pred_i"
+   },
+   "edge_peak_trials": 0
+  },
+  {
+   "level_dbfs": -60.0,
+   "trials": 500,
+   "estimators": {
+    "prod_L": {
+     "bias_ppm": 0.002,
+     "sigma_ppm": 0.285,
+     "max_abs_ppm": 1.147
+    },
+    "prod_R": {
+     "bias_ppm": -0.001,
+     "sigma_ppm": 0.045,
+     "max_abs_ppm": 0.174
+    },
+    "prod_mean": {
+     "bias_ppm": 0.0,
+     "sigma_ppm": 0.164,
+     "max_abs_ppm": 0.66
+    },
+    "lsq_L": {
+     "bias_ppm": -0.004,
+     "sigma_ppm": 0.087,
+     "max_abs_ppm": 0.257
+    },
+    "lsq_R": {
+     "bias_ppm": -0.002,
+     "sigma_ppm": 0.014,
+     "max_abs_ppm": 0.039
+    },
+    "joint_gls": {
+     "bias_ppm": -0.0,
+     "sigma_ppm": 0.004,
+     "max_abs_ppm": 0.014
+    }
+   },
+   "sigma_pred_stats": {
+    "n_valid": 500,
+    "mean_pred_ppm": 0.006,
+    "actual_sigma_ppm": 0.004,
+    "pred_over_actual": 1.422,
+    "coverage_1sigma_per_trial": 0.856,
+    "coverage_2sigma_per_trial": 0.99,
+    "note": "покрытие per-trial: |err_i| ≤ σ_pred_i"
+   },
+   "edge_peak_trials": 0
+  }
+ ]
+}
