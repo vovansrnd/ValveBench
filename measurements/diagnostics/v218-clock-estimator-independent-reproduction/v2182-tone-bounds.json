@@ -1,0 +1,134 @@
+{
+ "schedule": {
+  "source": "константы кода: backend.py:574 sleep(0.30) + pad 0.05 + lead 1.5; верифицировано кадрами программы (тон в кадре 1.5 программы)",
+  "start_s": 1.85,
+  "end_s": 4.3,
+  "program_frame_verification": {
+   "tone_start_in_program_s": 1.5,
+   "expected_lead_s": 1.5,
+   "match": true
+  }
+ },
+ "results": [
+  {
+   "index": 1,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 2.225,
+   "observed_end_s": 4.3,
+   "head_loss_ms": 375.0,
+   "tail_loss_ms": 0.0,
+   "production_window_s": [
+    2.65,
+    4.65
+   ],
+   "window_overrun_past_tone_end_ms": 350.0,
+   "tone_level_dbfs": -78.8,
+   "floor_dbfs": -114.6,
+   "assertions": "PASS"
+  },
+  {
+   "index": 2,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 1.86,
+   "observed_end_s": 4.305,
+   "head_loss_ms": 10.0,
+   "tail_loss_ms": -5.0,
+   "production_window_s": [
+    2.255,
+    4.255
+   ],
+   "window_overrun_past_tone_end_ms": -50.0,
+   "tone_level_dbfs": -72.7,
+   "floor_dbfs": -115.2,
+   "assertions": "PASS"
+  },
+  {
+   "index": 15,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 1.85,
+   "observed_end_s": 4.295,
+   "head_loss_ms": 0.0,
+   "tail_loss_ms": 5.0,
+   "production_window_s": [
+    2.245,
+    4.245
+   ],
+   "window_overrun_past_tone_end_ms": -50.0,
+   "tone_level_dbfs": -72.8,
+   "floor_dbfs": -120.5,
+   "assertions": "PASS"
+  },
+  {
+   "index": 16,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 1.855,
+   "observed_end_s": 4.3,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0,
+   "production_window_s": [
+    2.255,
+    4.255
+   ],
+   "window_overrun_past_tone_end_ms": -45.0,
+   "tone_level_dbfs": -78.8,
+   "floor_dbfs": -118.2,
+   "assertions": "PASS"
+  },
+  {
+   "index": 3,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 1.855,
+   "observed_end_s": 4.3,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0,
+   "production_window_s": [
+    2.25,
+    4.25
+   ],
+   "window_overrun_past_tone_end_ms": -50.0,
+   "tone_level_dbfs": -66.8,
+   "floor_dbfs": -114.7,
+   "assertions": "PASS"
+  },
+  {
+   "index": 4,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 1.855,
+   "observed_end_s": 4.3,
+   "head_loss_ms": 5.0,
+   "tail_loss_ms": 0.0,
+   "production_window_s": [
+    2.255,
+    4.255
+   ],
+   "window_overrun_past_tone_end_ms": -45.0,
+   "tone_level_dbfs": -60.8,
+   "floor_dbfs": -115.5,
+   "assertions": "PASS"
+  },
+  {
+   "index": 8,
+   "schedule_start_s": 1.85,
+   "schedule_end_s": 4.3,
+   "observed_start_s": 1.86,
+   "observed_end_s": 4.305,
+   "head_loss_ms": 10.0,
+   "tail_loss_ms": -5.0,
+   "production_window_s": [
+    2.26,
+    4.26
+   ],
+   "window_overrun_past_tone_end_ms": -45.0,
+   "tone_level_dbfs": -36.8,
+   "floor_dbfs": -117.4,
+   "assertions": "PASS"
+  }
+ ],
+ "assertions": "все PASS"
+}

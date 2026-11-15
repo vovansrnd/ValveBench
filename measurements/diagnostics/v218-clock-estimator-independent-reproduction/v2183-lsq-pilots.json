@@ -1,0 +1,2420 @@
+{
+ "script_sha256": "6bfa6a4da26a90268a8b0d5248772d81d753be68ef48af2dd9a460366e31bb1d",
+ "level_dbfs": -72.0,
+ "ppm_true": -23.5,
+ "trials": 100,
+ "measured_profile_dbhz": {
+  "50": -109.5,
+  "100": -112.5,
+  "150": -110.0,
+  "200": -117.0,
+  "250": -116.0,
+  "300": -115.0,
+  "350": -115.0,
+  "400": -116.0,
+  "450": -115.0,
+  "500": -114.9,
+  "550": -115.5,
+  "600": -116.0,
+  "650": -116.5,
+  "700": -117.0,
+  "750": -117.5,
+  "800": -118.9,
+  "850": -118.0,
+  "900": -118.5,
+  "950": -118.0,
+  "1000": -106.8,
+  "1050": -118.0,
+  "1100": -118.5,
+  "1150": -119.0,
+  "1200": -119.1,
+  "1250": -120.0,
+  "1300": -123.2,
+  "1350": -121.0,
+  "1400": -120.5,
+  "1450": -121.0,
+  "1500": -119.1,
+  "1550": -120.0,
+  "1600": -121.0,
+  "1650": -122.0,
+  "1700": -121.5,
+  "1750": -122.0,
+  "1800": -122.5,
+  "1850": -123.0,
+  "1900": -123.5,
+  "1950": -124.0,
+  "2000": -119.1
+ },
+ "results": [
+  {
+   "pilot_hz": 997.0,
+   "mode": "measured",
+   "mains_level_dbfs": null,
+   "trials": 100,
+   "prod_centroid": {
+    "bias_ppm": 0.017,
+    "sigma_ppm": 0.248,
+    "max_abs_ppm": 0.626
+   },
+   "lsq": {
+    "bias_ppm": -0.082,
+    "sigma_ppm": 1.585,
+    "max_abs_ppm": 2.404
+   },
+   "lsq_fit_rate_min_hz": 48000.0,
+   "lsq_fit_rate_max_hz": 48000.0,
+   "per_trial": [
+    {
+     "seed": 320450,
+     "f_est_hz": 996.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320451,
+     "f_est_hz": 996.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320452,
+     "f_est_hz": 996.9773,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320453,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320454,
+     "f_est_hz": 996.9775,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320455,
+     "f_est_hz": 996.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320456,
+     "f_est_hz": 996.9748,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320457,
+     "f_est_hz": 996.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320458,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320459,
+     "f_est_hz": 996.9786,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320460,
+     "f_est_hz": 996.975,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320461,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320462,
+     "f_est_hz": 996.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320463,
+     "f_est_hz": 996.9763,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320464,
+     "f_est_hz": 996.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320465,
+     "f_est_hz": 996.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320466,
+     "f_est_hz": 996.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320467,
+     "f_est_hz": 996.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320468,
+     "f_est_hz": 996.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320469,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320470,
+     "f_est_hz": 996.9778,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320471,
+     "f_est_hz": 996.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320472,
+     "f_est_hz": 996.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320473,
+     "f_est_hz": 996.9777,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320474,
+     "f_est_hz": 996.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320475,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320476,
+     "f_est_hz": 996.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320477,
+     "f_est_hz": 996.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320478,
+     "f_est_hz": 996.9752,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320479,
+     "f_est_hz": 996.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320480,
+     "f_est_hz": 996.9768,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320481,
+     "f_est_hz": 996.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320482,
+     "f_est_hz": 996.9786,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320483,
+     "f_est_hz": 996.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320484,
+     "f_est_hz": 996.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320485,
+     "f_est_hz": 996.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320486,
+     "f_est_hz": 996.9748,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320487,
+     "f_est_hz": 996.9769,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320488,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320489,
+     "f_est_hz": 996.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320490,
+     "f_est_hz": 996.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320491,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320492,
+     "f_est_hz": 996.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320493,
+     "f_est_hz": 996.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320494,
+     "f_est_hz": 996.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320495,
+     "f_est_hz": 996.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320496,
+     "f_est_hz": 996.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320497,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320498,
+     "f_est_hz": 996.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320499,
+     "f_est_hz": 996.9768,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320500,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320501,
+     "f_est_hz": 996.9752,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320502,
+     "f_est_hz": 996.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320503,
+     "f_est_hz": 996.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320504,
+     "f_est_hz": 996.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320505,
+     "f_est_hz": 996.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320506,
+     "f_est_hz": 996.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320507,
+     "f_est_hz": 996.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320508,
+     "f_est_hz": 996.9788,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320509,
+     "f_est_hz": 996.975,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320510,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320511,
+     "f_est_hz": 996.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320512,
+     "f_est_hz": 996.979,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320513,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320514,
+     "f_est_hz": 996.978,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320515,
+     "f_est_hz": 996.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320516,
+     "f_est_hz": 996.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320517,
+     "f_est_hz": 996.9779,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320518,
+     "f_est_hz": 996.9786,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320519,
+     "f_est_hz": 996.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320520,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320521,
+     "f_est_hz": 996.9763,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320522,
+     "f_est_hz": 996.9785,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320523,
+     "f_est_hz": 996.9765,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320524,
+     "f_est_hz": 996.9786,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320525,
+     "f_est_hz": 996.9748,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320526,
+     "f_est_hz": 996.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320527,
+     "f_est_hz": 996.9774,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320528,
+     "f_est_hz": 996.9788,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320529,
+     "f_est_hz": 996.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320530,
+     "f_est_hz": 996.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320531,
+     "f_est_hz": 996.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320532,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320533,
+     "f_est_hz": 996.9752,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320534,
+     "f_est_hz": 996.9749,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320535,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320536,
+     "f_est_hz": 996.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320537,
+     "f_est_hz": 996.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320538,
+     "f_est_hz": 996.9769,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320539,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320540,
+     "f_est_hz": 996.9769,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320541,
+     "f_est_hz": 996.9769,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320542,
+     "f_est_hz": 996.9787,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320543,
+     "f_est_hz": 996.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320544,
+     "f_est_hz": 996.9772,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320545,
+     "f_est_hz": 996.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320546,
+     "f_est_hz": 996.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320547,
+     "f_est_hz": 996.9752,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320548,
+     "f_est_hz": 996.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320549,
+     "f_est_hz": 996.9784,
+     "fit_rate_hz": 48000.0
+    }
+   ]
+  },
+  {
+   "pilot_hz": 1000.0,
+   "mode": "measured",
+   "mains_level_dbfs": null,
+   "trials": 100,
+   "prod_centroid": {
+    "bias_ppm": -0.104,
+    "sigma_ppm": 1.532,
+    "max_abs_ppm": 2.685
+   },
+   "lsq": {
+    "bias_ppm": -0.057,
+    "sigma_ppm": 1.496,
+    "max_abs_ppm": 2.312
+   },
+   "lsq_fit_rate_min_hz": 48000.0,
+   "lsq_fit_rate_max_hz": 48000.0,
+   "per_trial": [
+    {
+     "seed": 320750,
+     "f_est_hz": 999.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320751,
+     "f_est_hz": 999.9779,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320752,
+     "f_est_hz": 999.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320753,
+     "f_est_hz": 999.9776,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320754,
+     "f_est_hz": 999.9749,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320755,
+     "f_est_hz": 999.9775,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320756,
+     "f_est_hz": 999.9778,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320757,
+     "f_est_hz": 999.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320758,
+     "f_est_hz": 999.978,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320759,
+     "f_est_hz": 999.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320760,
+     "f_est_hz": 999.9773,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320761,
+     "f_est_hz": 999.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320762,
+     "f_est_hz": 999.9763,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320763,
+     "f_est_hz": 999.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320764,
+     "f_est_hz": 999.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320765,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320766,
+     "f_est_hz": 999.9772,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320767,
+     "f_est_hz": 999.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320768,
+     "f_est_hz": 999.9742,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320769,
+     "f_est_hz": 999.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320770,
+     "f_est_hz": 999.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320771,
+     "f_est_hz": 999.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320772,
+     "f_est_hz": 999.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320773,
+     "f_est_hz": 999.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320774,
+     "f_est_hz": 999.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320775,
+     "f_est_hz": 999.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320776,
+     "f_est_hz": 999.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320777,
+     "f_est_hz": 999.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320778,
+     "f_est_hz": 999.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320779,
+     "f_est_hz": 999.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320780,
+     "f_est_hz": 999.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320781,
+     "f_est_hz": 999.9754,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320782,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320783,
+     "f_est_hz": 999.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320784,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320785,
+     "f_est_hz": 999.9754,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320786,
+     "f_est_hz": 999.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320787,
+     "f_est_hz": 999.978,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320788,
+     "f_est_hz": 999.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320789,
+     "f_est_hz": 999.9746,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320790,
+     "f_est_hz": 999.9748,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320791,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320792,
+     "f_est_hz": 999.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320793,
+     "f_est_hz": 999.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320794,
+     "f_est_hz": 999.9778,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320795,
+     "f_est_hz": 999.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320796,
+     "f_est_hz": 999.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320797,
+     "f_est_hz": 999.9771,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320798,
+     "f_est_hz": 999.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320799,
+     "f_est_hz": 999.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320800,
+     "f_est_hz": 999.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320801,
+     "f_est_hz": 999.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320802,
+     "f_est_hz": 999.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320803,
+     "f_est_hz": 999.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320804,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320805,
+     "f_est_hz": 999.9776,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320806,
+     "f_est_hz": 999.9777,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320807,
+     "f_est_hz": 999.9782,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320808,
+     "f_est_hz": 999.9742,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320809,
+     "f_est_hz": 999.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320810,
+     "f_est_hz": 999.9744,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320811,
+     "f_est_hz": 999.9749,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320812,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320813,
+     "f_est_hz": 999.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320814,
+     "f_est_hz": 999.9778,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320815,
+     "f_est_hz": 999.9775,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320816,
+     "f_est_hz": 999.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320817,
+     "f_est_hz": 999.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320818,
+     "f_est_hz": 999.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320819,
+     "f_est_hz": 999.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320820,
+     "f_est_hz": 999.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320821,
+     "f_est_hz": 999.9772,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320822,
+     "f_est_hz": 999.9754,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320823,
+     "f_est_hz": 999.9781,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320824,
+     "f_est_hz": 999.9747,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320825,
+     "f_est_hz": 999.9784,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320826,
+     "f_est_hz": 999.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320827,
+     "f_est_hz": 999.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320828,
+     "f_est_hz": 999.9775,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320829,
+     "f_est_hz": 999.9755,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320830,
+     "f_est_hz": 999.9778,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320831,
+     "f_est_hz": 999.9777,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320832,
+     "f_est_hz": 999.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320833,
+     "f_est_hz": 999.9742,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320834,
+     "f_est_hz": 999.9745,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320835,
+     "f_est_hz": 999.9743,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320836,
+     "f_est_hz": 999.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320837,
+     "f_est_hz": 999.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320838,
+     "f_est_hz": 999.9749,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320839,
+     "f_est_hz": 999.9771,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320840,
+     "f_est_hz": 999.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320841,
+     "f_est_hz": 999.9783,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320842,
+     "f_est_hz": 999.977,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320843,
+     "f_est_hz": 999.9779,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320844,
+     "f_est_hz": 999.9748,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320845,
+     "f_est_hz": 999.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320846,
+     "f_est_hz": 999.9779,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320847,
+     "f_est_hz": 999.9751,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320848,
+     "f_est_hz": 999.9779,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 320849,
+     "f_est_hz": 999.9752,
+     "fit_rate_hz": 48000.0
+    }
+   ]
+  },
+  {
+   "pilot_hz": 1013.0,
+   "mode": "measured",
+   "mains_level_dbfs": null,
+   "trials": 100,
+   "prod_centroid": {
+    "bias_ppm": -0.066,
+    "sigma_ppm": 0.221,
+    "max_abs_ppm": 0.673
+   },
+   "lsq": {
+    "bias_ppm": 0.022,
+    "sigma_ppm": 0.36,
+    "max_abs_ppm": 0.712
+   },
+   "lsq_fit_rate_min_hz": 48000.0,
+   "lsq_fit_rate_max_hz": 48000.0,
+   "per_trial": [
+    {
+     "seed": 322050,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322051,
+     "f_est_hz": 1012.9765,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322052,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322053,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322054,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322055,
+     "f_est_hz": 1012.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322056,
+     "f_est_hz": 1012.9765,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322057,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322058,
+     "f_est_hz": 1012.9763,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322059,
+     "f_est_hz": 1012.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322060,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322061,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322062,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322063,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322064,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322065,
+     "f_est_hz": 1012.9768,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322066,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322067,
+     "f_est_hz": 1012.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322068,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322069,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322070,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322071,
+     "f_est_hz": 1012.9765,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322072,
+     "f_est_hz": 1012.9763,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322073,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322074,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322075,
+     "f_est_hz": 1012.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322076,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322077,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322078,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322079,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322080,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322081,
+     "f_est_hz": 1012.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322082,
+     "f_est_hz": 1012.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322083,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322084,
+     "f_est_hz": 1012.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322085,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322086,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322087,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322088,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322089,
+     "f_est_hz": 1012.9768,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322090,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322091,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322092,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322093,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322094,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322095,
+     "f_est_hz": 1012.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322096,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322097,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322098,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322099,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322100,
+     "f_est_hz": 1012.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322101,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322102,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322103,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322104,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322105,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322106,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322107,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322108,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322109,
+     "f_est_hz": 1012.9768,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322110,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322111,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322112,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322113,
+     "f_est_hz": 1012.9763,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322114,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322115,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322116,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322117,
+     "f_est_hz": 1012.976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322118,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322119,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322120,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322121,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322122,
+     "f_est_hz": 1012.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322123,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322124,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322125,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322126,
+     "f_est_hz": 1012.9765,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322127,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322128,
+     "f_est_hz": 1012.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322129,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322130,
+     "f_est_hz": 1012.9761,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322131,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322132,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322133,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322134,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322135,
+     "f_est_hz": 1012.9767,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322136,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322137,
+     "f_est_hz": 1012.9765,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322138,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322139,
+     "f_est_hz": 1012.9759,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322140,
+     "f_est_hz": 1012.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322141,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322142,
+     "f_est_hz": 1012.9764,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322143,
+     "f_est_hz": 1012.9755,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322144,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322145,
+     "f_est_hz": 1012.9758,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322146,
+     "f_est_hz": 1012.9766,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322147,
+     "f_est_hz": 1012.9757,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322148,
+     "f_est_hz": 1012.9762,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 322149,
+     "f_est_hz": 1012.9763,
+     "fit_rate_hz": 48000.0
+    }
+   ]
+  },
+  {
+   "pilot_hz": 997.0,
+   "mode": "uniform_comb",
+   "mains_level_dbfs": -60.0,
+   "trials": 50,
+   "prod_centroid": {
+    "bias_ppm": 3.199,
+    "sigma_ppm": 0.979,
+    "max_abs_ppm": 4.796
+   },
+   "lsq": {
+    "bias_ppm": -1.523,
+    "sigma_ppm": 64.864,
+    "max_abs_ppm": 107.068
+   },
+   "lsq_fit_rate_min_hz": 48000.0,
+   "lsq_fit_rate_max_hz": 48000.0,
+   "per_trial": [
+    {
+     "seed": 325990,
+     "f_est_hz": 996.9089,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325991,
+     "f_est_hz": 997.0712,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325992,
+     "f_est_hz": 997.0425,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325993,
+     "f_est_hz": 996.9796,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325994,
+     "f_est_hz": 996.9976,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325995,
+     "f_est_hz": 996.8986,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325996,
+     "f_est_hz": 996.9326,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325997,
+     "f_est_hz": 996.9264,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325998,
+     "f_est_hz": 996.9122,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 325999,
+     "f_est_hz": 996.9533,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326000,
+     "f_est_hz": 996.932,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326001,
+     "f_est_hz": 996.8981,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326002,
+     "f_est_hz": 996.9084,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326003,
+     "f_est_hz": 997.0791,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326004,
+     "f_est_hz": 997.0533,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326005,
+     "f_est_hz": 997.0073,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326006,
+     "f_est_hz": 997.0375,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326007,
+     "f_est_hz": 996.909,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326008,
+     "f_est_hz": 996.91,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326009,
+     "f_est_hz": 997.0657,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326010,
+     "f_est_hz": 997.0497,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326011,
+     "f_est_hz": 996.9242,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326012,
+     "f_est_hz": 996.9072,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326013,
+     "f_est_hz": 997.0833,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326014,
+     "f_est_hz": 997.0303,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326015,
+     "f_est_hz": 997.0752,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326016,
+     "f_est_hz": 996.8987,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326017,
+     "f_est_hz": 996.9911,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326018,
+     "f_est_hz": 996.9309,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326019,
+     "f_est_hz": 996.9748,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326020,
+     "f_est_hz": 996.9581,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326021,
+     "f_est_hz": 996.9187,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326022,
+     "f_est_hz": 997.0736,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326023,
+     "f_est_hz": 996.9108,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326024,
+     "f_est_hz": 996.8989,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326025,
+     "f_est_hz": 997.0586,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326026,
+     "f_est_hz": 996.9211,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326027,
+     "f_est_hz": 997.0282,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326028,
+     "f_est_hz": 996.9186,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326029,
+     "f_est_hz": 997.0098,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326030,
+     "f_est_hz": 996.9049,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326031,
+     "f_est_hz": 997.0212,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326032,
+     "f_est_hz": 997.0608,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326033,
+     "f_est_hz": 996.9028,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326034,
+     "f_est_hz": 996.9315,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326035,
+     "f_est_hz": 997.0698,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326036,
+     "f_est_hz": 997.0438,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326037,
+     "f_est_hz": 996.9683,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326038,
+     "f_est_hz": 996.9198,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326039,
+     "f_est_hz": 996.9447,
+     "fit_rate_hz": 48000.0
+    }
+   ]
+  },
+  {
+   "pilot_hz": 1000.0,
+   "mode": "uniform_comb",
+   "mains_level_dbfs": -60.0,
+   "trials": 50,
+   "prod_centroid": {
+    "bias_ppm": 23.103,
+    "sigma_ppm": 4.33,
+    "max_abs_ppm": 31.345
+   },
+   "lsq": {
+    "bias_ppm": 22.719,
+    "sigma_ppm": 4.708,
+    "max_abs_ppm": 32.372
+   },
+   "lsq_fit_rate_min_hz": 48000.0,
+   "lsq_fit_rate_max_hz": 48000.0,
+   "per_trial": [
+    {
+     "seed": 326290,
+     "f_est_hz": 999.9982,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326291,
+     "f_est_hz": 999.9961,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326292,
+     "f_est_hz": 1000.0004,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326293,
+     "f_est_hz": 999.993,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326294,
+     "f_est_hz": 1000.0084,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326295,
+     "f_est_hz": 999.9972,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326296,
+     "f_est_hz": 999.9938,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326297,
+     "f_est_hz": 1000.0078,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326298,
+     "f_est_hz": 1000.007,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326299,
+     "f_est_hz": 999.995,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326300,
+     "f_est_hz": 1000.0015,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326301,
+     "f_est_hz": 999.9942,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326302,
+     "f_est_hz": 999.9961,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326303,
+     "f_est_hz": 999.9965,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326304,
+     "f_est_hz": 999.9936,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326305,
+     "f_est_hz": 999.9945,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326306,
+     "f_est_hz": 1000.002,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326307,
+     "f_est_hz": 999.9956,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326308,
+     "f_est_hz": 999.9986,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326309,
+     "f_est_hz": 999.9959,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326310,
+     "f_est_hz": 1000.0072,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326311,
+     "f_est_hz": 1000.0027,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326312,
+     "f_est_hz": 999.9953,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326313,
+     "f_est_hz": 999.9942,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326314,
+     "f_est_hz": 1000.0029,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326315,
+     "f_est_hz": 1000.0089,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326316,
+     "f_est_hz": 999.9962,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326317,
+     "f_est_hz": 999.9934,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326318,
+     "f_est_hz": 999.9979,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326319,
+     "f_est_hz": 999.9994,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326320,
+     "f_est_hz": 999.9964,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326321,
+     "f_est_hz": 999.9997,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326322,
+     "f_est_hz": 999.997,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326323,
+     "f_est_hz": 1000.0038,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326324,
+     "f_est_hz": 999.996,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326325,
+     "f_est_hz": 1000.0075,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326326,
+     "f_est_hz": 999.9998,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326327,
+     "f_est_hz": 1000.0038,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326328,
+     "f_est_hz": 1000.005,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326329,
+     "f_est_hz": 1000.0038,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326330,
+     "f_est_hz": 1000.0063,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326331,
+     "f_est_hz": 999.9965,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326332,
+     "f_est_hz": 1000.0002,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326333,
+     "f_est_hz": 999.9995,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326334,
+     "f_est_hz": 999.9911,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326335,
+     "f_est_hz": 999.9959,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326336,
+     "f_est_hz": 999.9939,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326337,
+     "f_est_hz": 1000.0041,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326338,
+     "f_est_hz": 999.9969,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 326339,
+     "f_est_hz": 1000.0005,
+     "fit_rate_hz": 48000.0
+    }
+   ]
+  },
+  {
+   "pilot_hz": 1013.0,
+   "mode": "uniform_comb",
+   "mains_level_dbfs": -60.0,
+   "trials": 50,
+   "prod_centroid": {
+    "bias_ppm": -0.013,
+    "sigma_ppm": 0.246,
+    "max_abs_ppm": 0.685
+   },
+   "lsq": {
+    "bias_ppm": 1.771,
+    "sigma_ppm": 18.43,
+    "max_abs_ppm": 34.68
+   },
+   "lsq_fit_rate_min_hz": 48000.0,
+   "lsq_fit_rate_max_hz": 48000.0,
+   "per_trial": [
+    {
+     "seed": 327590,
+     "f_est_hz": 1013.0055,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327591,
+     "f_est_hz": 1012.9626,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327592,
+     "f_est_hz": 1012.9949,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327593,
+     "f_est_hz": 1012.9804,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327594,
+     "f_est_hz": 1012.9798,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327595,
+     "f_est_hz": 1013.0059,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327596,
+     "f_est_hz": 1012.9873,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327597,
+     "f_est_hz": 1012.9622,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327598,
+     "f_est_hz": 1012.9663,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327599,
+     "f_est_hz": 1012.9714,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327600,
+     "f_est_hz": 1012.9775,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327601,
+     "f_est_hz": 1012.9578,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327602,
+     "f_est_hz": 1012.9571,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327603,
+     "f_est_hz": 1012.9619,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327604,
+     "f_est_hz": 1013.0086,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327605,
+     "f_est_hz": 1012.9915,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327606,
+     "f_est_hz": 1012.997,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327607,
+     "f_est_hz": 1012.9934,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327608,
+     "f_est_hz": 1012.9462,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327609,
+     "f_est_hz": 1012.9866,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327610,
+     "f_est_hz": 1012.9858,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327611,
+     "f_est_hz": 1012.9847,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327612,
+     "f_est_hz": 1013.0085,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327613,
+     "f_est_hz": 1013.0013,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327614,
+     "f_est_hz": 1012.9411,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327615,
+     "f_est_hz": 1012.9716,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327616,
+     "f_est_hz": 1012.997,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327617,
+     "f_est_hz": 1012.9752,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327618,
+     "f_est_hz": 1012.9687,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327619,
+     "f_est_hz": 1012.9988,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327620,
+     "f_est_hz": 1012.9589,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327621,
+     "f_est_hz": 1012.9597,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327622,
+     "f_est_hz": 1013.0072,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327623,
+     "f_est_hz": 1012.9606,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327624,
+     "f_est_hz": 1012.9949,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327625,
+     "f_est_hz": 1012.9778,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327626,
+     "f_est_hz": 1012.9617,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327627,
+     "f_est_hz": 1012.9454,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327628,
+     "f_est_hz": 1012.9938,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327629,
+     "f_est_hz": 1012.9964,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327630,
+     "f_est_hz": 1012.9756,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327631,
+     "f_est_hz": 1012.9495,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327632,
+     "f_est_hz": 1012.9933,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327633,
+     "f_est_hz": 1012.9834,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327634,
+     "f_est_hz": 1012.9681,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327635,
+     "f_est_hz": 1013.0009,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327636,
+     "f_est_hz": 1012.9666,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327637,
+     "f_est_hz": 1012.9555,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327638,
+     "f_est_hz": 1012.9705,
+     "fit_rate_hz": 48000.0
+    },
+    {
+     "seed": 327639,
+     "f_est_hz": 1012.9531,
+     "fit_rate_hz": 48000.0
+    }
+   ]
+  }
+ ]
+}
