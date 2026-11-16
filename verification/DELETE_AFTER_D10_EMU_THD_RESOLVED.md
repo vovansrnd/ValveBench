@@ -880,3 +880,60 @@ The commit does not contain the claimed 271 MB WAV directory; `v2183-wav-manifes
 
 No production/main/PR changes, pilot or clock-gate policy changes, playback, hardware or DUT work.
 
+
+
+## 20. Coordinator review of v2.18.5 — commit 31c1f00 (16 Nov 2026)
+
+### 20.1 Scope and decision
+
+- Agent branch: `agent/v2185-line-aware-estimator-repair`, HEAD `31c1f001e133b3464f4739fff9fc32da5e8d44fa`.
+- Parent/base: `65e44ea360744bbd7a01b41b6785f251f7ea7b44`; one commit ahead, zero behind.
+- Compare contains diagnostic artifacts only. Production, main and PR #4 are untouched; no playback/hardware/DUT tests.
+- Full review: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2185.md`.
+
+**v2.18.5 is partially accepted as diagnostic progress; it is NOT accepted as a working line-aware estimator or closed evidence. No production approval.**
+
+### 20.2 Accepted progress
+
+- Coarse spectral maximum interpolation now uses the correct concavity sign and bounded ±0.5-bin offset; RSS minimum interpolation exposes a `grid_edge` state.
+- The exact historical 868 Hz case is rejected by the new edge guard in 100/100 trials; `est_joint` fails closed for that case.
+- Schedule code now distinguishes backend pre-pad, backend post-pad and `Rig._seg` reserve.
+- Manifest contains 32 unique entries and its total byte count agrees with the sum of entries.
+- Pilot script now records both channels and deterministic L/R line phase; resampling remains a one-tone test.
+- No production code changed.
+
+### 20.3 Residual QC is fail-all, not calibrated
+
+The residual detector compares the single largest FFT bin outside ±5 Hz from the fitted carrier with the median of all residual bins and flags it at a fixed 10 dB ratio. The parameter `qc_line_db` is not used; `line_amp_db` is not dBc; there is no multi-bin/persistence requirement.
+
+The committed results report `line_contaminated` for 500/500 L and R trials at every level in both MC models, 100/100 both channels for all measured-profile pilots, and even for a pure tone with no noise. Unit tests explicitly expect these false positives and do not exercise a positive normal `status='ok'` path. 19/19 PASS therefore confirms current fail-all behavior, not a usable QC gate.
+
+The known v2.18.4 −127 ppm case is not closed: residual search masks ±5 Hz, while its 997 Hz pilot / 1000 Hz interferer is separated by ~3 Hz. The exact in-band-coarse counterexample is not rerun with correct line attribution.
+
+### 20.4 CSD conjugation error remains
+
+The source `S_LR` is obtained with `scipy.signal.csd(L, R)`, whose documented convention is `conj(FFT(L))*FFT(R)`. For a generator `R = g L`, reproducing that target requires `g = S_LR/S_LL`. Current `noise_colored` uses `conj(S_LR)/S_LL`.
+
+The verifier then accumulates `FL*conj(FR)`, the opposite cross-spectrum convention, and compares it with the un-conjugated SciPy target. A synthetic +0.37-rad L/R test confirms: target SciPy phase +0.37, current generated SciPy CSD phase −0.37, while the verifier's opposite-convention product is +0.37. Thus the saved phase match is an artifact of inconsistent conventions; the colored complex-phase fix is not accepted. Correct generator and verifier under one convention, add a known-phase test and rerun colored MC.
+
+### 20.5 Pilot profile still under-integrates line power
+
+The script still uses Welch `nperseg=8192` at 192 kHz (Δf=23.4375 Hz) and integrates only ±12 Hz, typically one bin rather than the full Hann main lobe. Independent pure-sine check with the same method recovers only 0.577 of 1 kHz power (−2.388 dB) and 0.652 of 50 Hz power (−1.861 dB). `sqrt(2P)` is correct only after accurate line-power recovery. The JSON stores a pilot-script hash, but no source WAV or estimator hashes. Both-channel scoring is progress; calibrated profile extraction is not closed.
+
+### 20.6 MC and source-package limitations
+
+The MC CSVs predate fail-closed joint semantics and do not include `status_joint_gls`. All channel rows are QC-rejected; the summary nevertheless calculates raw frequency-error statistics. Keep these as conditional raw-estimator accuracy only, not accepted measurements. Joint-GLS/`sigma_pred` evidence must be regenerated after correcting CSD and fail-closed flow.
+
+The manifest's 32 names and byte sum are internally consistent, but actual WAV payload is only on the agent's local host; SHA256 values cannot be independently checked. No release asset should be published without user approval.
+
+### 20.7 Required v2.18.6 — diagnostics only
+
+1. Correct CSD convention end-to-end; known-phase test, full target/generated PSD, γ², complex CSD comparison, then colored MC rerun.
+2. Replace residual max/median QC with calibrated local/noise-aware line detection that does not mask the 997/1000 nearby-interference case; positive clean `ok` controls and TP/FP/TN/FN are mandatory.
+3. Reproduce the exact −127 ppm case and sweep nearby interferer offsets (including ±3 and ±5 Hz).
+4. Calibrate pilot line-power recovery with injected on/off-bin tests and full main-lobe integration; record source WAV and estimator hashes.
+5. Let joint estimator select/try both valid channels; exercise both accepted and rejected paths.
+6. Regenerate MC/pilot summaries with status-separated accepted/rejected counts; do not score rejected estimates as accepted.
+7. Keep WAV publication as a user decision; no blind upload.
+8. No production/main/PR changes, pilot/clock-gate policy changes, playback, hardware or DUT work.
+
