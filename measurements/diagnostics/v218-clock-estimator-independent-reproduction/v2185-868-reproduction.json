@@ -1,0 +1,2252 @@
+{
+ "summary": {
+  "scenario": "пилот 997 Гц (−72 дБFS) + гребёнка 50·k −30 дБFS (40 гармоник) + белый −96 дБFS; N=192000 (1 c, 192 кГц)",
+  "seed_formula": "218200 + 997000 + 300 + tr (tr 0..99)",
+  "legacy": {
+   "version": "est_lsq из 8d8b040 (v2.18.1): coarse-парабола без проверки кривизны и без ограничения смещения",
+   "trials": 100,
+   "trials_near_868hz": 100,
+   "trials_invalid_coarse_parabola": 100,
+   "trials_coarse_offset_gt_half_bin": 100,
+   "f_est_min_hz": 865.387,
+   "f_est_max_hz": 870.506,
+   "example_trial": {
+    "coarse_peak_bin": 999,
+    "coarse_peak_hz": 999.0,
+    "coarse_neighbors": [
+     1.4535,
+     189.8412,
+     379.6506
+    ],
+    "coarse_denominator": 1.4216313794582902,
+    "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+    "coarse_offset_bins": -133.0152,
+    "f0_after_coarse_hz": 865.985,
+    "rss_argmin_hz": 865.8348,
+    "f_est_hz": 865.8348,
+    "trial": 0,
+    "seed": 1215500
+   }
+  },
+  "repaired_v2185": {
+   "version": "v2185_estimators.est_lsq: boundary-guard + вогнутая парабола ±0.5 бина + line-QC",
+   "trials": 100,
+   "trials_edge_peak": 100,
+   "example": {
+    "trial": 0,
+    "status": "edge_peak",
+    "coarse_peak_hz": 999.0
+   }
+  },
+  "joint_fail_closed": {
+   "trials": 100,
+   "rejected_with_edge_peak": 100,
+   "semantics": "(None, None, fs, 'edge_peak') — невалидный старт не потребляется (ревизия v2.18.4 п.3)"
+  },
+  "verdict": "МЕХАНИЗМ ВОСПРОИЗВЕДЁН 100/100 (легаси), ПРАВЛЕННЫЙ оценщик ОТКЛОНЯЕТ 100/100 (edge_peak), joint fail-closed 100/100"
+ },
+ "legacy_per_trial": [
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4535,
+    189.8412,
+    379.6506
+   ],
+   "coarse_denominator": 1.4216313794582902,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.0152,
+   "f0_after_coarse_hz": 865.985,
+   "rss_argmin_hz": 865.8348,
+   "f_est_hz": 865.8348,
+   "trial": 0,
+   "seed": 1215500
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4563,
+    189.8344,
+    379.6539
+   ],
+   "coarse_denominator": 1.441389986815409,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.192,
+   "f0_after_coarse_hz": 867.808,
+   "rss_argmin_hz": 867.658,
+   "f_est_hz": 867.658,
+   "trial": 1,
+   "seed": 1215501
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.457,
+    189.8217,
+    379.6556
+   ],
+   "coarse_denominator": 1.4691447213656943,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.7139,
+   "f0_after_coarse_hz": 870.286,
+   "rss_argmin_hz": 870.4361,
+   "f_est_hz": 870.4361,
+   "trial": 2,
+   "seed": 1215502
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4579,
+    189.8223,
+    379.6568
+   ],
+   "coarse_denominator": 1.4701059779206958,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6298,
+   "f0_after_coarse_hz": 870.37,
+   "rss_argmin_hz": 870.4952,
+   "f_est_hz": 870.498,
+   "trial": 3,
+   "seed": 1215503
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4545,
+    189.8372,
+    379.6525
+   ],
+   "coarse_denominator": 1.4325595746434487,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.0008,
+   "f0_after_coarse_hz": 866.999,
+   "rss_argmin_hz": 866.8492,
+   "f_est_hz": 866.8492,
+   "trial": 4,
+   "seed": 1215504
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4542,
+    189.8394,
+    379.6514
+   ],
+   "coarse_denominator": 1.4269046625142892,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.5236,
+   "f0_after_coarse_hz": 866.476,
+   "rss_argmin_hz": 866.4889,
+   "f_est_hz": 866.4948,
+   "trial": 5,
+   "seed": 1215505
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4551,
+    189.8294,
+    379.655
+   ],
+   "coarse_denominator": 1.451278020370296,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.2989,
+   "f0_after_coarse_hz": 868.701,
+   "rss_argmin_hz": 868.5511,
+   "f_est_hz": 868.5511,
+   "trial": 6,
+   "seed": 1215506
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4547,
+    189.8316,
+    379.6524
+   ],
+   "coarse_denominator": 1.443795315224179,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.9735,
+   "f0_after_coarse_hz": 868.027,
+   "rss_argmin_hz": 868.1765,
+   "f_est_hz": 868.1765,
+   "trial": 7,
+   "seed": 1215507
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4566,
+    189.8239,
+    379.6571
+   ],
+   "coarse_denominator": 1.4660193165879605,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.9889,
+   "f0_after_coarse_hz": 870.011,
+   "rss_argmin_hz": 870.1611,
+   "f_est_hz": 870.1611,
+   "trial": 8,
+   "seed": 1215508
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4571,
+    189.824,
+    379.6553
+   ],
+   "coarse_denominator": 1.4644895722960882,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.1229,
+   "f0_after_coarse_hz": 869.877,
+   "rss_argmin_hz": 869.7271,
+   "f_est_hz": 869.7271,
+   "trial": 9,
+   "seed": 1215509
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4518,
+    189.8437,
+    379.6511
+   ],
+   "coarse_denominator": 1.4155750663550748,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.585,
+   "f0_after_coarse_hz": 865.415,
+   "rss_argmin_hz": 865.49,
+   "f_est_hz": 865.4955,
+   "trial": 10,
+   "seed": 1215510
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4571,
+    189.825,
+    379.6549
+   ],
+   "coarse_denominator": 1.4620198274809013,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.3409,
+   "f0_after_coarse_hz": 869.659,
+   "rss_argmin_hz": 869.5091,
+   "f_est_hz": 869.5091,
+   "trial": 11,
+   "seed": 1215511
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4545,
+    189.8324,
+    379.6535
+   ],
+   "coarse_denominator": 1.4432031963254417,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.0276,
+   "f0_after_coarse_hz": 867.972,
+   "rss_argmin_hz": 867.8224,
+   "f_est_hz": 867.8224,
+   "trial": 12,
+   "seed": 1215512
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4543,
+    189.841,
+    379.6506
+   ],
+   "coarse_denominator": 1.4228229018615934,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.9035,
+   "f0_after_coarse_hz": 866.096,
+   "rss_argmin_hz": 866.2465,
+   "f_est_hz": 866.2465,
+   "trial": 13,
+   "seed": 1215513
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4549,
+    189.8353,
+    379.6524
+   ],
+   "coarse_denominator": 1.4366875620010546,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.6214,
+   "f0_after_coarse_hz": 867.379,
+   "rss_argmin_hz": 867.4911,
+   "f_est_hz": 867.4956,
+   "trial": 14,
+   "seed": 1215514
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4557,
+    189.8226,
+    379.6558
+   ],
+   "coarse_denominator": 1.4663658702568227,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.9583,
+   "f0_after_coarse_hz": 870.042,
+   "rss_argmin_hz": 870.1917,
+   "f_est_hz": 870.1917,
+   "trial": 15,
+   "seed": 1215515
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4576,
+    189.8294,
+    379.6564
+   ],
+   "coarse_denominator": 1.4551494657095532,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.9519,
+   "f0_after_coarse_hz": 869.048,
+   "rss_argmin_hz": 869.1981,
+   "f_est_hz": 869.1981,
+   "trial": 16,
+   "seed": 1215516
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4542,
+    189.8395,
+    379.652
+   ],
+   "coarse_denominator": 1.427225355048904,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.4941,
+   "f0_after_coarse_hz": 866.506,
+   "rss_argmin_hz": 866.5434,
+   "f_est_hz": 866.5379,
+   "trial": 17,
+   "seed": 1215517
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4519,
+    189.8444,
+    379.6514
+   ],
+   "coarse_denominator": 1.414459448587138,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.6905,
+   "f0_after_coarse_hz": 865.31,
+   "rss_argmin_hz": 865.4595,
+   "f_est_hz": 865.4595,
+   "trial": 18,
+   "seed": 1215518
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4538,
+    189.8401,
+    379.6531
+   ],
+   "coarse_denominator": 1.4266290202488108,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.55,
+   "f0_after_coarse_hz": 866.45,
+   "rss_argmin_hz": 866.5,
+   "f_est_hz": 866.4975,
+   "trial": 19,
+   "seed": 1215519
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4526,
+    189.8425,
+    379.6499
+   ],
+   "coarse_denominator": 1.4174486044576042,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.4078,
+   "f0_after_coarse_hz": 865.592,
+   "rss_argmin_hz": 865.4922,
+   "f_est_hz": 865.4977,
+   "trial": 20,
+   "seed": 1215520
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4561,
+    189.8279,
+    379.6561
+   ],
+   "coarse_denominator": 1.4564934476379676,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.8324,
+   "f0_after_coarse_hz": 869.168,
+   "rss_argmin_hz": 869.3176,
+   "f_est_hz": 869.3176,
+   "trial": 21,
+   "seed": 1215521
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4583,
+    189.8229,
+    379.6561
+   ],
+   "coarse_denominator": 1.4687221299016073,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.7506,
+   "f0_after_coarse_hz": 870.249,
+   "rss_argmin_hz": 870.3994,
+   "f_est_hz": 870.3994,
+   "trial": 22,
+   "seed": 1215522
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.456,
+    189.8247,
+    379.6544
+   ],
+   "coarse_denominator": 1.4608245269550935,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.4469,
+   "f0_after_coarse_hz": 869.553,
+   "rss_argmin_hz": 869.4906,
+   "f_est_hz": 869.4943,
+   "trial": 23,
+   "seed": 1215523
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4535,
+    189.842,
+    379.6522
+   ],
+   "coarse_denominator": 1.4217772418890036,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.0021,
+   "f0_after_coarse_hz": 865.998,
+   "rss_argmin_hz": 865.8479,
+   "f_est_hz": 865.8479,
+   "trial": 24,
+   "seed": 1215524
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4514,
+    189.8433,
+    379.6503
+   ],
+   "coarse_denominator": 1.4151739612752294,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.6228,
+   "f0_after_coarse_hz": 865.377,
+   "rss_argmin_hz": 865.5022,
+   "f_est_hz": 865.4961,
+   "trial": 25,
+   "seed": 1215525
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4579,
+    189.822,
+    379.656
+   ],
+   "coarse_denominator": 1.4698042495920731,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6559,
+   "f0_after_coarse_hz": 870.344,
+   "rss_argmin_hz": 870.4566,
+   "f_est_hz": 870.462,
+   "trial": 26,
+   "seed": 1215526
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4552,
+    189.8364,
+    379.6503
+   ],
+   "coarse_denominator": 1.4325810713348233,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.9978,
+   "f0_after_coarse_hz": 867.002,
+   "rss_argmin_hz": 867.1522,
+   "f_est_hz": 867.1522,
+   "trial": 27,
+   "seed": 1215527
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4564,
+    189.8219,
+    379.6545
+   ],
+   "coarse_denominator": 1.4670142140345774,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.9006,
+   "f0_after_coarse_hz": 870.099,
+   "rss_argmin_hz": 870.2494,
+   "f_est_hz": 870.2494,
+   "trial": 28,
+   "seed": 1215528
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4558,
+    189.8262,
+    379.6553
+   ],
+   "coarse_denominator": 1.4586480317352652,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.6404,
+   "f0_after_coarse_hz": 869.36,
+   "rss_argmin_hz": 869.4971,
+   "f_est_hz": 869.497,
+   "trial": 29,
+   "seed": 1215529
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4526,
+    189.8431,
+    379.65
+   ],
+   "coarse_denominator": 1.4165106610515181,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.4961,
+   "f0_after_coarse_hz": 865.504,
+   "rss_argmin_hz": 865.4914,
+   "f_est_hz": 865.4952,
+   "trial": 30,
+   "seed": 1215530
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4527,
+    189.8405,
+    379.6519
+   ],
+   "coarse_denominator": 1.4234874391096355,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.8425,
+   "f0_after_coarse_hz": 866.158,
+   "rss_argmin_hz": 866.3075,
+   "f_est_hz": 866.3075,
+   "trial": 31,
+   "seed": 1215531
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4556,
+    189.8315,
+    379.6548
+   ],
+   "coarse_denominator": 1.4473808746434997,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.6495,
+   "f0_after_coarse_hz": 868.35,
+   "rss_argmin_hz": 868.5005,
+   "f_est_hz": 868.5005,
+   "trial": 32,
+   "seed": 1215532
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4575,
+    189.8218,
+    379.6561
+   ],
+   "coarse_denominator": 1.469825662525011,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6542,
+   "f0_after_coarse_hz": 870.346,
+   "rss_argmin_hz": 870.4958,
+   "f_est_hz": 870.4958,
+   "trial": 33,
+   "seed": 1215533
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.456,
+    189.8236,
+    379.6541
+   ],
+   "coarse_denominator": 1.4628843028281153,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.2645,
+   "f0_after_coarse_hz": 869.735,
+   "rss_argmin_hz": 869.5855,
+   "f_est_hz": 869.5855,
+   "trial": 34,
+   "seed": 1215534
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4537,
+    189.8428,
+    379.6513
+   ],
+   "coarse_denominator": 1.4194292717555186,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.2217,
+   "f0_after_coarse_hz": 865.778,
+   "rss_argmin_hz": 865.6283,
+   "f_est_hz": 865.6283,
+   "trial": 35,
+   "seed": 1215535
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.456,
+    189.8257,
+    379.655
+   ],
+   "coarse_denominator": 1.459617850327902,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.5541,
+   "f0_after_coarse_hz": 869.446,
+   "rss_argmin_hz": 869.4959,
+   "f_est_hz": 869.499,
+   "trial": 36,
+   "seed": 1215536
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4544,
+    189.8335,
+    379.6535
+   ],
+   "coarse_denominator": 1.440757145932821,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.2501,
+   "f0_after_coarse_hz": 867.75,
+   "rss_argmin_hz": 867.5999,
+   "f_est_hz": 867.5999,
+   "trial": 37,
+   "seed": 1215537
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4527,
+    189.8426,
+    379.6501
+   ],
+   "coarse_denominator": 1.4175053937139523,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.4025,
+   "f0_after_coarse_hz": 865.598,
+   "rss_argmin_hz": 865.4975,
+   "f_est_hz": 865.496,
+   "trial": 38,
+   "seed": 1215538
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4561,
+    189.8235,
+    379.6568
+   ],
+   "coarse_denominator": 1.4659369929169657,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.9963,
+   "f0_after_coarse_hz": 870.004,
+   "rss_argmin_hz": 870.1537,
+   "f_est_hz": 870.1537,
+   "trial": 39,
+   "seed": 1215539
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4529,
+    189.8343,
+    379.6515
+   ],
+   "coarse_denominator": 1.4358553378644956,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.698,
+   "f0_after_coarse_hz": 867.302,
+   "rss_argmin_hz": 867.452,
+   "f_est_hz": 867.452,
+   "trial": 40,
+   "seed": 1215540
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.453,
+    189.8343,
+    379.6533
+   ],
+   "coarse_denominator": 1.4375700913700484,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.5415,
+   "f0_after_coarse_hz": 867.458,
+   "rss_argmin_hz": 867.496,
+   "f_est_hz": 867.4964,
+   "trial": 41,
+   "seed": 1215541
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4522,
+    189.8436,
+    379.6528
+   ],
+   "coarse_denominator": 1.4178154720626708,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.3744,
+   "f0_after_coarse_hz": 865.626,
+   "rss_argmin_hz": 865.5006,
+   "f_est_hz": 865.4961,
+   "trial": 42,
+   "seed": 1215542
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4553,
+    189.8328,
+    379.6543
+   ],
+   "coarse_denominator": 1.4440470516114488,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.9511,
+   "f0_after_coarse_hz": 868.049,
+   "rss_argmin_hz": 868.1989,
+   "f_est_hz": 868.1989,
+   "trial": 43,
+   "seed": 1215543
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4551,
+    189.8325,
+    379.6521
+   ],
+   "coarse_denominator": 1.4421890659751284,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.1191,
+   "f0_after_coarse_hz": 867.881,
+   "rss_argmin_hz": 867.7309,
+   "f_est_hz": 867.7309,
+   "trial": 44,
+   "seed": 1215544
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4589,
+    189.8231,
+    379.6579
+   ],
+   "coarse_denominator": 1.470648072486199,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.5824,
+   "f0_after_coarse_hz": 870.418,
+   "rss_argmin_hz": 870.4926,
+   "f_est_hz": 870.4912,
+   "trial": 45,
+   "seed": 1215545
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4574,
+    189.822,
+    379.6564
+   ],
+   "coarse_denominator": 1.4698831281680214,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6494,
+   "f0_after_coarse_hz": 870.351,
+   "rss_argmin_hz": 870.5006,
+   "f_est_hz": 870.5006,
+   "trial": 46,
+   "seed": 1215546
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4555,
+    189.8294,
+    379.6559
+   ],
+   "coarse_denominator": 1.452519455194988,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.1877,
+   "f0_after_coarse_hz": 868.812,
+   "rss_argmin_hz": 868.6623,
+   "f_est_hz": 868.6623,
+   "trial": 47,
+   "seed": 1215547
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4574,
+    189.823,
+    379.6569
+   ],
+   "coarse_denominator": 1.4682424688047604,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.7932,
+   "f0_after_coarse_hz": 870.207,
+   "rss_argmin_hz": 870.3568,
+   "f_est_hz": 870.3568,
+   "trial": 48,
+   "seed": 1215548
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4553,
+    189.8348,
+    379.6527
+   ],
+   "coarse_denominator": 1.4384780849349568,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.4575,
+   "f0_after_coarse_hz": 867.543,
+   "rss_argmin_hz": 867.4925,
+   "f_est_hz": 867.4947,
+   "trial": 49,
+   "seed": 1215549
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4545,
+    189.8319,
+    379.6531
+   ],
+   "coarse_denominator": 1.4438748325147799,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.9666,
+   "f0_after_coarse_hz": 868.033,
+   "rss_argmin_hz": 868.1834,
+   "f_est_hz": 868.1834,
+   "trial": 50,
+   "seed": 1215550
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4572,
+    189.822,
+    379.6564
+   ],
+   "coarse_denominator": 1.4695991835702102,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6743,
+   "f0_after_coarse_hz": 870.326,
+   "rss_argmin_hz": 870.4757,
+   "f_est_hz": 870.4757,
+   "trial": 51,
+   "seed": 1215551
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4555,
+    189.8284,
+    379.655
+   ],
+   "coarse_denominator": 1.4537793545563318,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.0746,
+   "f0_after_coarse_hz": 868.925,
+   "rss_argmin_hz": 868.7754,
+   "f_est_hz": 868.7754,
+   "trial": 52,
+   "seed": 1215552
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4577,
+    189.8213,
+    379.6553
+   ],
+   "coarse_denominator": 1.4703070618508036,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6118,
+   "f0_after_coarse_hz": 870.388,
+   "rss_argmin_hz": 870.5007,
+   "f_est_hz": 870.4988,
+   "trial": 53,
+   "seed": 1215553
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4574,
+    189.8222,
+    379.6553
+   ],
+   "coarse_denominator": 1.468191468883731,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.7972,
+   "f0_after_coarse_hz": 870.203,
+   "rss_argmin_hz": 870.3528,
+   "f_est_hz": 870.3528,
+   "trial": 54,
+   "seed": 1215554
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4517,
+    189.8449,
+    379.652
+   ],
+   "coarse_denominator": 1.4138301217333265,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.7503,
+   "f0_after_coarse_hz": 865.25,
+   "rss_argmin_hz": 865.3997,
+   "f_est_hz": 865.3997,
+   "trial": 55,
+   "seed": 1215555
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4516,
+    189.8444,
+    379.651
+   ],
+   "coarse_denominator": 1.413690269962899,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.7632,
+   "f0_after_coarse_hz": 865.237,
+   "rss_argmin_hz": 865.3868,
+   "f_est_hz": 865.3868,
+   "trial": 56,
+   "seed": 1215556
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.458,
+    189.8213,
+    379.6565
+   ],
+   "coarse_denominator": 1.471835265205641,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.4785,
+   "f0_after_coarse_hz": 870.521,
+   "rss_argmin_hz": 870.484,
+   "f_est_hz": 870.4862,
+   "trial": 57,
+   "seed": 1215557
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4571,
+    189.8207,
+    379.6563
+   ],
+   "coarse_denominator": 1.4719901607940074,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.4653,
+   "f0_after_coarse_hz": 870.535,
+   "rss_argmin_hz": 870.4972,
+   "f_est_hz": 870.4982,
+   "trial": 58,
+   "seed": 1215558
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4519,
+    189.8433,
+    379.6512
+   ],
+   "coarse_denominator": 1.4164126565574406,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.506,
+   "f0_after_coarse_hz": 865.494,
+   "rss_argmin_hz": 865.494,
+   "f_est_hz": 865.4975,
+   "trial": 59,
+   "seed": 1215559
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.457,
+    189.8218,
+    379.6575
+   ],
+   "coarse_denominator": 1.470918862795429,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.5593,
+   "f0_after_coarse_hz": 870.441,
+   "rss_argmin_hz": 870.5032,
+   "f_est_hz": 870.4984,
+   "trial": 60,
+   "seed": 1215560
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4562,
+    189.8252,
+    379.6559
+   ],
+   "coarse_denominator": 1.4618344725461725,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.3579,
+   "f0_after_coarse_hz": 869.642,
+   "rss_argmin_hz": 869.4921,
+   "f_est_hz": 869.4921,
+   "trial": 61,
+   "seed": 1215561
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4542,
+    189.8332,
+    379.6532
+   ],
+   "coarse_denominator": 1.4409586395242968,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.2317,
+   "f0_after_coarse_hz": 867.768,
+   "rss_argmin_hz": 867.6183,
+   "f_est_hz": 867.6183,
+   "trial": 62,
+   "seed": 1215562
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4534,
+    189.8421,
+    379.6522
+   ],
+   "coarse_denominator": 1.4213567353396002,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.0415,
+   "f0_after_coarse_hz": 865.959,
+   "rss_argmin_hz": 865.8085,
+   "f_est_hz": 865.8085,
+   "trial": 63,
+   "seed": 1215563
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4539,
+    189.8377,
+    379.652
+   ],
+   "coarse_denominator": 1.4304596714752051,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.1946,
+   "f0_after_coarse_hz": 866.805,
+   "rss_argmin_hz": 866.6554,
+   "f_est_hz": 866.6554,
+   "trial": 64,
+   "seed": 1215564
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4561,
+    189.8277,
+    379.6556
+   ],
+   "coarse_denominator": 1.4563839008042692,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.842,
+   "f0_after_coarse_hz": 869.158,
+   "rss_argmin_hz": 869.308,
+   "f_est_hz": 869.308,
+   "trial": 65,
+   "seed": 1215565
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4526,
+    189.8433,
+    379.6505
+   ],
+   "coarse_denominator": 1.4164932558875307,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.4979,
+   "f0_after_coarse_hz": 865.502,
+   "rss_argmin_hz": 865.4896,
+   "f_est_hz": 865.4934,
+   "trial": 66,
+   "seed": 1215566
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4557,
+    189.8274,
+    379.6544
+   ],
+   "coarse_denominator": 1.4553150600914364,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.937,
+   "f0_after_coarse_hz": 869.063,
+   "rss_argmin_hz": 869.213,
+   "f_est_hz": 869.213,
+   "trial": 67,
+   "seed": 1215567
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.454,
+    189.8395,
+    379.6518
+   ],
+   "coarse_denominator": 1.4267239770769606,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.5406,
+   "f0_after_coarse_hz": 866.459,
+   "rss_argmin_hz": 866.4844,
+   "f_est_hz": 866.4857,
+   "trial": 68,
+   "seed": 1215568
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4546,
+    189.8331,
+    379.6527
+   ],
+   "coarse_denominator": 1.4412105397528308,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.2085,
+   "f0_after_coarse_hz": 867.792,
+   "rss_argmin_hz": 867.6415,
+   "f_est_hz": 867.6415,
+   "trial": 69,
+   "seed": 1215569
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4526,
+    189.8437,
+    379.6515
+   ],
+   "coarse_denominator": 1.416751629465466,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.474,
+   "f0_after_coarse_hz": 865.526,
+   "rss_argmin_hz": 865.501,
+   "f_est_hz": 865.4966,
+   "trial": 70,
+   "seed": 1215570
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4548,
+    189.8303,
+    379.6549
+   ],
+   "coarse_denominator": 1.4490564744693302,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -130.4987,
+   "f0_after_coarse_hz": 868.501,
+   "rss_argmin_hz": 868.4888,
+   "f_est_hz": 868.4924,
+   "trial": 71,
+   "seed": 1215571
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4567,
+    189.8208,
+    379.6563
+   ],
+   "coarse_denominator": 1.4713922086261277,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.5176,
+   "f0_after_coarse_hz": 870.482,
+   "rss_argmin_hz": 870.4949,
+   "f_est_hz": 870.4984,
+   "trial": 72,
+   "seed": 1215572
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.457,
+    189.8263,
+    379.6564
+   ],
+   "coarse_denominator": 1.4607725481878902,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.4519,
+   "f0_after_coarse_hz": 869.548,
+   "rss_argmin_hz": 869.4981,
+   "f_est_hz": 869.4989,
+   "trial": 73,
+   "seed": 1215573
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4563,
+    189.8232,
+    379.6548
+   ],
+   "coarse_denominator": 1.4648204110604297,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.0938,
+   "f0_after_coarse_hz": 869.906,
+   "rss_argmin_hz": 869.7562,
+   "f_est_hz": 869.7562,
+   "trial": 74,
+   "seed": 1215574
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4526,
+    189.8421,
+    379.6507
+   ],
+   "coarse_denominator": 1.4190580850101924,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.2568,
+   "f0_after_coarse_hz": 865.743,
+   "rss_argmin_hz": 865.5932,
+   "f_est_hz": 865.5932,
+   "trial": 75,
+   "seed": 1215575
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4584,
+    189.825,
+    379.658
+   ],
+   "coarse_denominator": 1.4664486690837748,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.9508,
+   "f0_after_coarse_hz": 870.049,
+   "rss_argmin_hz": 870.1992,
+   "f_est_hz": 870.1992,
+   "trial": 76,
+   "seed": 1215576
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.456,
+    189.8245,
+    379.6546
+   ],
+   "coarse_denominator": 1.4616599065347486,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.373,
+   "f0_after_coarse_hz": 869.627,
+   "rss_argmin_hz": 869.4895,
+   "f_est_hz": 869.4951,
+   "trial": 77,
+   "seed": 1215577
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4571,
+    189.8232,
+    379.6555
+   ],
+   "coarse_denominator": 1.4661805599769195,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.974,
+   "f0_after_coarse_hz": 870.026,
+   "rss_argmin_hz": 870.176,
+   "f_est_hz": 870.176,
+   "trial": 78,
+   "seed": 1215578
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4524,
+    189.843,
+    379.6534
+   ],
+   "coarse_denominator": 1.4197713970283985,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.1908,
+   "f0_after_coarse_hz": 865.809,
+   "rss_argmin_hz": 865.6592,
+   "f_est_hz": 865.6592,
+   "trial": 79,
+   "seed": 1215579
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.452,
+    189.8431,
+    379.6526
+   ],
+   "coarse_denominator": 1.4184256768891714,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.317,
+   "f0_after_coarse_hz": 865.683,
+   "rss_argmin_hz": 865.533,
+   "f_est_hz": 865.533,
+   "trial": 80,
+   "seed": 1215580
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4526,
+    189.8437,
+    379.6504
+   ],
+   "coarse_denominator": 1.4155943146522532,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.5827,
+   "f0_after_coarse_hz": 865.417,
+   "rss_argmin_hz": 865.4923,
+   "f_est_hz": 865.4937,
+   "trial": 81,
+   "seed": 1215581
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4532,
+    189.8424,
+    379.6498
+   ],
+   "coarse_denominator": 1.418168949394385,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.3398,
+   "f0_after_coarse_hz": 865.66,
+   "rss_argmin_hz": 865.5102,
+   "f_est_hz": 865.5102,
+   "trial": 82,
+   "seed": 1215582
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4543,
+    189.8329,
+    379.654
+   ],
+   "coarse_denominator": 1.442358702604679,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.1046,
+   "f0_after_coarse_hz": 867.895,
+   "rss_argmin_hz": 867.7454,
+   "f_est_hz": 867.7454,
+   "trial": 83,
+   "seed": 1215583
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4544,
+    189.8395,
+    379.6504
+   ],
+   "coarse_denominator": 1.4257605751186588,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.6296,
+   "f0_after_coarse_hz": 866.37,
+   "rss_argmin_hz": 866.4954,
+   "f_est_hz": 866.4966,
+   "trial": 84,
+   "seed": 1215584
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4572,
+    189.8239,
+    379.6562
+   ],
+   "coarse_denominator": 1.4655511257561216,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -129.0296,
+   "f0_after_coarse_hz": 869.97,
+   "rss_argmin_hz": 869.8204,
+   "f_est_hz": 869.8204,
+   "trial": 85,
+   "seed": 1215585
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.454,
+    189.836,
+    379.6529
+   ],
+   "coarse_denominator": 1.4347337621446172,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -131.8011,
+   "f0_after_coarse_hz": 867.199,
+   "rss_argmin_hz": 867.3489,
+   "f_est_hz": 867.3489,
+   "trial": 86,
+   "seed": 1215586
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4529,
+    189.8402,
+    379.6524
+   ],
+   "coarse_denominator": 1.4248428230254149,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -132.7162,
+   "f0_after_coarse_hz": 866.284,
+   "rss_argmin_hz": 866.4338,
+   "f_est_hz": 866.4338,
+   "trial": 87,
+   "seed": 1215587
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4527,
+    189.8427,
+    379.6513
+   ],
+   "coarse_denominator": 1.4185464121547398,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.305,
+   "f0_after_coarse_hz": 865.695,
+   "rss_argmin_hz": 865.545,
+   "f_est_hz": 865.545,
+   "trial": 88,
+   "seed": 1215588
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4569,
+    189.8229,
+    379.6569
+   ],
+   "coarse_denominator": 1.4680088700427518,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.8139,
+   "f0_after_coarse_hz": 870.186,
+   "rss_argmin_hz": 870.3361,
+   "f_est_hz": 870.3361,
+   "trial": 89,
+   "seed": 1215589
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4533,
+    189.8414,
+    379.6511
+   ],
+   "coarse_denominator": 1.4216760357866178,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.0113,
+   "f0_after_coarse_hz": 865.989,
+   "rss_argmin_hz": 865.8387,
+   "f_est_hz": 865.8387,
+   "trial": 90,
+   "seed": 1215590
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4581,
+    189.8237,
+    379.6575
+   ],
+   "coarse_denominator": 1.4682507386599468,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.7925,
+   "f0_after_coarse_hz": 870.207,
+   "rss_argmin_hz": 870.3575,
+   "f_est_hz": 870.3575,
+   "trial": 91,
+   "seed": 1215591
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4572,
+    189.8217,
+    379.6536
+   ],
+   "coarse_denominator": 1.4672999402921505,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.8749,
+   "f0_after_coarse_hz": 870.125,
+   "rss_argmin_hz": 870.2751,
+   "f_est_hz": 870.2751,
+   "trial": 92,
+   "seed": 1215592
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4531,
+    189.8428,
+    379.6501
+   ],
+   "coarse_denominator": 1.4175572948242916,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.3974,
+   "f0_after_coarse_hz": 865.603,
+   "rss_argmin_hz": 865.4901,
+   "f_est_hz": 865.4948,
+   "trial": 93,
+   "seed": 1215593
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4585,
+    189.8245,
+    379.6564
+   ],
+   "coarse_denominator": 1.465955754902211,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.9936,
+   "f0_after_coarse_hz": 870.006,
+   "rss_argmin_hz": 870.1564,
+   "f_est_hz": 870.1564,
+   "trial": 94,
+   "seed": 1215594
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4577,
+    189.8218,
+    379.6565
+   ],
+   "coarse_denominator": 1.4707252917708615,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.5756,
+   "f0_after_coarse_hz": 870.424,
+   "rss_argmin_hz": 870.5119,
+   "f_est_hz": 870.5064,
+   "trial": 95,
+   "seed": 1215595
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4578,
+    189.8229,
+    379.6576
+   ],
+   "coarse_denominator": 1.4696674781833963,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6685,
+   "f0_after_coarse_hz": 870.332,
+   "rss_argmin_hz": 870.4815,
+   "f_est_hz": 870.4815,
+   "trial": 96,
+   "seed": 1215596
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.453,
+    189.8431,
+    379.651
+   ],
+   "coarse_denominator": 1.417848477141547,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.3704,
+   "f0_after_coarse_hz": 865.63,
+   "rss_argmin_hz": 865.4921,
+   "f_est_hz": 865.4966,
+   "trial": 97,
+   "seed": 1215597
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4577,
+    189.8222,
+    379.6572
+   ],
+   "coarse_denominator": 1.4704416041991522,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -128.6006,
+   "f0_after_coarse_hz": 870.399,
+   "rss_argmin_hz": 870.4994,
+   "f_est_hz": 870.4971,
+   "trial": 98,
+   "seed": 1215598
+  },
+  {
+   "coarse_peak_bin": 999,
+   "coarse_peak_hz": 999.0,
+   "coarse_neighbors": [
+    1.4535,
+    189.8421,
+    379.6502
+   ],
+   "coarse_denominator": 1.419458945456256,
+   "coarse_curvature_sign": "ВЫПУКЛЫЙ/ПЛОСКИЙ — парабола невалидна",
+   "coarse_offset_bins": -133.2186,
+   "f0_after_coarse_hz": 865.781,
+   "rss_argmin_hz": 865.6314,
+   "f_est_hz": 865.6314,
+   "trial": 99,
+   "seed": 1215599
+  }
+ ],
+ "repaired_per_trial": [
+  {
+   "trial": 0,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 1,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 2,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 3,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 4,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 5,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 6,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 7,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 8,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 9,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 10,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 11,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 12,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 13,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 14,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 15,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 16,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 17,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 18,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 19,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 20,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 21,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 22,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 23,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 24,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 25,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 26,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 27,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 28,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 29,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 30,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 31,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 32,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 33,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 34,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 35,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 36,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 37,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 38,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 39,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 40,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 41,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 42,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 43,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 44,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 45,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 46,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 47,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 48,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 49,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 50,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 51,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 52,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 53,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 54,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 55,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 56,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 57,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 58,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 59,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 60,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 61,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 62,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 63,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 64,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 65,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 66,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 67,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 68,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 69,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 70,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 71,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 72,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 73,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 74,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 75,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 76,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 77,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 78,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 79,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 80,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 81,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 82,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 83,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 84,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 85,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 86,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 87,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 88,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 89,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 90,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 91,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 92,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 93,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 94,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 95,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 96,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 97,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 98,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  },
+  {
+   "trial": 99,
+   "status": "edge_peak",
+   "coarse_peak_hz": 999.0
+  }
+ ]
+}

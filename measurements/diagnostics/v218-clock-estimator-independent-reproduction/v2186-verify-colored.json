@@ -1,0 +1,74 @@
+{
+ "convention": "csd(L,R) = conj(FFT(L))·FFT(R) (scipy)",
+ "known_phase_check": {
+  "model_phase_rad": 0.37,
+  "measured_phase_rad": 0.3685,
+  "match": true
+ },
+ "bands": [
+  {
+   "band_hz": [
+    900,
+    1100
+   ],
+   "gamma2_synthesized": 0.66,
+   "psd_L_dev_db": -0.11,
+   "psd_R_dev_db": -0.07,
+   "cross_phase_syn_rad": 0.142,
+   "cross_phase_model_rad": 0.147
+  },
+  {
+   "band_hz": [
+    100,
+    500
+   ],
+   "gamma2_synthesized": 0.328,
+   "psd_L_dev_db": -0.08,
+   "psd_R_dev_db": -0.15,
+   "cross_phase_syn_rad": 0.086,
+   "cross_phase_model_rad": 0.076
+  },
+  {
+   "band_hz": [
+    500,
+    2000
+   ],
+   "gamma2_synthesized": 0.799,
+   "psd_L_dev_db": -0.1,
+   "psd_R_dev_db": -0.12,
+   "cross_phase_syn_rad": 0.197,
+   "cross_phase_model_rad": 0.199
+  },
+  {
+   "band_hz": [
+    2000,
+    8000
+   ],
+   "gamma2_synthesized": 0.859,
+   "psd_L_dev_db": -0.15,
+   "psd_R_dev_db": -0.15,
+   "cross_phase_syn_rad": 0.246,
+   "cross_phase_model_rad": 0.245
+  },
+  {
+   "band_hz": [
+    8000,
+    24000
+   ],
+   "gamma2_synthesized": 0.564,
+   "psd_L_dev_db": -0.15,
+   "psd_R_dev_db": -0.15,
+   "cross_phase_syn_rad": 0.226,
+   "cross_phase_model_rad": 0.226
+  }
+ ],
+ "check_trials": 15,
+ "model_info": {
+  "n_windows": 129,
+  "n_bins_flattened": {
+   "S_LL": 174,
+   "S_RR": 97,
+   "S_LR": 284
+  }
+ }
+}
