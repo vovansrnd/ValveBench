@@ -1,0 +1,60 @@
+{
+ "bands": [
+  {
+   "band_hz": [
+    900,
+    1100
+   ],
+   "gamma2_synthesized": 0.792,
+   "psd_L_dev_db": 0.16,
+   "psd_R_dev_db": 0.67,
+   "cross_phase_syn_rad": 0.14,
+   "cross_phase_model_rad": 0.141
+  },
+  {
+   "band_hz": [
+    100,
+    500
+   ],
+   "gamma2_synthesized": 0.969,
+   "psd_L_dev_db": 0.02,
+   "psd_R_dev_db": 0.02,
+   "cross_phase_syn_rad": 0.076,
+   "cross_phase_model_rad": 0.076
+  },
+  {
+   "band_hz": [
+    500,
+    2000
+   ],
+   "gamma2_synthesized": 0.948,
+   "psd_L_dev_db": 0.02,
+   "psd_R_dev_db": 0.09,
+   "cross_phase_syn_rad": 0.203,
+   "cross_phase_model_rad": 0.203
+  },
+  {
+   "band_hz": [
+    2000,
+    8000
+   ],
+   "gamma2_synthesized": 0.865,
+   "psd_L_dev_db": -0.01,
+   "psd_R_dev_db": -0.01,
+   "cross_phase_syn_rad": 0.235,
+   "cross_phase_model_rad": 0.234
+  },
+  {
+   "band_hz": [
+    8000,
+    24000
+   ],
+   "gamma2_synthesized": 0.568,
+   "psd_L_dev_db": -0.01,
+   "psd_R_dev_db": -0.01,
+   "cross_phase_syn_rad": 0.229,
+   "cross_phase_model_rad": 0.229
+  }
+ ],
+ "check_trials": 129
+}
