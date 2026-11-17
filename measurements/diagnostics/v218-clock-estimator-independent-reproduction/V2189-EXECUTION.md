@@ -7,7 +7,7 @@ are already defined here.
 ## Required actions on vovans-PC
 
 1. Fetch this branch in the existing clone via the established `ssh lk`
-   workflow. Do not rsync WAVs; the tests use deterministic synthetic data.
+   workflow. Do not rsync WAVs. The tests use deterministic synthetic data plus the compact WAV-derived line-profile JSON already included in this branch; its source WAV hashes remain in the JSON.
 2. Run from the repository root:
 
 ```bash
