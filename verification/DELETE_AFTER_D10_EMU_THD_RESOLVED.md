@@ -1359,3 +1359,92 @@ with `credential.helper=store` and `~/.git-credentials` mode 0600. Git's
 `store` helper keeps credentials in plaintext; mode 0600 restricts local
 file access but does not encrypt the token. Keep any token least-privileged
 and rotate/revoke it when no longer needed.
+
+
+
+## 28. v2.21.0 execution accepted; substantive review (18 Nov 2026)
+
+### 28.1 Execution verified
+
+Agent result `416a06be49d7a4a87217e05d672e4a299fe764b7` is a direct child of
+the exact task-branch head `b676663921e2a0fc61e70f987b5fcf77d4c26f7c`.
+GitHub compare confirms exactly seven output files. The manifest pins test
+source `d42c6b4a3677c8f0521d41926b8782c6a4d23447`; `py_compile` ×4 and all
+three scripts exit 0; `git diff --check` clean. No harness, frozen
+estimator or production source was edited.
+
+### 28.2 Production full-path occupancy false accept confirmed
+
+21 cases: 12 `Rig.run()` passes and 9 rejects. Front-contiguous tone
+occupancy 20–49% passes the real `Rig.run()` / `clock_check()` path with
+`ok=True`; 50–90% rejects in this tested matrix. Tested 40% centre, rear,
+split across blocks, two bursts and four bursts also pass. Tested 50% and
+60% split cases reject.
+
+The 20% case only barely meets local-SNR gate (20.29 / 20.32 dB) and
+returns `ok=True`; the 40% centre/split cases are similarly near 20.3 dB.
+Some other 40% placements produce much higher SNR. Warnings about onset
+fallback, non-coherent frequency, or low inter-block phase coherence do not
+affect the current overall clock-check result.
+
+The median-reference mechanism explains the inversion: when quiet frames
+are a majority, the median shifts into the quiet portion, hiding silence as
+the normal level. The run-length threshold of 50 ms may also allow high-duty
+pulse trains with many shorter gaps; that was not tested in v2.21.0.
+
+This is a production-path false acceptance of a partial measurement window.
+It is confirmed in the synthetic backend, not yet in physical hardware. The
+next diagnostic step must test sub-50-ms pulse trains, per-block tone
+presence, and legitimate continuous clock offsets before any fix is chosen.
+Do not gate simply on the current raw phase-coherence value: real DAC/ADC
+clock mismatch can also reduce it.
+
+### 28.3 Two-block line-QC persistence candidate
+
+Frozen independent LSQ v2.18.8 estimator:
+- line-free white: 56/540 full-window flags (10.37%); 0/540 when requiring
+  a line in both blocks within 0.5 Hz;
+- colored noise: 1/60 full-window; 0/60 persistent;
+- stable injected spurs: 31/48 full-window detections; 28/48 persistent;
+- all 24 stable −30 dBc injected spurs persist; at −35 dBc, 7/24 full
+  window and 4/24 persistent.
+
+Important methodology qualification: same `floor_bins=161` was used at
+0.5 Hz/bin for the 2 s FFT and 1 Hz/bin for each 1 s FFT. Thus physical
+local-floor bandwidth changed from about ±40 Hz to ±80 Hz in block mode.
+The apparent false-positive reduction needs a controlled repeat with
+physical-width normalization (approximately 81 bins for the 1 Hz FFT).
+No QC threshold changes.
+
+### 28.4 Nearby-line duration result
+
+Frozen independent LSQ v2.18.8 estimator:
+- pilot-only absolute fit-error p90: 0.0659 ppm (2 s) → 0.0241 ppm (4 s);
+- paired independent-phase injected-line records improved in 163/192
+  cases, worsened in 29/192;
+- paired same-initial-phase records improved in 128/192, worsened in 64/192.
+
+Examples: independent phase, Δ=0.25 Hz / −10 dBc improved from median
+47.63 to 13.40 ppm; Δ=0.40 Hz / −10 dBc from 50.65 to 5.36 ppm. In
+same-initial-phase cases, Δ=0.25 Hz / −10 dBc worsened 12.63 to 20.05 ppm,
+and Δ=0.75 Hz / −20 dBc worsened 0.046 to 2.51 ppm.
+
+A 4 s window improves pilot-only precision and often reduces the nearby-line
+bias, but it is not a universal fix. Keep production duration unchanged.
+
+### 28.5 Coordinator review and v2.22.0 plan
+
+Full review: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v221.md`.
+
+The next coordinator-authored diagnostic package will:
+1. Map full-path acceptance under periodic pulse trains with gaps shorter
+   than 50 ms, instrument per-block SNR and levels, and test continuous
+   tones with controlled offsets through ±100 ppm. Evaluate candidate
+   occupancy metrics offline only.
+2. Repeat two-block line-QC with physically normalized local-floor width;
+   include off-bin, stable and half-window-only spurs.
+3. Compare frozen LSQ durations 2/3/4/6 s on close-offset paired tests,
+   retaining phase modes and reporting absolute ppm shifts.
+
+No production/main/PR #4, pilot-frequency, clock-gate, threshold or frozen
+estimator changes are authorized.
