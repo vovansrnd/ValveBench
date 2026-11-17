@@ -47,6 +47,7 @@ def amp(db):
 
 
 def pilot_sig(level, seed, noise=None, t_len=None, drop=None):
+    # ВАЖНО: вызывать с ключевыми аргументами noise/t_len/drop
     n = int(t_len * FS) if t_len else N
     t = np.arange(n) / FS
     rng = np.random.default_rng(seed)
@@ -72,13 +73,13 @@ def classes(cal, spectra):
         for i in range(60):
             nL, _ = noise_white_corr(N, BASE_SEED + int(-lvl) * 100 + i)
             out.append((f"white{lvl:+.0f}#{i}",
-                        pilot_sig(f_true, lvl, BASE_SEED + 1000 + i, nL),
-                        True))
+                        pilot_sig(f_true, seed=BASE_SEED + 1000 + i,
+                                  noise=nL), True))
     for i in range(60):
         nL, _ = noise_colored(N, BASE_SEED + 2000 + i, spectra[1],
                               spectra[2], spectra[3])
         out.append((f"colored-72#{i}",
-                    pilot_sig(f_true, -72.0, BASE_SEED + 2100 + i, nL),
+                    pilot_sig(f_true, seed=BASE_SEED + 2100 + i, noise=nL),
                     True))
     # реальные профили линий (амплитуды/фазы из WAV)
     prof_path = OUT / "v2187-lsq-pilots.json"
@@ -98,8 +99,9 @@ def classes(cal, spectra):
         for i in range(40):
             nL, _ = noise_white_corr(N, BASE_SEED + 4000 + int(-lvl) + i)
             out.append((f"levels{lvl:+.0f}#{i}",
-                        pilot_sig(f_true, lvl, BASE_SEED + 4100 + int(-lvl)
-                                  + i, nL), lvl >= -90.0))
+                        pilot_sig(f_true, seed=BASE_SEED + 4100
+                                  + int(-lvl) + i, noise=nL),
+                        lvl >= -90.0))
     for i in range(30):
         t = np.arange(N) / FS
         x = amp(-60.0) * np.sin(2 * math.pi * f_true * t +
@@ -118,11 +120,11 @@ def classes(cal, spectra):
     for i in range(40):
         nL = amp(-96.0) / math.sqrt(2.0) * \
             np.random.default_rng(BASE_SEED + 5200 + i).standard_normal(N)
-        x = pilot_sig(f_true, -72.0, BASE_SEED + 5300 + i, noise=nL,
+        x = pilot_sig(f_true, seed=BASE_SEED + 5300 + i, noise=nL,
                       drop="half")
         out.append((f"dropout-half#{i}", x, False))
     for i in range(40):
-        x = pilot_sig(f_true, -72.0, BASE_SEED + 5400 + i, t_len=0.8)
+        x = pilot_sig(f_true, seed=BASE_SEED + 5400 + i, t_len=0.8)
         buf = np.zeros(N)
         buf[:len(x)] = x
         out.append((f"partial40#{i}", buf, False))
