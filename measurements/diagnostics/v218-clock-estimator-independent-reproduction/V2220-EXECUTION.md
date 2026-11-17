@@ -39,7 +39,9 @@
 First fetch the branch and read this file. Then, in the existing ValveBench clone:
 
 ```bash
-git fetch origin coordinator/v2220-clock-quality-validation
+git fetch origin \
+  +refs/heads/coordinator/v2220-clock-quality-validation:refs/remotes/origin/coordinator/v2220-clock-quality-validation \
+  +refs/heads/agent/v2220-coordinator-authored-validation:refs/remotes/origin/agent/v2220-coordinator-authored-validation
 git checkout --detach 5d5e9d1eaee6cc9e0b427e5f6e1a5d738b1a3a78
 test "$(git rev-parse HEAD)" = "5d5e9d1eaee6cc9e0b427e5f6e1a5d738b1a3a78"
 git status --short
@@ -120,7 +122,15 @@ the task branch. Reattach to the task branch and verify it descends from
 the pinned test source:
 
 ```bash
-git switch agent/v2220-coordinator-authored-validation
+if git show-ref --verify --quiet refs/heads/agent/v2220-coordinator-authored-validation; then
+  git switch agent/v2220-coordinator-authored-validation
+  test "$(git rev-parse HEAD)" = "$(git rev-parse origin/agent/v2220-coordinator-authored-validation)" || {
+    echo "Local task branch differs from fetched origin branch; stop without reset/rebase."
+    exit 1
+  }
+else
+  git switch --track -c agent/v2220-coordinator-authored-validation origin/agent/v2220-coordinator-authored-validation
+fi
 git merge-base --is-ancestor 5d5e9d1eaee6cc9e0b427e5f6e1a5d738b1a3a78 HEAD
 git status --short
 ```
