@@ -1094,3 +1094,51 @@ The coordinator will create the scripts and exact test conditions:
 The agent is to execute the committed coordinator-authored harness on vovans-PC via the existing `ssh lk` clone, return raw results/logs, and report environment/runtime. It must not redesign the measurement method or silently rewrite the harness. Any proposed changes must be submitted separately for coordinator review.
 
 No production/main/PR changes, no pilot-frequency or clock-gate changes, no playback, hardware or DUT work.
+
+
+## 24. Coordinator review of v2.18.9 — execution commit 3998788 (17 Nov 2026)
+
+### 24.1 Execution accepted
+
+The coordinator-authored v2.18.9 harnesses were executed unchanged on vovans-PC at test HEAD `7eb4fb9dc3200dc59228b74b213cb342e2748bfb`. Result commit: `399878851f75af528c102a7d521cad9e2ab5d749`, whose sole parent is the test HEAD. The compare from this coordinator branch is 10 commits ahead / 0 behind; changed files are diagnostics only.
+
+- `py_compile`: pass, Python 3.14.4 / NumPy 2.3.5 / SciPy 1.16.3.
+- Paired SNR: exit 0, 2:25.27 wall, 794,596 KiB maximum RSS.
+- Nearby sweep: exit 0, 8:33.66 wall, 127,004 KiB maximum RSS.
+- `git diff --check`: clean.
+- Full JSON, stdout/stderr and `/usr/bin/time -v` logs are committed with an execution manifest.
+
+Full review: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2189.md`.
+
+### 24.2 Paired SNR — metrics differ even with matched segmentation
+
+The corrected test pairs 448 identical 96 kHz, two-second records. Production sees two one-second blocks; LSQ sees the same complete two-second record. All pairs are finite. Diagnostic minus production SNR has mean −7.245 dB, median −3.723 dB, standard deviation 9.584 dB. The pooled regression remains descriptive only.
+
+The definitions are not interchangeable: production local noise uses the median of an 11-bin neighbourhood on the 1 Hz production grid, while the LSQ residual SNR uses a wider ±32 Hz band (excluding ±2 Hz) on the 0.5 Hz grid. Different bandwidths and the LSQ residual's response to nonstationarity produce different values. Do not transfer thresholds by regression and do not change production `CLOCK_MIN_SNR_DB=20`.
+
+The tested 20 dB LSQ floor separates the steady pilot+noise cases (lowest diagnostic SNR 23 dB) from all noise-only cases (all 40 report `tone_missing`), and rejects the half-window / 40%-occupancy cases. Retain 20 dB as a provisional LSQ residual-fit quality floor only; it is not a numerical equivalent of production SNR.
+
+### 24.3 Do not misread the SNR threshold matrix as the full production gate
+
+The v2.18.9 harness calls `dsp.analyze_tone` directly. Actual `Rig.run()` calls `_window_stability_reason()` before `clock_check()` sees the window. The guard rejects a per-channel drop of at least 12 dB below the channel's own median when it lasts at least 50 ms. Thus the injected half-window, first/tail-quarter and 40%-occupancy dropouts would be rejected upstream, before production SNR is used. The reported production-SNR-only accepts for those vectors are not end-to-end clock-check accepts.
+
+### 24.4 Candidate line-QC false positives
+
+13/252 steady-white, no-injected-line trials (5.2% of this sample) were reported as `line_contaminated`. The selected peaks span approximately 5.9–47.8 kHz. This is not yet a population false-positive estimate, but it warrants a larger seeded Monte Carlo before line-QC is used as a hard rejection criterion.
+
+### 24.5 Nearby residual-line probe remains diagnostic
+
+The probe detected 904/1440 injected lines (62.8%): 100% at −10/−20 dBc, 87.5% at −30 dBc, 26.4% at −35 dBc and none at −40 dBc. Quiet controls had no hits in this small sample; AM/FM controls fired because modulation produces legitimate sidebands.
+
+Its selected residual peak is on a 0.5 Hz grid and is not sub-bin-refined. Across detections, absolute frequency error median was 0.0735 Hz, p90 0.2735 Hz and max 0.4765 Hz; amplitude error median −0.5 dB, p10 −4.4 dB and worst −12.9 dB. These fields are diagnostic peak metadata, not calibrated measurements. The probe cannot identify whether a component came from an independent oscillator or modulation.
+
+### 24.6 Decisions and v2.19.0
+
+1. Accept execution and preserve raw JSON/log artifacts.
+2. Keep production `CLOCK_MIN_SNR_DB=20` unchanged.
+3. Keep LSQ `snr_min_db=20` provisional, but remove any wording that calls it numerically equal to production SNR.
+4. Reject the v2.18.8 8.8 dB “equivalent threshold”.
+5. Keep nearby residual spectral-component detection diagnostic-only; no status change and no change to the ±1.5 Hz exclusion.
+6. Next coordinator-authored validation: full-path upstream stability guard controls; larger line-QC false-positive Monte Carlo for line-free white/colored noise plus injected-spur sensitivity controls; and primary LSQ frequency bias with nearby components and AM/FM controls.
+
+No production, main, PR #4, pilot-frequency or clock-gate code was changed. No physical hardware, playback or DUT test was run in v2.18.9.
