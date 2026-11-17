@@ -123,14 +123,15 @@ git status --short
 Then stage only the seven filenames listed above, commit them, and push:
 
 ```bash
+D=measurements/diagnostics/v218-clock-estimator-independent-reproduction
 git add \
-  `$D/v2210-clock-quality-boundary.json` \
-  `$D/v2210-clock-quality-boundary-run.log` \
-  `$D/v2210-lineqc-two-block.json` \
-  `$D/v2210-lineqc-two-block-run.log` \
-  `$D/v2210-nearby-duration-comparison.json` \
-  `$D/v2210-nearby-duration-comparison-run.log` \
-  `$D/V2210-EXECUTION-MANIFEST.md`
+  "$D/v2210-clock-quality-boundary.json" \
+  "$D/v2210-clock-quality-boundary-run.log" \
+  "$D/v2210-lineqc-two-block.json" \
+  "$D/v2210-lineqc-two-block-run.log" \
+  "$D/v2210-nearby-duration-comparison.json" \
+  "$D/v2210-nearby-duration-comparison-run.log" \
+  "$D/V2210-EXECUTION-MANIFEST.md"
 git diff --cached --name-only
 git diff --cached --check
 git commit -m "v2.21.0: execute coordinator-authored offline diagnostics"
