@@ -1120,7 +1120,18 @@ The tested 20 dB LSQ floor separates the steady pilot+noise cases (lowest diagno
 
 ### 24.3 Do not misread the SNR threshold matrix as the full production gate
 
-The v2.18.9 harness calls `dsp.analyze_tone` directly. Actual `Rig.run()` calls `_window_stability_reason()` before `clock_check()` sees the window. The guard rejects a per-channel drop of at least 12 dB below the channel's own median when it lasts at least 50 ms. Thus the injected half-window, first/tail-quarter and 40%-occupancy dropouts would be rejected upstream, before production SNR is used. The reported production-SNR-only accepts for those vectors are not end-to-end clock-check accepts.
+The v2.18.9 harness calls `dsp.analyze_tone` directly and does not execute
+`Rig.run()` or `clock_check()`. The v2.19.0 matrix then called
+`_window_stability_reason()` directly and measured: first/tail-quarter
+dropouts reject; half-window dropout rejects; 40% occupancy (40% tone, 60%
+quiet) **passes**; 40 ms gap passes; 60 ms gap rejects; 200 ms / −6 dB sag
+passes.
+
+The 40%-occupancy pass is a demonstrated blind spot in the median-referenced
+guard. It does **not** establish that the complete production clock-check
+path accepts that capture: onset anchoring, `dsp.analyze_tone`, and the
+signal-validity gate were not exercised together. The v2.20.0 test is
+specifically tasked with testing that full path.
 
 ### 24.4 Candidate line-QC false positives
 
@@ -1161,3 +1172,83 @@ The coordinator-authored tests cover:
 Agent contract: fetch the exact branch, run `py_compile` on the three Python files, and execute both committed scripts unchanged. Save only the two JSON outputs, full stdout/stderr + `time -v` logs, and environment manifest. On any preflight or runtime failure, stop and return the complete traceback; do not edit code or methodology.
 
 No WAV copy, playback, hardware capture, DUT, production/main/PR #4, pilot-frequency or clock-gate changes.
+
+
+
+## 26. v2.19.0 results accepted; v2.20.0 full-path validation prepared (17 Nov 2026)
+
+### 26.1 v2.19.0 execution verified
+
+The agent executed the coordinator-authored harness unchanged at source HEAD
+`d292e730dc37fe64c3df06276ccce3d519a913f8`. Result commit
+`7cfae8f0459eb5beef53cd562ac26b1497e12cde` is a direct child and adds only
+the two JSON outputs, two complete run logs, and execution manifest.
+Compilation and both scripts passed (exit 0); neither harness nor frozen
+`v2188_estimators.py` was edited. Execution is accepted.
+
+### 26.2 Direct stability-guard outcomes
+
+At 96 kHz / 2 s, the real `Rig._window_stability_reason()` was invoked
+directly on synthetic stereo windows:
+
+- first-quarter dropout: reject;
+- tail-quarter dropout: reject;
+- half-window dropout: reject;
+- 40% tone occupancy / 60% quiet: **pass**;
+- 40 ms gap: pass; 60 ms gap: reject;
+- 200 ms / −6 dB sag: pass.
+
+This proves the 40%-occupancy vector bypasses the median guard. It does not
+prove that the complete `Rig.run()` / `clock_check()` path accepts it:
+onset anchoring and production tone analysis were not included in this
+direct-function experiment. Earlier wording in §24.3 claiming that the
+40%-occupancy vector would be rejected upstream is withdrawn.
+
+### 26.3 Line-QC false-positive signal
+
+- Seeded original white-noise replay: 13/252 steady-white, line-free records
+  `line_contaminated` (5.16%; Wilson 95% approximately 3.0–8.6%).
+- Focused low-level white-noise population: 27/270 (10.0%; Wilson 95%
+  approximately 7.0–14.2%).
+- Combined: 40/522 (7.66%), but the two populations have different
+  pilot/noise-level mixes and must not be treated as one homogeneous rate.
+- Colored-noise controls: 0/60 line-contaminated; 8/60 `snr_low`.
+- Noise-only controls: 60/60 `tone_missing`.
+- Injected-spur controls: 36/48 detected (75%) in this matrix.
+
+These are seeded synthetic results, not a hardware false-positive rate.
+No line-QC threshold or production state is changed.
+
+### 26.4 Nearby-line primary-fit bias
+
+The v2.19.0 sweep found the worst observed absolute induced shift of about
+0.0649 Hz (about 65 ppm) for independent-phase components at ±0.30–0.35 Hz
+and −10 dBc. The agent's 0.78 ppm example at +1.5 Hz / −30 dBc is one
+favourable cell, not representative of the worst case. The extreme cells
+contain only three trials per signed offset / phase / level, so this is
+high-priority but preliminary. Nearby detection remains diagnostic metadata;
+it does not change estimator status or guard the primary fitted frequency.
+
+### 26.5 v2.20.0 coordinator-authored package
+
+The package is on
+`agent/v2200-coordinator-authored-validation`. It contains three
+coordinator-authored scripts and the exact execution contract:
+
+1. `v2200_full_clock_path.py`: synthetic backend, real `Rig.run()` and
+   `clock_check()`, clean/40%/50% occupancy, 25% tail dropout, 500 ms head
+   dropout, 40/60 ms gaps, and 200 ms / −6 dB sag.
+2. `v2200_lineqc_montecarlo.py`: 100 focused seeded repetitions in each of
+   nine white-noise pilot/noise cells, retaining the v2.19.0 replay,
+   colored-noise, noise-only, and injected-spur controls; per-cell Wilson
+   intervals are added.
+3. `v2200_nearby_primary_fit_bias.py`: 0.25–1.50 Hz offsets, −10/−20/−30
+   dBc, both phase modes, 20 repetitions per absolute-offset cell (10 per
+   sign), paired pilot-only baselines, AM/FM controls, and separate
+   positive/negative summaries.
+
+The execution contract is `V2200-EXECUTION.md`. The agent's role is
+execution-only: compile and run the scripts unchanged, return complete
+JSON/logs/manifest, and stop on the first failure. No real hardware
+playback/capture, DUT, WAV, production/main/PR #4, pilot-frequency,
+clock-gate, or threshold changes are authorized.
