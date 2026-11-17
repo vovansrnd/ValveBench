@@ -3,7 +3,7 @@
 ## Frozen source
 
 - Branch: `coordinator/v2200-full-clockpath-diagnostics`
-- Exact test-source commit: `35c800b70bb270affc2d4964902660c8738ab064`
+- Exact test-source commit: `8fcbe642132d957edc239f52e85edbe8e854b698`
 - The parent includes the completed v2.19.0 execution artifacts.
 - Frozen estimator: `v2188_estimators.py` (do not edit).
 - This package is synthetic/offline diagnostics only.
@@ -34,8 +34,8 @@ From the existing ValveBench clone:
 
 ```bash
 git fetch origin coordinator/v2200-full-clockpath-diagnostics
-git checkout --detach 35c800b70bb270affc2d4964902660c8738ab064
-test "$(git rev-parse HEAD)" = "35c800b70bb270affc2d4964902660c8738ab064"
+git checkout --detach 8fcbe642132d957edc239f52e85edbe8e854b698
+test "$(git rev-parse HEAD)" = "8fcbe642132d957edc239f52e85edbe8e854b698"
 git status --short
 ```
 
