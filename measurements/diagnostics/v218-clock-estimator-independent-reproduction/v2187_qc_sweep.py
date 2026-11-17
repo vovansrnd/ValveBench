@@ -104,9 +104,16 @@ def main():
 
     for name, x in negs:
         qc = est_lsq(x, FS, PILOT_NOM)
-        cls = "TN" if qc["status"] == "ok" else (
-            "FP_line" if qc["status"] == "line_contaminated" else
-            f"FP_other:{qc['status']}")
+        no_pilot = "nopilot" in name
+        if no_pilot:
+            # негатив БЕЗ пилота: корректное поведение = отказ
+            # (tone_missing/snr_low); ok = опасное ложное принятие
+            cls = ("TN_refused" if qc["status"] != "ok" else
+                   "FP_false_accept")
+        else:
+            cls = "TN" if qc["status"] == "ok" else (
+                "FP_line" if qc["status"] == "line_contaminated" else
+                f"FP_other:{qc['status']}")
         recs.append({"cell": name, "verdict": cls, "status": qc["status"],
                      "line_hz": qc.get("line_hz"),
                      "line_dbc": qc.get("line_dbc"),
@@ -135,7 +142,7 @@ def main():
                         f"TP_unnamed:{qc['status']}"))
                 attr = (qc.get("line_hz") is not None and
                         abs(qc["line_hz"] - f_line) <= 1.5)
-                err = ((qc["f_est"] / f_pilot - 1) * 1e6 - PPM_TRUE
+                err = ((qc["f_est"] / f_pilot - 1) * 1e6
                        if qc.get("f_est") is not None else None)
                 recs.append({"cell": cell, "verdict": cls,
                              "status": qc["status"],
@@ -167,6 +174,10 @@ def main():
             nL, _ = noise_white_corr(N, 701000 + i)
             x = synth_trial(f_pilot, -72.0, lines, 700000 + i, nL)
             qc = est_lsq(x, FS, PILOT_NOM)
+            attr_real = None
+            if qc.get("line_hz") is not None:
+                near = min(lines, key=lambda ln: abs(ln[0] - qc["line_hz"]))
+                attr_real = bool(abs(near[0] - qc["line_hz"]) <= 1.5)
             recs.append({"cell": "real-profile",
                          "verdict": ("FN" if qc["status"] == "ok" else
                                      "TP" if qc["status"] ==
@@ -178,6 +189,7 @@ def main():
                          "f_est": (round(qc["f_est"], 4)
                                    if qc.get("f_est") is not None else None),
                          "f_line": None,
+                         "attr_ok": attr_real,
                          "profile_dbc_range": [dbc_list[0], dbc_list[-1]],
                          "profile_n_lines": len(rel)})
         print("  реальные профили: готово", flush=True)
@@ -199,7 +211,14 @@ def main():
         "TP_unnamed": cnt(lambda r: r["verdict"].startswith("TP_unnamed")),
         "FN": cnt(lambda r: r["verdict"] == "FN"),
         "negatives": n_neg,
+        "negatives_with_pilot": cnt(lambda r: r["cell"] in
+                                    ("clean", "white+pilot",
+                                     "colored+pilot")),
+        "negatives_no_pilot": cnt(lambda r: "nopilot" in r["cell"]),
         "TN": cnt(lambda r: r["verdict"] == "TN"),
+        "TN_refused_nopilot": cnt(lambda r: r["verdict"] == "TN_refused"),
+        "FP_false_accept_nopilot": cnt(lambda r: r["verdict"] ==
+                                       "FP_false_accept"),
         "FP_line": cnt(lambda r: r["verdict"] == "FP_line"),
         "FP_other": cnt(lambda r: r["verdict"].startswith("FP_other")),
         "note": ("нулевые ошибки на выборке не означают нулевую частоту "
@@ -208,9 +227,12 @@ def main():
     }
     summary["recall"] = (round((summary["TP"] + summary["TP_unnamed"]) /
                                n_pos, 4) if n_pos else None)
-    summary["false_positive_rate"] = (round((summary["FP_line"] +
-                                             summary["FP_other"]) / n_neg, 4)
-                                      if n_neg else None)
+    summary["false_positive_rate_with_pilot"] = (
+        round((summary["FP_line"] + summary["FP_other"]) /
+              max(summary["negatives_with_pilot"], 1), 4))
+    summary["false_accept_rate_no_pilot"] = (
+        round(summary["FP_false_accept_nopilot"] /
+              max(summary["negatives_no_pilot"], 1), 4))
     grid = {}
     for r in recs:
         c = r["cell"]
