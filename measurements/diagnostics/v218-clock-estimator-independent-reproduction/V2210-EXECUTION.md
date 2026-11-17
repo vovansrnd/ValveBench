@@ -105,6 +105,43 @@ NumPy, SciPy, compile command/result, run commands, exit codes, wall times,
 maximum RSS, diff-check result and output file list. Confirm that the estimator,
 harnesses and production files were not edited.
 
+## Commit results to the task branch
+
+The scripts are run detached at the pinned test-source commit. After all three
+runs pass, do not commit on detached HEAD and do not push a detached child.
+
+The seven generated output files remain untracked when switching back to the
+task branch. Reattach to the task branch and verify it descends from the pinned
+test source:
+
+```bash
+git switch agent/v2210-coordinator-authored-validation
+git merge-base --is-ancestor d42c6b4a3677c8f0521d41926b8782c6a4d23447 HEAD
+git status --short
+```
+
+Then stage only the seven filenames listed above, commit them, and push:
+
+```bash
+git add \
+  `$D/v2210-clock-quality-boundary.json` \
+  `$D/v2210-clock-quality-boundary-run.log` \
+  `$D/v2210-lineqc-two-block.json` \
+  `$D/v2210-lineqc-two-block-run.log` \
+  `$D/v2210-nearby-duration-comparison.json` \
+  `$D/v2210-nearby-duration-comparison-run.log` \
+  `$D/V2210-EXECUTION-MANIFEST.md`
+git diff --cached --name-only
+git diff --cached --check
+git commit -m "v2.21.0: execute coordinator-authored offline diagnostics"
+git push origin agent/v2210-coordinator-authored-validation
+```
+
+If the task branch is not available, the ancestry check fails, or the push is
+not fast-forward, stop and report the exact local HEAD, remote branch HEAD,
+and commit parent. Do not reset, rebase, cherry-pick, force-push or rewrite
+either branch without a separate coordinator instruction.
+
 ## Restrictions
 
 - Do not edit the scripts, frozen estimator, production source, main, PR #4,
