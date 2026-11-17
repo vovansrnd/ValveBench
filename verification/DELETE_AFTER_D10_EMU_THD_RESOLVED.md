@@ -993,3 +993,54 @@ The 1700-case confusion suite uses 2 s at 48 kHz and a different noise/line cons
 7. Add estimator SHA256 to pilot provenance.
 
 No production/main/PR changes, pilot-frequency or clock-gate changes, playback, hardware or DUT work.
+
+
+## 22. Coordinator review of v2.18.7 — commit 12d64d9 (17 Nov 2026)
+
+### 22.1 Scope and decision
+
+- Agent branch: `agent/v2187-partial-channel-snr-uncertainty-repair`, HEAD `12d64d914c336d6db3aba865bcaf89fb70d4aa7b`.
+- Base: `47657b350b2cd58aaf2c1209ea6248a34aa846d0`; compare 5 commits ahead, zero behind.
+- The branch compare contains diagnostic material only under `measurements/diagnostics/v218-clock-estimator-independent-reproduction/`. No production source, main or PR #4 changes; no playback/hardware/DUT work.
+- WAVs were transferred to the remote compute host for the heavy diagnostic runs; the WAV archive remains unpublished.
+- Full review: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2187.md`.
+
+**v2.18.7 is partially accepted as diagnostic progress; NOT accepted as a production-ready estimator or fully closed evidence. No production approval.**
+
+### 22.2 Accepted progress
+
+- **True partial-channel isolation:** when one channel passes, `est_joint` returns that channel's own LSQ result and lists it in `channels_used`; the rejected channel no longer enters covariance, whitening or GLS. Paired L/R tests compare against the good-channel-only result.
+- **Tone-presence gate is active:** no-pilot tests now reject rather than returning `ok`; 200 noise-only records at −80 dBFS give 0/200 `ok` (the v2.18.6 independent replay gave 55/200). Dropout, partial window, low-SNR and clipping tests are present.
+- **Variance conversion corrected:** `variance_hz2` and `sigma_hz=sqrt(variance_hz2)` remove the extra sqrt(2). White MC prediction/actual ratios are 1.03, 0.987 and 1.003 at −72/−66/−60 dBFS, with near-nominal 1σ/2σ coverage.
+- **CSD convention and amplitude check:** generator and verifier use `conj(FFT(L))*FFT(R)`; known phase +0.37→+0.3685 rad, amplitude ratio 1.025; target/generated S_LL, S_RR, S_LR and γ² arrays are saved.
+- **Line-QC sweep extended:** 3090 cases with levels +20…−45 dBc, signed offsets ±1…±5 Hz, measured profiles and no-tone negatives. No false accepts were seen among 360 defined negatives; 1303 line detections had 1303 correct attributions.
+- **Provenance improved:** pilots JSON contains SHA256 for the script, estimator module, WAV manifest and source WAVs. Weak-line extraction validation still has mean absolute error 1.21 dB / maximum 5.24 dB.
+
+### 22.3 Blocker — numeric SNR threshold is not shown equivalent to production
+
+The presence gate is real and catches the tested no-pilot records. But the new `snr_carrier_db` calculation is not the production `dsp.analyze_tone.local_snr_db` calculation to which the 20 dB constant belongs.
+
+Production `clock_check` obtains its SNR from `dsp.analyze_tone`, whose local floor is the median local spectrum multiplied by the fundamental-lobe bin count (normally 11), using the production Block/BH spectrum. v2.18.7 estimates an integrated noise RMS from a Hann-windowed residual across approximately ±32 Hz, excluding ±2 Hz, and compares this with the fitted peak amplitude. Different bandwidth, window and normalization mean the same 20 dB value is not automatically equivalent.
+
+Required: paired calculations on identical deterministic records and matched segments, with white/colored noise, hum/lines, pilot-level sweep, near-threshold cases, dropout, partial windows and no-tone cases. Save paired metric values, deltas and classification matrices. Either harmonize the metric or calibrate an explicitly separate threshold. Do not change production clock-gate policy or pilot frequency.
+
+### 22.4 Historical −127 ppm — failure mechanism reproduced, original input not recovered
+
+The v2.18.7 replay copies the identified v2.18.4 estimator code at ref `4fc938e` (not the unrelated 8d8b040 estimator). With a reconstructed 2 s @ 192 kHz signal, internally decimated 1/4, pilot 997 Hz at −60 dBFS, a 1000 Hz line at −30 dBFS and −96 dBFS noise, it produces 48/100 lower-end results (−126.95 ppm), 52/100 upper-end results (+173.95 ppm), and status `ok` in all 100. v2.18.7 rejects all 100.
+
+This validates a v2.18.4 failure family and demonstrates that the new residual QC catches the chosen synthetic case. It is **not an exact replay of the historical test input**: the original inline script/input was not saved, and the current parameters were selected by searching for the −127 ppm fingerprint. Keep the report labelled “reconstructed synthetic replay”; do not call it exact historical reproduction unless the original input/provenance is recovered.
+
+### 22.5 Remaining line-QC limitation and uncertainty boundary
+
+The sweep has 1303 line-QC true positives (47.73% of 2730 injected-line positives), plus 48 unnamed/other refusals. Any-refusal recall is 49.49%; these are different metrics and must not be conflated. The ±1/±1.5 Hz exclusion remains a blind zone: strong lines there can bias accepted clock estimates by tens to >100 ppm (up to 118.5 ppm in the reported cells). This is an architectural limitation requiring a separate design task, not a minor reporting caveat.
+
+White-noise `sigma_pred` is accepted only for the tested white synthetic model. Colored MC reports pred/actual ≈0.36 and poor 1σ/2σ coverage (about 0.27–0.33 / 0.526–0.554). Do not publish `sigma_pred` as calibrated for colored noise.
+
+### 22.6 Required v2.18.8 — diagnostics only
+
+1. Pair v2.18.7 `snr_carrier_db` with production `dsp.analyze_tone.local_snr_db` on identical records and matched segments. Calibrate/justify the threshold; do not change production policy.
+2. Search available archived history for the original historical −127 input/script. If unavailable, keep the synthetic reconstruction label; never invent provenance.
+3. Design and test a separate nearby-tone discriminator for the ±1/±1.5 Hz blind zone. Preserve the current exclusion band until a distinct design is reviewed.
+4. Keep colored-noise uncertainty explicitly non-publishable until a temporally correlated-noise covariance model is validated.
+5. Preserve diagnostic-only scope: no production/main/PR changes, pilot-frequency or clock-gate changes, playback, hardware or DUT work.
+
