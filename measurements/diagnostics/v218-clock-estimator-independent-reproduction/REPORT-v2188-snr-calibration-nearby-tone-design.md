@@ -120,7 +120,7 @@ dbc ≥ −35). Информационные поля `nearby_tone_hz` / `nearby
 
 ## §4. Сохранение принятых исправлений (п.4)
 
-Юнит-тесты v2.18.7 (35 PASS) выполняются на `v2188_estimators.py`
+Юнит-тесты v2.18.7+probe (36 PASS) выполняются на `v2188_estimators.py`
 без изменений утверждений: изоляция каналов (bitwise ok_partial),
 tone-presence gate (0/200 ложных ok на шуме без пилота),
 variance_hz2/sigma_hz, помехи ±3/±5 Гц, CSD-конвенция. Цветная
@@ -132,7 +132,7 @@ sigma_pred (0.36 фактической) **не публикуется** как 
 
 ```bash
 cd measurements/diagnostics/v218-clock-estimator-independent-reproduction
-python3 v2188_unit_tests.py                                        # 35 PASS
+python3 v2188_unit_tests.py                                        # 36 PASS
 python3 v2188_snr_compare.py --source-dir <dir v214>               # §1
 python3 v2188_nearby_tone.py                                       # §3
 python3 v2188_make_tables.py                                       # таблицы
