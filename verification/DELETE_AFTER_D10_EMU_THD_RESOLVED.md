@@ -1252,3 +1252,110 @@ execution-only: compile and run the scripts unchanged, return complete
 JSON/logs/manifest, and stop on the first failure. No real hardware
 playback/capture, DUT, WAV, production/main/PR #4, pilot-frequency,
 clock-gate, or threshold changes are authorized.
+
+
+
+## 27. v2.20.0 execution accepted; substantive review (18 Nov 2026)
+
+### 27.1 Execution provenance
+
+Agent result commit:
+`43f1cb6cbbb973e5ba05260fe2dc832e2f38f896`, direct child of the pinned
+execution-contract head `d5e29814dc6746a7fc196492539b4cb7959ff7ab`.
+GitHub compare confirms exactly seven added result artifacts and one commit
+ahead. Manifest identifies frozen test source
+`8fcbe642132d957edc239f52e85edbe8e854b698`; `py_compile` ×4 and all three
+runs exit 0; `git diff --check` clean. No harness, frozen estimator or
+production source was edited.
+
+Runtimes / maximum RSS from the manifest:
+- Full production path: 1.08 s / 167,840 KB.
+- Line-QC Monte Carlo: 6:58.17 / 124,956 KB.
+- Nearby primary-fit bias: 8:03.01 / 131,988 KB.
+
+Execution accepted; algorithmic acceptance remains separate.
+
+### 27.2 Confirmed production clock-preflight false accept
+
+The 40%-occupancy front-loaded vector (0.8 s tone followed by 1.2 s quiet
+inside the 2 s measurement window) passes the real `Rig.run()` and
+`clock_check()` path:
+- `Rig.run()`: pass; `clock_check()`: returned; `ok=True`.
+- `signal_ok=True`; local SNR 46.90 dB L / 46.81 dB R.
+- Frequency estimates +0.087 ppm L / −0.040 ppm R.
+- The analyzer emits inter-block phase coherence warnings (0.585 / 0.767),
+  but this does not affect the signal-validity gate or overall result.
+
+This is a demonstrated production-path false accept of an incomplete
+measurement window. The median-referenced stability guard misses it, and
+phase instability is warning-only for this gate. The next test must map the
+acceptance boundary by duty fraction, time placement, block distribution,
+onset shift and phase coherence before selecting a fix.
+
+Other cases: clean PASS; 50% front occupancy reject; 25% tail dropout reject;
+40 ms gap PASS; 60 ms gap reject; 200 ms / −6 dB sag PASS. The 500 ms head
+dropout rejects, but onset shifts from the 0.137 s DAC delay to 1.030 s and
+the selected window then contains about 0.85 s of post-program silence. This
+is not an isolated test of a head dropout; it combines onset re-anchoring
+with a too-short generated tail.
+
+### 27.3 Frozen v2.18.8 LSQ line-QC false alarms
+
+These results belong to the independent diagnostic LSQ estimator, not
+production `clock_check()`:
+- Focused line-free white noise: 86/900 `line_contaminated` (9.56%;
+  Wilson 95% approximately 7.8–11.7%).
+- Original replay: 13/252 (5.16%; Wilson 95% approximately 3.0–8.6%).
+- 95/99 white-noise false flags were exactly three-bin clusters. However,
+  all 42/48 injected-spur detections were also three-bin clusters. A naive
+  four-bin minimum would remove most false flags but also the observed
+  injected-spur hits; do not apply it.
+- False peaks span 658.5–47,843.5 Hz, median 20,701.5 Hz; `line_dbc`
+  median −33.1 dBc (range −34.9 to −27.6 dBc).
+- Stable injected spurs detected: 42/48 (87.5%).
+
+Keep the frozen `QC_CFG` unchanged. Test a two-block frequency-persistence
+candidate against white/colored-noise controls and injected stable spurs.
+
+### 27.4 Frozen v2.18.8 LSQ nearby-line bias
+
+This is also independent-estimator evidence, not production
+`clock_check()`:
+- Total 1,512 records: 360 baselines and 1,080 nearby-line records.
+- Nearby probe hits: 995/1,080 (92.1%).
+- Worst induced shift: 67.03 ppm, independent phase, +0.40 Hz, −10 dBc.
+  That cell has 20 trials, all 20 probe hits, and all 20 estimator statuses
+  remain `ok`. The agent's quoted 61 ppm at +0.25 Hz is valid for that
+  cell but is not the overall maximum.
+- Other independent-phase −10 dBc maxima: +0.30 Hz 65.70 ppm;
+  +0.35 Hz 65.42 ppm; +0.25 Hz 61.07 ppm; +0.50 Hz 58.06 ppm.
+- AM triggered the probe 36/36; FM 34/36. The probe does not classify
+  independent oscillators separately from modulation sidebands.
+
+Keep nearby detection diagnostic-only pending a longer-window comparison.
+No refusal state or threshold change is authorized.
+
+### 27.5 v2.21.0 coordinator-authored follow-up
+
+Branch: `agent/v2210-coordinator-authored-validation`.
+
+- `v2210_clock_quality_boundary.py`: real production `Rig.run()` /
+  `clock_check()` across front/centre/back occupancy, front duty fractions
+  around 50%, and split/burst patterns; records onset, SNR, phase coherence,
+  warnings and final status.
+- `v2210_lineqc_two_block.py`: unchanged frozen v2.18.8 estimator; compares
+  full-window line-QC with same-frequency hits in both 1 s blocks at
+  0.5/1/2 Hz tolerances; 540 white, 60 colored, 48 stable-spur controls.
+- `v2210_nearby_duration_comparison.py`: paired 2 s / 4 s windows, offsets
+  0.25–1.00 Hz, −10/−20 dBc, both phase modes, 16 trials per absolute-offset
+  cell (eight per sign).
+
+Execution contract: `V2210-EXECUTION.md`. Agent remains execution-only.
+No hardware, DUT, WAV, production/main/PR #4, pilot-frequency, clock-gate,
+threshold or production-source changes are authorized.
+
+Operational note from the agent: remote push authentication was configured
+with `credential.helper=store` and `~/.git-credentials` mode 0600. Git's
+`store` helper keeps credentials in plaintext; mode 0600 restricts local
+file access but does not encrypt the token. Keep any token least-privileged
+and rotate/revoke it when no longer needed.
