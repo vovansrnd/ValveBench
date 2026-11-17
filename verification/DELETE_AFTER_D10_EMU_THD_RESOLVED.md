@@ -1044,3 +1044,53 @@ White-noise `sigma_pred` is accepted only for the tested white synthetic model. 
 4. Keep colored-noise uncertainty explicitly non-publishable until a temporally correlated-noise covariance model is validated.
 5. Preserve diagnostic-only scope: no production/main/PR changes, pilot-frequency or clock-gate changes, playback, hardware or DUT work.
 
+
+
+## 23. Coordinator review of v2.18.8 — commit 89569a1 (17 Nov 2026)
+
+### 23.1 Scope and decision
+
+- Agent branch: `agent/v2188-snr-calibration-nearby-tone-design`, HEAD `89569a1e4753d6c56cbb33e9ae19252929c9f170`.
+- Base: `0fbf2e2284b61b07347d0570c347673cc89e536c`; compare 7 commits ahead, zero behind.
+- The branch compare contains diagnostic files only. Production/main/PR #4 and pilot/clock-gate policy are untouched; no playback, hardware or DUT work.
+- Full review: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2188.md`.
+
+**v2.18.8 is partially accepted as diagnostic progress. SNR calibration and nearby-tone discrimination are not closed; no production approval.**
+
+### 23.2 Accepted progress
+
+- The 760 paired synthetic records establish that the v2.18.7 SNR metric is not numerically interchangeable with production `local_snr_db` by copying the same 20 dB threshold.
+- The original v2.18.4 inline script/input for −127 ppm was not found in available repository history; the v2.18.7 result remains correctly labelled synthetic reconstruction.
+- The beat-envelope experiment was abandoned; the current nearby probe is a local spectral-peak search in the LSQ residual and does not alter status.
+- The ±1.5 Hz exclusion remains unchanged.
+- The branch contains diagnostic work only.
+
+### 23.3 Blocker — SNR comparison does not reproduce standard production segmentation
+
+The v2.18.8 comparison calls production `dsp.analyze_tone(x, FS=48000, f0, N=96000)`: one 2-second analysis block.
+
+The standard `Rig` defaults in `valvebench/measure.py` are `fs=96000`, `df=1`, `blocks=2`; hence `self.n=96000` and `_tone_an` passes 96000 samples per block. The standard clock-check path supplies a two-block (2-second) window, therefore production computes its spectrum from two 1-second blocks. The v2.18.8 comparison uses a different FFT segmentation and frequency-bin spacing. Although both routines see the same total waveform duration, the paired production SNR is not the standard production clock-check result.
+
+Consequently, the pooled regression diag = 1.192·prod − 15.09 and the derived diag≈8.8 dB “equivalent threshold” are not accepted as production calibration. Keep diagnostic 20 dB provisional; do not change production `CLOCK_MIN_SNR_DB=20`.
+
+### 23.4 Nearby spectral probe — incomplete validation and stale documentation
+
+The implementation is a residual spectral-peak probe, not the beat-envelope algorithm still described in stale docstrings. Its current validation:
+- has 60 quiet controls and zero false fires in that sample;
+- pools sync/free-phase populations;
+- only injects positive offsets +0.5, +1.0 and +1.5 Hz;
+- tests offsets aligned to the 0.5 Hz FFT grid, not off-bin interferers;
+- lacks AM/FM sideband and other nonstationary-pilot controls.
+
+The claim of ±Δ coverage is unsupported because the generator only iterates positive `delta`. The probe cannot by itself distinguish an independent oscillator from modulation sidebands. Keep it diagnostic-only; name it a nearby residual spectral-line probe until broader evidence supports a stronger claim. Do not change the ±1.5 Hz exclusion or turn the probe into a refusal status.
+
+### 23.5 Required v2.18.9 — coordinator-authored test harness, agent execution only
+
+The coordinator will create the scripts and exact test conditions:
+1. SNR comparison at the standard 96 kHz, 2-second, two 1-second block production configuration, against v2.18.8 `est_lsq` on the exact same samples.
+2. Nearby residual-line validation across positive and negative, on-bin and off-bin offsets, separate synchronous/free-phase classes, and AM/FM controls.
+3. A clear output contract: raw per-trial JSON/CSV, per-class metrics and captured command/log provenance.
+
+The agent is to execute the committed coordinator-authored harness on vovans-PC via the existing `ssh lk` clone, return raw results/logs, and report environment/runtime. It must not redesign the measurement method or silently rewrite the harness. Any proposed changes must be submitted separately for coordinator review.
+
+No production/main/PR changes, no pilot-frequency or clock-gate changes, no playback, hardware or DUT work.
