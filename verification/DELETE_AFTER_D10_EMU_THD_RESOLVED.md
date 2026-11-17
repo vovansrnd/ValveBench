@@ -1448,3 +1448,37 @@ The next coordinator-authored diagnostic package will:
 
 No production/main/PR #4, pilot-frequency, clock-gate, threshold or frozen
 estimator changes are authorized.
+
+
+
+## 29. v2.22.0 coordinator-authored diagnostic package prepared (18 Nov 2026)
+
+Pinned test-source commit:
+`5d5e9d1eaee6cc9e0b427e5f6e1a5d738b1a3a78`.
+
+Task branch:
+`agent/v2220-coordinator-authored-validation`.
+Execution contract:
+`measurements/diagnostics/v218-clock-estimator-independent-reproduction/V2220-EXECUTION.md`.
+
+Three coordinator-authored scripts:
+1. `v2220_clock_occupancy_diagnostics.py`: synthetic full
+   `Rig.run()` / `clock_check()` tests for contiguous/placed windows,
+   periodic pulse trains with short gaps around the 50 ms run threshold,
+   frequency offsets from −110 to +110 ppm, AM controls, per-block tone/SNR
+   diagnostics, and 2 ms frame occupancy relative to upper quantiles.
+2. `v2220_lineqc_physical_width.py`: unchanged frozen v2.18.8 estimator;
+   compares line-QC persistence with legacy 161-bin and physically
+   normalized 81-bin per-block local floors. Includes 900 white-noise
+   controls, colored noise, stable on-/off-bin spurs, and first-/second-half
+   only spurs.
+3. `v2220_nearby_duration_robustness.py`: paired 2/3/4/6 s fits with
+   consistent seeds, offsets 0.25/0.35/0.40/0.50/0.75 Hz, −10/−20 dBc,
+   both phase modes, and eight positive plus eight negative trials per
+   offset/phase/level cell.
+
+The agent contract is execution-only. It may compile and run the exact
+committed scripts, save the three complete JSON outputs, three full logs,
+and manifest, then commit only those seven result files. It must stop on
+the first failure. No hardware/playback/DUT/WAV, no production/main/PR #4,
+no clock-gate/threshold changes and no estimator edits are authorized.
