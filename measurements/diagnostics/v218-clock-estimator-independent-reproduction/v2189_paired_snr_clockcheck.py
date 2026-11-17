@@ -125,6 +125,25 @@ def make_cases():
         cases.append(("partial-40pct", x, "partial"))
         idx += 1
 
+    # Measured line profile from the v2.18.7 WAV-derived extraction.
+    # The WAV payload is not copied; the JSON retains its source hashes.
+    profile_path = OUT / "v2187-lsq-pilots.json"
+    if profile_path.exists():
+        profile = json.loads(profile_path.read_text(encoding="utf-8"))["measured_profile"]
+        for tr in range(20):
+            seed = seed0 + 45000 + idx
+            rng = np.random.default_rng(seed)
+            x = pilot(-72.0, seed)
+            t = np.arange(N, dtype=np.float64) / FS
+            for fh, values in profile.items():
+                a = float(values.get("amp_L", 0.0))
+                if a > 0:
+                    phase = float(rng.uniform(0.0, 2.0 * math.pi))
+                    x += a * np.sin(2.0 * math.pi * float(fh) * t + phase)
+            x += white_noise(-96.0, seed + 1)
+            cases.append(("measured-real-profile", x, "measured_profile"))
+            idx += 1
+
     # Clipping: SNR is not expected to detect this; line-QC is a later layer.
     for tr in range(20):
         seed = seed0 + 50000 + idx
