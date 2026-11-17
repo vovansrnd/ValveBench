@@ -171,6 +171,33 @@ def main():
             })
             trial_id += 1
 
+    # WAV-derived real profile control (same provenance JSON as v2.18.8).
+    profile_path = OUT / "v2187-lsq-pilots.json"
+    if profile_path.exists():
+        profile = json.loads(profile_path.read_text(encoding="utf-8"))["measured_profile"]
+        for tr in range(20):
+            seed = seed_base + 350000 + trial_id
+            rng = np.random.default_rng(seed)
+            pilot, _ = make_pilot(seed)
+            t = np.arange(N, dtype=np.float64) / FS
+            x = pilot.copy()
+            for fh, values in profile.items():
+                a = float(values.get("amp_L", 0.0))
+                if a > 0:
+                    phase = float(rng.uniform(0.0, 2.0 * math.pi))
+                    x += a * np.sin(2.0 * math.pi * float(fh) * t + phase)
+            x += white_noise(seed + 1)
+            qc = run_estimator(x)
+            nearby_hz = qc.get("nearby_tone_hz")
+            rows.append({
+                "trial": trial_id, "kind": "control",
+                "category": "measured_real_profile",
+                "nearby_hz": nearby_hz, "nearby_db": qc.get("nearby_tone_db"),
+                "detected": nearby_hz is not None,
+                "estimator_status": qc.get("status"),
+            })
+            trial_id += 1
+
     # AM/FM controls deliberately produce sidebands; a probe hit is not
     # automatically a false positive for a spectral-component detector.
     t = np.arange(N, dtype=np.float64) / FS
