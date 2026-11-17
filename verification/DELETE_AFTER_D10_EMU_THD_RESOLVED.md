@@ -1142,3 +1142,22 @@ Its selected residual peak is on a 0.5 Hz grid and is not sub-bin-refined. Acros
 6. Next coordinator-authored validation: full-path upstream stability guard controls; larger line-QC false-positive Monte Carlo for line-free white/colored noise plus injected-spur sensitivity controls; and primary LSQ frequency bias with nearby components and AM/FM controls.
 
 No production, main, PR #4, pilot-frequency or clock-gate code was changed. No physical hardware, playback or DUT test was run in v2.18.9.
+
+
+## 25. Required v2.19.0 — coordinator-authored validation package (17 Nov 2026)
+
+Branch: `agent/v2190-coordinator-authored-validation`, based directly on the updated coordinator review branch. The package is diagnostic-only and contains four files under the diagnostics directory:
+- frozen `v2188_estimators.py`;
+- `v2190_gate_lineqc_montecarlo.py`;
+- `v2190_nearby_primary_fit_bias.py`;
+- `V2190-EXECUTION.md`.
+
+The coordinator-authored tests cover:
+
+1. **Production stability guard:** same 96 kHz / 2 s window geometry; steady tone, first/tail-quarter dropouts, half-window dropout, 40% tone occupancy, 40 ms and 60 ms gaps, and a 200 ms −6 dB sag. The aim is to verify the actual median-referenced `Rig._window_stability_reason()`, especially where quiet frames form a majority. This is a candidate boundary check, not a presumed bug.
+2. **Line-QC false-positive population:** exact seeded replay of the v2.18.9 252 steady-white cases; 270 additional low-level white-noise cases; 60 colored-noise cases; 60 no-pilot controls; and 48 injected discrete-spur sensitivity controls. Preserve every per-trial status and line result.
+3. **Primary-frequency bias:** paired pilot-only baselines and 432 nearby-component trials covering both signs, nine offsets, four levels, and same-initial / independent phase; plus 72 AM/FM controls. Record the actual primary LSQ fitted frequency and its shift relative to the matched baseline, separately from nearby residual-peak metadata.
+
+Agent contract: fetch the exact branch, run `py_compile` on the three Python files, and execute both committed scripts unchanged. Save only the two JSON outputs, full stdout/stderr + `time -v` logs, and environment manifest. On any preflight or runtime failure, stop and return the complete traceback; do not edit code or methodology.
+
+No WAV copy, playback, hardware capture, DUT, production/main/PR #4, pilot-frequency or clock-gate changes.
