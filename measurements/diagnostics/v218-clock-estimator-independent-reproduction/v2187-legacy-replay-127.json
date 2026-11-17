@@ -1,0 +1,2958 @@
+{
+ "summary": {
+  "estimator": "точная копия est_lsq из v2184_estimators.py (4fc938e) — bounded-coarse, баг curv > 0, guard, RSS ±0.15 Гц; НЕ 8d8b040",
+  "construction": {
+   "fs_hz": 192000,
+   "duration_s": 2.0,
+   "decimation": "resample_poly(1, 4) → 48 кГц внутри est_lsq",
+   "pilot_hz": 997.0,
+   "pilot_level_dbfs": -60.0,
+   "line_hz": 999.9765000000001,
+   "line_level_dbfs": -30.0,
+   "noise_dbfs": -96.0,
+   "seed_formula": "218200 + 997000 + 300 + tr (tr 0..99)",
+   "reconstruction_notes": [
+    "уровень пилота −60 дБFS: при −72 coarse уходит на край полосы (утечка линии в бин 998.5, первый боковик Ханна −31.5 дБ) — семья edge_peak, не −127",
+    "длительность 2 с: вариант 1 с @ 192 кГц даёт edge_peak 100/100 (гл. лепесток Ханна ±2 Гц при T=1 с накрывает бин 999); 2 с — дефолт скриптов v2.18.4"
+   ]
+  },
+  "trials": 100,
+  "status_ok_count": 100,
+  "err_minus_127_ppm": 48,
+  "err_plus_174_ppm": 52,
+  "verdict": "ТОЧНОЕ ВОСПРОИЗВЕДЕНИЕ: 48/100 −127.0 ppm (нижний край 996.85), 52/100 +174.0 ppm (верхний край 997.15), статус ok 100/100 — историческая ошибка ПРИНИМАЛАСЬ молча; v2.18.7 отклоняет 100/100",
+  "example_trial": {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.792,
+    24.076,
+    10.996
+   ],
+   "coarse_curv": -24.3641,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.8
+   },
+   "trial": 0,
+   "seed": 1215500
+  },
+  "v2187_behavior": "те же сигналы через v2187_estimators.est_lsq: line_contaminated с атрибуцией (см. per-trial line_attribution_modern_qc)",
+  "v2187_refused_of_100": 100
+ },
+ "per_trial": [
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.792,
+    24.076,
+    10.996
+   ],
+   "coarse_curv": -24.3641,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.8
+   },
+   "trial": 0,
+   "seed": 1215500
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.813,
+    24.042,
+    11.059
+   ],
+   "coarse_curv": -24.2128,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.4
+   },
+   "trial": 1,
+   "seed": 1215501
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.77,
+    24.107,
+    10.939
+   ],
+   "coarse_curv": -24.506,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.3
+   },
+   "trial": 2,
+   "seed": 1215502
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.813,
+    24.036,
+    11.063
+   ],
+   "coarse_curv": -24.1965,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.4
+   },
+   "trial": 3,
+   "seed": 1215503
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.831,
+    24.014,
+    11.108
+   ],
+   "coarse_curv": -24.0906,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.8
+   },
+   "trial": 4,
+   "seed": 1215504
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.912,
+    23.881,
+    11.34
+   ],
+   "coarse_curv": -23.5096,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.4
+   },
+   "trial": 5,
+   "seed": 1215505
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.793,
+    24.071,
+    11.002
+   ],
+   "coarse_curv": -24.3463,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.9
+   },
+   "trial": 6,
+   "seed": 1215506
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.938,
+    23.837,
+    11.414
+   ],
+   "coarse_curv": -23.3225,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.8
+   },
+   "trial": 7,
+   "seed": 1215507
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.751,
+    24.14,
+    10.879
+   ],
+   "coarse_curv": -24.6492,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.9
+   },
+   "trial": 8,
+   "seed": 1215508
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.955,
+    23.815,
+    11.454
+   ],
+   "coarse_curv": -23.2206,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.5
+   },
+   "trial": 9,
+   "seed": 1215509
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.806,
+    24.052,
+    11.036
+   ],
+   "coarse_curv": -24.2612,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.2
+   },
+   "trial": 10,
+   "seed": 1215510
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.762,
+    24.123,
+    10.91
+   ],
+   "coarse_curv": -24.5733,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.1
+   },
+   "trial": 11,
+   "seed": 1215511
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.88,
+    23.934,
+    11.249
+   ],
+   "coarse_curv": -23.7386,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.2
+   },
+   "trial": 12,
+   "seed": 1215512
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.908,
+    23.889,
+    11.326
+   ],
+   "coarse_curv": -23.5425,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.5
+   },
+   "trial": 13,
+   "seed": 1215513
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.823,
+    24.028,
+    11.085
+   ],
+   "coarse_curv": -24.1483,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.7
+   },
+   "trial": 14,
+   "seed": 1215514
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.875,
+    23.94,
+    11.232
+   ],
+   "coarse_curv": -23.7735,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.3
+   },
+   "trial": 15,
+   "seed": 1215515
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.857,
+    23.968,
+    11.188
+   ],
+   "coarse_curv": -23.8922,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.8
+   },
+   "trial": 16,
+   "seed": 1215516
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.938,
+    23.841,
+    11.41
+   ],
+   "coarse_curv": -23.3326,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.8
+   },
+   "trial": 17,
+   "seed": 1215517
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.939,
+    23.838,
+    11.411
+   ],
+   "coarse_curv": -23.3261,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.8
+   },
+   "trial": 18,
+   "seed": 1215518
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.915,
+    23.878,
+    11.346
+   ],
+   "coarse_curv": -23.4944,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.3
+   },
+   "trial": 19,
+   "seed": 1215519
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.782,
+    24.09,
+    10.975
+   ],
+   "coarse_curv": -24.4223,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.6
+   },
+   "trial": 20,
+   "seed": 1215520
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.801,
+    24.059,
+    11.024
+   ],
+   "coarse_curv": -24.2926,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.1
+   },
+   "trial": 21,
+   "seed": 1215521
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.754,
+    24.136,
+    10.891
+   ],
+   "coarse_curv": -24.626,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.0
+   },
+   "trial": 22,
+   "seed": 1215522
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.841,
+    24.0,
+    11.135
+   ],
+   "coarse_curv": -24.0232,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.4
+   },
+   "trial": 23,
+   "seed": 1215523
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.896,
+    23.906,
+    11.293
+   ],
+   "coarse_curv": -23.624,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.7
+   },
+   "trial": 24,
+   "seed": 1215524
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.952,
+    23.819,
+    11.444
+   ],
+   "coarse_curv": -23.2434,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.6
+   },
+   "trial": 25,
+   "seed": 1215525
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.791,
+    24.076,
+    10.996
+   ],
+   "coarse_curv": -24.3644,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.8
+   },
+   "trial": 26,
+   "seed": 1215526
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.778,
+    24.1,
+    10.956
+   ],
+   "coarse_curv": -24.4662,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.5
+   },
+   "trial": 27,
+   "seed": 1215527
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.865,
+    23.956,
+    11.206
+   ],
+   "coarse_curv": -23.8399,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.6
+   },
+   "trial": 28,
+   "seed": 1215528
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.937,
+    23.839,
+    11.406
+   ],
+   "coarse_curv": -23.3361,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.8
+   },
+   "trial": 29,
+   "seed": 1215529
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.747,
+    24.143,
+    10.873
+   ],
+   "coarse_curv": -24.6653,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.9
+   },
+   "trial": 30,
+   "seed": 1215530
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.759,
+    24.13,
+    10.898
+   ],
+   "coarse_curv": -24.6024,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.0
+   },
+   "trial": 31,
+   "seed": 1215531
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.928,
+    23.854,
+    11.384
+   ],
+   "coarse_curv": -23.395,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.0
+   },
+   "trial": 32,
+   "seed": 1215532
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.795,
+    24.07,
+    11.007
+   ],
+   "coarse_curv": -24.3368,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.9
+   },
+   "trial": 33,
+   "seed": 1215533
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.939,
+    23.838,
+    11.411
+   ],
+   "coarse_curv": -23.3262,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.8
+   },
+   "trial": 34,
+   "seed": 1215534
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.918,
+    23.873,
+    11.355
+   ],
+   "coarse_curv": -23.4723,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.2
+   },
+   "trial": 35,
+   "seed": 1215535
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.881,
+    23.929,
+    11.254
+   ],
+   "coarse_curv": -23.723,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.1
+   },
+   "trial": 36,
+   "seed": 1215536
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.775,
+    24.098,
+    10.952
+   ],
+   "coarse_curv": -24.4688,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.5
+   },
+   "trial": 37,
+   "seed": 1215537
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.793,
+    24.074,
+    11.0
+   ],
+   "coarse_curv": -24.3552,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.9
+   },
+   "trial": 38,
+   "seed": 1215538
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.752,
+    24.133,
+    10.889
+   ],
+   "coarse_curv": -24.6244,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.0
+   },
+   "trial": 39,
+   "seed": 1215539
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.936,
+    23.843,
+    11.404
+   ],
+   "coarse_curv": -23.3457,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.9
+   },
+   "trial": 40,
+   "seed": 1215540
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.928,
+    23.855,
+    11.383
+   ],
+   "coarse_curv": -23.3991,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.0
+   },
+   "trial": 41,
+   "seed": 1215541
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.815,
+    24.038,
+    11.064
+   ],
+   "coarse_curv": -24.1963,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.5
+   },
+   "trial": 42,
+   "seed": 1215542
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.921,
+    23.867,
+    11.365
+   ],
+   "coarse_curv": -23.4469,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.2
+   },
+   "trial": 43,
+   "seed": 1215543
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.775,
+    24.102,
+    10.954
+   ],
+   "coarse_curv": -24.4747,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.4
+   },
+   "trial": 44,
+   "seed": 1215544
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.842,
+    23.996,
+    11.141
+   ],
+   "coarse_curv": -24.0093,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.4
+   },
+   "trial": 45,
+   "seed": 1215545
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.943,
+    23.831,
+    11.423
+   ],
+   "coarse_curv": -23.2949,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.7
+   },
+   "trial": 46,
+   "seed": 1215546
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.8,
+    24.061,
+    11.02
+   ],
+   "coarse_curv": -24.3027,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.0
+   },
+   "trial": 47,
+   "seed": 1215547
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.744,
+    24.152,
+    10.861
+   ],
+   "coarse_curv": -24.6996,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 48,
+   "seed": 1215548
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.906,
+    23.893,
+    11.321
+   ],
+   "coarse_curv": -23.5573,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.5
+   },
+   "trial": 49,
+   "seed": 1215549
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.861,
+    23.966,
+    11.194
+   ],
+   "coarse_curv": -23.8775,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.7
+   },
+   "trial": 50,
+   "seed": 1215550
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.803,
+    24.054,
+    11.032
+   ],
+   "coarse_curv": -24.2739,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.1
+   },
+   "trial": 51,
+   "seed": 1215551
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.843,
+    23.99,
+    11.144
+   ],
+   "coarse_curv": -23.9934,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.3
+   },
+   "trial": 52,
+   "seed": 1215552
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.769,
+    24.112,
+    10.93
+   ],
+   "coarse_curv": -24.5246,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.3
+   },
+   "trial": 53,
+   "seed": 1215553
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.752,
+    24.139,
+    10.881
+   ],
+   "coarse_curv": -24.6451,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.9
+   },
+   "trial": 54,
+   "seed": 1215554
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.749,
+    24.144,
+    10.873
+   ],
+   "coarse_curv": -24.6659,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.9
+   },
+   "trial": 55,
+   "seed": 1215555
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.937,
+    23.844,
+    11.404
+   ],
+   "coarse_curv": -23.3459,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.9
+   },
+   "trial": 56,
+   "seed": 1215556
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.747,
+    24.147,
+    10.868
+   ],
+   "coarse_curv": -24.6787,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 57,
+   "seed": 1215557
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.944,
+    23.831,
+    11.426
+   ],
+   "coarse_curv": -23.2924,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.7
+   },
+   "trial": 58,
+   "seed": 1215558
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.823,
+    24.024,
+    11.085
+   ],
+   "coarse_curv": -24.1404,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.7
+   },
+   "trial": 59,
+   "seed": 1215559
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.751,
+    24.142,
+    10.879
+   ],
+   "coarse_curv": -24.6551,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.9
+   },
+   "trial": 60,
+   "seed": 1215560
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.896,
+    23.907,
+    11.29
+   ],
+   "coarse_curv": -23.6292,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 61,
+   "seed": 1215561
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.954,
+    23.808,
+    11.46
+   ],
+   "coarse_curv": -23.2005,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.5
+   },
+   "trial": 62,
+   "seed": 1215562
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.746,
+    24.147,
+    10.868
+   ],
+   "coarse_curv": -24.6809,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 63,
+   "seed": 1215563
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.96,
+    23.804,
+    11.471
+   ],
+   "coarse_curv": -23.1773,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.4
+   },
+   "trial": 64,
+   "seed": 1215564
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.809,
+    24.049,
+    11.045
+   ],
+   "coarse_curv": -24.2437,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.3
+   },
+   "trial": 65,
+   "seed": 1215565
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.892,
+    23.911,
+    11.282
+   ],
+   "coarse_curv": -23.6472,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 66,
+   "seed": 1215566
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.845,
+    23.984,
+    11.153
+   ],
+   "coarse_curv": -23.9705,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.2
+   },
+   "trial": 67,
+   "seed": 1215567
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.895,
+    23.91,
+    11.288
+   ],
+   "coarse_curv": -23.6377,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 68,
+   "seed": 1215568
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.885,
+    23.923,
+    11.263
+   ],
+   "coarse_curv": -23.6991,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.0
+   },
+   "trial": 69,
+   "seed": 1215569
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.943,
+    23.829,
+    11.426
+   ],
+   "coarse_curv": -23.2905,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.7
+   },
+   "trial": 70,
+   "seed": 1215570
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.759,
+    24.129,
+    10.902
+   ],
+   "coarse_curv": -24.5974,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.1
+   },
+   "trial": 71,
+   "seed": 1215571
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.765,
+    24.113,
+    10.929
+   ],
+   "coarse_curv": -24.5314,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.3
+   },
+   "trial": 72,
+   "seed": 1215572
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.942,
+    23.832,
+    11.425
+   ],
+   "coarse_curv": -23.2969,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.7
+   },
+   "trial": 73,
+   "seed": 1215573
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.946,
+    23.833,
+    11.425
+   ],
+   "coarse_curv": -23.2954,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.7
+   },
+   "trial": 74,
+   "seed": 1215574
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.812,
+    24.041,
+    11.052
+   ],
+   "coarse_curv": -24.2195,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.4
+   },
+   "trial": 75,
+   "seed": 1215575
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.852,
+    23.975,
+    11.171
+   ],
+   "coarse_curv": -23.9257,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.0
+   },
+   "trial": 76,
+   "seed": 1215576
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.77,
+    24.114,
+    10.934
+   ],
+   "coarse_curv": -24.5231,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.3
+   },
+   "trial": 77,
+   "seed": 1215577
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.867,
+    23.953,
+    11.215
+   ],
+   "coarse_curv": -23.8246,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.5
+   },
+   "trial": 78,
+   "seed": 1215578
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.775,
+    24.104,
+    10.949
+   ],
+   "coarse_curv": -24.4841,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.4
+   },
+   "trial": 79,
+   "seed": 1215579
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.786,
+    24.08,
+    10.988
+   ],
+   "coarse_curv": -24.3854,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.7
+   },
+   "trial": 80,
+   "seed": 1215580
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.816,
+    24.039,
+    11.062
+   ],
+   "coarse_curv": -24.2008,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.4
+   },
+   "trial": 81,
+   "seed": 1215581
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.916,
+    23.87,
+    11.352
+   ],
+   "coarse_curv": -23.4717,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.2
+   },
+   "trial": 82,
+   "seed": 1215582
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.801,
+    24.062,
+    11.023
+   ],
+   "coarse_curv": -24.3004,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.0
+   },
+   "trial": 83,
+   "seed": 1215583
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.772,
+    24.105,
+    10.945
+   ],
+   "coarse_curv": -24.4926,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.4
+   },
+   "trial": 84,
+   "seed": 1215584
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.908,
+    23.887,
+    11.326
+   ],
+   "coarse_curv": -23.5413,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.5
+   },
+   "trial": 85,
+   "seed": 1215585
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.748,
+    24.145,
+    10.871
+   ],
+   "coarse_curv": -24.6699,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 86,
+   "seed": 1215586
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.922,
+    23.865,
+    11.368
+   ],
+   "coarse_curv": -23.4411,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.1
+   },
+   "trial": 87,
+   "seed": 1215587
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.834,
+    24.005,
+    11.123
+   ],
+   "coarse_curv": -24.0541,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.6
+   },
+   "trial": 88,
+   "seed": 1215588
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.843,
+    23.989,
+    11.145
+   ],
+   "coarse_curv": -23.9906,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.3
+   },
+   "trial": 89,
+   "seed": 1215589
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.743,
+    24.15,
+    10.86
+   ],
+   "coarse_curv": -24.6973,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.8
+   },
+   "trial": 90,
+   "seed": 1215590
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.911,
+    23.892,
+    11.326
+   ],
+   "coarse_curv": -23.5469,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.5
+   },
+   "trial": 91,
+   "seed": 1215591
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.818,
+    24.029,
+    11.077
+   ],
+   "coarse_curv": -24.1631,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.6
+   },
+   "trial": 92,
+   "seed": 1215592
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.805,
+    24.053,
+    11.035
+   ],
+   "coarse_curv": -24.2659,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.2
+   },
+   "trial": 93,
+   "seed": 1215593
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.915,
+    23.88,
+    11.343
+   ],
+   "coarse_curv": -23.5009,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 23.3
+   },
+   "trial": 94,
+   "seed": 1215594
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.805,
+    24.055,
+    11.034
+   ],
+   "coarse_curv": -24.2704,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.2
+   },
+   "trial": 95,
+   "seed": 1215595
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.773,
+    24.105,
+    10.942
+   ],
+   "coarse_curv": -24.4947,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 0,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 996.85,
+   "status": "ok",
+   "err_ppm": -126.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.4
+   },
+   "trial": 96,
+   "seed": 1215596
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.837,
+    24.005,
+    11.125
+   ],
+   "coarse_curv": -24.0489,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 25.6
+   },
+   "trial": 97,
+   "seed": 1215597
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.875,
+    23.943,
+    11.233
+   ],
+   "coarse_curv": -23.7781,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 24.3
+   },
+   "trial": 98,
+   "seed": 1215598
+  },
+  {
+   "fs_after_decimation": 48000.0,
+   "coarse_peak_hz": 997.0,
+   "coarse_at_band_edge": false,
+   "coarse_neighbors": [
+    12.959,
+    23.804,
+    11.471
+   ],
+   "coarse_curv": -23.1779,
+   "curv_check_v2184": "refine SKIPPED (вогнутый пик, curv < 0)",
+   "f0_after_coarse_hz": 997.0,
+   "rss_grid_hz": [
+    996.85,
+    997.15
+   ],
+   "rss_argmin_index": 24,
+   "rss_argmin_at_endpoint": true,
+   "f_est_hz": 997.15,
+   "status": "ok",
+   "err_ppm": 173.95,
+   "line_attribution_modern_qc": {
+    "line": true,
+    "line_hz": 1000.0,
+    "line_dbc": 22.4
+   },
+   "trial": 99,
+   "seed": 1215599
+  }
+ ]
+}
