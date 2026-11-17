@@ -46,9 +46,11 @@ The numeric decision matrix happens to match 408 accepts / 40 refusals for diagn
 
 The harness intentionally calls `dsp.analyze_tone` directly. It does not execute the full `Rig.run()` / `clock_check()` path.
 
-The actual `Rig.run()` performs `_window_stability_reason()` before returning the analysis window. That guard rejects a per-channel drop of at least 12 dB below the window median lasting at least 50 ms. The injected half-window, quarter-window, and 40%-occupancy dropouts in this harness contain much longer gaps and would be rejected by that upstream guard before the production SNR gate is evaluated.
+The actual `Rig.run()` performs `_window_stability_reason()` before returning the analysis window. The guard rejects a per-channel run at least 12 dB below that channel's own window median when it lasts at least 50 ms. However, whether a particular dropout is rejected depends on the median of the whole window.
 
-Therefore, do not describe the production-side SNR-only accepts for those dropout rows as end-to-end production clock-check accepts. The paired experiment is a metric comparison, not a full clock-check acceptance test.
+The coordinator-authored v2.19.0 direct guard matrix established the following: first-quarter and tail-quarter dropouts are rejected; a half-window dropout is rejected; **40% signal occupancy passes the guard** because the 60% quiet portion shifts the median into the quiet region. This is a demonstrated blind spot of the median-referenced guard itself.
+
+The v2.18.9 paired experiment did not execute `Rig.run()` or `clock_check()`, and the v2.19.0 test only called `_window_stability_reason()` directly. Thus neither experiment establishes whether the complete production clock-check path returns a valid result for the 40%-occupancy capture: onset handling and the production `dsp.analyze_tone` / signal-validity gate still need to be exercised end to end.
 
 ### 2.4 Useful signal-quality observations
 
@@ -61,7 +63,7 @@ Therefore, do not describe the production-side SNR-only accepts for those dropou
 | 40% window occupancy | 20 | 46.1 dB | 17.4 dB | all `snr_low` |
 | first/tail-quarter dropout | 40 | 28.5 dB | 28.1 dB | all `line_contaminated`; production stability guard is the decisive precheck |
 
-The 20 dB LSQ floor separates the tested steady pilot+noise cases (minimum 23.0 dB) from no-pilot controls (maximum −8.6 dB), and it rejects the half-window / partial-occupancy cases. This supports keeping 20 dB as a **provisional LSQ residual-fit quality floor**. It does not establish equivalence to the production SNR metric, nor does it calibrate all noise distributions.
+The 20 dB LSQ floor separates the tested steady pilot+noise cases (minimum 23.0 dB) from no-pilot controls (maximum −8.6 dB), and it rejects the half-window / partial-occupancy cases in this LSQ-only metric comparison. This does not mean the production median guard rejects the same vectors; its 40%-occupancy case passes in the v2.19.0 direct guard matrix. This supports keeping 20 dB as a **provisional LSQ residual-fit quality floor**. It does not establish equivalence to the production SNR metric, nor does it calibrate all noise distributions.
 
 ### 2.5 New candidate issue: line-QC false alarms in white-noise controls
 
