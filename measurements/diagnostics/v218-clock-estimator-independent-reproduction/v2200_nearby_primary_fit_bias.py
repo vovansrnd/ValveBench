@@ -87,7 +87,7 @@ def summarize(rows):
     injected = [r for r in rows if r["kind"] == "nearby_line"]
     grouped = defaultdict(list)
     for row in injected:
-        key = (row["phase_mode"], row["delta_hz"], row["line_dbc"])
+        key = (row["phase_mode"], row["delta_abs_hz"], row["line_dbc"])
         grouped[key].append(row)
 
     per_cell = {}
@@ -105,12 +105,22 @@ def summarize(rows):
             },
             "n_status_ok": sum(r["status"] == "ok" for r in group),
             "n_probe_hit_and_status_ok": sum(r["nearby_detected"] and r["status"] == "ok" for r in group),
+            "signed_offset_trials": {
+                "negative": sum(r["delta_hz"] < 0 for r in group),
+                "positive": sum(r["delta_hz"] > 0 for r in group),
+            },
+            "signed_offset_max_abs_induced_shift_ppm": {
+                sign: max((abs(r["induced_shift_hz"]) / PILOT_TRUE * 1e6
+                           for r in group if r["induced_shift_hz"] is not None
+                           and ((r["delta_hz"] < 0) if sign == "negative" else (r["delta_hz"] > 0))),
+                          default=None)
+                for sign in ("negative", "positive")
+            },
             "status_counts": status_counts(group),
             "fit_error_median_hz": percentile(fit_errors, 50),
             "fit_error_abs_p90_hz": percentile(abs_fit_errors, 90),
             "fit_error_abs_max_hz": max(abs_fit_errors) if abs_fit_errors else None,
             "induced_shift_median_hz": percentile(induced, 50),
-            "induced_shift_abs_p90_hz": percentile(abs_induced, 90),
             "induced_shift_abs_p90_hz": percentile(abs_induced, 90),
             "max_abs_induced_shift_hz": max(abs_induced) if abs_induced else None,
             "max_abs_induced_shift_ppm": (max(abs_induced) / PILOT_TRUE * 1e6) if abs_induced else None,
