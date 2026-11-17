@@ -412,27 +412,27 @@ def verify_models(f_t, S_LL, S_RR, S_LR, n_check=15):
     S_LR_ph = np.abs(S_LR) * np.exp(1j * ph_model)
     nL, nR = noise_colored(n, BASE_SEED + 950, S_LL, S_RR, S_LR_ph)
     FL = np.fft.rfft(nL); FR = np.fft.rfft(nR)
-    aLL0 = np.abs(FL) ** 2 * 2.0 / (FS_MC * n)
     mb = (bins >= 900) & (bins <= 1100)
-    cross_mean = np.mean(np.conj(FL[mb]) * FR[mb])
+    # PSD-нормировка та же, что у verifier: aLR = conj(FL)·FR·2/(fs·n)
+    aLR_ph = np.conj(FL[mb]) * FR[mb] * 2.0 / (FS_MC * n)
+    cross_mean = np.mean(aLR_ph)
     ph_meas = float(np.angle(cross_mean))
-    # АМПЛИТУДНАЯ проверка (§21 п.6): |cross|/|S_LL_ср| против модельного
-    # |S_LR_ph|/S_LL — когерентная передача R от L той же величины
-    sll_mean = float(np.mean(aLL0[mb])) if aLL0 is not None else \
-        float(np.mean(np.abs(FL[mb]) ** 2 * 2.0 / (FS_MC * n)))
-    cross_mag_norm = float(np.abs(cross_mean) / max(sll_mean, 1e-30))
-    model_mag = float(np.mean(np.abs(S_LR_ph[mb]) / np.maximum(S_LL[mb], 1e-30)))
+    # АМПЛИТУДНАЯ проверка (§21 п.6): |среднее aLR| против среднего
+    # |S_LR_ph| — когерентная передача R от L той же величины;
+    # некогерентная часть усредняется в ноль
+    cross_mag = float(np.abs(cross_mean))
+    model_mag = float(np.mean(np.abs(S_LR_ph[mb])))
     out["known_phase_check"] = {
         "model_phase_rad": ph_model, "measured_phase_rad": round(ph_meas, 4),
         "phase_match": bool(abs(ph_meas - ph_model) < 0.05),
-        "model_cross_over_sll": round(model_mag, 4),
-        "measured_cross_over_sll": round(cross_mag_norm, 4),
-        "amplitude_ratio": round(cross_mag_norm / max(model_mag, 1e-30), 3),
-        "amplitude_match": bool(abs(cross_mag_norm /
+        "model_cross_psd": round(model_mag, 6),
+        "measured_cross_psd": round(cross_mag, 6),
+        "amplitude_ratio": round(cross_mag / max(model_mag, 1e-30), 3),
+        "amplitude_match": bool(abs(cross_mag /
                                     max(model_mag, 1e-30) - 1.0) < 0.1)}
     print(f"    known-phase: модель +{ph_model} рад → измерено "
-          f"{ph_meas:+.4f} рад; |cross|/S_LL модель {model_mag:.3f} → "
-          f"измерено {cross_mag_norm:.3f}", flush=True)
+          f"{ph_meas:+.4f} рад; |cross| модель {model_mag:.3e} → "
+          f"измерено {cross_mag:.3e}", flush=True)
     for lo, hi in ((900, 1100), (100, 500), (500, 2000), (2000, 8000),
                    (8000, 24000)):
         mb = (bins >= lo) & (bins <= hi)

@@ -75,7 +75,7 @@ def mc_table(model):
 
 def sweep_table():
     base = Path(__file__).resolve().parent
-    d = json.load(open(base / "v2186-qc-confusion.json", encoding="utf-8"))
+    d = json.load(open(base / "v2187-qc-sweep.json", encoding="utf-8"))
     s = d["summary"]
     lines = ["### TP/FP/TN/FN калибровки line-QC (v2187_qc_sweep.py)",
              "",
@@ -92,7 +92,9 @@ def sweep_table():
              f"| FP_line (негатив: line_contaminated) | {s['FP_line']} |",
              f"| FP_other (негатив: иной отказ) | {s['FP_other']} |",
              f"| **Полнота (recall)** | **{s['recall']}** |",
-             f"| **Доля ложных отказов** | **{s['false_positive_rate']}** |",
+             f"| **FPR при пилоте** | **{s['false_positive_rate_with_pilot']}** |",
+             f"| **Ложные принятия без пилота** | **{s['FP_false_accept_nopilot']}"
+             f"/{s['negatives_no_pilot']}** |",
              "", "Легаси-оценщики на семействе контрпримеров (п.3):",
              ""]
     leg = base / "v2186-legacy-counterexample.json"
