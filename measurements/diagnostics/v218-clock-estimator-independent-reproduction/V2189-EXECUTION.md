@@ -8,7 +8,13 @@ are already defined here.
 
 1. Fetch this branch in the existing clone via the established `ssh lk`
    workflow. Do not rsync WAVs. The tests use deterministic synthetic data plus the compact WAV-derived line-profile JSON already included in this branch; its source WAV hashes remain in the JSON.
-2. Run from the repository root:
+2. From the repository root, run the syntax check first:
+
+```bash
+python3 -m py_compile measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2188_estimators.py measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189_paired_snr_clockcheck.py measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189_nearby_offbin_sweep.py
+```
+
+If compilation fails, stop and return the complete error; do not repair the test harness. If it passes, run:
 
 ```bash
 python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189_paired_snr_clockcheck.py
@@ -16,7 +22,7 @@ python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v
 ```
 
 3. Capture complete stdout/stderr and runtime for each command.
-4. Commit only the generated JSON outputs and a short execution manifest
+4. Run `git diff --check` and record the final branch HEAD. Commit only the generated JSON outputs and a short execution manifest
    containing host CPU, OS, Python, NumPy, SciPy, branch HEAD and command
    exit status.
 
