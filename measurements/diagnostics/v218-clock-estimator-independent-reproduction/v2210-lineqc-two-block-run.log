@@ -1,0 +1,90 @@
+{
+  "purpose": "Test whether requiring the same residual line in both 1-second blocks reduces white-noise false alarms while retaining stable injected spurs.",
+  "fs_hz": 96000.0,
+  "duration_s": 2.0,
+  "pilot_nominal_hz": 1000.0,
+  "pilot_true_hz": 999.9765000000001,
+  "df_full_hz": 0.5,
+  "df_per_block_hz": 1.0,
+  "trials": 648,
+  "tolerances_hz": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "categories": {
+    "injected_stable_spur": {
+      "n": 48,
+      "full_window_line_hits": 31,
+      "full_window_line_hit_rate": 0.6458333333333334,
+      "reconstruction_mismatches": 0,
+      "block_1_hits": 31,
+      "block_2_hits": 36,
+      "persistent_both_blocks_within_0.5hz": 28,
+      "persistent_rate_within_0.5hz": 0.5833333333333334,
+      "persistent_both_blocks_within_1hz": 28,
+      "persistent_rate_within_1hz": 0.5833333333333334,
+      "persistent_both_blocks_within_2hz": 28,
+      "persistent_rate_within_2hz": 0.5833333333333334
+    },
+    "line_free_colored": {
+      "n": 60,
+      "full_window_line_hits": 1,
+      "full_window_line_hit_rate": 0.016666666666666666,
+      "reconstruction_mismatches": 0,
+      "block_1_hits": 1,
+      "block_2_hits": 2,
+      "persistent_both_blocks_within_0.5hz": 0,
+      "persistent_rate_within_0.5hz": 0.0,
+      "persistent_both_blocks_within_1hz": 0,
+      "persistent_rate_within_1hz": 0.0,
+      "persistent_both_blocks_within_2hz": 0,
+      "persistent_rate_within_2hz": 0.0
+    },
+    "line_free_white": {
+      "n": 540,
+      "full_window_line_hits": 56,
+      "full_window_line_hit_rate": 0.1037037037037037,
+      "reconstruction_mismatches": 0,
+      "block_1_hits": 48,
+      "block_2_hits": 53,
+      "persistent_both_blocks_within_0.5hz": 0,
+      "persistent_rate_within_0.5hz": 0.0,
+      "persistent_both_blocks_within_1hz": 0,
+      "persistent_rate_within_1hz": 0.0,
+      "persistent_both_blocks_within_2hz": 0,
+      "persistent_rate_within_2hz": 0.0
+    }
+  },
+  "interpretation": "The two-block persistence rule is only a candidate diagnostic policy. Do not implement it or change QC_CFG from these synthetic data alone.",
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2210-lineqc-two-block.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2210_lineqc_two_block.py"
+	User time (seconds): 227.49
+	System time (seconds): 8.85
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:56.42
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 125892
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 3781103
+	Voluntary context switches: 39
+	Involuntary context switches: 2931
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 1232
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

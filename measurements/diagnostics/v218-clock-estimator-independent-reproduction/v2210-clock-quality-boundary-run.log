@@ -1,0 +1,155 @@
+{
+  "purpose": "Characterize when the real production Rig.run() stability guard and clock_check() accept or reject intermittent 1 kHz pilot occupancy.",
+  "fs_hz": 96000,
+  "window_s": 2.0,
+  "blocks": 2,
+  "settle_s": 0.4,
+  "pilot_hz": 1000.0,
+  "pilot_level_dbfs": -72.0,
+  "case_count": 21,
+  "rig_run_counts": {
+    "pass": 12,
+    "reject": 9
+  },
+  "clock_check_counts": {
+    "raised": 9,
+    "returned": 12
+  },
+  "returned_ok_cases": [
+    "clean_100pct",
+    "front_contiguous_20pct",
+    "front_contiguous_30pct",
+    "front_contiguous_35pct",
+    "front_contiguous_40pct",
+    "front_contiguous_45pct",
+    "front_contiguous_49pct",
+    "40pct_center",
+    "40pct_back",
+    "40pct_split_across_blocks",
+    "40pct_two_bursts_first_block",
+    "40pct_four_bursts"
+  ],
+  "front_contiguous_boundary": [
+    {
+      "active_fraction": 0.2,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "ok": true,
+      "onset_shift_s": 0.0030000000000000027
+    },
+    {
+      "active_fraction": 0.3,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "ok": true,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.35,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "ok": true,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.4,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "ok": true,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.45,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "ok": true,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.49,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "ok": true,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.5,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.51,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.55,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.6,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.7,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.8,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    },
+    {
+      "active_fraction": 0.9,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "ok": null,
+      "onset_shift_s": -0.0020000000000000018
+    }
+  ],
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2210-clock-quality-boundary.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2210_clock_quality_boundary.py"
+	User time (seconds): 1.53
+	System time (seconds): 0.59
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.14
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 167852
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 227625
+	Voluntary context switches: 1
+	Involuntary context switches: 40
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 120
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

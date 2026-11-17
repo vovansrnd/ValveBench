@@ -1,0 +1,1525 @@
+{
+  "summary": {
+    "purpose": "Characterize when the real production Rig.run() stability guard and clock_check() accept or reject intermittent 1 kHz pilot occupancy.",
+    "fs_hz": 96000,
+    "window_s": 2.0,
+    "blocks": 2,
+    "settle_s": 0.4,
+    "pilot_hz": 1000.0,
+    "pilot_level_dbfs": -72.0,
+    "case_count": 21,
+    "rig_run_counts": {
+      "pass": 12,
+      "reject": 9
+    },
+    "clock_check_counts": {
+      "raised": 9,
+      "returned": 12
+    },
+    "returned_ok_cases": [
+      "clean_100pct",
+      "front_contiguous_20pct",
+      "front_contiguous_30pct",
+      "front_contiguous_35pct",
+      "front_contiguous_40pct",
+      "front_contiguous_45pct",
+      "front_contiguous_49pct",
+      "40pct_center",
+      "40pct_back",
+      "40pct_split_across_blocks",
+      "40pct_two_bursts_first_block",
+      "40pct_four_bursts"
+    ],
+    "front_contiguous_boundary": [
+      {
+        "active_fraction": 0.2,
+        "rig_run": "pass",
+        "clock_check": "returned",
+        "ok": true,
+        "onset_shift_s": 0.0030000000000000027
+      },
+      {
+        "active_fraction": 0.3,
+        "rig_run": "pass",
+        "clock_check": "returned",
+        "ok": true,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.35,
+        "rig_run": "pass",
+        "clock_check": "returned",
+        "ok": true,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.4,
+        "rig_run": "pass",
+        "clock_check": "returned",
+        "ok": true,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.45,
+        "rig_run": "pass",
+        "clock_check": "returned",
+        "ok": true,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.49,
+        "rig_run": "pass",
+        "clock_check": "returned",
+        "ok": true,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.5,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.51,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.55,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.6,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.7,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.8,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      },
+      {
+        "active_fraction": 0.9,
+        "rig_run": "reject",
+        "clock_check": "raised",
+        "ok": null,
+        "onset_shift_s": -0.0020000000000000018
+      }
+    ],
+    "environment": {
+      "python": "3.14.4",
+      "numpy": "2.3.5",
+      "scipy": "1.16.3"
+    }
+  },
+  "per_case": [
+    {
+      "case": "clean_100pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "active_fraction": 1.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.028764328474650824,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.000089909929,
+            "ppm": 0.08990992905744122,
+            "level_dbfs": -71.99958794951351,
+            "snr_db": 73.90956388409964,
+            "coh_err_bins": 8.99099289881633e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000611456005,
+            "ppm": 0.061145600582790394,
+            "level_dbfs": -72.00005064749595,
+            "snr_db": 74.48341956485032,
+            "coh_err_bins": 6.114560051173612e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 1000.000089909929,
+          "level_dbfs": -71.99958794951351,
+          "local_snr_db": 73.90956388409964,
+          "phase_coherence": 0.9999999982822844,
+          "phase_spread_deg": 0.0033582518677184405,
+          "coh_err_bins": 8.99099289881633e-05,
+          "warnings": []
+        },
+        "R": {
+          "f0_hz": 1000.0000611456005,
+          "level_dbfs": -72.00005064749595,
+          "local_snr_db": 74.48341956485032,
+          "phase_coherence": 0.9999999999950435,
+          "phase_spread_deg": 0.00018039491643697452,
+          "coh_err_bins": 6.114560051173612e-05,
+          "warnings": []
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_20pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.4
+        ]
+      ],
+      "active_fraction": 0.2,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 13440,
+      "onset_s": 0.14,
+      "onset_shift_from_dac_delay_s": 0.0030000000000000027,
+      "selected_window_start_s": 0.54,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 1.1594721527341534,
+        "channels": {
+          "L": {
+            "f0_hz": 999.998148343676,
+            "ppm": -1.8516563240478234,
+            "level_dbfs": -85.9806203663011,
+            "snr_db": 20.289551647926878,
+            "coh_err_bins": -0.0018516563239927564,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9969888715232,
+            "ppm": -3.011128476781977,
+            "level_dbfs": -83.71095958478499,
+            "snr_db": 20.315481738237786,
+            "coh_err_bins": -0.003011128476828162,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "R: сдвиг тона -0.0030 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0030 бина; допуск ±0.002)"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.998148343676,
+          "level_dbfs": -85.9806203663011,
+          "local_snr_db": 20.289551647926878,
+          "phase_coherence": 0.9999840074429415,
+          "phase_spread_deg": 0.3240397743410812,
+          "coh_err_bins": -0.0018516563239927564,
+          "warnings": []
+        },
+        "R": {
+          "f0_hz": 999.9969888715232,
+          "level_dbfs": -83.71095958478499,
+          "local_snr_db": 20.315481738237786,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.003011128476828162,
+          "warnings": [
+            "сдвиг тона -0.0030 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 38400,
+        "active_fraction": 0.2
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_30pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.6
+        ]
+      ],
+      "active_fraction": 0.3,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.26642768258255956,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9993657699895,
+            "ppm": -0.6342300105099952,
+            "level_dbfs": -82.42776243866746,
+            "snr_db": 28.10870647148664,
+            "coh_err_bins": -0.000634230010518877,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9990993423069,
+            "ppm": -0.9006576930925547,
+            "level_dbfs": -82.42808014264482,
+            "snr_db": 28.130002182342153,
+            "coh_err_bins": -0.0009006576931369636,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.413); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9993657699895,
+          "level_dbfs": -82.42776243866746,
+          "local_snr_db": 28.10870647148664,
+          "phase_coherence": 0.4134871446337761,
+          "phase_spread_deg": 76.14645113607227,
+          "coh_err_bins": -0.000634230010518877,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.413); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9990993423069,
+          "level_dbfs": -82.42808014264482,
+          "local_snr_db": 28.130002182342153,
+          "phase_coherence": 0.9415098290173725,
+          "phase_spread_deg": 19.892528809593564,
+          "coh_err_bins": -0.0009006576931369636,
+          "warnings": []
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 57600,
+        "active_fraction": 0.3
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_35pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.7
+        ]
+      ],
+      "active_fraction": 0.35,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.1524379948936172,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9998277245559,
+            "ppm": -0.17227544413245255,
+            "level_dbfs": -81.09269177437344,
+            "snr_db": 35.157170156562316,
+            "coh_err_bins": -0.00017227544412889984,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999801625507,
+            "ppm": -0.019837449238835347,
+            "level_dbfs": -81.09431401928121,
+            "snr_db": 35.295736735574145,
+            "coh_err_bins": -1.9837449258375273e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.181); гармоники усреднены с нормировкой на фазу несущей",
+          "R: фаза несущей между блоками нестабильна (coherence=0.297); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9998277245559,
+          "level_dbfs": -81.09269177437344,
+          "local_snr_db": 35.157170156562316,
+          "phase_coherence": 0.18131056055326536,
+          "phase_spread_deg": 105.88234983565363,
+          "coh_err_bins": -0.00017227544412889984,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.181); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9999801625507,
+          "level_dbfs": -81.09431401928121,
+          "local_snr_db": 35.295736735574145,
+          "phase_coherence": 0.29735988192419777,
+          "phase_spread_deg": 89.23482983267006,
+          "coh_err_bins": -1.9837449258375273e-05,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.297); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 67200,
+        "active_fraction": 0.35
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_40pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.8
+        ]
+      ],
+      "active_fraction": 0.4,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.00025574264927996637,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999724075,
+            "ppm": -0.027592500062567638,
+            "level_dbfs": -79.9370411474838,
+            "snr_db": 46.72828412295886,
+            "coh_err_bins": -2.759250003236957e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999721517573,
+            "ppm": -0.027848242711847604,
+            "level_dbfs": -79.93725723521408,
+            "snr_db": 46.97105201345138,
+            "coh_err_bins": -2.7848242666550505e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.402); гармоники усреднены с нормировкой на фазу несущей",
+          "R: фаза несущей между блоками нестабильна (coherence=0.735); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9999724075,
+          "level_dbfs": -79.9370411474838,
+          "local_snr_db": 46.72828412295886,
+          "phase_coherence": 0.40214245559583695,
+          "phase_spread_deg": 77.3365216109373,
+          "coh_err_bins": -2.759250003236957e-05,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.402); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9999721517573,
+          "level_dbfs": -79.93725723521408,
+          "local_snr_db": 46.97105201345138,
+          "phase_coherence": 0.734891145416264,
+          "phase_spread_deg": 44.97137610893477,
+          "coh_err_bins": -2.7848242666550505e-05,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.735); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_45pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.9
+        ]
+      ],
+      "active_fraction": 0.45,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.019148241436894864,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000198251722,
+            "ppm": 0.019825172170584437,
+            "level_dbfs": -78.9150055101241,
+            "snr_db": 64.78287523800819,
+            "coh_err_bins": 1.9825172216769715e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000006769308,
+            "ppm": 0.0006769307336895736,
+            "level_dbfs": -78.91599601025794,
+            "snr_db": 65.09986423270756,
+            "coh_err_bins": 6.769307674403535e-07,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 1000.0000198251722,
+          "level_dbfs": -78.9150055101241,
+          "local_snr_db": 64.78287523800819,
+          "phase_coherence": 0.8129735829986241,
+          "phase_spread_deg": 36.870772402039165,
+          "coh_err_bins": 1.9825172216769715e-05,
+          "warnings": []
+        },
+        "R": {
+          "f0_hz": 1000.0000006769308,
+          "level_dbfs": -78.91599601025794,
+          "local_snr_db": 65.09986423270756,
+          "phase_coherence": 0.9982463003643612,
+          "phase_spread_deg": 3.394734240938313,
+          "coh_err_bins": 6.769307674403535e-07,
+          "warnings": []
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 86400,
+        "active_fraction": 0.45
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_49pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.98
+        ]
+      ],
+      "active_fraction": 0.49,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.08581337818114321,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999451063572,
+            "ppm": -0.05489364274247066,
+            "level_dbfs": -78.17779807881253,
+            "snr_db": 72.31173197988774,
+            "coh_err_bins": -5.489364275490516e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000309197354,
+            "ppm": 0.030919735438672546,
+            "level_dbfs": -78.17830974633472,
+            "snr_db": 72.40556619749432,
+            "coh_err_bins": 3.0919735422685335e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.064); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9999451063572,
+          "level_dbfs": -78.17779807881253,
+          "local_snr_db": 72.31173197988774,
+          "phase_coherence": 0.06361432638946915,
+          "phase_spread_deg": 134.490576847988,
+          "coh_err_bins": -5.489364275490516e-05,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.064); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        },
+        "R": {
+          "f0_hz": 1000.0000309197354,
+          "level_dbfs": -78.17830974633472,
+          "local_snr_db": 72.40556619749432,
+          "phase_coherence": 0.8684565544823348,
+          "phase_spread_deg": 30.43023223114915,
+          "coh_err_bins": 3.0919735422685335e-05,
+          "warnings": []
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 94080,
+        "active_fraction": 0.49
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_50pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "active_fraction": 0.5,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.5 дБ длительностью 1.00 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.5 дБ длительностью 1.00 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 96000,
+        "active_fraction": 0.5
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_51pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.02
+        ]
+      ],
+      "active_fraction": 0.51,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.6 дБ длительностью 0.98 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.6 дБ длительностью 0.98 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 97920,
+        "active_fraction": 0.51
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_55pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.1
+        ]
+      ],
+      "active_fraction": 0.55,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.7 дБ длительностью 0.90 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.7 дБ длительностью 0.90 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 105600,
+        "active_fraction": 0.55
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_60pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.2
+        ]
+      ],
+      "active_fraction": 0.6,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.4 дБ длительностью 0.80 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.4 дБ длительностью 0.80 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 115200,
+        "active_fraction": 0.6
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_70pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.4
+        ]
+      ],
+      "active_fraction": 0.7,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.9 дБ длительностью 0.60 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.9 дБ длительностью 0.60 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 134400,
+        "active_fraction": 0.7
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_80pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.6
+        ]
+      ],
+      "active_fraction": 0.8,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 37.0 дБ длительностью 0.40 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 37.0 дБ длительностью 0.40 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 153600,
+        "active_fraction": 0.8
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "front_contiguous_90pct",
+      "active_intervals_s": [
+        [
+          0.0,
+          1.8
+        ]
+      ],
+      "active_fraction": 0.9,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 37.0 дБ длительностью 0.20 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 37.0 дБ длительностью 0.20 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 172800,
+        "active_fraction": 0.9
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "40pct_center",
+      "active_intervals_s": [
+        [
+          0.6,
+          1.4
+        ]
+      ],
+      "active_fraction": 0.39999999999999997,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 13440,
+      "onset_s": 0.14,
+      "onset_shift_from_dac_delay_s": 0.0030000000000000027,
+      "selected_window_start_s": 0.54,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.01932402826643198,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9979560089807,
+            "ppm": -2.043991019218261,
+            "level_dbfs": -80.49060982414537,
+            "snr_db": 20.389897430494926,
+            "coh_err_bins": -0.002043991019263558,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9979366849525,
+            "ppm": -2.063315047484693,
+            "level_dbfs": -80.48928144056923,
+            "snr_db": 20.375870820968697,
+            "coh_err_bins": -0.0020633150475077855,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: сдвиг тона -0.0020 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0020 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0021 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0021 бина; допуск ±0.002)"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9979560089807,
+          "level_dbfs": -80.49060982414537,
+          "local_snr_db": 20.389897430494926,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.002043991019263558,
+          "warnings": [
+            "сдвиг тона -0.0020 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9979366849525,
+          "level_dbfs": -80.48928144056923,
+          "local_snr_db": 20.375870820968697,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.0020633150475077855,
+          "warnings": [
+            "сдвиг тона -0.0021 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "40pct_back",
+      "active_intervals_s": [
+        [
+          1.2,
+          2.0
+        ]
+      ],
+      "active_fraction": 0.4,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 13440,
+      "onset_s": 0.14,
+      "onset_shift_from_dac_delay_s": 0.0030000000000000027,
+      "selected_window_start_s": 0.54,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.056524964708870584,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999546224947,
+            "ppm": -0.04537750530886342,
+            "level_dbfs": -79.9251028303908,
+            "snr_db": 47.13118888890057,
+            "coh_err_bins": -4.53775053301797e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.99989809753,
+            "ppm": -0.101902470017734,
+            "level_dbfs": -79.92639553970454,
+            "snr_db": 47.058243736115244,
+            "coh_err_bins": -0.0001019024699644433,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "R: фаза несущей между блоками нестабильна (coherence=0.479); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9999546224947,
+          "level_dbfs": -79.9251028303908,
+          "local_snr_db": 47.13118888890057,
+          "phase_coherence": 0.9445149121391976,
+          "phase_spread_deg": 19.35949759158261,
+          "coh_err_bins": -4.53775053301797e-05,
+          "warnings": []
+        },
+        "R": {
+          "f0_hz": 999.99989809753,
+          "level_dbfs": -79.92639553970454,
+          "local_snr_db": 47.058243736115244,
+          "phase_coherence": 0.47894601270033704,
+          "phase_spread_deg": 69.52258630341137,
+          "coh_err_bins": -0.0001019024699644433,
+          "warnings": [
+            "фаза несущей между блоками нестабильна (coherence=0.479); гармоники усреднены с нормировкой на фазу несущей"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "40pct_split_across_blocks",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.4
+        ],
+        [
+          1.0,
+          1.4
+        ]
+      ],
+      "active_fraction": 0.39999999999999997,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 13440,
+      "onset_s": 0.14,
+      "onset_shift_from_dac_delay_s": 0.0030000000000000027,
+      "selected_window_start_s": 0.54,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.1414968291424401,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9976784215035,
+            "ppm": -2.3215784965557873,
+            "level_dbfs": -80.70086282251046,
+            "snr_db": 20.328129778732755,
+            "coh_err_bins": -0.002321578496548682,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9978199183325,
+            "ppm": -2.180081667413347,
+            "level_dbfs": -80.70027984381821,
+            "snr_db": 20.28521023778289,
+            "coh_err_bins": -0.002180081667461309,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: сдвиг тона -0.0023 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0023 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0022 бина; допуск ±0.002)"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9976784215035,
+          "level_dbfs": -80.70086282251046,
+          "local_snr_db": 20.328129778732755,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.002321578496548682,
+          "warnings": [
+            "сдвиг тона -0.0023 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9978199183325,
+          "level_dbfs": -80.70027984381821,
+          "local_snr_db": 20.28521023778289,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.002180081667461309,
+          "warnings": [
+            "сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "50pct_split_across_blocks",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.5
+        ],
+        [
+          1.0,
+          1.5
+        ]
+      ],
+      "active_fraction": 0.5,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.9 дБ длительностью 0.50 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.9 дБ длительностью 0.50 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 96000,
+        "active_fraction": 0.5
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "60pct_split_across_blocks",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.6
+        ],
+        [
+          1.0,
+          1.6
+        ]
+      ],
+      "active_fraction": 0.6000000000000001,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "onset_shift_from_dac_delay_s": -0.0020000000000000018,
+      "selected_window_start_s": 0.535,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 37.0 дБ длительностью 0.40 с — недостаточно устойчивого сигнала для анализа",
+      "error": "MeasureError: сегмент 1: канал L: провал 37.0 дБ длительностью 0.40 с — недостаточно устойчивого сигнала для анализа",
+      "tone_analysis": {},
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 115200,
+        "active_fraction": 0.6
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "40pct_two_bursts_first_block",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.4
+        ],
+        [
+          0.6,
+          1.0
+        ]
+      ],
+      "active_fraction": 0.4,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 13440,
+      "onset_s": 0.14,
+      "onset_shift_from_dac_delay_s": 0.0030000000000000027,
+      "selected_window_start_s": 0.54,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.9116911706685826,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9965448588546,
+            "ppm": -3.455141145414231,
+            "level_dbfs": -80.50359467851379,
+            "snr_db": 20.97963720831316,
+            "coh_err_bins": -0.003455141145423113,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9974565500253,
+            "ppm": -2.5434499747456485,
+            "level_dbfs": -80.50307748492976,
+            "snr_db": 21.002848745949805,
+            "coh_err_bins": -0.002543449974723444,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: сдвиг тона -0.0035 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0035 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0025 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0025 бина; допуск ±0.002)"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9965448588546,
+          "level_dbfs": -80.50359467851379,
+          "local_snr_db": 20.97963720831316,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.003455141145423113,
+          "warnings": [
+            "сдвиг тона -0.0035 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9974565500253,
+          "level_dbfs": -80.50307748492976,
+          "local_snr_db": 21.002848745949805,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.002543449974723444,
+          "warnings": [
+            "сдвиг тона -0.0025 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "40pct_four_bursts",
+      "active_intervals_s": [
+        [
+          0.0,
+          0.2
+        ],
+        [
+          0.45,
+          0.65
+        ],
+        [
+          0.9,
+          1.1
+        ],
+        [
+          1.35,
+          1.55
+        ]
+      ],
+      "active_fraction": 0.4,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 13440,
+      "onset_s": 0.14,
+      "onset_shift_from_dac_delay_s": 0.0030000000000000027,
+      "selected_window_start_s": 0.54,
+      "run_error": null,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.16613701703249717,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9976828319252,
+            "ppm": -2.317168074750242,
+            "level_dbfs": -74.4386560583853,
+            "snr_db": 24.434312615073864,
+            "coh_err_bins": -0.0023171680747964274,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9978489689423,
+            "ppm": -2.151031057717745,
+            "level_dbfs": -74.43825526053176,
+            "snr_db": 24.430196027480537,
+            "coh_err_bins": -0.002151031057678665,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: сдвиг тона -0.0023 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0023 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0022 бина; допуск ±0.002)"
+        ]
+      },
+      "tone_analysis": {
+        "L": {
+          "f0_hz": 999.9976828319252,
+          "level_dbfs": -74.4386560583853,
+          "local_snr_db": 24.434312615073864,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.0023171680747964274,
+          "warnings": [
+            "сдвиг тона -0.0023 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        },
+        "R": {
+          "f0_hz": 999.9978489689423,
+          "level_dbfs": -74.43825526053176,
+          "local_snr_db": 24.430196027480537,
+          "phase_coherence": null,
+          "phase_spread_deg": null,
+          "coh_err_bins": -0.002151031057678665,
+          "warnings": [
+            "сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+          ]
+        }
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "settle_samples": 38400,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4
+      },
+      "backend_play_calls": 1
+    }
+  ]
+}
