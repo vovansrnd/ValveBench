@@ -1,0 +1,113 @@
+{
+  "purpose": "Observe the complete production Rig.run() -> _onset -> stability guard -> dsp.analyze_tone -> clock_check() path under deterministic synthetic capture faults.",
+  "fs_hz": 96000,
+  "window_s": 2.0,
+  "blocks": 2,
+  "settle_s": 0.4,
+  "pilot_hz": 1000.0,
+  "pilot_level_dbfs": -72.0,
+  "case_count": 8,
+  "rig_run_counts": {
+    "pass": 4,
+    "reject": 4
+  },
+  "clock_check_counts": {
+    "raised": 4,
+    "returned": 4
+  },
+  "occupancy_40_percent": {
+    "case": "occupancy_40_percent_front_loaded",
+    "fault": {
+      "start_s": 0.8,
+      "end_s": 2.0
+    },
+    "backend": "v2200-synthetic-capture",
+    "rig_run": "pass",
+    "clock_check": "returned",
+    "onset_sample": 12960,
+    "onset_s": 0.135,
+    "error": null,
+    "window_shape": [
+      192000,
+      2
+    ],
+    "run_warnings": [],
+    "clock_result": {
+      "ok": true,
+      "clock_ok": true,
+      "clock_ppm_ok": true,
+      "clock_consistent": true,
+      "signal_ok": true,
+      "coherent": true,
+      "clock_channel_spread_ppm": 0.12739954957652344,
+      "channels": {
+        "L": {
+          "f0": 1000.0000874461151,
+          "ppm": 0.08744611501576571,
+          "level_dbfs": -79.93722691160659,
+          "snr_db": 46.90460950765295,
+          "coh_err_bins": 8.744611511701805e-05,
+          "clock_ok": true,
+          "signal_ok": true,
+          "coherent": true
+        },
+        "R": {
+          "f0": 999.9999600465654,
+          "ppm": -0.03995343456075773,
+          "level_dbfs": -79.93686218999814,
+          "snr_db": 46.8063343255077,
+          "coh_err_bins": -3.99534345660868e-05,
+          "clock_ok": true,
+          "signal_ok": true,
+          "coherent": true
+        }
+      },
+      "warnings": [
+        "L: фаза несущей между блоками нестабильна (coherence=0.585); гармоники усреднены с нормировкой на фазу несущей",
+        "R: фаза несущей между блоками нестабильна (coherence=0.767); гармоники усреднены с нормировкой на фазу несущей"
+      ]
+    },
+    "capture": {
+      "capture_samples": 353952,
+      "program_samples": 235200,
+      "delay_samples": 13152,
+      "measurement_start_sample_nominal": 51552,
+      "fault_start_sample": 128352,
+      "fault_end_sample": 243552,
+      "fault_start_s_in_measurement_window": 0.8,
+      "fault_end_s_in_measurement_window": 2.0
+    },
+    "backend_play_calls": 1
+  },
+  "interpretation": "Synthetic diagnostic only. A returned clock_check result does not by itself validate hardware behavior; compare Rig rejection, signal_ok, clock_ok and overall ok separately. No thresholds or production code are changed.",
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2200-full-clock-path.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2200_full_clock_path.py"
+	User time (seconds): 0.83
+	System time (seconds): 0.25
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.08
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 167840
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 96215
+	Voluntary context switches: 1
+	Involuntary context switches: 10
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 40
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

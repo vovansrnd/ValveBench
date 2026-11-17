@@ -1,0 +1,1703 @@
+  phase=same_initial_phase, offset=0.25 Hz: 420 rows
+  phase=same_initial_phase, offset=0.30 Hz: 480 rows
+  phase=same_initial_phase, offset=0.35 Hz: 540 rows
+  phase=same_initial_phase, offset=0.40 Hz: 600 rows
+  phase=same_initial_phase, offset=0.50 Hz: 660 rows
+  phase=same_initial_phase, offset=0.65 Hz: 720 rows
+  phase=same_initial_phase, offset=0.75 Hz: 780 rows
+  phase=same_initial_phase, offset=1.00 Hz: 840 rows
+  phase=same_initial_phase, offset=1.50 Hz: 900 rows
+  phase=independent_phase, offset=0.25 Hz: 960 rows
+  phase=independent_phase, offset=0.30 Hz: 1020 rows
+  phase=independent_phase, offset=0.35 Hz: 1080 rows
+  phase=independent_phase, offset=0.40 Hz: 1140 rows
+  phase=independent_phase, offset=0.50 Hz: 1200 rows
+  phase=independent_phase, offset=0.65 Hz: 1260 rows
+  phase=independent_phase, offset=0.75 Hz: 1320 rows
+  phase=independent_phase, offset=1.00 Hz: 1380 rows
+  phase=independent_phase, offset=1.50 Hz: 1440 rows
+{
+  "capture": {
+    "fs_hz": 96000.0,
+    "duration_s": 2.0,
+    "samples": 192000,
+    "fft_bin_hz": 0.5,
+    "pilot_nominal_hz": 1000.0,
+    "pilot_true_hz": 999.9765000000001,
+    "pilot_level_dbfs": -72.0,
+    "noise_level_dbfs": -96.0,
+    "offset_abs_hz": [
+      0.25,
+      0.3,
+      0.35,
+      0.4,
+      0.5,
+      0.65,
+      0.75,
+      1.0,
+      1.5
+    ],
+    "line_levels_dbc": [
+      -10.0,
+      -20.0,
+      -30.0
+    ],
+    "phase_modes": [
+      "same_initial_phase",
+      "independent_phase"
+    ],
+    "trials_per_abs_offset_phase_level": 20,
+    "trials_per_signed_offset_phase_level": 10
+  },
+  "results": {
+    "trials_total": 1512,
+    "pilot_only_baseline": {
+      "n": 360,
+      "fit_error_median_hz": -7.205276233435143e-07,
+      "fit_error_abs_p90_hz": 6.467902077247346e-05
+    },
+    "nearby_line_trials": 1080,
+    "nearby_line_detected": 995,
+    "nearby_line_cells": {
+      "independent_phase d+0.25 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 0,
+        "nearby_probe_hit_status_counts": {
+          "ok": 0
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 0,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 6.04054109604619,
+          "positive": 5.788342249130253
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.00045486411494266576,
+        "fit_error_abs_p90_hz": 0.0057820417513198665,
+        "fit_error_abs_max_hz": 0.005992491734787109,
+        "induced_shift_median_hz": -0.00048026399036871226,
+        "induced_shift_abs_p90_hz": 0.005790364862014031,
+        "max_abs_induced_shift_hz": 0.006040399143330433,
+        "max_abs_induced_shift_ppm": 6.04054109604619,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": null,
+        "max_abs_fit_error_ppm": 5.992632561652306
+      },
+      "independent_phase d+0.25 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 18.61168973967152,
+          "positive": 18.604392345104504
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0006606764076764193,
+        "fit_error_abs_p90_hz": 0.018037313347440433,
+        "fit_error_abs_max_hz": 0.018595015543382942,
+        "induced_shift_median_hz": -0.0006860762831024658,
+        "induced_shift_abs_p90_hz": 0.018043871614372622,
+        "max_abs_induced_shift_hz": 0.018611252364962638,
+        "max_abs_induced_shift_ppm": 18.61168973967152,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 18.61168973967152,
+        "max_abs_fit_error_ppm": 18.59545253651755
+      },
+      "independent_phase d+0.25 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 53.71117902159138,
+          "positive": 61.06798149979565
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 0.00022351875855974868,
+        "fit_error_abs_p90_hz": 0.053546925034982,
+        "fit_error_abs_max_hz": 0.06105760680372896,
+        "induced_shift_median_hz": 0.00021576935199618674,
+        "induced_shift_abs_p90_hz": 0.05352330598092294,
+        "max_abs_induced_shift_hz": 0.061066546402230415,
+        "max_abs_induced_shift_ppm": 61.06798149979565,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 61.06798149979565,
+        "max_abs_fit_error_ppm": 61.0590416912087
+      },
+      "independent_phase d+0.30 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 6,
+        "nearby_probe_hit_status_counts": {
+          "ok": 6
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 6,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 6.50866778936599,
+          "positive": 6.469437087685603
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 8.579993260582341e-05,
+        "fit_error_abs_p90_hz": 0.006462015079262073,
+        "fit_error_abs_max_hz": 0.0064974761801295244,
+        "induced_shift_median_hz": 7.77539373189029e-05,
+        "induced_shift_abs_p90_hz": 0.00646756943708624,
+        "max_abs_induced_shift_hz": 0.0065085148356729405,
+        "max_abs_induced_shift_ppm": 6.50866778936599,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 3.165438148923582,
+        "max_abs_fit_error_ppm": 6.497628874408072
+      },
+      "independent_phase d+0.30 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 20.711682364241252,
+          "positive": 20.21247854199537
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.00045173670650910935,
+        "fit_error_abs_p90_hz": 0.020166456209403806,
+        "fit_error_abs_max_hz": 0.020700156984162277,
+        "induced_shift_median_hz": -0.00045978270179602987,
+        "induced_shift_abs_p90_hz": 0.020207672150661438,
+        "max_abs_induced_shift_hz": 0.020711195639705693,
+        "max_abs_induced_shift_ppm": 20.711682364241252,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 20.711682364241252,
+        "max_abs_fit_error_ppm": 20.70064344928333
+      },
+      "independent_phase d+0.30 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 65.6984112816213,
+          "positive": 60.651239530637135
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.008933518766980342,
+        "fit_error_abs_p90_hz": 0.06060450356010279,
+        "fit_error_abs_max_hz": 0.06568582871341277,
+        "induced_shift_median_hz": -0.008941564762267262,
+        "induced_shift_abs_p90_hz": 0.06064571950136042,
+        "max_abs_induced_shift_hz": 0.06569686736895619,
+        "max_abs_induced_shift_ppm": 65.6984112816213,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 65.6984112816213,
+        "max_abs_fit_error_ppm": 65.68737236666338
+      },
+      "independent_phase d+0.35 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 11,
+        "nearby_probe_hit_status_counts": {
+          "ok": 11
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 11,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 6.281766043623962,
+          "positive": 6.580340864880279
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0021713885544158984,
+        "fit_error_abs_p90_hz": 0.006420788162517965,
+        "fit_error_abs_max_hz": 0.006539342568657958,
+        "induced_shift_median_hz": -0.0021914341226647593,
+        "induced_shift_abs_p90_hz": 0.006406314114826728,
+        "max_abs_induced_shift_hz": 0.006580186226869955,
+        "max_abs_induced_shift_ppm": 6.580340864880279,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 4.154864453027386,
+        "max_abs_fit_error_ppm": 6.539496246819757
+      },
+      "independent_phase d+0.35 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 19.985157986383765,
+          "positive": 20.866445455350092
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0074205237381193,
+        "fit_error_abs_p90_hz": 0.02027045642154235,
+        "fit_error_abs_max_hz": 0.020825111435669896,
+        "induced_shift_median_hz": -0.007440569306368161,
+        "induced_shift_abs_p90_hz": 0.020295140955329315,
+        "max_abs_induced_shift_hz": 0.020865955093881894,
+        "max_abs_induced_shift_ppm": 20.866445455350092,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 20.866445455350092,
+        "max_abs_fit_error_ppm": 20.82560083728957
+      },
+      "independent_phase d+0.35 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 63.38435050351048,
+          "positive": 65.42252174890514
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.029384738498606566,
+        "fit_error_abs_p90_hz": 0.0640738570213557,
+        "fit_error_abs_max_hz": 0.06538014066143205,
+        "induced_shift_median_hz": -0.029404784066855427,
+        "induced_shift_abs_p90_hz": 0.06409854155514268,
+        "max_abs_induced_shift_hz": 0.06542098431964405,
+        "max_abs_induced_shift_ppm": 65.42252174890514,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 65.42252174890514,
+        "max_abs_fit_error_ppm": 65.38167713084462
+      },
+      "independent_phase d+0.40 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 18,
+        "nearby_probe_hit_status_counts": {
+          "ok": 18
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 18,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 6.031725897641864,
+          "positive": 6.323911589367207
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0011276617690896273,
+        "fit_error_abs_p90_hz": 0.0061180547371918696,
+        "fit_error_abs_max_hz": 0.006369095335003294,
+        "induced_shift_median_hz": -0.0010561503557937613,
+        "induced_shift_abs_p90_hz": 0.006063068322737309,
+        "max_abs_induced_shift_hz": 0.006323762977444858,
+        "max_abs_induced_shift_ppm": 6.323911589367207,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 6.040489757388108,
+        "max_abs_fit_error_ppm": 6.369245012261082
+      },
+      "independent_phase d+0.40 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 19.449312449079994,
+          "positive": 20.353135418497708
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0034308841323991146,
+        "fit_error_abs_p90_hz": 0.0195118478227414,
+        "fit_error_abs_max_hz": 0.020397989477373812,
+        "induced_shift_median_hz": -0.0033593727191032485,
+        "induced_shift_abs_p90_hz": 0.019521619435170123,
+        "max_abs_induced_shift_hz": 0.020352657119815376,
+        "max_abs_induced_shift_ppm": 20.353135418497708,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 20.353135418497708,
+        "max_abs_fit_error_ppm": 20.398468841391583
+      },
+      "independent_phase d+0.40 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 64.59497995298672,
+          "positive": 67.03064226706725
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.011286800543189202,
+        "fit_error_abs_p90_hz": 0.06477977216785576,
+        "fit_error_abs_max_hz": 0.06707439940453241,
+        "induced_shift_median_hz": -0.011215289129893335,
+        "induced_shift_abs_p90_hz": 0.06478954378028448,
+        "max_abs_induced_shift_hz": 0.06702906704697398,
+        "max_abs_induced_shift_ppm": 67.03064226706725,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 67.03064226706725,
+        "max_abs_fit_error_ppm": 67.07597568996113
+      },
+      "independent_phase d+0.50 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 4.849890850225625,
+          "positive": 4.83608587996283
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.002984629342961398,
+        "fit_error_abs_p90_hz": 0.004682453571899714,
+        "fit_error_abs_max_hz": 0.004867354667339896,
+        "induced_shift_median_hz": -0.0030077247921553862,
+        "induced_shift_abs_p90_hz": 0.0046681449381480895,
+        "max_abs_induced_shift_hz": 0.004849776877790646,
+        "max_abs_induced_shift_ppm": 4.849890850225625,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 4.849890850225625,
+        "max_abs_fit_error_ppm": 4.867469052862638
+      },
+      "independent_phase d+0.50 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 16.004328152194013,
+          "positive": 15.94262492256782
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.009736658187307512,
+        "fit_error_abs_p90_hz": 0.015157963076774196,
+        "fit_error_abs_max_hz": 0.015973632706277385,
+        "induced_shift_median_hz": -0.009772091006198025,
+        "induced_shift_abs_p90_hz": 0.015166306291757792,
+        "max_abs_induced_shift_hz": 0.01600395205048244,
+        "max_abs_induced_shift_ppm": 16.004328152194013,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 16.004328152194013,
+        "max_abs_fit_error_ppm": 15.974008095467628
+      },
+      "independent_phase d+0.50 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 58.05886309795749,
+          "positive": 57.80945101318523
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.030554283377512093,
+        "fit_error_abs_p90_hz": 0.054859841549534855,
+        "fit_error_abs_max_hz": 0.05794975350852383,
+        "induced_shift_median_hz": -0.030589716196402605,
+        "induced_shift_abs_p90_hz": 0.05486044217832387,
+        "max_abs_induced_shift_hz": 0.058057498714674693,
+        "max_abs_induced_shift_ppm": 58.05886309795749,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 58.05886309795749,
+        "max_abs_fit_error_ppm": 57.95111535973477
+      },
+      "independent_phase d+0.65 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 1.4486203925450327,
+          "positive": 1.4667075084217334
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 0.0003479386894014169,
+        "fit_error_abs_p90_hz": 0.0014037380664603915,
+        "fit_error_abs_max_hz": 0.0014495989170200119,
+        "induced_shift_median_hz": 0.00036002467334128596,
+        "induced_shift_abs_p90_hz": 0.001403015407311159,
+        "max_abs_induced_shift_hz": 0.0014666730407952855,
+        "max_abs_induced_shift_ppm": 1.4667075084217334,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 1.4667075084217334,
+        "max_abs_fit_error_ppm": 1.4496329833951216
+      },
+      "independent_phase d+0.65 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 4.822735279146992,
+          "positive": 4.889387870605047
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 0.0011680012058263856,
+        "fit_error_abs_p90_hz": 0.004661738255674663,
+        "fit_error_abs_max_hz": 0.004861854771888829,
+        "induced_shift_median_hz": 0.0011800871897662546,
+        "induced_shift_abs_p90_hz": 0.004659981189092832,
+        "max_abs_induced_shift_hz": 0.004889272969990088,
+        "max_abs_induced_shift_ppm": 4.889387870605047,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 4.889387870605047,
+        "max_abs_fit_error_ppm": 4.86196902816099
+      },
+      "independent_phase d+0.65 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "n_status_ok": 10,
+        "n_probe_hit_and_status_ok": 10,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 18.364304606858788,
+          "positive": 18.69475492399925
+        },
+        "status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "fit_error_median_hz": 0.004081675012173491,
+        "fit_error_abs_p90_hz": 0.017559458443008682,
+        "fit_error_abs_max_hz": 0.01866689739915728,
+        "induced_shift_median_hz": 0.00409376099611336,
+        "induced_shift_abs_p90_hz": 0.01755770137642685,
+        "max_abs_induced_shift_hz": 0.018694315597258537,
+        "max_abs_induced_shift_ppm": 18.69475492399925,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 18.364304606858788,
+        "max_abs_fit_error_ppm": 18.667336081555195
+      },
+      "independent_phase d+0.75 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 0.6614029627379133,
+          "positive": 0.6871300098962259
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 0.0002946115013173767,
+        "fit_error_abs_p90_hz": 0.0006624907280524895,
+        "fit_error_abs_max_hz": 0.0006819446666668227,
+        "induced_shift_median_hz": 0.00030235804399580957,
+        "induced_shift_abs_p90_hz": 0.0006617567212060749,
+        "max_abs_induced_shift_hz": 0.0006871138623409934,
+        "max_abs_induced_shift_ppm": 0.6871300098962259,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 0.6871300098962259,
+        "max_abs_fit_error_ppm": 0.6819606927431021
+      },
+      "independent_phase d+0.75 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 2.013420921524174,
+          "positive": 2.262929183642273
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 0.00098430757418555,
+        "fit_error_abs_p90_hz": 0.0020266218333176767,
+        "fit_error_abs_max_hz": 0.002237921133087184,
+        "induced_shift_median_hz": 0.0009513468415889292,
+        "induced_shift_abs_p90_hz": 0.002031306862272686,
+        "max_abs_induced_shift_hz": 0.002262876004806458,
+        "max_abs_induced_shift_ppm": 2.262929183642273,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 2.262929183642273,
+        "max_abs_fit_error_ppm": 2.237973725469732
+      },
+      "independent_phase d+0.75 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "n_status_ok": 10,
+        "n_probe_hit_and_status_ok": 10,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 6.51409828440591,
+          "positive": 8.2350354010975
+        },
+        "status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "fit_error_median_hz": 0.002964944314442164,
+        "fit_error_abs_p90_hz": 0.006578799881560828,
+        "fit_error_abs_max_hz": 0.008209887006046301,
+        "induced_shift_median_hz": 0.002931983581845543,
+        "induced_shift_abs_p90_hz": 0.00660615540808749,
+        "max_abs_induced_shift_hz": 0.008234841877765575,
+        "max_abs_induced_shift_ppm": 8.2350354010975,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 6.51409828440591,
+        "max_abs_fit_error_ppm": 8.21007994292496
+      },
+      "independent_phase d+1.00 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 2.4112839698927244,
+          "positive": 2.4065114716473706
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0009237263005275054,
+        "fit_error_abs_p90_hz": 0.002325646097972367,
+        "fit_error_abs_max_hz": 0.0024751398647140377,
+        "induced_shift_median_hz": -0.0008835433254148484,
+        "induced_shift_abs_p90_hz": 0.002333081122424119,
+        "max_abs_induced_shift_hz": 0.002411227304719432,
+        "max_abs_induced_shift_ppm": 2.4112839698927244,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 2.4112839698927244,
+        "max_abs_fit_error_ppm": 2.4751980318677864
+      },
+      "independent_phase d+1.00 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 7.70655890548958,
+          "positive": 7.689995735298561
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.0028496575257577206,
+        "fit_error_abs_p90_hz": 0.007446577248174436,
+        "fit_error_abs_max_hz": 0.0077702903613499075,
+        "induced_shift_median_hz": -0.0028094745506450636,
+        "induced_shift_abs_p90_hz": 0.0074540122726261876,
+        "max_abs_induced_shift_hz": 0.007706377801355302,
+        "max_abs_induced_shift_ppm": 7.70655890548958,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 7.70655890548958,
+        "max_abs_fit_error_ppm": 7.770472967464642
+      },
+      "independent_phase d+1.00 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 1,
+          "ok": 19
+        },
+        "n_status_ok": 19,
+        "n_probe_hit_and_status_ok": 19,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 25.01852395502097,
+          "positive": 24.955759449968205
+        },
+        "status_counts": {
+          "line_contaminated": 1,
+          "ok": 19
+        },
+        "fit_error_median_hz": -0.009099908713380955,
+        "fit_error_abs_p90_hz": 0.02419069663174014,
+        "fit_error_abs_max_hz": 0.025081848579702637,
+        "induced_shift_median_hz": -0.009059725738268298,
+        "induced_shift_abs_p90_hz": 0.02419813165619189,
+        "max_abs_induced_shift_hz": 0.02501793601970803,
+        "max_abs_induced_shift_ppm": 25.01852395502097,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 25.01852395502097,
+        "max_abs_fit_error_ppm": 25.082438016996033
+      },
+      "independent_phase d+1.50 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 10,
+        "nearby_probe_hit_status_counts": {
+          "ok": 10
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 10,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 1.475163091559664,
+          "positive": 1.4883032142117438
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -0.00032462922683862416,
+        "fit_error_abs_p90_hz": 0.0014857072813583728,
+        "fit_error_abs_max_hz": 0.0015068118570980005,
+        "induced_shift_median_hz": -0.0003201066547831033,
+        "induced_shift_abs_p90_hz": 0.001475806634618948,
+        "max_abs_induced_shift_hz": 0.00148826823908621,
+        "max_abs_induced_shift_ppm": 1.4883032142117438,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 1.475163091559664,
+        "max_abs_fit_error_ppm": 1.5068472680087985
+      },
+      "independent_phase d+1.50 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 2,
+          "ok": 18
+        },
+        "n_status_ok": 18,
+        "n_probe_hit_and_status_ok": 18,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 4.648212308613274,
+          "positive": 4.709651328821903
+        },
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 18
+        },
+        "fit_error_median_hz": -0.0010181052994653328,
+        "fit_error_abs_p90_hz": 0.00468004469121297,
+        "fit_error_abs_max_hz": 0.004722061413644951,
+        "induced_shift_median_hz": -0.001013582727409812,
+        "induced_shift_abs_p90_hz": 0.004651882631628723,
+        "max_abs_induced_shift_hz": 0.004709540652015676,
+        "max_abs_induced_shift_ppm": 4.709651328821903,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 4.709651328821903,
+        "max_abs_fit_error_ppm": 4.722172384695991
+      },
+      "independent_phase d+1.50 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 15,
+          "ok": 5
+        },
+        "n_status_ok": 5,
+        "n_probe_hit_and_status_ok": 5,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 14.837818446100698,
+          "positive": 15.053097974211624
+        },
+        "status_counts": {
+          "line_contaminated": 15,
+          "ok": 5
+        },
+        "fit_error_median_hz": -0.0032297726656338455,
+        "fit_error_abs_p90_hz": 0.014616027569854851,
+        "fit_error_abs_max_hz": 0.015065264988038507,
+        "induced_shift_median_hz": -0.0032252500935783246,
+        "induced_shift_abs_p90_hz": 0.014617568639789625,
+        "max_abs_induced_shift_hz": 0.015052744226409231,
+        "max_abs_induced_shift_ppm": 15.053097974211624,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 13.770094740528425,
+        "max_abs_fit_error_ppm": 15.065619030085713
+      },
+      "same_initial_phase d+0.25 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 0,
+        "nearby_probe_hit_status_counts": {
+          "ok": 0
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 0,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 0.12487053877095568,
+          "positive": 0.12460844238661238
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -2.0890815562779608e-05,
+        "fit_error_abs_p90_hz": 0.0001785377024020818,
+        "fit_error_abs_max_hz": 0.00018848446268293628,
+        "induced_shift_median_hz": 4.804346644959878e-07,
+        "induced_shift_abs_p90_hz": 0.0001240652139699705,
+        "max_abs_induced_shift_hz": 0.00012486760431329458,
+        "max_abs_induced_shift_ppm": 0.12487053877095568,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": null,
+        "max_abs_fit_error_ppm": 0.18848889217190232
+      },
+      "same_initial_phase d+0.25 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 1.2404901833037418,
+          "positive": 1.2393915156248982
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -2.0360346525194473e-05,
+        "fit_error_abs_p90_hz": 0.0012877703717890654,
+        "fit_error_abs_max_hz": 0.0013022756713780836,
+        "induced_shift_median_hz": 1.5398655932585825e-06,
+        "induced_shift_abs_p90_hz": 0.0012379529893792097,
+        "max_abs_induced_shift_hz": 0.0012404610317844345,
+        "max_abs_induced_shift_ppm": 1.2404901833037418,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 1.2404901833037418,
+        "max_abs_fit_error_ppm": 1.3023062755755594
+      },
+      "same_initial_phase d+0.25 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 12.654105579737246,
+          "positive": 12.643601758894006
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -1.8306815150026523e-05,
+        "fit_error_abs_p90_hz": 0.01268385728407111,
+        "fit_error_abs_max_hz": 0.01270778391631211,
+        "induced_shift_median_hz": 4.286169541956042e-06,
+        "induced_shift_abs_p90_hz": 0.01264360908579647,
+        "max_abs_induced_shift_hz": 0.012653808208256123,
+        "max_abs_induced_shift_ppm": 12.654105579737246,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 12.654105579737246,
+        "max_abs_fit_error_ppm": 12.70808255625218
+      },
+      "same_initial_phase d+0.30 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 1.9247736009287506,
+          "positive": 1.923562836075751
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -1.7661947708802472e-06,
+        "fit_error_abs_p90_hz": 0.0019651566669608655,
+        "fit_error_abs_max_hz": 0.0019841690170778747,
+        "induced_shift_median_hz": 7.804054007465311e-07,
+        "induced_shift_abs_p90_hz": 0.0019241471063196514,
+        "max_abs_induced_shift_hz": 0.001924728368749129,
+        "max_abs_induced_shift_ppm": 1.9247736009287506,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 1.9247736009287506,
+        "max_abs_fit_error_ppm": 1.9842156461455591
+      },
+      "same_initial_phase d+0.30 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 5.471172446974824,
+          "positive": 5.464093014183528
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 1.6696711213626259e-06,
+        "fit_error_abs_p90_hz": 0.005508885151289178,
+        "fit_error_abs_max_hz": 0.005515759495324346,
+        "induced_shift_median_hz": 3.816152684521512e-06,
+        "induced_shift_abs_p90_hz": 0.005469589363860905,
+        "max_abs_induced_shift_hz": 0.005471043874422321,
+        "max_abs_induced_shift_ppm": 5.471172446974824,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 5.471172446974824,
+        "max_abs_fit_error_ppm": 5.515889118718635
+      },
+      "same_initial_phase d+0.30 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 10.944029564086458,
+          "positive": 10.93832542339969
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 5.739056916809204e-06,
+        "fit_error_abs_p90_hz": 0.010963842126000146,
+        "fit_error_abs_max_hz": 0.01098351011989962,
+        "induced_shift_median_hz": 2.2883164092490915e-06,
+        "induced_shift_abs_p90_hz": 0.010939473016537703,
+        "max_abs_induced_shift_hz": 0.010943772379391703,
+        "max_abs_induced_shift_ppm": 10.944029564086458,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 10.944029564086458,
+        "max_abs_fit_error_ppm": 10.983768238453223
+      },
+      "same_initial_phase d+0.35 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 3.8025689210739864,
+          "positive": 3.8019852656222537
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -2.0573073129526165e-05,
+        "fit_error_abs_p90_hz": 0.00385107556425055,
+        "fit_error_abs_max_hz": 0.003868318181162067,
+        "induced_shift_median_hz": 1.4179498180055816e-06,
+        "induced_shift_abs_p90_hz": 0.0038019485891368277,
+        "max_abs_induced_shift_hz": 0.0038024795607043416,
+        "max_abs_induced_shift_ppm": 3.8025689210739864,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 3.8025689210739864,
+        "max_abs_fit_error_ppm": 3.868409088775653
+      },
+      "same_initial_phase d+0.35 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 11.669007450605339,
+          "positive": 11.674941325616524
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -2.0678720773048553e-05,
+        "fit_error_abs_p90_hz": 0.011714943372248854,
+        "fit_error_abs_max_hz": 0.011741089226688928,
+        "induced_shift_median_hz": 3.240063506382285e-08,
+        "induced_shift_abs_p90_hz": 0.011669560546749835,
+        "max_abs_induced_shift_hz": 0.011674666964495373,
+        "max_abs_induced_shift_ppm": 11.674941325616524,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 11.674941325616524,
+        "max_abs_fit_error_ppm": 11.741365148769923
+      },
+      "same_initial_phase d+0.35 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 33.868006071781934,
+          "positive": 33.88666391593101
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -1.9549108969840745e-05,
+        "fit_error_abs_p90_hz": 0.03390853477856126,
+        "fit_error_abs_max_hz": 0.03395228984152254,
+        "induced_shift_median_hz": -2.3117174237086147e-06,
+        "induced_shift_abs_p90_hz": 0.03387065120402895,
+        "max_abs_induced_shift_hz": 0.03388586757932899,
+        "max_abs_induced_shift_ppm": 33.88666391593101,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 33.88666391593101,
+        "max_abs_fit_error_ppm": 33.95308773908441
+      },
+      "same_initial_phase d+0.40 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 5.020839218055593,
+          "positive": 5.014665456587868
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 2.7218856075705844e-05,
+        "fit_error_abs_p90_hz": 0.005057819758792448,
+        "fit_error_abs_max_hz": 0.005107336588935141,
+        "induced_shift_median_hz": 2.5854436103145417e-06,
+        "induced_shift_abs_p90_hz": 0.005020397339694682,
+        "max_abs_induced_shift_hz": 0.005020721228333969,
+        "max_abs_induced_shift_ppm": 5.020839218055593,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 5.020839218055593,
+        "max_abs_fit_error_ppm": 5.1074566141655735
+      },
+      "same_initial_phase d+0.40 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 15.522172581897566,
+          "positive": 15.515484066732675
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 2.772905895653821e-05,
+        "fit_error_abs_p90_hz": 0.015551555450088017,
+        "fit_error_abs_max_hz": 0.015600339997604351,
+        "induced_shift_median_hz": 1.5552616332570324e-06,
+        "induced_shift_abs_p90_hz": 0.015520764160339696,
+        "max_abs_induced_shift_hz": 0.015521807810841892,
+        "max_abs_induced_shift_ppm": 15.522172581897566,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 15.522172581897566,
+        "max_abs_fit_error_ppm": 15.600706614209784
+      },
+      "same_initial_phase d+0.40 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 45.92990743252011,
+          "positive": 45.91003586247476
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 3.290015507673161e-05,
+        "fit_error_abs_p90_hz": 0.04593337599397955,
+        "fit_error_abs_max_hz": 0.04598252947630499,
+        "induced_shift_median_hz": 4.89816181925562e-06,
+        "induced_shift_abs_p90_hz": 0.04592601442017212,
+        "max_abs_induced_shift_hz": 0.04592882807969545,
+        "max_abs_induced_shift_ppm": 45.92990743252011,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 45.92990743252011,
+        "max_abs_fit_error_ppm": 45.983610091142125
+      },
+      "same_initial_phase d+0.50 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 4.717987665875635,
+          "positive": 4.716304386616285
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 7.774036703267484e-08,
+        "fit_error_abs_p90_hz": 0.004768541711052876,
+        "fit_error_abs_max_hz": 0.004792534042735497,
+        "induced_shift_median_hz": 2.382546995249868e-06,
+        "induced_shift_abs_p90_hz": 0.004716947858787535,
+        "max_abs_induced_shift_hz": 0.0047178767931654875,
+        "max_abs_induced_shift_ppm": 4.717987665875635,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 4.717987665875635,
+        "max_abs_fit_error_ppm": 4.79264666993224
+      },
+      "same_initial_phase d+0.50 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 14.323725814663273,
+          "positive": 14.328878789972622
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -3.3403065913262253e-06,
+        "fit_error_abs_p90_hz": 0.014371617027529737,
+        "fit_error_abs_max_hz": 0.014396748281455984,
+        "induced_shift_median_hz": 2.0522732029348845e-06,
+        "induced_shift_abs_p90_hz": 0.014323731275680984,
+        "max_abs_induced_shift_hz": 0.014328542061321059,
+        "max_abs_induced_shift_ppm": 14.328878789972622,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 14.328878789972622,
+        "max_abs_fit_error_ppm": 14.397086612991387
+      },
+      "same_initial_phase d+0.50 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 40.10228106855891,
+          "positive": 40.114269403245764
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -4.651666472454963e-06,
+        "fit_error_abs_p90_hz": 0.04013102901549246,
+        "fit_error_abs_max_hz": 0.040160612623253655,
+        "induced_shift_median_hz": 5.717012243167119e-06,
+        "induced_shift_abs_p90_hz": 0.04010215080221542,
+        "max_abs_induced_shift_hz": 0.04011332671791479,
+        "max_abs_induced_shift_ppm": 40.114269403245764,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 40.114269403245764,
+        "max_abs_fit_error_ppm": 40.16155641982952
+      },
+      "same_initial_phase d+0.65 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 0.8423744246430566,
+          "positive": 0.8427660350933314
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -1.979365487159157e-05,
+        "fit_error_abs_p90_hz": 0.0008803220591630633,
+        "fit_error_abs_max_hz": 0.0008956523441838726,
+        "induced_shift_median_hz": -8.31618081065244e-08,
+        "induced_shift_abs_p90_hz": 0.0008421315725058775,
+        "max_abs_induced_shift_hz": 0.0008427462300915067,
+        "max_abs_induced_shift_ppm": 0.8427660350933314,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 0.8427660350933314,
+        "max_abs_fit_error_ppm": 0.8956733925085965
+      },
+      "same_initial_phase d+0.65 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 2.6251352407989184,
+          "positive": 2.6259151867594595
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": -1.8319655453069572e-05,
+        "fit_error_abs_p90_hz": 0.002661657794567418,
+        "fit_error_abs_max_hz": 0.0026760052921872557,
+        "induced_shift_median_hz": -5.794134949610452e-08,
+        "induced_shift_abs_p90_hz": 0.002624381106693363,
+        "max_abs_induced_shift_hz": 0.002625853477752571,
+        "max_abs_induced_shift_ppm": 2.6259151867594595,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 2.6259151867594595,
+        "max_abs_fit_error_ppm": 2.6760681797894805
+      },
+      "same_initial_phase d+0.65 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "n_status_ok": 10,
+        "n_probe_hit_and_status_ok": 10,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 7.9209043450156065,
+          "positive": 7.916805260317056
+        },
+        "status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "fit_error_median_hz": -1.1421667181821249e-05,
+        "fit_error_abs_p90_hz": 0.007945799925050779,
+        "fit_error_abs_max_hz": 0.007959605992823526,
+        "induced_shift_median_hz": 2.8177513513583108e-06,
+        "induced_shift_abs_p90_hz": 0.007917914886115795,
+        "max_abs_induced_shift_hz": 0.0079207182037635,
+        "max_abs_induced_shift_ppm": 7.9209043450156065,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 7.9209043450156065,
+        "max_abs_fit_error_ppm": 7.959793047960153
+      },
+      "same_initial_phase d+0.75 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 0.0054684360714532775,
+          "positive": 0.005245713433840626
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 2.8026727250107797e-07,
+        "fit_error_abs_p90_hz": 6.42421682641725e-05,
+        "fit_error_abs_max_hz": 7.251856459333794e-05,
+        "induced_shift_median_hz": 4.2112901610380504e-07,
+        "induced_shift_abs_p90_hz": 5.2514900744427e-06,
+        "max_abs_induced_shift_hz": 5.468307563205599e-06,
+        "max_abs_induced_shift_ppm": 0.0054684360714532775,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 0.0054684360714532775,
+        "max_abs_fit_error_ppm": 0.0725202688196552
+      },
+      "same_initial_phase d+0.75 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 0.04837735184476564,
+          "positive": 0.04764460021861906
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 7.418497261824086e-06,
+        "fit_error_abs_p90_hz": 8.405006831253561e-05,
+        "fit_error_abs_max_hz": 0.00010303896863206319,
+        "induced_shift_median_hz": 1.3270981185087294e-06,
+        "induced_shift_abs_p90_hz": 4.7655934486101616e-05,
+        "max_abs_induced_shift_hz": 4.837621497699729e-05,
+        "max_abs_induced_shift_ppm": 0.04837735184476564,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 0.04837735184476564,
+        "max_abs_fit_error_ppm": 0.10304139010473064
+      },
+      "same_initial_phase d+0.75 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "n_status_ok": 10,
+        "n_probe_hit_and_status_ok": 10,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 0.45914914277164093,
+          "positive": 0.45664268848006434
+        },
+        "status_counts": {
+          "line_contaminated": 10,
+          "ok": 10
+        },
+        "fit_error_median_hz": 1.1251706268922135e-05,
+        "fit_error_abs_p90_hz": 0.0004866829123443495,
+        "fit_error_abs_max_hz": 0.000502080132264382,
+        "induced_shift_median_hz": 4.1998341089311e-06,
+        "induced_shift_abs_p90_hz": 0.0004563551150454259,
+        "max_abs_induced_shift_hz": 0.00045913835276678583,
+        "max_abs_induced_shift_ppm": 0.45914914277164093,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 0.45914914277164093,
+        "max_abs_fit_error_ppm": 0.5020919314247704
+      },
+      "same_initial_phase d+1.00 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 2.3910990731510546,
+          "positive": 2.390730577369699
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 8.852631481204298e-06,
+        "fit_error_abs_p90_hz": 0.002451844583345064,
+        "fit_error_abs_max_hz": 0.0024713908240983073,
+        "induced_shift_median_hz": 8.066916166171723e-07,
+        "induced_shift_abs_p90_hz": 0.0023906879259925516,
+        "max_abs_induced_shift_hz": 0.002391042882322836,
+        "max_abs_induced_shift_ppm": 2.3910990731510546,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 2.3910990731510546,
+        "max_abs_fit_error_ppm": 2.471448903147531
+      },
+      "same_initial_phase d+1.00 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 7.485140839649497,
+          "positive": 7.483508744316806
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 1.1450665567735996e-05,
+        "fit_error_abs_p90_hz": 0.007542283146699446,
+        "fit_error_abs_max_hz": 0.0075602562716312605,
+        "induced_shift_median_hz": 2.3988220618775813e-06,
+        "induced_shift_abs_p90_hz": 0.007483558912304034,
+        "max_abs_induced_shift_hz": 0.0074849649388397665,
+        "max_abs_induced_shift_ppm": 7.485140839649497,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 7.485140839649497,
+        "max_abs_fit_error_ppm": 7.560433941828893
+      },
+      "same_initial_phase d+1.00 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "ok": 20
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 20,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 22.788662575192433,
+          "positive": 22.794767910014052
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 1.2436978408914001e-05,
+        "fit_error_abs_p90_hz": 0.022834110823998797,
+        "fit_error_abs_max_hz": 0.022858233959141216,
+        "induced_shift_median_hz": 7.900812875050178e-07,
+        "induced_shift_abs_p90_hz": 0.02278476617685783,
+        "max_abs_induced_shift_hz": 0.02279423223296817,
+        "max_abs_induced_shift_ppm": 22.794767910014052,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 22.794767910014052,
+        "max_abs_fit_error_ppm": 22.85877114026301
+      },
+      "same_initial_phase d+1.50 -30dBc": {
+        "n": 20,
+        "nearby_probe_hits": 10,
+        "nearby_probe_hit_status_counts": {
+          "ok": 10
+        },
+        "n_status_ok": 20,
+        "n_probe_hit_and_status_ok": 10,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 1.5987837169498074,
+          "positive": 1.5979449589512826
+        },
+        "status_counts": {
+          "ok": 20
+        },
+        "fit_error_median_hz": 2.2320569883049757e-05,
+        "fit_error_abs_p90_hz": 0.0016561542533622743,
+        "fit_error_abs_max_hz": 0.0016769851497429045,
+        "induced_shift_median_hz": 2.1532537175517064e-07,
+        "induced_shift_abs_p90_hz": 0.0015979788053755329,
+        "max_abs_induced_shift_hz": 0.0015987461455324592,
+        "max_abs_induced_shift_ppm": 1.5987837169498074,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 1.5987837169498074,
+        "max_abs_fit_error_ppm": 1.6770245598200602
+      },
+      "same_initial_phase d+1.50 -20dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 4,
+          "ok": 16
+        },
+        "n_status_ok": 16,
+        "n_probe_hit_and_status_ok": 16,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 5.035869732466544,
+          "positive": 5.029441024888792
+        },
+        "status_counts": {
+          "line_contaminated": 4,
+          "ok": 16
+        },
+        "fit_error_median_hz": 2.3013467625787598e-05,
+        "fit_error_abs_p90_hz": 0.005087157073455728,
+        "fit_error_abs_max_hz": 0.005108262342446324,
+        "induced_shift_median_hz": 2.4759489747339103e-06,
+        "induced_shift_abs_p90_hz": 0.005033294448401194,
+        "max_abs_induced_shift_hz": 0.005035751389527832,
+        "max_abs_induced_shift_ppm": 5.035869732466544,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 5.035869732466544,
+        "max_abs_fit_error_ppm": 5.108382389432475
+      },
+      "same_initial_phase d+1.50 -10dBc": {
+        "n": 20,
+        "nearby_probe_hits": 20,
+        "nearby_probe_hit_status_counts": {
+          "line_contaminated": 19,
+          "ok": 1
+        },
+        "n_status_ok": 1,
+        "n_probe_hit_and_status_ok": 1,
+        "signed_offset_trials": {
+          "negative": 10,
+          "positive": 10
+        },
+        "signed_offset_max_abs_induced_shift_ppm": {
+          "negative": 15.642217198472105,
+          "positive": 15.635077435546803
+        },
+        "status_counts": {
+          "line_contaminated": 19,
+          "ok": 1
+        },
+        "fit_error_median_hz": 1.6165607405582705e-05,
+        "fit_error_abs_p90_hz": 0.015680304979844094,
+        "fit_error_abs_max_hz": 0.01571216392403585,
+        "induced_shift_median_hz": 2.3998910592126776e-07,
+        "induced_shift_abs_p90_hz": 0.01563495850853087,
+        "max_abs_induced_shift_hz": 0.01564184960636794,
+        "max_abs_induced_shift_ppm": 15.642217198472105,
+        "max_abs_induced_shift_ppm_when_probe_hit_and_status_ok": 15.623318900669526,
+        "max_abs_fit_error_ppm": 15.712533168565308
+      }
+    },
+    "modulation_controls": {
+      "AM": {
+        "n": 36,
+        "nearby_probe_hits": 36,
+        "status_counts": {
+          "line_contaminated": 12,
+          "ok": 24
+        },
+        "fit_error_median_hz": -1.0905910130531993e-07,
+        "fit_error_abs_p90_hz": 6.407052126178314e-05,
+        "fit_error_abs_max_hz": 0.0001004029746809465
+      },
+      "FM": {
+        "n": 36,
+        "nearby_probe_hits": 34,
+        "status_counts": {
+          "line_contaminated": 12,
+          "ok": 24
+        },
+        "fit_error_median_hz": 0.0017462485783994453,
+        "fit_error_abs_p90_hz": 0.022389212851408047,
+        "fit_error_abs_max_hz": 0.030876240407110345
+      }
+    }
+  },
+  "interpretation": "The target is the primary LSQ fitted pilot frequency. A nearby residual peak is separate diagnostic metadata. AM/FM controls create legitimate sidebands and do not identify an independent oscillator.",
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2200-nearby-primary-fit-bias.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2200_nearby_primary_fit_bias.py"
+	User time (seconds): 472.47
+	System time (seconds): 10.40
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 8:03.01
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 131988
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 4271012
+	Voluntary context switches: 38
+	Involuntary context switches: 6519
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 2096
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

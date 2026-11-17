@@ -1,0 +1,437 @@
+{
+  "summary": {
+    "purpose": "Observe the complete production Rig.run() -> _onset -> stability guard -> dsp.analyze_tone -> clock_check() path under deterministic synthetic capture faults.",
+    "fs_hz": 96000,
+    "window_s": 2.0,
+    "blocks": 2,
+    "settle_s": 0.4,
+    "pilot_hz": 1000.0,
+    "pilot_level_dbfs": -72.0,
+    "case_count": 8,
+    "rig_run_counts": {
+      "pass": 4,
+      "reject": 4
+    },
+    "clock_check_counts": {
+      "raised": 4,
+      "returned": 4
+    },
+    "occupancy_40_percent": {
+      "case": "occupancy_40_percent_front_loaded",
+      "fault": {
+        "start_s": 0.8,
+        "end_s": 2.0
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.12739954957652344,
+        "channels": {
+          "L": {
+            "f0": 1000.0000874461151,
+            "ppm": 0.08744611501576571,
+            "level_dbfs": -79.93722691160659,
+            "snr_db": 46.90460950765295,
+            "coh_err_bins": 8.744611511701805e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0": 999.9999600465654,
+            "ppm": -0.03995343456075773,
+            "level_dbfs": -79.93686218999814,
+            "snr_db": 46.8063343255077,
+            "coh_err_bins": -3.99534345660868e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.585); гармоники усреднены с нормировкой на фазу несущей",
+          "R: фаза несущей между блоками нестабильна (coherence=0.767); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 128352,
+        "fault_end_sample": 243552,
+        "fault_start_s_in_measurement_window": 0.8,
+        "fault_end_s_in_measurement_window": 2.0
+      },
+      "backend_play_calls": 1
+    },
+    "interpretation": "Synthetic diagnostic only. A returned clock_check result does not by itself validate hardware behavior; compare Rig rejection, signal_ok, clock_ok and overall ok separately. No thresholds or production code are changed.",
+    "environment": {
+      "python": "3.14.4",
+      "numpy": "2.3.5",
+      "scipy": "1.16.3"
+    }
+  },
+  "per_case": [
+    {
+      "case": "clean",
+      "fault": {},
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.06357236670417876,
+        "channels": {
+          "L": {
+            "f0": 1000.0000197427702,
+            "ppm": 0.01974277008542913,
+            "level_dbfs": -72.00045040032506,
+            "snr_db": 76.19456350859909,
+            "coh_err_bins": 1.9742770177799684e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0": 1000.0000833151369,
+            "ppm": 0.08331513678960789,
+            "level_dbfs": -71.99985631915705,
+            "snr_db": 75.48860968406025,
+            "coh_err_bins": 8.331513686243852e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 51552,
+        "fault_end_sample": 51552,
+        "fault_start_s_in_measurement_window": 0.0,
+        "fault_end_s_in_measurement_window": 0.0
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "occupancy_40_percent_front_loaded",
+      "fault": {
+        "start_s": 0.8,
+        "end_s": 2.0
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.12739954957652344,
+        "channels": {
+          "L": {
+            "f0": 1000.0000874461151,
+            "ppm": 0.08744611501576571,
+            "level_dbfs": -79.93722691160659,
+            "snr_db": 46.90460950765295,
+            "coh_err_bins": 8.744611511701805e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0": 999.9999600465654,
+            "ppm": -0.03995343456075773,
+            "level_dbfs": -79.93686218999814,
+            "snr_db": 46.8063343255077,
+            "coh_err_bins": -3.99534345660868e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.585); гармоники усреднены с нормировкой на фазу несущей",
+          "R: фаза несущей между блоками нестабильна (coherence=0.767); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 128352,
+        "fault_end_sample": 243552,
+        "fault_start_s_in_measurement_window": 0.8,
+        "fault_end_s_in_measurement_window": 2.0
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "occupancy_50_percent_front_loaded",
+      "fault": {
+        "start_s": 1.0,
+        "end_s": 2.0
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": "MeasureError: сегмент 1: канал L: провал 36.7 дБ длительностью 1.00 с — недостаточно устойчивого сигнала для анализа",
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.7 дБ длительностью 1.00 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 147552,
+        "fault_end_sample": 243552,
+        "fault_start_s_in_measurement_window": 1.0,
+        "fault_end_s_in_measurement_window": 2.0
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "tail_dropout_25_percent",
+      "fault": {
+        "start_s": 1.5,
+        "end_s": 2.0
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": "MeasureError: сегмент 1: канал L: провал 36.8 дБ длительностью 0.50 с — недостаточно устойчивого сигнала для анализа",
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.8 дБ длительностью 0.50 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 195552,
+        "fault_end_sample": 243552,
+        "fault_start_s_in_measurement_window": 1.5,
+        "fault_end_s_in_measurement_window": 2.0
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "head_dropout_500ms",
+      "fault": {
+        "start_s": 0.0,
+        "end_s": 0.5
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 98880,
+      "onset_s": 1.03,
+      "error": "MeasureError: сегмент 1: канал L: провал 18.9 дБ длительностью 0.85 с — недостаточно устойчивого сигнала для анализа",
+      "run_error": "MeasureError: сегмент 1: канал L: провал 18.9 дБ длительностью 0.85 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 51552,
+        "fault_end_sample": 99552,
+        "fault_start_s_in_measurement_window": 0.0,
+        "fault_end_s_in_measurement_window": 0.5
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "gap_40ms",
+      "fault": {
+        "start_s": 0.4,
+        "end_s": 0.44
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.09674115675206707,
+        "channels": {
+          "L": {
+            "f0": 1000.0000448929756,
+            "ppm": 0.04489297555920757,
+            "level_dbfs": -72.1756292344852,
+            "snr_db": 28.951246166103004,
+            "coh_err_bins": 4.4892975552102143e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0": 999.9999481518188,
+            "ppm": -0.0518481811928595,
+            "level_dbfs": -72.17572425447301,
+            "snr_db": 28.973197283201774,
+            "coh_err_bins": -5.184818121506396e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 89952,
+        "fault_end_sample": 93792,
+        "fault_start_s_in_measurement_window": 0.4,
+        "fault_end_s_in_measurement_window": 0.44
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "gap_60ms",
+      "fault": {
+        "start_s": 0.4,
+        "end_s": 0.46
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": "MeasureError: сегмент 1: канал L: провал 37.1 дБ длительностью 0.06 с — недостаточно устойчивого сигнала для анализа",
+      "run_error": "MeasureError: сегмент 1: канал L: провал 37.1 дБ длительностью 0.06 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 89952,
+        "fault_end_sample": 95712,
+        "fault_start_s_in_measurement_window": 0.4,
+        "fault_end_s_in_measurement_window": 0.46
+      },
+      "backend_play_calls": 1
+    },
+    {
+      "case": "sag_200ms_minus6db",
+      "fault": {
+        "start_s": 0.4,
+        "end_s": 0.6,
+        "factor": 0.5
+      },
+      "backend": "v2200-synthetic-capture",
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "onset_sample": 12960,
+      "onset_s": 0.135,
+      "error": null,
+      "window_shape": [
+        192000,
+        2
+      ],
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "clock_ppm_ok": true,
+        "clock_consistent": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.015996553637265265,
+        "channels": {
+          "L": {
+            "f0": 1000.0000650385705,
+            "ppm": 0.0650385705291967,
+            "level_dbfs": -72.44558982464278,
+            "snr_db": 34.22596636985649,
+            "coh_err_bins": 6.503857048301143e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0": 1000.0000490420169,
+            "ppm": 0.04904201689193144,
+            "level_dbfs": -72.44574470014022,
+            "snr_db": 34.25324084018186,
+            "coh_err_bins": 4.9042016939893074e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "measurement_start_sample_nominal": 51552,
+        "fault_start_sample": 89952,
+        "fault_end_sample": 109152,
+        "fault_start_s_in_measurement_window": 0.4,
+        "fault_end_s_in_measurement_window": 0.6
+      },
+      "backend_play_calls": 1
+    }
+  ]
+}
