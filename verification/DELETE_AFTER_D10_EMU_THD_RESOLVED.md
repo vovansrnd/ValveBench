@@ -937,3 +937,59 @@ The manifest's 32 names and byte sum are internally consistent, but actual WAV p
 7. Keep WAV publication as a user decision; no blind upload.
 8. No production/main/PR changes, pilot/clock-gate policy changes, playback, hardware or DUT work.
 
+
+
+## 21. Coordinator review of v2.18.6 — commit fb12df6 (17 Nov 2026)
+
+### 21.1 Scope and decision
+
+- Agent branch: `agent/v2186-qc-calibration-csd-convention`, HEAD `fb12df62321f453a73db8d13dc2faf5824afd2df`.
+- Parent/base: `7376cc18103a920e1cbbf32add31d7990d2e1dee`; one commit ahead, zero behind.
+- Compare contains diagnostics only. Production/main/PR #4 are untouched; no playback, hardware or DUT work.
+- Full review: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-v2186.md`.
+
+**v2.18.6 is partially accepted as diagnostic progress; not accepted as a production-ready estimator or closed evidence. No production approval.**
+
+### 21.2 Accepted
+
+- CSD synthesis now uses `S_LR/S_LL`; verifier uses `conj(FL)*FR`, consistently matching `scipy.signal.csd(L,R)`. The reported +0.37 → +0.3685 rad check supports the phase-sign correction.
+- Anchored nominal fit ±0.15 Hz prevents coarse-peak teleportation; the 997/1000 and ±3/±5 Hz synthetic interference classes are now detected/attributed.
+- Residual QC now uses a local floor, a ≥3-bin cluster and carrier-relative dBc.
+- Pilot line power uses 32768-sample Welch segments, injected-line recovery calibration, side-band background subtraction and CSD phase. This corrects the old main-lobe truncation method; weak-line validation remains uncertain.
+- Schedule names distinguish backend pre-pad, post-pad and `_seg` reserve.
+- Fresh line-free colored MC and white MC both show 500/500 accepted at each tested level in the committed summaries.
+
+### 21.3 Blocker — `ok_partial` still fits both channels
+
+`est_joint` selects its starting frequency from whichever channel passes QC, but afterwards still computes residuals/covariance and the joint GLS objective from both original channels. The rejected channel is not removed. The current 1050 Hz partial-path test is far from the 1000 Hz carrier and only checks the returned status. Require true channel masking or return the valid single-channel estimate; test a ±3 Hz contaminant against a clean opposite channel.
+
+### 21.4 Blocker — missing tone can be accepted
+
+`snr_local_db` is computed but never used as an acceptance threshold. All 700 negatives in the confusion matrix contain a pilot. No-pilot/noise-only or dropout negatives exist. An independent replay of the committed LSQ/RSS/residual-QC logic on 200 noise-only records (2 s, 48 kHz, −80 dBFS Gaussian noise) returned `ok` on 55/200, `grid_edge` on 110/200 and `line_contaminated` on 35/200. Add an explicit tone-presence/minimum-SNR gate and tests for absent tone, partial tone and low-SNR captures.
+
+### 21.5 Blocker — `sigma_pred` applies sqrt(2) twice
+
+`est_joint` returns `var_f = 2/(RSS'' )` after its finite-difference curvature conversion, but the MC runner calculates `sqrt(2*jg[1])`. The additional factor inflates reported sigma by sqrt(2). The current white pred/actual ratio 1.462 would be about 1.034 after removing that extra factor; colored 0.511 would be about 0.361. Re-derive and apply variance-to-sigma conversion once, then refresh coverage tables. Do not use current `sigma_pred` claims.
+
+### 21.6 Historical −127 ppm not exactly replayed
+
+The 1700-case confusion suite uses 2 s at 48 kHz and a different noise/line construction from the original one-second 192 kHz → 48 kHz v2.18.1/v2.18.4 test. Its legacy script calls 8d8b040 and produces +1775.7 ppm, while the historical −127 ppm was reported by the v2.18.4 bounded-coarse ±0.15 Hz estimator. The 996.85 Hz lower-grid-end arithmetic is correct, but exact replay is not done. Re-run the exact v2.18.4 estimator and original signal/seed; keep the present legacy family as separate related cases.
+
+### 21.7 Other evidence limits
+
+- The TP/TN results are exact for the defined synthetic population only: no absent-tone negatives and no systematic below-carrier line sweep. The weakest injected positive in the confusion matrix is +12 dBc relative to the pilot; add calibrated dBc thresholds including −20…−45 dBc and actual line profiles.
+- CSD phase sign is fixed, but the verifier does not save target gamma² or cross-spectrum magnitude errors on the same grid. The unit known-phase test divides CSD density by raw FFT-bin power and checks phase only; it does not validate generated amplitude. Use common PSD/CSD normalization and store target/generated full cross-spectral metrics.
+- Pilot JSON records source WAV and pilot script hashes, but omits the estimator-module hash. Add it.
+- The WAV archive remains local and has not been published; no publication requested.
+
+### 21.8 Required next iteration — diagnostics only
+
+1. Fix true channel exclusion in `ok_partial` and compare with the good-channel-only estimate.
+2. Add a tone-presence/SNR gate, including no-pilot, dropout and low-SNR test sets.
+3. Correct the extra sqrt(2) in `sigma_pred`; recalculate MC summaries and coverage.
+4. Replay −127 ppm with the exact v2.18.4 estimator, original sample rate, duration, noise, phase and seed.
+5. Add an interference amplitude sweep below carrier and around the −35 dBc threshold, with actual measured line profiles and TP/FP/TN/FN.
+6. Complete the CSD verifier with common normalization, generated amplitude/PSD assertions and target/generated gamma²/CSD magnitude/phase.
+7. Add estimator SHA256 to pilot provenance.
+
+No production/main/PR changes, pilot-frequency or clock-gate changes, playback, hardware or DUT work.
