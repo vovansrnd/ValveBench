@@ -59,9 +59,13 @@ def synth_trial(f_pilot, pilot_lvl, lines, seed, noise):
 
 
 def main():
-    spectra = measured_spectra(
-        "/opt/MyApps/Adudio/ValveBench-v214-clock-diagnostic/measurements/"
-        "diagnostics/v214-clock-diagnostic", FS)
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--source-dir", default="/opt/MyApps/Adudio/"
+                    "ValveBench-v214-clock-diagnostic/measurements/"
+                    "diagnostics/v214-clock-diagnostic")
+    args = ap.parse_args()
+    spectra = measured_spectra(args.source_dir, FS)
     f_pilot = PILOT_NOM * (1 + PPM_TRUE * 1e-6)
     pilot_amp = amp(-72.0)
     recs = []
