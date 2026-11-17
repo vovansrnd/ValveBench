@@ -88,7 +88,7 @@ def classes(cal, spectra):
         for i in range(60):
             rng = np.random.default_rng(BASE_SEED + 3000 + i)
             t = np.arange(N) / FS
-            x = pilot_sig(f_true, -72.0, BASE_SEED + 3100 + i)
+            x = pilot_sig(f_true, seed=BASE_SEED + 3100 + i)
             for fh, v in meas.items():
                 if v["amp_L"] > 0:
                     x[:N] += v["amp_L"] * np.sin(
