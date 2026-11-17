@@ -1,0 +1,2146 @@
+  phase=same_initial_phase, offset=0.30 Hz: 132 rows
+  phase=same_initial_phase, offset=0.35 Hz: 156 rows
+  phase=same_initial_phase, offset=0.55 Hz: 180 rows
+  phase=same_initial_phase, offset=0.75 Hz: 204 rows
+  phase=same_initial_phase, offset=0.95 Hz: 228 rows
+  phase=same_initial_phase, offset=1.05 Hz: 252 rows
+  phase=same_initial_phase, offset=1.25 Hz: 276 rows
+  phase=same_initial_phase, offset=1.45 Hz: 300 rows
+  phase=same_initial_phase, offset=1.50 Hz: 324 rows
+  phase=independent_phase, offset=0.30 Hz: 348 rows
+  phase=independent_phase, offset=0.35 Hz: 372 rows
+  phase=independent_phase, offset=0.55 Hz: 396 rows
+  phase=independent_phase, offset=0.75 Hz: 420 rows
+  phase=independent_phase, offset=0.95 Hz: 444 rows
+  phase=independent_phase, offset=1.05 Hz: 468 rows
+  phase=independent_phase, offset=1.25 Hz: 492 rows
+  phase=independent_phase, offset=1.45 Hz: 516 rows
+  phase=independent_phase, offset=1.50 Hz: 540 rows
+{
+  "capture": {
+    "fs_hz": 96000.0,
+    "duration_s": 2.0,
+    "samples": 192000,
+    "fft_bin_hz": 0.5,
+    "pilot_nominal_hz": 1000.0,
+    "pilot_true_hz": 999.9765000000001,
+    "pilot_level_dbfs": -72.0,
+    "noise_level_dbfs": -96.0,
+    "offset_abs_hz": [
+      0.3,
+      0.35,
+      0.55,
+      0.75,
+      0.95,
+      1.05,
+      1.25,
+      1.45,
+      1.5
+    ],
+    "line_levels_dbc": [
+      -10.0,
+      -20.0,
+      -30.0,
+      -35.0
+    ],
+    "phase_modes": [
+      "same_initial_phase",
+      "independent_phase"
+    ],
+    "trials_per_abs_offset_phase_level": 6,
+    "trials_per_signed_offset_phase_level": 3
+  },
+  "results": {
+    "trials_total": 612,
+    "pilot_only_baseline": {
+      "n": 108,
+      "fit_error_median_hz": -4.510200710683421e-07,
+      "fit_error_abs_p90_hz": 7.320886628576772e-05
+    },
+    "nearby_line_trials": 432,
+    "nearby_line_detected": 337,
+    "nearby_line_cells": {
+      "independent_phase d-1.50 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -4.164698498243524e-05,
+        "fit_error_abs_p90_hz": 0.00036495249146355495,
+        "fit_error_abs_max_hz": 0.0004457788680838348,
+        "induced_shift_median_hz": -7.672667379665654e-05,
+        "induced_shift_abs_p90_hz": 0.0003635526435573411,
+        "max_abs_induced_shift_hz": 0.0004352591359975122,
+        "max_abs_fit_error_ppm": 0.4457893441334219
+      },
+      "independent_phase d-1.50 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -9.20837283047149e-05,
+        "fit_error_abs_p90_hz": 0.0006463144385634224,
+        "fit_error_abs_max_hz": 0.0007848721161280992,
+        "induced_shift_median_hz": -0.0001364555855616345,
+        "induced_shift_abs_p90_hz": 0.0006467730243457482,
+        "max_abs_induced_shift_hz": 0.0007743523840417765,
+        "max_abs_fit_error_ppm": 0.784890561056284
+      },
+      "independent_phase d-1.50 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.00038744180847061216,
+        "fit_error_abs_p90_hz": 0.002049514978443767,
+        "fit_error_abs_max_hz": 0.002465033270937056,
+        "induced_shift_median_hz": -0.00043181366572753177,
+        "induced_shift_abs_p90_hz": 0.002049973564226093,
+        "max_abs_induced_shift_hz": 0.0024545135388507333,
+        "max_abs_fit_error_ppm": 2.4650912005802694
+      },
+      "independent_phase d-1.50 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": -0.0013270570618715283,
+        "fit_error_abs_p90_hz": 0.006543288615330312,
+        "fit_error_abs_max_hz": 0.007847346503695007,
+        "induced_shift_median_hz": -0.0013714289191284479,
+        "induced_shift_abs_p90_hz": 0.006543747201112638,
+        "max_abs_induced_shift_hz": 0.007836826771608685,
+        "max_abs_fit_error_ppm": 7.847530920671643
+      },
+      "independent_phase d-1.45 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 2,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.00014097286157266353,
+        "fit_error_abs_p90_hz": 0.0007855600658103867,
+        "fit_error_abs_max_hz": 0.0007981398726997213,
+        "induced_shift_median_hz": -7.315193283830013e-05,
+        "induced_shift_abs_p90_hz": 0.0008331508463243154,
+        "max_abs_induced_shift_hz": 0.0008450696927866375,
+        "max_abs_fit_error_ppm": 0.7981586294275128
+      },
+      "independent_phase d-1.45 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0001986651943752804,
+        "fit_error_abs_p90_hz": 0.0014336293145333912,
+        "fit_error_abs_max_hz": 0.001455287604358091,
+        "induced_shift_median_hz": -0.000130844265640917,
+        "induced_shift_abs_p90_hz": 0.0014812200950473197,
+        "max_abs_induced_shift_hz": 0.001502217424445007,
+        "max_abs_fit_error_ppm": 1.4553218044204947
+      },
+      "independent_phase d-1.45 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0004935327796147249,
+        "fit_error_abs_p90_hz": 0.004631822723240475,
+        "fit_error_abs_max_hz": 0.004695806305790029,
+        "induced_shift_median_hz": -0.00042571185088036145,
+        "induced_shift_abs_p90_hz": 0.004679413503754404,
+        "max_abs_induced_shift_hz": 0.004742736125876945,
+        "max_abs_fit_error_ppm": 4.695916659831535
+      },
+      "independent_phase d-1.45 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.001536513502287562,
+        "fit_error_abs_p90_hz": 0.01466780368077707,
+        "fit_error_abs_max_hz": 0.0148444686296898,
+        "induced_shift_median_hz": -0.0014686925735531986,
+        "induced_shift_abs_p90_hz": 0.014715394461290998,
+        "max_abs_induced_shift_hz": 0.014891398449776716,
+        "max_abs_fit_error_ppm": 14.844817482900647
+      },
+      "independent_phase d-1.25 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.00015952985813783016,
+        "fit_error_abs_p90_hz": 0.00019977990214101738,
+        "fit_error_abs_max_hz": 0.00020984241314181418,
+        "induced_shift_median_hz": -0.00012902792639124527,
+        "induced_shift_abs_p90_hz": 0.00013221792376043594,
+        "max_abs_induced_shift_hz": 0.00013301542310273362,
+        "max_abs_fit_error_ppm": 0.2098473445544112
+      },
+      "independent_phase d-1.25 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0002618974145889297,
+        "fit_error_abs_p90_hz": 0.0002997385211756409,
+        "fit_error_abs_max_hz": 0.00030919879782231874,
+        "induced_shift_median_hz": -0.00022838431107174983,
+        "induced_shift_abs_p90_hz": 0.00023398324585741648,
+        "max_abs_induced_shift_hz": 0.00023538297955383314,
+        "max_abs_fit_error_ppm": 0.3092060641648266
+      },
+      "independent_phase d-1.25 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.0007533173293268192,
+        "fit_error_abs_p90_hz": 0.0007801497579748684,
+        "fit_error_abs_max_hz": 0.0007868578651368807,
+        "induced_shift_median_hz": -0.0007060433783863118,
+        "induced_shift_abs_p90_hz": 0.0007226509911106404,
+        "max_abs_induced_shift_hz": 0.0007268028942917226,
+        "max_abs_fit_error_ppm": 0.7868763567312638
+      },
+      "independent_phase d-1.25 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.002165433589539134,
+        "fit_error_abs_p90_hz": 0.0021656865736758846,
+        "fit_error_abs_max_hz": 0.002165749819710072,
+        "induced_shift_median_hz": -0.0020849353329595033,
+        "induced_shift_abs_p90_hz": 0.0021281223901951306,
+        "max_abs_induced_shift_hz": 0.0021389191545040376,
+        "max_abs_fit_error_ppm": 2.1658007160268986
+      },
+      "independent_phase d-1.05 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 2,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0008125998361947495,
+        "fit_error_abs_p90_hz": 0.0009039627171887332,
+        "fit_error_abs_max_hz": 0.0009268034374372291,
+        "induced_shift_median_hz": 0.0008017486604785518,
+        "induced_shift_abs_p90_hz": 0.000874766943479699,
+        "max_abs_induced_shift_hz": 0.0008930215142299858,
+        "max_abs_fit_error_ppm": 0.9268252178298481
+      },
+      "independent_phase d-1.05 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0014338144559360444,
+        "fit_error_abs_p90_hz": 0.001581220939965533,
+        "fit_error_abs_max_hz": 0.0016180725609729052,
+        "induced_shift_median_hz": 0.0014229632802198466,
+        "induced_shift_abs_p90_hz": 0.0015520251662564989,
+        "max_abs_induced_shift_hz": 0.0015842906377656618,
+        "max_abs_fit_error_ppm": 1.6181105865716896
+      },
+      "independent_phase d-1.05 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.00446921577622561,
+        "fit_error_abs_p90_hz": 0.004883703047562448,
+        "fit_error_abs_max_hz": 0.004987324865396658,
+        "induced_shift_median_hz": 0.004458364600509412,
+        "induced_shift_abs_p90_hz": 0.004854507273853415,
+        "max_abs_induced_shift_hz": 0.004953542942189415,
+        "max_abs_fit_error_ppm": 4.98744207028531
+      },
+      "independent_phase d-1.05 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.01367580816258851,
+        "fit_error_abs_p90_hz": 0.014820563510147622,
+        "fit_error_abs_max_hz": 0.0151067523470374,
+        "induced_shift_median_hz": 0.013664956986872312,
+        "induced_shift_abs_p90_hz": 0.014791367736438587,
+        "max_abs_induced_shift_hz": 0.015072970423830157,
+        "max_abs_fit_error_ppm": 15.107107364060454
+      },
+      "independent_phase d-0.95 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0010935349849887643,
+        "fit_error_abs_p90_hz": 0.0010976448129213167,
+        "fit_error_abs_max_hz": 0.0010986722699044549,
+        "induced_shift_median_hz": 0.0010637235196782058,
+        "induced_shift_abs_p90_hz": 0.0010729086704714063,
+        "max_abs_induced_shift_hz": 0.0010752049581697065,
+        "max_abs_fit_error_ppm": 1.0986980893095537
+      },
+      "independent_phase d-0.95 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.001925770856132658,
+        "fit_error_abs_p90_hz": 0.001928822621857762,
+        "fit_error_abs_max_hz": 0.001929585563289038,
+        "induced_shift_median_hz": 0.001890822105906409,
+        "induced_shift_abs_p90_hz": 0.0019071688503572658,
+        "max_abs_induced_shift_hz": 0.0019112555364699801,
+        "max_abs_fit_error_ppm": 1.9296309096154138
+      },
+      "independent_phase d-0.95 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.006002434870538309,
+        "fit_error_abs_p90_hz": 0.006041053122976337,
+        "fit_error_abs_max_hz": 0.006050707686085843,
+        "induced_shift_median_hz": 0.00596748612031206,
+        "induced_shift_abs_p90_hz": 0.0060193993514758405,
+        "max_abs_induced_shift_hz": 0.0060323776592667855,
+        "max_abs_fit_error_ppm": 6.050849881058047
+      },
+      "independent_phase d-0.95 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.018711048283421405,
+        "fit_error_abs_p90_hz": 0.018861476690835842,
+        "fit_error_abs_max_hz": 0.018899083792689453,
+        "induced_shift_median_hz": 0.018676099533195156,
+        "induced_shift_abs_p90_hz": 0.018839822919335347,
+        "max_abs_induced_shift_hz": 0.018880753765870395,
+        "max_abs_fit_error_ppm": 18.89952793159584
+      },
+      "independent_phase d-0.75 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -7.830279400877771e-06,
+        "fit_error_abs_p90_hz": 0.0003420775743734339,
+        "fit_error_abs_max_hz": 0.0003661383681219377,
+        "induced_shift_median_hz": -3.079068130773521e-05,
+        "induced_shift_abs_p90_hz": 0.00035116448934786605,
+        "max_abs_induced_shift_hz": 0.00037054496169730555,
+        "max_abs_fit_error_ppm": 0.36614697257579315
+      },
+      "independent_phase d-0.75 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -3.37298586146062e-05,
+        "fit_error_abs_p90_hz": 0.0006116987322911882,
+        "fit_error_abs_max_hz": 0.0006494648076795784,
+        "induced_shift_median_hz": -5.669026052146364e-05,
+        "induced_shift_abs_p90_hz": 0.0006207856472656203,
+        "max_abs_induced_shift_hz": 0.0006538714012549462,
+        "max_abs_fit_error_ppm": 0.6494800704612341
+      },
+      "independent_phase d-0.75 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.00018624859387728065,
+        "fit_error_abs_p90_hz": 0.0018993401287616507,
+        "fit_error_abs_max_hz": 0.001987760309020814,
+        "induced_shift_median_hz": -0.0002092089957841381,
+        "induced_shift_abs_p90_hz": 0.0019084270437360828,
+        "max_abs_induced_shift_hz": 0.001992166902596182,
+        "max_abs_fit_error_ppm": 1.9878070224858422
+      },
+      "independent_phase d-0.75 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.000924820596878817,
+        "fit_error_abs_p90_hz": 0.005563578860483176,
+        "fit_error_abs_max_hz": 0.005643857276254494,
+        "induced_shift_median_hz": -0.0009477809987856745,
+        "induced_shift_abs_p90_hz": 0.005572665775457608,
+        "max_abs_induced_shift_hz": 0.0056482638698298615,
+        "max_abs_fit_error_ppm": 5.643989910017378
+      },
+      "independent_phase d-0.55 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0017035711274502319,
+        "fit_error_abs_p90_hz": 0.0019142403991963875,
+        "fit_error_abs_max_hz": 0.0019669077171329263,
+        "induced_shift_median_hz": 0.0017135953754632283,
+        "induced_shift_abs_p90_hz": 0.0019282961436374534,
+        "max_abs_induced_shift_hz": 0.00198197133568101,
+        "max_abs_fit_error_ppm": 1.9669539405505292
+      },
+      "independent_phase d-0.55 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0030156362331581477,
+        "fit_error_abs_p90_hz": 0.0033863113942970815,
+        "fit_error_abs_max_hz": 0.0034789801845818147,
+        "induced_shift_median_hz": 0.003025660481171144,
+        "induced_shift_abs_p90_hz": 0.0034003671387381473,
+        "max_abs_induced_shift_hz": 0.003494043803129898,
+        "max_abs_fit_error_ppm": 3.4790619425374643
+      },
+      "independent_phase d-0.55 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.009233164351599044,
+        "fit_error_abs_p90_hz": 0.01030550005848454,
+        "fit_error_abs_max_hz": 0.010573583985205914,
+        "induced_shift_median_hz": 0.00924318859961204,
+        "induced_shift_abs_p90_hz": 0.010319555802925606,
+        "max_abs_induced_shift_hz": 0.010588647603753998,
+        "max_abs_fit_error_ppm": 10.573832470268965
+      },
+      "independent_phase d-0.55 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.026366594517980957,
+        "fit_error_abs_p90_hz": 0.028891498269581463,
+        "fit_error_abs_max_hz": 0.029522724207481588,
+        "induced_shift_median_hz": 0.026376618765993953,
+        "induced_shift_abs_p90_hz": 0.028905554014022526,
+        "max_abs_induced_shift_hz": 0.02953778782602967,
+        "max_abs_fit_error_ppm": 29.523418007804768
+      },
+      "independent_phase d-0.35 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.003607354773635052,
+        "fit_error_abs_p90_hz": 0.0036111152348212274,
+        "fit_error_abs_max_hz": 0.003612055350117771,
+        "induced_shift_median_hz": -0.0035299845422969156,
+        "induced_shift_abs_p90_hz": 0.003618177491921415,
+        "max_abs_induced_shift_hz": 0.0036402257293275397,
+        "max_abs_fit_error_ppm": 3.612140235413303
+      },
+      "independent_phase d-0.35 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.006370036969542525,
+        "fit_error_abs_p90_hz": 0.006433628096851862,
+        "fit_error_abs_max_hz": 0.0064495258786791965,
+        "induced_shift_median_hz": -0.00628796616172167,
+        "induced_shift_abs_p90_hz": 0.0064435106998416815,
+        "max_abs_induced_shift_hz": 0.006482396834371684,
+        "max_abs_fit_error_ppm": 6.449677446099179
+      },
+      "independent_phase d-0.35 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.02008517836407009,
+        "fit_error_abs_p90_hz": 0.02045961968165102,
+        "fit_error_abs_max_hz": 0.020553230011046253,
+        "induced_shift_median_hz": -0.020003107556249233,
+        "induced_shift_abs_p90_hz": 0.02046950228464084,
+        "max_abs_induced_shift_hz": 0.02058610096673874,
+        "max_abs_fit_error_ppm": 20.553713023302297
+      },
+      "independent_phase d-0.35 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.06350221864124705,
+        "fit_error_abs_p90_hz": 0.06450002109515936,
+        "fit_error_abs_max_hz": 0.06474947170863743,
+        "induced_shift_median_hz": -0.0634201478334262,
+        "induced_shift_abs_p90_hz": 0.06450990369814917,
+        "max_abs_induced_shift_hz": 0.06478234266432992,
+        "max_abs_fit_error_ppm": 64.75099335698131
+      },
+      "independent_phase d-0.30 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0029329398504387427,
+        "fit_error_abs_p90_hz": 0.003036036116759533,
+        "fit_error_abs_max_hz": 0.0030618101833397304,
+        "induced_shift_median_hz": -0.0029140490116787987,
+        "induced_shift_abs_p90_hz": 0.003060506799238283,
+        "max_abs_induced_shift_hz": 0.003097121246128154,
+        "max_abs_fit_error_ppm": 3.061882137569963
+      },
+      "independent_phase d-0.30 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.005210192451045259,
+        "fit_error_abs_p90_hz": 0.005423411150945867,
+        "fit_error_abs_max_hz": 0.005476715825921019,
+        "induced_shift_median_hz": -0.005191301612285315,
+        "induced_shift_abs_p90_hz": 0.005447881833424617,
+        "max_abs_induced_shift_hz": 0.005512026888709443,
+        "max_abs_fit_error_ppm": 5.476844531767515
+      },
+      "independent_phase d-0.30 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.016562011111773245,
+        "fit_error_abs_p90_hz": 0.01726357914735672,
+        "fit_error_abs_max_hz": 0.017438971156252592,
+        "induced_shift_median_hz": -0.0165431202730133,
+        "induced_shift_abs_p90_hz": 0.01728804982983547,
+        "max_abs_induced_shift_hz": 0.017474282219041015,
+        "max_abs_fit_error_ppm": 17.43938098170566
+      },
+      "independent_phase d-0.30 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.052934001604626246,
+        "fit_error_abs_p90_hz": 0.05451896209588085,
+        "fit_error_abs_max_hz": 0.0549152022186945,
+        "induced_shift_median_hz": -0.0529151107658663,
+        "induced_shift_abs_p90_hz": 0.0545434327783596,
+        "max_abs_induced_shift_hz": 0.05495051328148293,
+        "max_abs_fit_error_ppm": 54.916492756274266
+      },
+      "independent_phase d+0.30 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0033351568309853974,
+        "fit_error_abs_p90_hz": 0.003547157261823486,
+        "fit_error_abs_max_hz": 0.003600157369533008,
+        "induced_shift_median_hz": -0.0032996641766658286,
+        "induced_shift_abs_p90_hz": 0.0035494946459039057,
+        "max_abs_induced_shift_hz": 0.003611952263213425,
+        "max_abs_fit_error_ppm": 3.6002419752194252
+      },
+      "independent_phase d+0.30 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.005905530470272424,
+        "fit_error_abs_p90_hz": 0.006319369545553855,
+        "fit_error_abs_max_hz": 0.006422829314374212,
+        "induced_shift_median_hz": -0.0058700378159528555,
+        "induced_shift_abs_p90_hz": 0.006321706929634274,
+        "max_abs_induced_shift_hz": 0.006434624208054629,
+        "max_abs_fit_error_ppm": 6.42298025441019
+      },
+      "independent_phase d+0.30 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.01859922775247469,
+        "fit_error_abs_p90_hz": 0.020090421610620978,
+        "fit_error_abs_max_hz": 0.02046322007515755,
+        "induced_shift_median_hz": -0.01856373509815512,
+        "induced_shift_abs_p90_hz": 0.0200927589947014,
+        "max_abs_induced_shift_hz": 0.020475014968837968,
+        "max_abs_fit_error_ppm": 20.463700972130393
+      },
+      "independent_phase d+0.30 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.05814327666882946,
+        "fit_error_abs_p90_hz": 0.06352338740032337,
+        "fit_error_abs_max_hz": 0.06486841508319685,
+        "induced_shift_median_hz": -0.05810778401450989,
+        "induced_shift_abs_p90_hz": 0.0635257247844038,
+        "max_abs_induced_shift_hz": 0.06488020997687727,
+        "max_abs_fit_error_ppm": 64.86993952677572
+      },
+      "independent_phase d+0.35 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.003498471617604082,
+        "fit_error_abs_p90_hz": 0.0035602544670837234,
+        "fit_error_abs_max_hz": 0.0035757001794536336,
+        "induced_shift_median_hz": 0.0035255367948821004,
+        "induced_shift_abs_p90_hz": 0.0035324056613944776,
+        "max_abs_induced_shift_hz": 0.003534122878022572,
+        "max_abs_fit_error_ppm": 3.575784210382577
+      },
+      "independent_phase d+0.35 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.006254613318560587,
+        "fit_error_abs_p90_hz": 0.006321611446946917,
+        "fit_error_abs_max_hz": 0.0063383609790435,
+        "induced_shift_median_hz": 0.006281678495838605,
+        "induced_shift_abs_p90_hz": 0.006293762641257672,
+        "max_abs_induced_shift_hz": 0.006296783677612439,
+        "max_abs_fit_error_ppm": 6.338509934026949
+      },
+      "independent_phase d+0.35 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.01994618227763567,
+        "fit_error_abs_p90_hz": 0.02003736168535397,
+        "fit_error_abs_max_hz": 0.020060156537283547,
+        "induced_shift_median_hz": 0.01997324745491369,
+        "induced_shift_abs_p90_hz": 0.020009512879664727,
+        "max_abs_induced_shift_hz": 0.020018579235852485,
+        "max_abs_fit_error_ppm": 20.060627962040652
+      },
+      "independent_phase d+0.35 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0633138455725657,
+        "fit_error_abs_p90_hz": 0.06345668656845191,
+        "fit_error_abs_max_hz": 0.06349239681742347,
+        "induced_shift_median_hz": 0.06334091074984372,
+        "induced_shift_abs_p90_hz": 0.06342883776276267,
+        "max_abs_induced_shift_hz": 0.06345081951599241,
+        "max_abs_fit_error_ppm": 63.493888923813174
+      },
+      "independent_phase d+0.55 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 2,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0004520522497841739,
+        "fit_error_abs_p90_hz": 0.0019416283020518678,
+        "fit_error_abs_max_hz": 0.002183152534485089,
+        "induced_shift_median_hz": 0.00046142700114160107,
+        "induced_shift_abs_p90_hz": 0.0018939819514571356,
+        "max_abs_induced_shift_hz": 0.0021422409591878022,
+        "max_abs_fit_error_ppm": 2.1832038397753233
+      },
+      "independent_phase d+0.55 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0008085842142691035,
+        "fit_error_abs_p90_hz": 0.003446141888753118,
+        "fit_error_abs_max_hz": 0.003889190675181453,
+        "induced_shift_median_hz": 0.0008179589656265307,
+        "induced_shift_abs_p90_hz": 0.003398495538158386,
+        "max_abs_induced_shift_hz": 0.0038482790998841665,
+        "max_abs_fit_error_ppm": 3.889282073310176
+      },
+      "independent_phase d+0.55 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.002537942159619888,
+        "fit_error_abs_p90_hz": 0.011286094115666856,
+        "fit_error_abs_max_hz": 0.012834292023626404,
+        "induced_shift_median_hz": 0.0025473169109773153,
+        "induced_shift_abs_p90_hz": 0.011238447765072124,
+        "max_abs_induced_shift_hz": 0.012793380448329117,
+        "max_abs_fit_error_ppm": 12.834593636576862
+      },
+      "independent_phase d+0.55 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.007698520944586562,
+        "fit_error_abs_p90_hz": 0.04164681439440301,
+        "fit_error_abs_max_hz": 0.04814847335626382,
+        "induced_shift_median_hz": 0.007707895695943989,
+        "induced_shift_abs_p90_hz": 0.041599168043808275,
+        "max_abs_induced_shift_hz": 0.048107561780966535,
+        "max_abs_fit_error_ppm": 48.149604871978305
+      },
+      "independent_phase d+0.75 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.00010821083299106249,
+        "fit_error_abs_p90_hz": 0.00035229402515142284,
+        "fit_error_abs_max_hz": 0.0003769012774910152,
+        "induced_shift_median_hz": 0.00018799626627696853,
+        "induced_shift_abs_p90_hz": 0.0003425567236263305,
+        "max_abs_induced_shift_hz": 0.00037359607119924476,
+        "max_abs_fit_error_ppm": 0.37691013487918484
+      },
+      "independent_phase d+0.75 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0002546976230632936,
+        "fit_error_abs_p90_hz": 0.000614904053918508,
+        "fit_error_abs_max_hz": 0.0006625696406672432,
+        "induced_shift_median_hz": 0.0003344830563491996,
+        "induced_shift_abs_p90_hz": 0.0006051667523934157,
+        "max_abs_induced_shift_hz": 0.0006592644343754728,
+        "max_abs_fit_error_ppm": 0.6625852114197115
+      },
+      "independent_phase d+0.75 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0009799026328209948,
+        "fit_error_abs_p90_hz": 0.0018637496787050623,
+        "fit_error_abs_max_hz": 0.0020120497695188533,
+        "induced_shift_median_hz": 0.0010596880661069008,
+        "induced_shift_abs_p90_hz": 0.00185401237717997,
+        "max_abs_induced_shift_hz": 0.002008744563227083,
+        "max_abs_fit_error_ppm": 2.0120970537996175
+      },
+      "independent_phase d+0.75 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": 0.0032677502906608424,
+        "fit_error_abs_p90_hz": 0.005349639591304367,
+        "fit_error_abs_max_hz": 0.005693672619145218,
+        "induced_shift_median_hz": 0.0033475357239467485,
+        "induced_shift_abs_p90_hz": 0.005339902289779275,
+        "max_abs_induced_shift_hz": 0.005690367412853448,
+        "max_abs_fit_error_ppm": 5.693806423596172
+      },
+      "independent_phase d+0.95 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0008584858098856785,
+        "fit_error_abs_p90_hz": 0.001333379392826828,
+        "fit_error_abs_max_hz": 0.0014521027885621152,
+        "induced_shift_median_hz": -0.0009384121706261794,
+        "induced_shift_abs_p90_hz": 0.0013262007423236355,
+        "max_abs_induced_shift_hz": 0.0014231478852479995,
+        "max_abs_fit_error_ppm": 1.4521369137795888
+      },
+      "independent_phase d+0.95 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0015875544761456695,
+        "fit_error_abs_p90_hz": 0.002364758150952184,
+        "fit_error_abs_max_hz": 0.002559059069653813,
+        "induced_shift_median_hz": -0.0016674808368861704,
+        "induced_shift_abs_p90_hz": 0.002357579500448992,
+        "max_abs_induced_shift_hz": 0.0025301041663396973,
+        "max_abs_fit_error_ppm": 2.5591192089552233
+      },
+      "independent_phase d+0.95 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 1,
+          "ok": 2
+        },
+        "fit_error_median_hz": -0.005175631744464226,
+        "fit_error_abs_p90_hz": 0.0074536190449407515,
+        "fit_error_abs_max_hz": 0.008023115870059883,
+        "induced_shift_median_hz": -0.005255558105204727,
+        "induced_shift_abs_p90_hz": 0.007446440394437559,
+        "max_abs_induced_shift_hz": 0.007994160966745767,
+        "max_abs_fit_error_ppm": 8.023304417713698
+      },
+      "independent_phase d+0.95 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.016366506458894037,
+        "fit_error_abs_p90_hz": 0.023298640384950886,
+        "fit_error_abs_max_hz": 0.0250316738664651,
+        "induced_shift_median_hz": -0.016446432819634538,
+        "induced_shift_abs_p90_hz": 0.023291461734447693,
+        "max_abs_induced_shift_hz": 0.025002718963150983,
+        "max_abs_fit_error_ppm": 25.032262124625024
+      },
+      "independent_phase d+1.05 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 2,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0005572525772095105,
+        "fit_error_abs_p90_hz": 0.0008926458426230966,
+        "fit_error_abs_max_hz": 0.000976494158976493,
+        "induced_shift_median_hz": -0.0004869348585998523,
+        "induced_shift_abs_p90_hz": 0.0008878385166099179,
+        "max_abs_induced_shift_hz": 0.0009880644311124342,
+        "max_abs_fit_error_ppm": 0.9765171071285106
+      },
+      "independent_phase d+1.05 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.000935987411367023,
+        "fit_error_abs_p90_hz": 0.0015794436030319048,
+        "fit_error_abs_max_hz": 0.0017403076509481252,
+        "induced_shift_median_hz": -0.0008656696927573648,
+        "induced_shift_abs_p90_hz": 0.0015746362770187262,
+        "max_abs_induced_shift_hz": 0.0017518779230840664,
+        "max_abs_fit_error_ppm": 1.7403485491390298
+      },
+      "independent_phase d+1.05 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0028047984777685997,
+        "fit_error_abs_p90_hz": 0.004921361108404199,
+        "fit_error_abs_max_hz": 0.005450501766063098,
+        "induced_shift_median_hz": -0.0027344807591589415,
+        "induced_shift_abs_p90_hz": 0.00491655378239102,
+        "max_abs_induced_shift_hz": 0.0054620720381990395,
+        "max_abs_fit_error_ppm": 5.450629855864711
+      },
+      "independent_phase d+1.05 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": -0.008708548475510725,
+        "fit_error_abs_p90_hz": 0.014944184802129713,
+        "fit_error_abs_max_hz": 0.01650309388378446,
+        "induced_shift_median_hz": -0.008638230756901066,
+        "induced_shift_abs_p90_hz": 0.014939377476116534,
+        "max_abs_induced_shift_hz": 0.0165146641559204,
+        "max_abs_fit_error_ppm": 16.503481715604774
+      },
+      "independent_phase d+1.25 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -9.330561715614749e-05,
+        "fit_error_abs_p90_hz": 0.00017105249280575664,
+        "fit_error_abs_max_hz": 0.0001904892117181589,
+        "induced_shift_median_hz": -0.00013274959053433122,
+        "induced_shift_abs_p90_hz": 0.0001372623409906737,
+        "max_abs_induced_shift_hz": 0.0001383905286047593,
+        "max_abs_fit_error_ppm": 0.19049368831983443
+      },
+      "independent_phase d+1.25 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": -0.00019776154670125834,
+        "fit_error_abs_p90_hz": 0.0002791217119238354,
+        "fit_error_abs_max_hz": 0.00029946175322947965,
+        "induced_shift_median_hz": -0.00023720552007944207,
+        "induced_shift_abs_p90_hz": 0.00024533156010875246,
+        "max_abs_induced_shift_hz": 0.00024736307011608005,
+        "max_abs_fit_error_ppm": 0.29946879074606214
+      },
+      "independent_phase d+1.25 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.0007289925406439579,
+        "fit_error_abs_p90_hz": 0.0008295853559502575,
+        "fit_error_abs_max_hz": 0.0008547335597768324,
+        "induced_shift_median_hz": -0.0007684365140221416,
+        "induced_shift_abs_p90_hz": 0.0007957952041351746,
+        "max_abs_induced_shift_hz": 0.0008026348766634328,
+        "max_abs_fit_error_ppm": 0.8547536464875248
+      },
+      "independent_phase d+1.25 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.002593961380171095,
+        "fit_error_abs_p90_hz": 0.002773680567770498,
+        "fit_error_abs_max_hz": 0.0028186103646703486,
+        "induced_shift_median_hz": -0.0026334053535492785,
+        "induced_shift_abs_p90_hz": 0.002739890415955415,
+        "max_abs_induced_shift_hz": 0.002766511681556949,
+        "max_abs_fit_error_ppm": 2.818676603570532
+      },
+      "independent_phase d+1.45 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0006285032555979342,
+        "fit_error_abs_p90_hz": 0.0006545887538095485,
+        "fit_error_abs_max_hz": 0.0006611101283624521,
+        "induced_shift_median_hz": -0.0006404134650210835,
+        "induced_shift_abs_p90_hz": 0.0006796623143372927,
+        "max_abs_induced_shift_hz": 0.0006894745266663449,
+        "max_abs_fit_error_ppm": 0.6611256648155751
+      },
+      "independent_phase d+1.45 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 2,
+        "status_counts": {
+          "line_contaminated": 1,
+          "ok": 2
+        },
+        "fit_error_median_hz": -0.0011594384387763057,
+        "fit_error_abs_p90_hz": 0.0011639767554015635,
+        "fit_error_abs_max_hz": 0.0011651113345578779,
+        "induced_shift_median_hz": -0.0011387417754349372,
+        "induced_shift_abs_p90_hz": 0.0012086144395880183,
+        "max_abs_induced_shift_hz": 0.0012260826056262886,
+        "max_abs_fit_error_ppm": 1.1651387153176878
+      },
+      "independent_phase d+1.45 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.003620960760486014,
+        "fit_error_abs_p90_hz": 0.0037778379825567756,
+        "fit_error_abs_max_hz": 0.0038170572880744658,
+        "induced_shift_median_hz": -0.0036002640971446453,
+        "induced_shift_abs_p90_hz": 0.00382247566674323,
+        "max_abs_induced_shift_hz": 0.0038780285591428765,
+        "max_abs_fit_error_ppm": 3.8171469910287543
+      },
+      "independent_phase d+1.45 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.011403609055605557,
+        "fit_error_abs_p90_hz": 0.012049410346162404,
+        "fit_error_abs_max_hz": 0.012210860668801615,
+        "induced_shift_median_hz": -0.011382912392264188,
+        "induced_shift_abs_p90_hz": 0.012094048030348858,
+        "max_abs_induced_shift_hz": 0.012271831939870026,
+        "max_abs_fit_error_ppm": 12.211147630770938
+      },
+      "independent_phase d+1.50 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0003546739109197006,
+        "fit_error_abs_p90_hz": 0.0007201956432254519,
+        "fit_error_abs_max_hz": 0.0007992343770411026,
+        "induced_shift_median_hz": -0.00034347156531566725,
+        "induced_shift_abs_p90_hz": 0.0007313732961165443,
+        "max_abs_induced_shift_hz": 0.0007942453377154379,
+        "max_abs_fit_error_ppm": 0.7992531594903505
+      },
+      "independent_phase d+1.50 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0006217669883881172,
+        "fit_error_abs_p90_hz": 0.001290359464314861,
+        "fit_error_abs_max_hz": 0.001418679448875082,
+        "induced_shift_median_hz": -0.0006105646427840838,
+        "induced_shift_abs_p90_hz": 0.001301537117205953,
+        "max_abs_induced_shift_hz": 0.0014136904095494174,
+        "max_abs_fit_error_ppm": 1.4187127886256146
+      },
+      "independent_phase d+1.50 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": -0.0019388514016327463,
+        "fit_error_abs_p90_hz": 0.004120379391520146,
+        "fit_error_abs_max_hz": 0.004496749861004901,
+        "induced_shift_median_hz": -0.001927649056028713,
+        "induced_shift_abs_p90_hz": 0.004131557044411238,
+        "max_abs_induced_shift_hz": 0.004491760821679236,
+        "max_abs_fit_error_ppm": 4.496855537110022
+      },
+      "independent_phase d+1.50 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.0060883665604478665,
+        "fit_error_abs_p90_hz": 0.013165383373461736,
+        "fit_error_abs_max_hz": 0.014360409855839862,
+        "induced_shift_median_hz": -0.006077164214843833,
+        "induced_shift_abs_p90_hz": 0.01317656102635283,
+        "max_abs_induced_shift_hz": 0.014355420816514197,
+        "max_abs_fit_error_ppm": 14.360747333402195
+      },
+      "same_initial_phase d-1.50 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0008954742027071916,
+        "fit_error_abs_p90_hz": 0.0009008178894418962,
+        "fit_error_abs_max_hz": 0.0009021538111255722,
+        "induced_shift_median_hz": 0.0008989450865328763,
+        "induced_shift_abs_p90_hz": 0.0008995412581271012,
+        "max_abs_induced_shift_hz": 0.0008996903010256574,
+        "max_abs_fit_error_ppm": 0.9021750122383597
+      },
+      "same_initial_phase d-1.50 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0015937784643256236,
+        "fit_error_abs_p90_hz": 0.0015995856199197077,
+        "fit_error_abs_max_hz": 0.0016010374088182289,
+        "induced_shift_median_hz": 0.0015972493481513084,
+        "induced_shift_abs_p90_hz": 0.0015983089886049129,
+        "max_abs_induced_shift_hz": 0.001598573898718314,
+        "max_abs_fit_error_ppm": 1.6010750340815296
+      },
+      "same_initial_phase d-1.50 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0050275252677920435,
+        "fit_error_abs_p90_hz": 0.005035620881221803,
+        "fit_error_abs_max_hz": 0.005037644784579243,
+        "induced_shift_median_hz": 0.005030996151617728,
+        "induced_shift_abs_p90_hz": 0.005034344249907008,
+        "max_abs_induced_shift_hz": 0.005035181274479328,
+        "max_abs_fit_error_ppm": 5.0377631720137845
+      },
+      "same_initial_phase d-1.50 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": 0.0156225564255692,
+        "fit_error_abs_p90_hz": 0.01563806445865339,
+        "fit_error_abs_max_hz": 0.015641941466924436,
+        "induced_shift_median_hz": 0.015626027309394885,
+        "induced_shift_abs_p90_hz": 0.015636787827338593,
+        "max_abs_induced_shift_hz": 0.01563947795682452,
+        "max_abs_fit_error_ppm": 15.642309061187373
+      },
+      "same_initial_phase d-1.45 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 1,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0008321379081053237,
+        "fit_error_abs_p90_hz": 0.0008779208025543994,
+        "fit_error_abs_max_hz": 0.0008893665261666683,
+        "induced_shift_median_hz": 0.0008728446172199256,
+        "induced_shift_abs_p90_hz": 0.0008730168625106672,
+        "max_abs_induced_shift_hz": 0.0008730599238333525,
+        "max_abs_fit_error_ppm": 0.8893874267711974
+      },
+      "same_initial_phase d-1.45 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0015114677863721226,
+        "fit_error_abs_p90_hz": 0.0015579460478193142,
+        "fit_error_abs_max_hz": 0.001569565613181112,
+        "induced_shift_median_hz": 0.0015528725953117828,
+        "induced_shift_abs_p90_hz": 0.0015531817277405935,
+        "max_abs_induced_shift_hz": 0.0015532590108477962,
+        "max_abs_fit_error_ppm": 1.5696024988398345
+      },
+      "same_initial_phase d-1.45 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.004877746200236288,
+        "fit_error_abs_p90_hz": 0.0049276436985564945,
+        "fit_error_abs_max_hz": 0.004940118073136546,
+        "induced_shift_median_hz": 0.004922632275452088,
+        "induced_shift_abs_p90_hz": 0.004923575631733001,
+        "max_abs_induced_shift_hz": 0.00492381147080323,
+        "max_abs_fit_error_ppm": 4.940234168639508
+      },
+      "same_initial_phase d-1.45 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.015542419475991665,
+        "fit_error_abs_p90_hz": 0.015603304235742143,
+        "fit_error_abs_max_hz": 0.015618525425679763,
+        "induced_shift_median_hz": 0.015599178598790786,
+        "induced_shift_abs_p90_hz": 0.015601610778435315,
+        "max_abs_induced_shift_hz": 0.015602218823346448,
+        "max_abs_fit_error_ppm": 15.618892469652799
+      },
+      "same_initial_phase d-1.25 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 6.848379143775674e-06,
+        "fit_error_abs_p90_hz": 3.828737453659414e-05,
+        "fit_error_abs_max_hz": 4.013406282865617e-05,
+        "induced_shift_median_hz": -7.165499482653104e-08,
+        "induced_shift_abs_p90_hz": 1.0893891158048064e-07,
+        "max_abs_induced_shift_hz": 1.1825989076896803e-07,
+        "max_abs_fit_error_ppm": 0.04013500600129719
+      },
+      "same_initial_phase d-1.25 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 6.4500043208681745e-06,
+        "fit_error_abs_p90_hz": 3.796605687966803e-05,
+        "fit_error_abs_max_hz": 3.961134905239305e-05,
+        "induced_shift_median_hz": -5.559218152484391e-07,
+        "induced_shift_abs_p90_hz": 6.239632966753561e-07,
+        "max_abs_induced_shift_hz": 6.409736670320854e-07,
+        "max_abs_fit_error_ppm": 0.039612279940971655
+      },
+      "same_initial_phase d-1.25 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": -1.0339350637877942e-06,
+        "fit_error_abs_p90_hz": 3.7722407637375e-05,
+        "fit_error_abs_max_hz": 3.927792397462326e-05,
+        "induced_shift_median_hz": -8.448957601103757e-06,
+        "induced_shift_abs_p90_hz": 8.691375865055306e-06,
+        "max_abs_induced_shift_hz": 8.751980431043194e-06,
+        "max_abs_fit_error_ppm": 0.0392788470275284
+      },
+      "same_initial_phase d-1.25 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -8.470239095004217e-05,
+        "fit_error_abs_p90_hz": 0.00011619456531661854,
+        "fit_error_abs_max_hz": 0.00012406760890826263,
+        "induced_shift_median_hz": -9.323864253474312e-05,
+        "induced_shift_abs_p90_hz": 9.427927545857528e-05,
+        "max_abs_induced_shift_hz": 9.453943368953333e-05,
+        "max_abs_fit_error_ppm": 0.12407052456558991
+      },
+      "same_initial_phase d-1.05 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0011197888984497695,
+        "fit_error_abs_p90_hz": 0.0011327332675136858,
+        "fit_error_abs_max_hz": 0.001135969359779665,
+        "induced_shift_median_hz": 0.0011014588716307117,
+        "induced_shift_abs_p90_hz": 0.0011015200420615655,
+        "max_abs_induced_shift_hz": 0.0011015353346692791,
+        "max_abs_fit_error_ppm": 1.1359960556869735
+      },
+      "same_initial_phase d-1.05 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.001970626173715573,
+        "fit_error_abs_p90_hz": 0.001983296423441061,
+        "fit_error_abs_max_hz": 0.001986463985872433,
+        "induced_shift_median_hz": 0.001952296146896515,
+        "induced_shift_abs_p90_hz": 0.001952401232279044,
+        "max_abs_induced_shift_hz": 0.0019524275036246763,
+        "max_abs_fit_error_ppm": 1.9865106688731513
+      },
+      "same_initial_phase d-1.05 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.006093794273624553,
+        "fit_error_abs_p90_hz": 0.0061049425318969956,
+        "fit_error_abs_max_hz": 0.006107729596465106,
+        "induced_shift_median_hz": 0.006075464246805495,
+        "induced_shift_abs_p90_hz": 0.006075688429791626,
+        "max_abs_induced_shift_hz": 0.0060757444755381584,
+        "max_abs_fit_error_ppm": 6.107873131483696
+      },
+      "same_initial_phase d-1.05 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.018221673038851804,
+        "fit_error_abs_p90_hz": 0.018227044733930598,
+        "fit_error_abs_max_hz": 0.018228387657700296,
+        "induced_shift_median_hz": 0.01820317838439678,
+        "induced_shift_abs_p90_hz": 0.018203310086505553,
+        "max_abs_induced_shift_hz": 0.018203343012032747,
+        "max_abs_fit_error_ppm": 18.228816034877116
+      },
+      "same_initial_phase d-0.95 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0013366831279881808,
+        "fit_error_abs_p90_hz": 0.0013568955889923019,
+        "fit_error_abs_max_hz": 0.001361948704243332,
+        "induced_shift_median_hz": 0.0013553076688594956,
+        "induced_shift_abs_p90_hz": 0.0013553693189578553,
+        "max_abs_induced_shift_hz": 0.0013553847314824452,
+        "max_abs_fit_error_ppm": 1.3619807107900355
+      },
+      "same_initial_phase d-0.95 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.002391315881254741,
+        "fit_error_abs_p90_hz": 0.0024114002632131815,
+        "fit_error_abs_max_hz": 0.0024164213587027916,
+        "induced_shift_median_hz": 0.0024099404221260556,
+        "induced_shift_abs_p90_hz": 0.00241004799224811,
+        "max_abs_induced_shift_hz": 0.0024100748847786235,
+        "max_abs_fit_error_ppm": 2.416478145939221
+      },
+      "same_initial_phase d-0.95 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.007593473311430898,
+        "fit_error_abs_p90_hz": 0.007612809348051997,
+        "fit_error_abs_max_hz": 0.007617643357207271,
+        "induced_shift_median_hz": 0.007612097852302213,
+        "induced_shift_abs_p90_hz": 0.007612508493980386,
+        "max_abs_induced_shift_hz": 0.007612611154399929,
+        "max_abs_fit_error_ppm": 7.617822376033107
+      },
+      "same_initial_phase d-0.95 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.023793422427502264,
+        "fit_error_abs_p90_hz": 0.023810166557473166,
+        "fit_error_abs_max_hz": 0.023814352589965893,
+        "induced_shift_median_hz": 0.02381204696837358,
+        "induced_shift_abs_p90_hz": 0.02381351626152082,
+        "max_abs_induced_shift_hz": 0.023813883584807627,
+        "max_abs_fit_error_ppm": 23.81491224040354
+      },
+      "same_initial_phase d-0.75 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -4.323827715779771e-05,
+        "fit_error_abs_p90_hz": 5.614280466943455e-05,
+        "fit_error_abs_max_hz": 5.91211262417346e-05,
+        "induced_shift_median_hz": -1.2930307775604888e-06,
+        "induced_shift_abs_p90_hz": 1.4366226196216302e-06,
+        "max_abs_induced_shift_hz": 1.4725205801369157e-06,
+        "max_abs_fit_error_ppm": 0.05912251562085168
+      },
+      "same_initial_phase d-0.75 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -4.623011523108289e-05,
+        "fit_error_abs_p90_hz": 5.8647618288887315e-05,
+        "fit_error_abs_max_hz": 6.175199405333842e-05,
+        "induced_shift_median_hz": -4.284868850845669e-06,
+        "induced_shift_abs_p90_hz": 4.545249089460412e-06,
+        "max_abs_induced_shift_hz": 4.610344149114098e-06,
+        "max_abs_fit_error_ppm": 0.06175344525930201
+      },
+      "same_initial_phase d-0.75 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -8.64709027155186e-05,
+        "fit_error_abs_p90_hz": 9.747002231961233e-05,
+        "fit_error_abs_max_hz": 0.00010021980222063576,
+        "induced_shift_median_hz": -4.452565633528138e-05,
+        "induced_shift_abs_p90_hz": 4.5427403779285666e-05,
+        "max_abs_induced_shift_hz": 4.565284064028674e-05,
+        "max_abs_fit_error_ppm": 0.10022215744133563
+      },
+      "same_initial_phase d-0.75 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0004879099551544641,
+        "fit_error_abs_p90_hz": 0.0004945397075971414,
+        "fit_error_abs_max_hz": 0.0004961971457078107,
+        "induced_shift_median_hz": -0.0004459647087742269,
+        "induced_shift_abs_p90_hz": 0.0004495792442639868,
+        "max_abs_induced_shift_hz": 0.00045048287813642673,
+        "max_abs_fit_error_ppm": 0.49620880661476613
+      },
+      "same_initial_phase d-0.55 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.002013656726262525,
+        "fit_error_abs_p90_hz": 0.0020145907328469547,
+        "fit_error_abs_max_hz": 0.0020148242344930622,
+        "induced_shift_median_hz": 0.001990032200751557,
+        "induced_shift_abs_p90_hz": 0.0019900630750953495,
+        "max_abs_induced_shift_hz": 0.001990070793681298,
+        "max_abs_fit_error_ppm": 2.0148715839752853
+      },
+      "same_initial_phase d-0.55 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0035317379698653895,
+        "fit_error_abs_p90_hz": 0.003532396537980276,
+        "fit_error_abs_max_hz": 0.0035325611800089973,
+        "induced_shift_median_hz": 0.0035081134443544215,
+        "induced_shift_abs_p90_hz": 0.003508163818810317,
+        "max_abs_induced_shift_hz": 0.003508176412424291,
+        "max_abs_fit_error_ppm": 3.5326441971476297
+      },
+      "same_initial_phase d-0.55 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.010651842926790778,
+        "fit_error_abs_p90_hz": 0.01065271041111373,
+        "fit_error_abs_max_hz": 0.010652927282194469,
+        "induced_shift_median_hz": 0.0106293027566835,
+        "induced_shift_abs_p90_hz": 0.010629634831389012,
+        "max_abs_induced_shift_hz": 0.01062971785006539,
+        "max_abs_fit_error_ppm": 10.653177631868816
+      },
+      "same_initial_phase d-0.55 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0296514480071437,
+        "fit_error_abs_p90_hz": 0.029656732659304907,
+        "fit_error_abs_max_hz": 0.02965805382234521,
+        "induced_shift_median_hz": 0.02963442929683424,
+        "induced_shift_abs_p90_hz": 0.029635751777163932,
+        "max_abs_induced_shift_hz": 0.029636082397246355,
+        "max_abs_fit_error_ppm": 29.65875080298908
+      },
+      "same_initial_phase d-0.35 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.002131672086875369,
+        "fit_error_abs_p90_hz": 0.002198968383186184,
+        "fit_error_abs_max_hz": 0.0022157924572638876,
+        "induced_shift_median_hz": 0.00215021448900643,
+        "induced_shift_abs_p90_hz": 0.002151503416985179,
+        "max_abs_induced_shift_hz": 0.002151825648979866,
+        "max_abs_fit_error_ppm": 2.215844529610333
+      },
+      "same_initial_phase d-0.35 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0037823992829544295,
+        "fit_error_abs_p90_hz": 0.0038498973443893193,
+        "fit_error_abs_max_hz": 0.0038667718597480416,
+        "induced_shift_median_hz": 0.003801193891490584,
+        "induced_shift_abs_p90_hz": 0.003803450874443115,
+        "max_abs_induced_shift_hz": 0.0038040151201812478,
+        "max_abs_fit_error_ppm": 3.86686273102222
+      },
+      "same_initial_phase d-0.35 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.011644358326975635,
+        "fit_error_abs_p90_hz": 0.011712539257678145,
+        "fit_error_abs_max_hz": 0.011729584490353773,
+        "induced_shift_median_hz": 0.011664006522096315,
+        "induced_shift_abs_p90_hz": 0.011671820403535094,
+        "max_abs_induced_shift_hz": 0.011673773873894788,
+        "max_abs_fit_error_ppm": 11.72986014206711
+      },
+      "same_initial_phase d-0.35 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0338470679934062,
+        "fit_error_abs_p90_hz": 0.03390535717396688,
+        "fit_error_abs_max_hz": 0.033919929469107046,
+        "induced_shift_median_hz": 0.03385435150084959,
+        "induced_shift_abs_p90_hz": 0.033878567993269826,
+        "max_abs_induced_shift_hz": 0.033884622116374885,
+        "max_abs_fit_error_ppm": 33.920726606182285
+      },
+      "same_initial_phase d-0.30 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.0011011947671022426,
+        "fit_error_abs_p90_hz": 0.0011082028178634573,
+        "fit_error_abs_max_hz": 0.001109954830553761,
+        "induced_shift_median_hz": 0.0011030705164785104,
+        "induced_shift_abs_p90_hz": 0.0011035358058734345,
+        "max_abs_induced_shift_hz": 0.0011036521282221656,
+        "max_abs_fit_error_ppm": 1.109980915105266
+      },
+      "same_initial_phase d-0.30 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.001920549996157206,
+        "fit_error_abs_p90_hz": 0.0019271995863164193,
+        "fit_error_abs_max_hz": 0.0019288619838562227,
+        "induced_shift_median_hz": 0.001921977669780972,
+        "induced_shift_abs_p90_hz": 0.0019228014197778976,
+        "max_abs_induced_shift_hz": 0.001923007357277129,
+        "max_abs_fit_error_ppm": 1.9289073131780823
+      },
+      "same_initial_phase d-0.30 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.005462728351176338,
+        "fit_error_abs_p90_hz": 0.005467657433928253,
+        "fit_error_abs_max_hz": 0.005468889704616231,
+        "induced_shift_median_hz": 0.0054620053905409804,
+        "induced_shift_abs_p90_hz": 0.005464549647945205,
+        "max_abs_induced_shift_hz": 0.005465185712296261,
+        "max_abs_fit_error_ppm": 5.469018226544555
+      },
+      "same_initial_phase d-0.30 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 0.01091775424242769,
+        "fit_error_abs_p90_hz": 0.010917794350871191,
+        "fit_error_abs_max_hz": 0.010917804377982065,
+        "induced_shift_median_hz": 0.01091086992835244,
+        "induced_shift_abs_p90_hz": 0.01091838337695208,
+        "max_abs_induced_shift_hz": 0.010920261739101988,
+        "max_abs_fit_error_ppm": 10.918060952414447
+      },
+      "same_initial_phase d+0.30 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0011631203968818227,
+        "fit_error_abs_p90_hz": 0.001164984518231904,
+        "fit_error_abs_max_hz": 0.0011654505485694244,
+        "induced_shift_median_hz": -0.0011028545079625474,
+        "induced_shift_abs_p90_hz": 0.001104020807224515,
+        "max_abs_induced_shift_hz": 0.001104312382040007,
+        "max_abs_fit_error_ppm": 1.1654779373009507
+      },
+      "same_initial_phase d+0.30 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.001981567938628359,
+        "fit_error_abs_p90_hz": 0.0019834566741792512,
+        "fit_error_abs_max_hz": 0.0019839288580669745,
+        "induced_shift_median_hz": -0.0019213175667118776,
+        "induced_shift_abs_p90_hz": 0.0019233530121255172,
+        "max_abs_induced_shift_hz": 0.001923861873478927,
+        "max_abs_fit_error_ppm": 1.9839754814907893
+      },
+      "same_initial_phase d+0.30 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.005516936995036303,
+        "fit_error_abs_p90_hz": 0.005519352808505573,
+        "fit_error_abs_max_hz": 0.005519956761872891,
+        "induced_shift_median_hz": -0.005457345470517794,
+        "induced_shift_abs_p90_hz": 0.005462920665672754,
+        "max_abs_induced_shift_hz": 0.005464314464461495,
+        "max_abs_fit_error_ppm": 5.520086483905262
+      },
+      "same_initial_phase d+0.30 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.010971179241437312,
+        "fit_error_abs_p90_hz": 0.010978563401545216,
+        "fit_error_abs_max_hz": 0.010980409441572192,
+        "induced_shift_median_hz": -0.010917798150217095,
+        "induced_shift_abs_p90_hz": 0.010930210352557878,
+        "max_abs_induced_shift_hz": 0.010933313403143075,
+        "max_abs_fit_error_ppm": 10.980667487258142
+      },
+      "same_initial_phase d+0.35 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0021485225946662467,
+        "fit_error_abs_p90_hz": 0.002149831159999849,
+        "fit_error_abs_max_hz": 0.0021501583013332493,
+        "induced_shift_median_hz": -0.0021500443365312094,
+        "induced_shift_abs_p90_hz": 0.0021501641754639424,
+        "max_abs_induced_shift_hz": 0.0021501941351971254,
+        "max_abs_fit_error_ppm": 2.1502088312407834
+      },
+      "same_initial_phase d+0.35 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0037982614976499463,
+        "fit_error_abs_p90_hz": 0.003799480133056932,
+        "fit_error_abs_max_hz": 0.003799784791908678,
+        "induced_shift_median_hz": -0.003799670827106638,
+        "induced_shift_abs_p90_hz": 0.0037998805959659878,
+        "max_abs_induced_shift_hz": 0.003799933038180825,
+        "max_abs_fit_error_ppm": 3.799874088949768
+      },
+      "same_initial_phase d+0.35 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.011666694652717524,
+        "fit_error_abs_p90_hz": 0.011667629669659618,
+        "fit_error_abs_max_hz": 0.011667863423895142,
+        "induced_shift_median_hz": -0.011667749459093102,
+        "induced_shift_abs_p90_hz": 0.011668242846417343,
+        "max_abs_induced_shift_hz": 0.011668366193248403,
+        "max_abs_fit_error_ppm": 11.668137625129331
+      },
+      "same_initial_phase d+0.35 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.03386176915239503,
+        "fit_error_abs_p90_hz": 0.03386251639769853,
+        "fit_error_abs_max_hz": 0.0338627032090244,
+        "induced_shift_median_hz": -0.03386258924422236,
+        "induced_shift_abs_p90_hz": 0.033863270403185194,
+        "max_abs_induced_shift_hz": 0.033863440692925906,
+        "max_abs_fit_error_ppm": 33.86349900125093
+      },
+      "same_initial_phase d+0.55 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0019561763123192577,
+        "fit_error_abs_p90_hz": 0.002008466076745208,
+        "fit_error_abs_max_hz": 0.0020215385178516954,
+        "induced_shift_median_hz": -0.0019893016500418526,
+        "induced_shift_abs_p90_hz": 0.001989522108738129,
+        "max_abs_induced_shift_hz": 0.0019895772234121978,
+        "max_abs_fit_error_ppm": 2.0215860251232853
+      },
+      "same_initial_phase d+0.55 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.00347306213018328,
+        "fit_error_abs_p90_hz": 0.0035242985724153186,
+        "fit_error_abs_max_hz": 0.0035371076829733283,
+        "induced_shift_median_hz": -0.003505977077111311,
+        "induced_shift_abs_p90_hz": 0.003506365848443238,
+        "max_abs_induced_shift_hz": 0.00350646304127622,
+        "max_abs_fit_error_ppm": 3.5371908069572915
+      },
+      "same_initial_phase d+0.55 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.010594905238349384,
+        "fit_error_abs_p90_hz": 0.010641250894195764,
+        "fit_error_abs_max_hz": 0.010652837308157359,
+        "induced_shift_median_hz": -0.010626766773611962,
+        "induced_shift_abs_p90_hz": 0.01062799827427625,
+        "max_abs_induced_shift_hz": 0.010628306149442324,
+        "max_abs_fit_error_ppm": 10.653087655717266
+      },
+      "same_initial_phase d+0.55 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.02960158769769805,
+        "fit_error_abs_p90_hz": 0.029635073178224048,
+        "fit_error_abs_max_hz": 0.029643444548355546,
+        "induced_shift_median_hz": -0.029630342860173187,
+        "induced_shift_abs_p90_hz": 0.02963405945906743,
+        "max_abs_induced_shift_hz": 0.02963498860879099,
+        "max_abs_fit_error_ppm": 29.64414118567341
+      },
+      "same_initial_phase d+0.75 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 1.3571594308814383e-05,
+        "fit_error_abs_p90_hz": 6.186460082062695e-05,
+        "fit_error_abs_max_hz": 7.393785244858009e-05,
+        "induced_shift_median_hz": 1.3189513765610172e-06,
+        "induced_shift_abs_p90_hz": 1.4307418268799665e-06,
+        "max_abs_induced_shift_hz": 1.4586894394597039e-06,
+        "max_abs_fit_error_ppm": 0.07393959002894576
+      },
+      "same_initial_phase d+0.75 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 1.6582842704337963e-05,
+        "fit_error_abs_p90_hz": 6.487671287231933e-05,
+        "fit_error_abs_max_hz": 7.695018041431467e-05,
+        "induced_shift_median_hz": 4.331279342295602e-06,
+        "induced_shift_abs_p90_hz": 4.531386366579682e-06,
+        "max_abs_induced_shift_hz": 4.5814131226507016e-06,
+        "max_abs_fit_error_ppm": 0.07695198878605114
+      },
+      "same_initial_phase d+0.75 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 5.694919695997669e-05,
+        "fit_error_abs_p90_hz": 0.00010522727911848051,
+        "fit_error_abs_max_hz": 0.00011729679965810647,
+        "induced_shift_median_hz": 4.469278974283952e-05,
+        "induced_shift_abs_p90_hz": 4.5333633806876605e-05,
+        "max_abs_induced_shift_hz": 4.5493844822885876e-05,
+        "max_abs_fit_error_ppm": 0.1172995561976771
+      },
+      "same_initial_phase d+0.75 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": 0.0004593242385908525,
+        "fit_error_abs_p90_hz": 0.000507228872675114,
+        "fit_error_abs_max_hz": 0.0005192050311961793,
+        "induced_shift_median_hz": 0.00044697878672650404,
+        "induced_shift_abs_p90_hz": 0.00044891018631005865,
+        "max_abs_induced_shift_hz": 0.0004493930362059473,
+        "max_abs_fit_error_ppm": 0.5192172328011501
+      },
+      "same_initial_phase d+0.95 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 2,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0013585868090331132,
+        "fit_error_abs_p90_hz": 0.0013970337068485606,
+        "fit_error_abs_max_hz": 0.0014066454313024224,
+        "induced_shift_median_hz": -0.001354280655959883,
+        "induced_shift_abs_p90_hz": 0.0013545450658966729,
+        "max_abs_induced_shift_hz": 0.0013546111683808704,
+        "max_abs_fit_error_ppm": 1.4066784882468961
+      },
+      "same_initial_phase d+0.95 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0024118471183101065,
+        "fit_error_abs_p90_hz": 0.002449837460426352,
+        "fit_error_abs_max_hz": 0.002459335045955413,
+        "induced_shift_median_hz": -0.0024075409652368762,
+        "induced_shift_abs_p90_hz": 0.002408005755319209,
+        "max_abs_induced_shift_hz": 0.0024081219528397924,
+        "max_abs_fit_error_ppm": 2.4593928416871926
+      },
+      "same_initial_phase d+0.95 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.007609558036051567,
+        "fit_error_abs_p90_hz": 0.007645372129695715,
+        "fit_error_abs_max_hz": 0.007654325653106753,
+        "induced_shift_median_hz": -0.007605251882978337,
+        "induced_shift_abs_p90_hz": 0.007606640334324765,
+        "max_abs_induced_shift_hz": 0.007606987447161373,
+        "max_abs_fit_error_ppm": 7.6545055339868
+      },
+      "same_initial_phase d+0.95 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.023806673635249354,
+        "fit_error_abs_p90_hz": 0.02383367087361421,
+        "fit_error_abs_max_hz": 0.023840420183205424,
+        "induced_shift_median_hz": -0.023800444056973902,
+        "induced_shift_abs_p90_hz": 0.023804797259322184,
+        "max_abs_induced_shift_hz": 0.023805885559909257,
+        "max_abs_fit_error_ppm": 23.840980446245908
+      },
+      "same_initial_phase d+1.05 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0011020332733551186,
+        "fit_error_abs_p90_hz": 0.0011242278711961263,
+        "fit_error_abs_max_hz": 0.0011297765206563781,
+        "induced_shift_median_hz": -0.0011005087009152703,
+        "induced_shift_abs_p90_hz": 0.001100759034056864,
+        "max_abs_induced_shift_hz": 0.0011008216173422625,
+        "max_abs_fit_error_ppm": 1.1298030710285472
+      },
+      "same_initial_phase d+1.05 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0019517873600989333,
+        "fit_error_abs_p90_hz": 0.001974176146336504,
+        "fit_error_abs_max_hz": 0.0019797733428958963,
+        "induced_shift_median_hz": -0.001950262787659085,
+        "induced_shift_abs_p90_hz": 0.0019507073091972415,
+        "max_abs_induced_shift_hz": 0.0019508184395817807,
+        "max_abs_fit_error_ppm": 1.97981986866281
+      },
+      "same_initial_phase d+1.05 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0060672990720149755,
+        "fit_error_abs_p90_hz": 0.006090640246634393,
+        "fit_error_abs_max_hz": 0.006096475540289248,
+        "induced_shift_median_hz": -0.006065774499575127,
+        "induced_shift_abs_p90_hz": 0.006067171409495131,
+        "max_abs_induced_shift_hz": 0.006067520636975132,
+        "max_abs_fit_error_ppm": 6.096618810831301
+      },
+      "same_initial_phase d+1.05 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.01818617875721884,
+        "fit_error_abs_p90_hz": 0.018212660421045256,
+        "fit_error_abs_max_hz": 0.01821928083700186,
+        "induced_shift_median_hz": -0.018184654184778992,
+        "induced_shift_abs_p90_hz": 0.018189191583905993,
+        "max_abs_induced_shift_hz": 0.018190325933687745,
+        "max_abs_fit_error_ppm": 18.219709000163366
+      },
+      "same_initial_phase d+1.25 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": 5.600303325081768e-06,
+        "fit_error_abs_p90_hz": 0.00010425710856907245,
+        "fit_error_abs_max_hz": 0.00012299466311560536,
+        "induced_shift_median_hz": 3.0238709314289736e-07,
+        "induced_shift_abs_p90_hz": 3.282881380073377e-07,
+        "max_abs_induced_shift_hz": 3.347633992234478e-07,
+        "max_abs_fit_error_ppm": 0.12299755355811397
+      },
+      "same_initial_phase d+1.25 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 2,
+          "ok": 1
+        },
+        "fit_error_median_hz": 6.2906290168029955e-06,
+        "fit_error_abs_p90_hz": 0.00010387019092377159,
+        "fit_error_abs_max_hz": 0.00012234503037689137,
+        "induced_shift_median_hz": 9.663298214945826e-07,
+        "induced_shift_abs_p90_hz": 1.0133372370546567e-06,
+        "max_abs_induced_shift_hz": 1.0250890909446753e-06,
+        "max_abs_fit_error_ppm": 0.12234790555267185
+      },
+      "same_initial_phase d+1.25 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": 1.52180642771782e-05,
+        "fit_error_abs_p90_hz": 9.862257966233302e-05,
+        "fit_error_abs_max_hz": 0.00011359007464761817,
+        "induced_shift_median_hz": 9.748096431394515e-06,
+        "induced_shift_abs_p90_hz": 9.911638767334807e-06,
+        "max_abs_induced_shift_hz": 9.95252435131988e-06,
+        "max_abs_fit_error_ppm": 0.11359274407710397
+      },
+      "same_initial_phase d+1.25 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": 0.00010345492421492963,
+        "fit_error_abs_p90_hz": 0.00012177816599887593,
+        "fit_error_abs_max_hz": 0.0001263589764448625,
+        "induced_shift_median_hz": 9.768444908786478e-05,
+        "induced_shift_abs_p90_hz": 9.808839724883001e-05,
+        "max_abs_induced_shift_hz": 9.818938428907131e-05,
+        "max_abs_fit_error_ppm": 0.12636194595059233
+      },
+      "same_initial_phase d+1.45 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0008756854329021735,
+        "fit_error_abs_p90_hz": 0.0009401959828664985,
+        "fit_error_abs_max_hz": 0.0009563236203575798,
+        "induced_shift_median_hz": -0.0008719533154817327,
+        "induced_shift_abs_p90_hz": 0.0008723437559183366,
+        "max_abs_induced_shift_hz": 0.0008724413660274877,
+        "max_abs_fit_error_ppm": 0.9563460944908003
+      },
+      "same_initial_phase d+1.45 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0015545036194453132,
+        "fit_error_abs_p90_hz": 0.0016195381825127697,
+        "fit_error_abs_max_hz": 0.0016357968232796338,
+        "induced_shift_median_hz": -0.0015510422568922877,
+        "induced_shift_abs_p90_hz": 0.0015517401065380909,
+        "max_abs_induced_shift_hz": 0.0015519145689495417,
+        "max_abs_fit_error_ppm": 1.6358352654083708
+      },
+      "same_initial_phase d+1.45 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.004915238280659651,
+        "fit_error_abs_p90_hz": 0.004982883901789137,
+        "fit_error_abs_max_hz": 0.004999795307071508,
+        "induced_shift_median_hz": -0.004913084104714471,
+        "induced_shift_abs_p90_hz": 0.004915347263136027,
+        "max_abs_induced_shift_hz": 0.004915913052741416,
+        "max_abs_fit_error_ppm": 4.999912805022426
+      },
+      "same_initial_phase d+1.45 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.015579520372057232,
+        "fit_error_abs_p90_hz": 0.0156548804396607,
+        "fit_error_abs_max_hz": 0.01567372045656157,
+        "induced_shift_median_hz": -0.015581472474195834,
+        "induced_shift_abs_p90_hz": 0.015588165056624349,
+        "max_abs_induced_shift_hz": 0.015589838202231476,
+        "max_abs_fit_error_ppm": 15.674088797648311
+      },
+      "same_initial_phase d+1.50 -35dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0008716549692735498,
+        "fit_error_abs_p90_hz": 0.0009102910260708086,
+        "fit_error_abs_max_hz": 0.0009199500402701233,
+        "induced_shift_median_hz": -0.0008986419318262051,
+        "induced_shift_abs_p90_hz": 0.0008990886475203297,
+        "max_abs_induced_shift_hz": 0.0008992003264438608,
+        "max_abs_fit_error_ppm": 0.9199716596041239
+      },
+      "same_initial_phase d+1.50 -30dBc": {
+        "n": 3,
+        "nearby_probe_hits": 0,
+        "status_counts": {
+          "ok": 3
+        },
+        "fit_error_median_hz": -0.0015690850876808327,
+        "fit_error_abs_p90_hz": 0.0016083739619489278,
+        "fit_error_abs_max_hz": 0.0016181961805159517,
+        "induced_shift_median_hz": -0.0015964529452503484,
+        "induced_shift_abs_p90_hz": 0.0015972477624018211,
+        "max_abs_induced_shift_hz": 0.0015974464666896893,
+        "max_abs_fit_error_ppm": 1.6182342090198636
+      },
+      "same_initial_phase d+1.50 -20dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 1,
+          "ok": 2
+        },
+        "fit_error_median_hz": -0.004995577564159248,
+        "fit_error_abs_p90_hz": 0.005038054828355598,
+        "fit_error_abs_max_hz": 0.005048674144404686,
+        "induced_shift_median_hz": -0.005024772506658337,
+        "induced_shift_abs_p90_hz": 0.005027294045794406,
+        "max_abs_induced_shift_hz": 0.005027924430578423,
+        "max_abs_fit_error_ppm": 5.048792791035274
+      },
+      "same_initial_phase d+1.50 -10dBc": {
+        "n": 3,
+        "nearby_probe_hits": 3,
+        "status_counts": {
+          "line_contaminated": 3
+        },
+        "fit_error_median_hz": -0.015585540289862365,
+        "fit_error_abs_p90_hz": 0.0156375319605786,
+        "fit_error_abs_max_hz": 0.015650529878257657,
+        "induced_shift_median_hz": -0.015620752769109458,
+        "induced_shift_abs_p90_hz": 0.01562797468536701,
+        "max_abs_induced_shift_hz": 0.015629780164431395,
+        "max_abs_fit_error_ppm": 15.650897674353004
+      }
+    },
+    "modulation_controls": {
+      "AM": {
+        "n": 36,
+        "nearby_probe_hits": 36,
+        "status_counts": {
+          "line_contaminated": 12,
+          "ok": 24
+        },
+        "fit_error_median_hz": -6.316597421118786e-06,
+        "fit_error_abs_p90_hz": 7.809944804648694e-05,
+        "fit_error_abs_max_hz": 0.00012664631753978028
+      },
+      "FM": {
+        "n": 36,
+        "nearby_probe_hits": 34,
+        "status_counts": {
+          "line_contaminated": 12,
+          "ok": 24
+        },
+        "fit_error_median_hz": -0.00021153673822027486,
+        "fit_error_abs_p90_hz": 0.025499295534928024,
+        "fit_error_abs_max_hz": 0.03093469695750173
+      }
+    }
+  },
+  "interpretation": "The target is the primary LSQ fitted pilot frequency. A nearby residual peak is separate diagnostic metadata. AM/FM controls create legitimate sidebands and do not identify an independent oscillator.",
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2190-nearby-primary-fit-bias.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2190_nearby_primary_fit_bias.py"
+	User time (seconds): 191.39
+	System time (seconds): 4.18
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:15.63
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 131080
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 1708689
+	Voluntary context switches: 14
+	Involuntary context switches: 2073
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 1080
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0
