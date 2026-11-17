@@ -129,7 +129,7 @@ def classes(cal, spectra):
         buf[:len(x)] = x
         out.append((f"partial40#{i}", buf, False))
     for i in range(30):
-        x = pilot_sig(f_true, -60.0, BASE_SEED + 5500 + i, noise=None)
+        x = pilot_sig(f_true, seed=BASE_SEED + 5500 + i)
         out.append((f"clip#{i}",
                     np.clip(x, -0.35 * amp(-60.0), 0.35 * amp(-60.0)),
                     False))
