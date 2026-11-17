@@ -1,0 +1,170 @@
+=== v2189_paired_snr_clockcheck.py ===
+FS=96000 Hz; duration=2 s; production blocks=2 x 96000 frames; cases=448
+  100/448
+  200/448
+  300/448
+  400/448
+{
+  "trials": 448,
+  "pairs_finite": 448,
+  "production_config": {
+    "fs_hz": 96000.0,
+    "duration_s": 2.0,
+    "df_hz": 1.0,
+    "blocks": 2,
+    "samples_per_block": 96000,
+    "note": "Mirrors standard Rig(fs=96000, df=1, blocks=2) segmentation."
+  },
+  "thresholds_db": {
+    "production": 20.0,
+    "diagnostic_sweep": [
+      -5.0,
+      0.0,
+      5.0,
+      8.8,
+      10.0,
+      15.0,
+      20.0,
+      25.0,
+      30.0
+    ]
+  },
+  "paired_metric_stats": {
+    "difference_mean_db": -7.2450389983312755,
+    "difference_median_db": -3.7227158505705518,
+    "difference_std_db": 9.583857771524986,
+    "regression_diag_equals_slope_prod_plus_intercept": {
+      "slope": 1.0571557536114817,
+      "intercept_db": -9.753025489397546,
+      "correlation": 0.9076431379144806,
+      "note": "Descriptive only; do not infer a threshold from pooled regression."
+    }
+  },
+  "class_summary": {
+    "clipped": {
+      "n": 20,
+      "production_median_db": 86.08690329929595,
+      "diagnostic_median_db": 82.05,
+      "difference_median_db": -4.123326940359853
+    },
+    "dropout-first-quarter": {
+      "n": 20,
+      "production_median_db": 28.515254358534378,
+      "diagnostic_median_db": 28.1,
+      "difference_median_db": -0.46234932329977774
+    },
+    "dropout-half": {
+      "n": 20,
+      "production_median_db": 58.03895726506323,
+      "diagnostic_median_db": 18.5,
+      "difference_median_db": -39.48895726506323
+    },
+    "dropout-tail-quarter": {
+      "n": 20,
+      "production_median_db": 28.546111412857808,
+      "diagnostic_median_db": 28.1,
+      "difference_median_db": -0.4753846282037557
+    },
+    "measured_profile": {
+      "n": 20,
+      "production_median_db": 61.67322062636313,
+      "diagnostic_median_db": 57.95,
+      "difference_median_db": -3.5394744757972596
+    },
+    "no_pilot": {
+      "n": 40,
+      "production_median_db": 0.4928434206975011,
+      "diagnostic_median_db": -16.4,
+      "difference_median_db": -15.99022453579125
+    },
+    "partial": {
+      "n": 20,
+      "production_median_db": 46.15499417746673,
+      "diagnostic_median_db": 17.4,
+      "difference_median_db": -28.7437701230729
+    },
+    "steady_colored": {
+      "n": 36,
+      "production_median_db": 39.66825856982017,
+      "diagnostic_median_db": 36.1,
+      "difference_median_db": -3.583375816260375
+    },
+    "steady_white": {
+      "n": 252,
+      "production_median_db": 47.01236423158721,
+      "diagnostic_median_db": 43.5,
+      "difference_median_db": -3.608312157758
+    }
+  },
+  "threshold_decision_matrix": {
+    "-5.0": {
+      "prod_accept/diag_accept": 408,
+      "prod_refuse/diag_refuse": 40
+    },
+    "0.0": {
+      "prod_accept/diag_accept": 408,
+      "prod_refuse/diag_refuse": 40
+    },
+    "5.0": {
+      "prod_accept/diag_accept": 408,
+      "prod_refuse/diag_refuse": 40
+    },
+    "8.8": {
+      "prod_accept/diag_accept": 408,
+      "prod_refuse/diag_refuse": 40
+    },
+    "10.0": {
+      "prod_accept/diag_accept": 408,
+      "prod_refuse/diag_refuse": 40
+    },
+    "15.0": {
+      "prod_accept/diag_accept": 408,
+      "prod_refuse/diag_refuse": 40
+    },
+    "20.0": {
+      "prod_accept/diag_accept": 368,
+      "prod_refuse/diag_refuse": 40,
+      "prod_accept/diag_refuse": 40
+    },
+    "25.0": {
+      "prod_accept/diag_accept": 357,
+      "prod_accept/diag_refuse": 51,
+      "prod_refuse/diag_refuse": 40
+    },
+    "30.0": {
+      "prod_accept/diag_accept": 283,
+      "prod_accept/diag_refuse": 125,
+      "prod_refuse/diag_refuse": 40
+    }
+  },
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189-paired-snr-clockcheck.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189_paired_snr_clockcheck.py"
+	User time (seconds): 141.67
+	System time (seconds): 3.55
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:25.27
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 794596
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 1522728
+	Voluntary context switches: 19
+	Involuntary context switches: 1847
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 456
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

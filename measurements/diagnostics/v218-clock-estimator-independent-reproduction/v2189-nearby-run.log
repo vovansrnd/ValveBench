@@ -1,0 +1,1550 @@
+=== v2189_nearby_offbin_sweep.py ===
+  phase=same_initial_phase: 720 total rows
+  phase=independent_phase: 1440 total rows
+{
+  "capture": {
+    "fs_hz": 96000.0,
+    "duration_s": 2.0,
+    "samples": 192000,
+    "fft_bin_hz": 0.5,
+    "pilot_nominal_hz": 1000.0,
+    "pilot_true_hz": 999.9765000000001,
+    "pilot_level_dbfs": -72.0,
+    "noise_level_dbfs": -96.0
+  },
+  "sweep": {
+    "offsets_hz_abs": [
+      0.3,
+      0.35,
+      0.55,
+      0.75,
+      0.95,
+      1.05,
+      1.25,
+      1.45,
+      1.5
+    ],
+    "signs": [
+      -1,
+      1
+    ],
+    "line_levels_dbc": [
+      -10.0,
+      -20.0,
+      -30.0,
+      -35.0,
+      -40.0
+    ],
+    "phase_modes": [
+      "same_initial_phase",
+      "independent_phase"
+    ],
+    "trials_per_cell": 8
+  },
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  },
+  "results": {
+    "trials_total": 1604,
+    "injected_line_trials": 1440,
+    "injected_lines_detected": 904,
+    "injected_lines_missed": 536,
+    "controls": {
+      "AM": {
+        "n": 48,
+        "probe_fired": 48,
+        "probe_quiet": 0
+      },
+      "FM": {
+        "n": 48,
+        "probe_fired": 48,
+        "probe_quiet": 0
+      },
+      "clean_pilot": {
+        "n": 24,
+        "probe_fired": 0,
+        "probe_quiet": 24
+      },
+      "measured_real_profile": {
+        "n": 20,
+        "probe_fired": 0,
+        "probe_quiet": 20
+      },
+      "pilot_plus_noise": {
+        "n": 24,
+        "probe_fired": 0,
+        "probe_quiet": 24
+      }
+    },
+    "per_cell": {
+      "independent_phase d-1.50 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-1.50 -35dBc": {
+        "n": 8,
+        "detected": 5,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 5
+      },
+      "independent_phase d-1.50 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.50 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.50 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.45 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-1.45 -35dBc": {
+        "n": 8,
+        "detected": 5,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 5
+      },
+      "independent_phase d-1.45 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.45 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.45 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.25 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-1.25 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-1.25 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.25 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.25 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.05 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-1.05 -35dBc": {
+        "n": 8,
+        "detected": 1,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 1
+      },
+      "independent_phase d-1.05 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.05 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -0.05000000000000071,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-1.05 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -0.09999999999999964,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.95 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.95 -35dBc": {
+        "n": 8,
+        "detected": 6,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.25,
+        "amplitude_within_2_5db": 6
+      },
+      "independent_phase d-0.95 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.95 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.15000000000000036,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.95 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.75 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.75 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.75 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.27349999999989905,
+        "frequency_error_max_abs_hz": 0.27349999999989905,
+        "amplitude_error_median_db": -0.5,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.75 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.27349999999989905,
+        "frequency_error_max_abs_hz": 0.27349999999989905,
+        "amplitude_error_median_db": -0.5,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.75 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.27349999999989905,
+        "frequency_error_max_abs_hz": 0.27349999999989905,
+        "amplitude_error_median_db": -0.4500000000000002,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.55 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.55 -35dBc": {
+        "n": 8,
+        "detected": 3,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 3
+      },
+      "independent_phase d-0.55 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -0.75,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.55 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.55 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.04999999999999982,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d-0.35 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.35 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.35 -30dBc": {
+        "n": 8,
+        "detected": 5,
+        "frequency_error_median_hz": -0.12650000000007822,
+        "frequency_error_max_abs_hz": 0.12650000000007822,
+        "amplitude_error_median_db": -3.3999999999999986,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.35 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.12650000000007822,
+        "frequency_error_max_abs_hz": 0.12650000000007822,
+        "amplitude_error_median_db": -2.5500000000000007,
+        "amplitude_within_2_5db": 4
+      },
+      "independent_phase d-0.35 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.12650000000007822,
+        "frequency_error_max_abs_hz": 0.12650000000007822,
+        "amplitude_error_median_db": -2.8500000000000005,
+        "amplitude_within_2_5db": 4
+      },
+      "independent_phase d-0.30 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.30 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.30 -30dBc": {
+        "n": 8,
+        "detected": 1,
+        "frequency_error_median_hz": -0.17650000000014643,
+        "frequency_error_max_abs_hz": 0.17650000000014643,
+        "amplitude_error_median_db": -4.100000000000001,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.30 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.17650000000014643,
+        "frequency_error_max_abs_hz": 0.17650000000014643,
+        "amplitude_error_median_db": -6.25,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d-0.30 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.17650000000014643,
+        "frequency_error_max_abs_hz": 0.17650000000014643,
+        "amplitude_error_median_db": -4.95,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.30 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.30 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.30 -30dBc": {
+        "n": 8,
+        "detected": 2,
+        "frequency_error_median_hz": 0.22349999999994452,
+        "frequency_error_max_abs_hz": 0.22349999999994452,
+        "amplitude_error_median_db": -4.300000000000001,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.30 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.22349999999994452,
+        "frequency_error_max_abs_hz": 0.22349999999994452,
+        "amplitude_error_median_db": -5.850000000000001,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.30 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.22349999999994452,
+        "frequency_error_max_abs_hz": 0.22349999999994452,
+        "amplitude_error_median_db": -4.5,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.35 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.35 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.35 -30dBc": {
+        "n": 8,
+        "detected": 4,
+        "frequency_error_median_hz": 0.1734999999998763,
+        "frequency_error_max_abs_hz": 0.1734999999998763,
+        "amplitude_error_median_db": -3.5,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.35 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.1734999999998763,
+        "frequency_error_max_abs_hz": 0.1734999999998763,
+        "amplitude_error_median_db": -5.5,
+        "amplitude_within_2_5db": 1
+      },
+      "independent_phase d+0.35 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.1734999999998763,
+        "frequency_error_max_abs_hz": 0.1734999999998763,
+        "amplitude_error_median_db": -3.8,
+        "amplitude_within_2_5db": 2
+      },
+      "independent_phase d+0.55 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.55 -35dBc": {
+        "n": 8,
+        "detected": 3,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 3
+      },
+      "independent_phase d+0.55 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.09999999999999964,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.55 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": -0.15000000000000036,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.55 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": -0.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.75 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.75 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.75 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -0.15000000000000036,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.75 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": 0.15000000000000036,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.75 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -0.5,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.95 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+0.95 -35dBc": {
+        "n": 8,
+        "detected": 6,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.05000000000000071,
+        "amplitude_within_2_5db": 6
+      },
+      "independent_phase d+0.95 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.95 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+0.95 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -0.04999999999999982,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.05 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.05 -35dBc": {
+        "n": 8,
+        "detected": 6,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.15000000000000213,
+        "amplitude_within_2_5db": 6
+      },
+      "independent_phase d+1.05 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.05 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.05000000000000071,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.05 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.09999999999999964,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.25 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.25 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.25 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1500000000000004,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.25 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.25 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1499999999999995,
+        "amplitude_within_2_5db": 8
+      },
+      "independent_phase d+1.45 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.45 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.45 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.42650000000014643,
+        "frequency_error_max_abs_hz": 0.42650000000014643,
+        "amplitude_error_median_db": -4.349999999999998,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.45 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.42650000000014643,
+        "frequency_error_max_abs_hz": 0.42650000000014643,
+        "amplitude_error_median_db": -4.399999999999999,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.45 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.42650000000014643,
+        "frequency_error_max_abs_hz": 0.42650000000014643,
+        "amplitude_error_median_db": -4.4,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.50 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.50 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.50 -30dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.50 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.47650000000010095,
+        "frequency_error_max_abs_hz": 0.47650000000010095,
+        "amplitude_error_median_db": -5.5,
+        "amplitude_within_2_5db": 0
+      },
+      "independent_phase d+1.50 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.47650000000010095,
+        "frequency_error_max_abs_hz": 0.47650000000010095,
+        "amplitude_error_median_db": -5.55,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-1.50 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-1.50 -35dBc": {
+        "n": 8,
+        "detected": 6,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 6
+      },
+      "same_initial_phase d-1.50 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.50 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.50 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.023499999999899046,
+        "frequency_error_max_abs_hz": 0.023499999999899046,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.45 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-1.45 -35dBc": {
+        "n": 8,
+        "detected": 6,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 6
+      },
+      "same_initial_phase d-1.45 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.45 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.05000000000000071,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.45 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.09999999999999964,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.25 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-1.25 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-1.25 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1000000000000014,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.25 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.25 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.05 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-1.05 -35dBc": {
+        "n": 8,
+        "detected": 7,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 7
+      },
+      "same_initial_phase d-1.05 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.05 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-1.05 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -0.09999999999999964,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.95 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.95 -35dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.20000000000000284,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.95 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.95 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.95 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.75 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.75 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.75 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.27349999999989905,
+        "frequency_error_max_abs_hz": 0.27349999999989905,
+        "amplitude_error_median_db": -0.6000000000000014,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.75 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.27349999999989905,
+        "frequency_error_max_abs_hz": 0.27349999999989905,
+        "amplitude_error_median_db": -0.6000000000000014,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.75 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.27349999999989905,
+        "frequency_error_max_abs_hz": 0.27349999999989905,
+        "amplitude_error_median_db": -0.5999999999999996,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.55 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.55 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.55 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.55 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -1.1000000000000014,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.55 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": -1.0999999999999996,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.35 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.35 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.35 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.12650000000007822,
+        "frequency_error_max_abs_hz": 0.12650000000007822,
+        "amplitude_error_median_db": -3.299999999999997,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.35 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.12650000000007822,
+        "frequency_error_max_abs_hz": 0.12650000000007822,
+        "amplitude_error_median_db": -3.0,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.35 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.12650000000007822,
+        "frequency_error_max_abs_hz": 0.12650000000007822,
+        "amplitude_error_median_db": -2.0999999999999996,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d-0.30 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.30 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.30 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.17650000000014643,
+        "frequency_error_max_abs_hz": 0.17650000000014643,
+        "amplitude_error_median_db": -3.8999999999999986,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.30 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.17650000000014643,
+        "frequency_error_max_abs_hz": 0.17650000000014643,
+        "amplitude_error_median_db": -3.6999999999999993,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d-0.30 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.17650000000014643,
+        "frequency_error_max_abs_hz": 0.17650000000014643,
+        "amplitude_error_median_db": -3.3000000000000007,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.30 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.30 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.30 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.22349999999994452,
+        "frequency_error_max_abs_hz": 0.22349999999994452,
+        "amplitude_error_median_db": -4.0,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.30 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.22349999999994452,
+        "frequency_error_max_abs_hz": 0.22349999999994452,
+        "amplitude_error_median_db": -3.8499999999999996,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.30 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.22349999999994452,
+        "frequency_error_max_abs_hz": 0.22349999999994452,
+        "amplitude_error_median_db": -3.4000000000000004,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.35 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.35 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.35 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.1734999999998763,
+        "frequency_error_max_abs_hz": 0.1734999999998763,
+        "amplitude_error_median_db": -3.3999999999999986,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.35 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.1734999999998763,
+        "frequency_error_max_abs_hz": 0.1734999999998763,
+        "amplitude_error_median_db": -3.1000000000000014,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.35 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.1734999999998763,
+        "frequency_error_max_abs_hz": 0.1734999999998763,
+        "amplitude_error_median_db": -2.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.55 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.55 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.55 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": -1.1000000000000014,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.55 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": -1.1000000000000014,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.55 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": -1.0499999999999998,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.75 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.75 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.75 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -0.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.75 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -0.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.75 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -0.3000000000000007,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.95 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+0.95 -35dBc": {
+        "n": 8,
+        "detected": 7,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 7
+      },
+      "same_initial_phase d+0.95 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.95 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+0.95 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": 0.07349999999985357,
+        "frequency_error_max_abs_hz": 0.07349999999985357,
+        "amplitude_error_median_db": 0.09999999999999964,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.05 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.05 -35dBc": {
+        "n": 8,
+        "detected": 7,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 7
+      },
+      "same_initial_phase d+1.05 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.05 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.10000000000000142,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.05 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.02650000000005548,
+        "frequency_error_max_abs_hz": 0.02650000000005548,
+        "amplitude_error_median_db": 0.0,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.25 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.25 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.25 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1500000000000004,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.25 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.25 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.22650000000010095,
+        "frequency_error_max_abs_hz": 0.22650000000010095,
+        "amplitude_error_median_db": -1.1999999999999993,
+        "amplitude_within_2_5db": 8
+      },
+      "same_initial_phase d+1.45 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.45 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.45 -30dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.42650000000014643,
+        "frequency_error_max_abs_hz": 0.42650000000014643,
+        "amplitude_error_median_db": -4.5,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.45 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.42650000000014643,
+        "frequency_error_max_abs_hz": 0.42650000000014643,
+        "amplitude_error_median_db": -4.399999999999999,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.45 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.42650000000014643,
+        "frequency_error_max_abs_hz": 0.42650000000014643,
+        "amplitude_error_median_db": -4.4,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.50 -40dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.50 -35dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.50 -30dBc": {
+        "n": 8,
+        "detected": 0,
+        "frequency_error_median_hz": null,
+        "frequency_error_max_abs_hz": null,
+        "amplitude_error_median_db": null,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.50 -20dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.47650000000010095,
+        "frequency_error_max_abs_hz": 0.47650000000010095,
+        "amplitude_error_median_db": -5.600000000000001,
+        "amplitude_within_2_5db": 0
+      },
+      "same_initial_phase d+1.50 -10dBc": {
+        "n": 8,
+        "detected": 8,
+        "frequency_error_median_hz": -0.47650000000010095,
+        "frequency_error_max_abs_hz": 0.47650000000010095,
+        "amplitude_error_median_db": -5.699999999999999,
+        "amplitude_within_2_5db": 0
+      }
+    }
+  },
+  "interpretation": "A hit means a nearby residual spectral component was found. AM/FM controls may produce legitimate sidebands; this probe does not prove an independent oscillator."
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189-nearby-offbin.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2189_nearby_offbin_sweep.py"
+	User time (seconds): 502.03
+	System time (seconds): 11.51
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 8:33.66
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 127004
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 4792436
+	Voluntary context switches: 41
+	Involuntary context switches: 5935
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 1488
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0
