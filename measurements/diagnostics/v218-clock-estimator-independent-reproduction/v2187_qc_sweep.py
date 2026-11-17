@@ -156,7 +156,7 @@ def main():
     if prof_path.exists():
         prof = json.load(open(prof_path, encoding="utf-8"))
         meas = prof["measured_profile"]
-        rel = [(fh, v["amp_L"] / pilot_amp)
+        rel = [(float(fh), v["amp_L"] / pilot_amp)
                for fh, v in meas.items() if v["amp_L"] > 0]
         dbc_list = sorted({round(20 * math.log10(max(r, 1e-12)), 1)
                            for _, r in rel}, reverse=True)
