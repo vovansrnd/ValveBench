@@ -103,12 +103,14 @@ def main():
          for leak_db in LEAKAGE_DBFS:
           rng=np.random.default_rng(seed+int(abs(leak_db)*100))
           relative_phase=float(rng.uniform(0,2*np.pi))
+          actual_leak_db = leak_db if channel == 0 else (-125.0 if leak_db == -109.0 else leak_db)
           x,_=synth(n,f_nom,seed,channel,leak_db,relative_phase)
           fit=fit_record(x,f_nom); b=base.get("f_est_hz"); f=fit.get("f_est_hz")
           induced=((f-b)/f_true*1e6) if f is not None and b is not None else None
           rows.append({"trial":trial_id,"kind":"1000hz_leakage","pilot_nominal_hz":f_nom,
             "pilot_true_hz":f_true,"leakage_hz":1000.0,"leakage_dbfs":leak_db,
-            "leakage_dbc_vs_pilot":leak_db-PILOT_DBFS,"relative_phase_rad":relative_phase,
+            "actual_leakage_dbfs":actual_leak_db,
+            "leakage_dbc_vs_pilot":actual_leak_db-PILOT_DBFS,"relative_phase_rad":relative_phase,
             "duration_s":duration,"channel":chname,"trial_index":trial,"seed":seed,
             "baseline_f_est_hz":b,"induced_shift_ppm":induced,**fit}); trial_id+=1
     # AM/FM controls at 1 kHz: sidebands are not automatically grounds for rejection.
@@ -151,6 +153,7 @@ def main():
       "fs_hz":FS,"pilot_nominals_hz":list(PILOT_NOMINALS),"durations_s":[2,4,6],
       "pilot_level_dbfs":PILOT_DBFS,"broadband_noise_dbfs":NOISE_DBFS,
       "observed_leakage_L_dbfs":-109.0,"observed_leakage_R_dbfs":-125.0,
+      "per_channel_actual_leakage_level_is_recorded":True,
       "stress_leakage_dbfs":list(LEAKAGE_DBFS),"clock_offset_ppm":-23.5,
       "comb":"60 Hz harmonics, low-level synthetic controls",
       "nearby_hard_gate":False,"production_changes":False,
