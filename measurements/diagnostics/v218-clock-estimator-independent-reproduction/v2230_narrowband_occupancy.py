@@ -28,6 +28,7 @@ NOISE_DBFS = -80.0             # sine-equivalent broadband RMS level
 LEAKAGE_DBFS = -109.0          # observed 1 kHz line in quiet L channel
 PILOT_LEVELS = (-66.0, -72.0)
 PILOT_HZ = 1000.0
+OBSERVED_BASE_PPM = -23.5  # 999.9765 Hz pilot against the observed 1000 Hz leakage
 SEED_BASE = 223001
 
 
@@ -79,7 +80,7 @@ class SyntheticBackend:
     def play_record(self,out,tail=0.8):
         program=np.asarray(out,dtype=np.float64)
         if program.ndim==1: program=np.column_stack((program,program))
-        ppm=float(self.cfg.get("frequency_offset_ppm",0.0))
+        ppm=OBSERVED_BASE_PPM+float(self.cfg.get("frequency_offset_ppm",0.0))
         if ppm:
             src=np.arange(len(program),dtype=float)*(1.0+ppm*1e-6)
             ix=np.arange(len(program),dtype=float)
@@ -109,7 +110,7 @@ class SyntheticBackend:
         leak=amp(float(self.cfg.get("leakage_dbfs",LEAKAGE_DBFS)))
         rec[:,0]+=leak*np.sin(2*np.pi*1000.0*t+0.31)
         rec[:,1]+=amp(-125.0)*np.sin(2*np.pi*1000.0*t+1.13)
-        self.meta={"noise_dbfs":self.cfg.get("noise_dbfs"),"noise_channel_correlation":rho,
+        self.meta={"noise_dbfs":self.cfg.get("noise_dbfs"),"noise_channel_correlation":rho,"effective_frequency_offset_ppm":ppm,
                    "leakage_L_dbfs":self.cfg.get("leakage_dbfs"),"leakage_R_dbfs":-125.0,
                    "delay_s":DELAY_S,"program_window_start_s":SETTLE_S}
         self.last_recording=rec
@@ -190,7 +191,7 @@ def run_case(cfg,i):
         pilot_f=float(np.mean([v["f0"] for v in result.get("ch",{}).values()]))
     except Exception as e:
         row["clock_check"]="raised"; row["clock_error"]=f"{type(e).__name__}: {e}"
-        pilot_f=PILOT_HZ*(1.0+float(cfg.get("frequency_offset_ppm",0))*1e-6)
+        pilot_f=PILOT_HZ*(1.0+(OBSERVED_BASE_PPM+float(cfg.get("frequency_offset_ppm",0)))*1e-6)
     win=captured.get("win")
     if win is None:
         # The production stability guard can reject before returning windows.
@@ -208,7 +209,8 @@ def main():
       "cases":len(rows),"fs_hz":FS,"window_s":WINDOW_S,"block_s":1.0,
       "demod_frame_ms":FRAME_S*1000,"demod_hop_ms":HOP_S*1000,
       "noise_dbfs_rms_sine_equiv":NOISE_DBFS,"noise_model":"broadband Gaussian, L/R rho=0.95",
-      "pilot_levels_dbfs":list(PILOT_LEVELS),"leakage_L_dbfs":LEAKAGE_DBFS,
+      "pilot_levels_dbfs":list(PILOT_LEVELS),"pilot_true_hz_at_base":PILOT_HZ*(1.0+OBSERVED_BASE_PPM*1e-6),
+      "observed_base_frequency_offset_ppm":OBSERVED_BASE_PPM,"leakage_L_dbfs":LEAKAGE_DBFS,
       "candidate_thresholds_are_not_approved":True,
       "interpretation":"The q95-12 dB threshold uses a global per-channel reference to avoid each silent block self-normalizing. The off-band demodulation is only a diagnostic noise proxy. The 0.97 occupancy / 50 ms run criteria remain unvalidated candidates."},
       "per_case":rows,"environment":{"python":platform.python_version(),"numpy":np.__version__,"scipy":scipy.__version__}}
