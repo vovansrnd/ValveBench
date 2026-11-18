@@ -134,7 +134,9 @@ def main():
     for key,items in sorted(grouped.items()):
       shifts=[abs(r["induced_shift_ppm"]) for r in items if r["induced_shift_ppm"] is not None]
       errors=[abs(r["fit_error_ppm"]) for r in items if r["fit_error_ppm"] is not None]
-      summaries[f"pilot={key[0]:g}Hz T={key[1]:g}s {key[2]} leak={key[3]:g}dBFS"]={
+      summaries[f"pilot={key[0]:g}Hz T={key[1]:g}s {key[2]} nominal_leak={key[3]:g}dBFS"]={
+       "nominal_leakage_control_dbfs":key[3],
+       "actual_leakage_dbfs":items[0]["actual_leakage_dbfs"],
        "n":len(items),"induced_abs_median_ppm":float(np.median(shifts)) if shifts else None,
        "induced_abs_p90_ppm":float(np.percentile(shifts,90)) if shifts else None,
        "induced_abs_max_ppm":max(shifts) if shifts else None,
