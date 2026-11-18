@@ -1,0 +1,411 @@
+{
+  "purpose": "Compare full-window line-QC with two-block persistence under legacy and physically normalized local-floor bandwidths.",
+  "fs_hz": 96000.0,
+  "duration_s": 2.0,
+  "pilot_nominal_hz": 1000.0,
+  "pilot_true_hz": 999.9765000000001,
+  "df_full_hz": 0.5,
+  "df_half_hz": 1.0,
+  "legacy_floor_bins": 161,
+  "full_window_floor_half_width_hz": 40.0,
+  "legacy_half_window_floor_half_width_hz": 80.0,
+  "physical_half_window_floor_bins": 81,
+  "physical_half_window_floor_half_width_hz": 40.0,
+  "tolerances_hz": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "trial_count": 1296,
+  "categories": {
+    "first_half_spur": {
+      "n": 96,
+      "full_window_hits": 0,
+      "full_window_rate": 0.0,
+      "full_window_wilson95": [
+        0.0,
+        0.03847694748481595
+      ],
+      "legacy_block_1_hits": 52,
+      "legacy_block_2_hits": 0,
+      "legacy_both_within_0_5hz": 0,
+      "legacy_both_rate": 0.0,
+      "legacy_both_wilson95": [
+        0.0,
+        0.03847694748481595
+      ],
+      "physical_block_1_hits": 52,
+      "physical_block_2_hits": 0,
+      "physical_both_within_0_5hz": 0,
+      "physical_both_rate": 0.0,
+      "physical_both_wilson95": [
+        0.0,
+        0.03847694748481595
+      ],
+      "reconstruction_mismatches": 0,
+      "legacy_both_within_0.5hz": 0,
+      "physical_both_within_0.5hz": 0,
+      "legacy_both_within_1hz": 0,
+      "physical_both_within_1hz": 0,
+      "legacy_both_within_2hz": 0,
+      "physical_both_within_2hz": 0
+    },
+    "line_free_colored": {
+      "n": 60,
+      "full_window_hits": 0,
+      "full_window_rate": 0.0,
+      "full_window_wilson95": [
+        0.0,
+        0.06017393047793289
+      ],
+      "legacy_block_1_hits": 2,
+      "legacy_block_2_hits": 1,
+      "legacy_both_within_0_5hz": 0,
+      "legacy_both_rate": 0.0,
+      "legacy_both_wilson95": [
+        0.0,
+        0.06017393047793289
+      ],
+      "physical_block_1_hits": 2,
+      "physical_block_2_hits": 1,
+      "physical_both_within_0_5hz": 0,
+      "physical_both_rate": 0.0,
+      "physical_both_wilson95": [
+        0.0,
+        0.06017393047793289
+      ],
+      "reconstruction_mismatches": 0,
+      "legacy_both_within_0.5hz": 0,
+      "physical_both_within_0.5hz": 0,
+      "legacy_both_within_1hz": 0,
+      "physical_both_within_1hz": 0,
+      "legacy_both_within_2hz": 0,
+      "physical_both_within_2hz": 0
+    },
+    "line_free_white": {
+      "n": 900,
+      "full_window_hits": 80,
+      "full_window_rate": 0.08888888888888889,
+      "full_window_wilson95": [
+        0.07200091325964388,
+        0.10927155749186833
+      ],
+      "legacy_block_1_hits": 74,
+      "legacy_block_2_hits": 65,
+      "legacy_both_within_0_5hz": 0,
+      "legacy_both_rate": 0.0,
+      "legacy_both_wilson95": [
+        4.336808689942018e-19,
+        0.004250302265352689
+      ],
+      "physical_block_1_hits": 97,
+      "physical_block_2_hits": 93,
+      "physical_both_within_0_5hz": 0,
+      "physical_both_rate": 0.0,
+      "physical_both_wilson95": [
+        4.336808689942018e-19,
+        0.004250302265352689
+      ],
+      "reconstruction_mismatches": 0,
+      "legacy_both_within_0.5hz": 0,
+      "physical_both_within_0.5hz": 0,
+      "legacy_both_within_1hz": 0,
+      "physical_both_within_1hz": 0,
+      "legacy_both_within_2hz": 0,
+      "physical_both_within_2hz": 0
+    },
+    "second_half_spur": {
+      "n": 96,
+      "full_window_hits": 0,
+      "full_window_rate": 0.0,
+      "full_window_wilson95": [
+        0.0,
+        0.03847694748481595
+      ],
+      "legacy_block_1_hits": 0,
+      "legacy_block_2_hits": 51,
+      "legacy_both_within_0_5hz": 0,
+      "legacy_both_rate": 0.0,
+      "legacy_both_wilson95": [
+        0.0,
+        0.03847694748481595
+      ],
+      "physical_block_1_hits": 0,
+      "physical_block_2_hits": 51,
+      "physical_both_within_0_5hz": 0,
+      "physical_both_rate": 0.0,
+      "physical_both_wilson95": [
+        0.0,
+        0.03847694748481595
+      ],
+      "reconstruction_mismatches": 0,
+      "legacy_both_within_0.5hz": 0,
+      "physical_both_within_0.5hz": 0,
+      "legacy_both_within_1hz": 0,
+      "physical_both_within_1hz": 0,
+      "legacy_both_within_2hz": 0,
+      "physical_both_within_2hz": 0
+    },
+    "stable_spur": {
+      "n": 144,
+      "full_window_hits": 59,
+      "full_window_rate": 0.4097222222222222,
+      "full_window_wilson95": [
+        0.33275935999749184,
+        0.4913767424256421
+      ],
+      "legacy_block_1_hits": 54,
+      "legacy_block_2_hits": 56,
+      "legacy_both_within_0_5hz": 51,
+      "legacy_both_rate": 0.3541666666666667,
+      "legacy_both_wilson95": [
+        0.2807687889835203,
+        0.4351433764692346
+      ],
+      "physical_block_1_hits": 54,
+      "physical_block_2_hits": 56,
+      "physical_both_within_0_5hz": 51,
+      "physical_both_rate": 0.3541666666666667,
+      "physical_both_wilson95": [
+        0.2807687889835203,
+        0.4351433764692346
+      ],
+      "reconstruction_mismatches": 0,
+      "legacy_both_within_0.5hz": 51,
+      "physical_both_within_0.5hz": 51,
+      "legacy_both_within_1hz": 51,
+      "physical_both_within_1hz": 51,
+      "legacy_both_within_2hz": 51,
+      "physical_both_within_2hz": 51
+    }
+  },
+  "injected_cells": {
+    "first_half_spur 12345Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 4
+    },
+    "first_half_spur 12345Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "first_half_spur 12345.4Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "first_half_spur 12345.4Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "first_half_spur 23456.2Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "first_half_spur 23456.2Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "first_half_spur 34567.6Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "first_half_spur 34567.6Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "second_half_spur 12345Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 3
+    },
+    "second_half_spur 12345Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "second_half_spur 12345.4Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "second_half_spur 12345.4Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "second_half_spur 23456.2Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "second_half_spur 23456.2Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "second_half_spur 34567.6Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "second_half_spur 34567.6Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 12
+    },
+    "stable_spur 12345Hz -40dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 12345Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 11,
+      "legacy_both_0_5hz": 3,
+      "physical_both_0_5hz": 3,
+      "physical_any_block_hits": 11
+    },
+    "stable_spur 12345Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 12,
+      "legacy_both_0_5hz": 12,
+      "physical_both_0_5hz": 12,
+      "physical_any_block_hits": 12
+    },
+    "stable_spur 12345.4Hz -40dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 12345.4Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 12345.4Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 12,
+      "legacy_both_0_5hz": 12,
+      "physical_both_0_5hz": 12,
+      "physical_any_block_hits": 12
+    },
+    "stable_spur 23456.2Hz -40dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 23456.2Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 23456.2Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 12,
+      "legacy_both_0_5hz": 12,
+      "physical_both_0_5hz": 12,
+      "physical_any_block_hits": 12
+    },
+    "stable_spur 34567.6Hz -40dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 34567.6Hz -35dBc": {
+      "n": 12,
+      "full_window_hits": 0,
+      "legacy_both_0_5hz": 0,
+      "physical_both_0_5hz": 0,
+      "physical_any_block_hits": 0
+    },
+    "stable_spur 34567.6Hz -30dBc": {
+      "n": 12,
+      "full_window_hits": 12,
+      "legacy_both_0_5hz": 12,
+      "physical_both_0_5hz": 12,
+      "physical_any_block_hits": 12
+    }
+  },
+  "interpretation": "The normalized two-block rule is a candidate diagnostic policy only. It may suppress transient real spurs by design. Do not change QC_CFG or use it as a hard refusal without a separate coordinator decision.",
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2220-lineqc-physical-width.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2220_lineqc_physical_width.py"
+	User time (seconds): 452.21
+	System time (seconds): 15.32
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 7:47.66
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 126888
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 6447228
+	Voluntary context switches: 41
+	Involuntary context switches: 5403
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 3760
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

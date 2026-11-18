@@ -1,0 +1,84 @@
+{
+  "purpose": "Compare real production clock_check acceptance with per-block SNR and upper-quantile-relative frame occupancy on continuous, gated, pulsed and amplitude-modulated synthetic pilots.",
+  "fs_hz": 96000,
+  "window_s": 2.0,
+  "blocks": 2,
+  "settle_s": 0.4,
+  "pilot_hz": 1000.0,
+  "pilot_level_dbfs": -72.0,
+  "case_count": 34,
+  "rig_run_counts": {
+    "pass": 31,
+    "reject": 3
+  },
+  "clock_check_counts": {
+    "raised": 3,
+    "returned": 31
+  },
+  "returned_ok_cases": [
+    "clean_steady",
+    "front_contiguous_20pct",
+    "front_contiguous_40pct",
+    "front_contiguous_49pct",
+    "40pct_center",
+    "40pct_back",
+    "40pct_split",
+    "40pct_four_bursts",
+    "pulse_period_40ms_duty_40pct",
+    "pulse_period_40ms_duty_60pct",
+    "pulse_period_50ms_duty_50pct",
+    "pulse_period_80ms_duty_40pct",
+    "pulse_period_80ms_duty_60pct",
+    "pulse_period_100ms_duty_40pct",
+    "pulse_period_100ms_duty_60pct",
+    "pulse_period_120ms_duty_40pct",
+    "pulse_period_120ms_duty_60pct",
+    "pulse_period_200ms_duty_40pct",
+    "pulse_period_200ms_duty_80pct",
+    "steady_frequency_offset_-80ppm",
+    "steady_frequency_offset_-50ppm",
+    "steady_frequency_offset_+0ppm",
+    "steady_frequency_offset_+50ppm",
+    "steady_frequency_offset_+80ppm",
+    "steady_am_depth_0.2_at_5hz",
+    "steady_am_depth_0.5_at_5hz",
+    "steady_am_depth_0.5_at_20hz"
+  ],
+  "candidate_gate_counts": {
+    "candidate_both_blocks_snr_ge_20db": 27,
+    "candidate_both_blocks_snr_ge_30db": 18,
+    "candidate_both_blocks_snr_ge_40db": 18,
+    "candidate_both_channels_q90_occupancy_ge_90pct": 13,
+    "candidate_both_channels_q90_occupancy_ge_95pct": 13
+  },
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}
+JSON: /home/vovans/ValveBench-compute/ValveBench/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2220-clock-occupancy-diagnostics.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2220_clock_occupancy_diagnostics.py"
+	User time (seconds): 2.81
+	System time (seconds): 1.04
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.85
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 260732
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 403874
+	Voluntary context switches: 1
+	Involuntary context switches: 50
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 352
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0

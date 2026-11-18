@@ -1,0 +1,5422 @@
+{
+  "summary": {
+    "purpose": "Compare real production clock_check acceptance with per-block SNR and upper-quantile-relative frame occupancy on continuous, gated, pulsed and amplitude-modulated synthetic pilots.",
+    "fs_hz": 96000,
+    "window_s": 2.0,
+    "blocks": 2,
+    "settle_s": 0.4,
+    "pilot_hz": 1000.0,
+    "pilot_level_dbfs": -72.0,
+    "case_count": 34,
+    "rig_run_counts": {
+      "pass": 31,
+      "reject": 3
+    },
+    "clock_check_counts": {
+      "raised": 3,
+      "returned": 31
+    },
+    "returned_ok_cases": [
+      "clean_steady",
+      "front_contiguous_20pct",
+      "front_contiguous_40pct",
+      "front_contiguous_49pct",
+      "40pct_center",
+      "40pct_back",
+      "40pct_split",
+      "40pct_four_bursts",
+      "pulse_period_40ms_duty_40pct",
+      "pulse_period_40ms_duty_60pct",
+      "pulse_period_50ms_duty_50pct",
+      "pulse_period_80ms_duty_40pct",
+      "pulse_period_80ms_duty_60pct",
+      "pulse_period_100ms_duty_40pct",
+      "pulse_period_100ms_duty_60pct",
+      "pulse_period_120ms_duty_40pct",
+      "pulse_period_120ms_duty_60pct",
+      "pulse_period_200ms_duty_40pct",
+      "pulse_period_200ms_duty_80pct",
+      "steady_frequency_offset_-80ppm",
+      "steady_frequency_offset_-50ppm",
+      "steady_frequency_offset_+0ppm",
+      "steady_frequency_offset_+50ppm",
+      "steady_frequency_offset_+80ppm",
+      "steady_am_depth_0.2_at_5hz",
+      "steady_am_depth_0.5_at_5hz",
+      "steady_am_depth_0.5_at_20hz"
+    ],
+    "candidate_gate_counts": {
+      "candidate_both_blocks_snr_ge_20db": 27,
+      "candidate_both_blocks_snr_ge_30db": 18,
+      "candidate_both_blocks_snr_ge_40db": 18,
+      "candidate_both_channels_q90_occupancy_ge_90pct": 13,
+      "candidate_both_channels_q90_occupancy_ge_95pct": 13
+    },
+    "environment": {
+      "python": "3.14.4",
+      "numpy": "2.3.5",
+      "scipy": "1.16.3"
+    }
+  },
+  "per_case": [
+    {
+      "case": "clean_steady",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.005816019887916468,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999941478794,
+            "ppm": -0.0058521205659189945,
+            "level_dbfs": -72.00023372261565,
+            "snr_db": 74.94654110310137,
+            "coh_err_bins": -5.852120580129849e-06,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999883318595,
+            "ppm": -0.011668140453835463,
+            "level_dbfs": -72.00011458900606,
+            "snr_db": 74.86357132620878,
+            "coh_err_bins": -1.1668140473375388e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.9994402407323,
+          "q90_dbfs": -71.98984558417794,
+          "q95_dbfs": -71.98730730852661,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.999505044849,
+          "q90_dbfs": -71.98927843346848,
+          "q95_dbfs": -71.98656019265391,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999434254254,
+            "level_dbfs": -72.00018243897031,
+            "local_snr_db": 74.90346415358847,
+            "coh_err_bins": -5.657457461438753e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999133267946,
+            "level_dbfs": -72.00005620002108,
+            "local_snr_db": 75.76895457283022,
+            "coh_err_bins": -8.66732053736996e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0000448673251,
+            "level_dbfs": -72.00028500656379,
+            "local_snr_db": 77.31850041383369,
+            "coh_err_bins": 4.486732507302804e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000633327624,
+            "level_dbfs": -72.00017297838355,
+            "local_snr_db": 74.52711239804161,
+            "coh_err_bins": 6.333276235181984e-05,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.52711239804161,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "front_contiguous_20pct",
+      "active_fraction": 0.2,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.4
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.10544701323222938,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9980099578212,
+            "ppm": -1.9900421788232592,
+            "level_dbfs": -85.97897033916462,
+            "snr_db": 20.26425826928168,
+            "coh_err_bins": -0.00199004217881793,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.997904510808,
+            "ppm": -2.0954891920554886,
+            "level_dbfs": -83.71029063256697,
+            "snr_db": 20.273116444922316,
+            "coh_err_bins": -0.0020954891920155205,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "R: сдвиг тона -0.0021 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0021 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.86462733403954,
+          "q90_dbfs": -71.9990844522336,
+          "q95_dbfs": -71.99337864373496,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.201,
+          "q95_relative_above_12db_fraction": 0.201,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.85467795096062,
+          "q90_dbfs": -71.99936147565336,
+          "q95_dbfs": -71.99435677190702,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.201,
+          "q95_relative_above_12db_fraction": 0.201,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9980099699793,
+            "level_dbfs": -80.02380853650044,
+            "local_snr_db": 20.264340867949944,
+            "coh_err_bins": -0.001990030020692757,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9979040300288,
+            "level_dbfs": -80.69999264394824,
+            "local_snr_db": 20.273386944586438,
+            "coh_err_bins": -0.002095969971151135,
+            "warnings": [
+              "сдвиг тона -0.0021 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 997.5932443152386,
+            "level_dbfs": -147.18070660830574,
+            "local_snr_db": -1.0393481875193704,
+            "coh_err_bins": -0.4067556847613787,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.41 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1001.366816965918,
+            "level_dbfs": -143.59727864956344,
+            "local_snr_db": 6.529857640762605,
+            "coh_err_bins": 0.3668169659180194,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.37 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": -1.0393481875193704,
+      "candidate_both_blocks_snr_ge_20db": false,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 38400,
+        "active_fraction": 0.2,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "front_contiguous_40pct",
+      "active_fraction": 0.4,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.8
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.1192574874409047,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000212557504,
+            "ppm": 0.021255750493054393,
+            "level_dbfs": -79.93642030067143,
+            "snr_db": 47.007558583594175,
+            "coh_err_bins": 2.1255750425552833e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.999901998263,
+            "ppm": -0.0980017369478503,
+            "level_dbfs": -79.93628981414265,
+            "snr_db": 47.03281712059866,
+            "coh_err_bins": -9.800173700114101e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.55065871645263,
+          "q90_dbfs": -71.99365246346954,
+          "q95_dbfs": -71.9897322063364,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.401,
+          "q95_relative_above_12db_fraction": 0.401,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.58916526567808,
+          "q90_dbfs": -71.993999605189,
+          "q95_dbfs": -71.9904145158544,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.401,
+          "q95_relative_above_12db_fraction": 0.401,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.0000212893291,
+            "level_dbfs": -73.91616250060471,
+            "local_snr_db": 47.00852132304273,
+            "coh_err_bins": 2.1289329083629127e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999019684521,
+            "level_dbfs": -73.91613202058205,
+            "local_snr_db": 47.036100416209806,
+            "coh_err_bins": -9.803154785004153e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 996.3775960009431,
+            "level_dbfs": -145.18071000276552,
+            "local_snr_db": 4.63631382935052,
+            "coh_err_bins": 0.3775960009430719,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.38 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1002.0045668251007,
+            "level_dbfs": -145.39049744409175,
+            "local_snr_db": 3.649909045102779,
+            "coh_err_bins": 0.004566825100710048,
+            "warnings": [
+              "сдвиг тона +0.0046 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 3.649909045102779,
+      "candidate_both_blocks_snr_ge_20db": false,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "front_contiguous_49pct",
+      "active_fraction": 0.49,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.98
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.14109020085584234,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999509796252,
+            "ppm": -0.04902037487042321,
+            "level_dbfs": -78.17758346551523,
+            "snr_db": 71.5139927785131,
+            "coh_err_bins": -4.902037483134336e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.000092069826,
+            "ppm": 0.09206982598541913,
+            "level_dbfs": -78.17760438182313,
+            "snr_db": 71.09369798024284,
+            "coh_err_bins": 9.206982599607727e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "L: фаза несущей между блоками нестабильна (coherence=0.715); гармоники усреднены с нормировкой на фазу несущей",
+          "R: фаза несущей между блоками нестабильна (coherence=0.781); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -108.99772358159139,
+          "q90_dbfs": -71.99239601822822,
+          "q95_dbfs": -71.98923074592032,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.491,
+          "q95_relative_above_12db_fraction": 0.491,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.17857323976887,
+          "q90_dbfs": -71.99274503215645,
+          "q95_dbfs": -71.98860813318664,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.491,
+          "q95_relative_above_12db_fraction": 0.491,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999509797692,
+            "level_dbfs": -72.15748053942471,
+            "local_snr_db": 76.0459671260758,
+            "coh_err_bins": -4.902023079011997e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000920799538,
+            "level_dbfs": -72.15751615592025,
+            "local_snr_db": 75.05136217316502,
+            "coh_err_bins": 9.20799537880157e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1003.2853431277147,
+            "level_dbfs": -144.4104316980836,
+            "local_snr_db": 5.321977030984893,
+            "coh_err_bins": 0.2853431277146683,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.29 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.4039142186422,
+            "level_dbfs": -146.27095462013372,
+            "local_snr_db": 1.3094232490282973,
+            "coh_err_bins": 0.40391421864217136,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.40 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 1.3094232490282973,
+      "candidate_both_blocks_snr_ge_20db": false,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 94080,
+        "active_fraction": 0.49,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "front_contiguous_50pct",
+      "active_fraction": 0.5,
+      "active_intervals_s": [
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.9 дБ длительностью 1.00 с — недостаточно устойчивого сигнала для анализа",
+      "onset_s": 0.135,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.9 дБ длительностью 1.00 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 96000,
+        "active_fraction": 0.5,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "front_contiguous_60pct",
+      "active_fraction": 0.6,
+      "active_intervals_s": [
+        [
+          0.0,
+          1.2
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "error": "MeasureError: сегмент 1: канал L: провал 36.6 дБ длительностью 0.80 с — недостаточно устойчивого сигнала для анализа",
+      "onset_s": 0.135,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 36.6 дБ длительностью 0.80 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 115200,
+        "active_fraction": 0.6,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "40pct_center",
+      "active_fraction": 0.39999999999999997,
+      "active_intervals_s": [
+        [
+          0.6,
+          1.4
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.7856900211544726,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9985278865848,
+            "ppm": -1.4721134151685078,
+            "level_dbfs": -79.9255599085597,
+            "snr_db": 20.40075319381163,
+            "coh_err_bins": -0.0014721134151614024,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9977421965636,
+            "ppm": -2.2578034363229804,
+            "level_dbfs": -80.4907012090225,
+            "snr_db": 20.404394586735265,
+            "coh_err_bins": -0.002257803436350514,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "R: сдвиг тона -0.0023 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0023 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.61400438340425,
+          "q90_dbfs": -71.99349460507521,
+          "q95_dbfs": -71.98911965339256,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.403,
+          "q95_relative_above_12db_fraction": 0.403,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.54604493861663,
+          "q90_dbfs": -71.99372539859266,
+          "q95_dbfs": -71.99003975816775,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.403,
+          "q95_relative_above_12db_fraction": 0.403,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9982154120121,
+            "level_dbfs": -79.892924226482,
+            "local_snr_db": 20.49398673672487,
+            "coh_err_bins": -0.0017845879879132553,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9980124573116,
+            "level_dbfs": -79.8948844389989,
+            "local_snr_db": 20.48053941944701,
+            "coh_err_bins": -0.001987542688425492,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9988727208874,
+            "level_dbfs": -79.9583186760123,
+            "local_snr_db": 20.30051643648344,
+            "coh_err_bins": -0.0011272791125520598,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9974440641925,
+            "level_dbfs": -80.70014600665976,
+            "local_snr_db": 20.32223664174268,
+            "coh_err_bins": -0.0025559358075497585,
+            "warnings": [
+              "сдвиг тона -0.0026 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 20.30051643648344,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "40pct_back",
+      "active_fraction": 0.4,
+      "active_intervals_s": [
+        [
+          1.2,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.04642316242531308,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.00003511859,
+            "ppm": 0.03511859003602069,
+            "level_dbfs": -79.9261561212836,
+            "snr_db": 47.13514521528196,
+            "coh_err_bins": 3.5118589948979206e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000815417524,
+            "ppm": 0.08154175246133377,
+            "level_dbfs": -79.92506563611957,
+            "snr_db": 47.35547643718472,
+            "coh_err_bins": 8.15417523654105e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: фаза несущей между блоками нестабильна (coherence=0.463); гармоники усреднены с нормировкой на фазу несущей"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.58632440531903,
+          "q90_dbfs": -71.99392160652714,
+          "q95_dbfs": -71.9896685916442,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.402,
+          "q95_relative_above_12db_fraction": 0.402,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.6144862140365,
+          "q90_dbfs": -71.9928588823796,
+          "q95_dbfs": -71.98961019538956,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.402,
+          "q95_relative_above_12db_fraction": 0.402,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.304050935673,
+            "level_dbfs": -149.84936162838574,
+            "local_snr_db": -2.898922871869929,
+            "coh_err_bins": 0.3040509356729899,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.30 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 997.979259305427,
+            "level_dbfs": -149.12067518698046,
+            "local_snr_db": -1.5632001444200352,
+            "coh_err_bins": -0.020740694572964458,
+            "warnings": [
+              "сдвиг тона -0.0207 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0000351180317,
+            "level_dbfs": -73.90573535961357,
+            "local_snr_db": 47.14498348391376,
+            "coh_err_bins": 3.511803174660599e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000815468575,
+            "level_dbfs": -73.90498053508898,
+            "local_snr_db": 47.372981880173256,
+            "coh_err_bins": 8.154685747285839e-05,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": -2.898922871869929,
+      "candidate_both_blocks_snr_ge_20db": false,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "40pct_split",
+      "active_fraction": 0.39999999999999997,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.4
+        ],
+        [
+          1.0,
+          1.4
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.5062248144005466,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9977741165231,
+            "ppm": -2.2258834768695834,
+            "level_dbfs": -80.69943979643121,
+            "snr_db": 20.30969116157337,
+            "coh_err_bins": -0.0022258834768535962,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9982803413375,
+            "ppm": -1.7196586624690369,
+            "level_dbfs": -79.95815462831948,
+            "snr_db": 20.288585453209976,
+            "coh_err_bins": -0.0017196586625232158,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0022 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.60267889408983,
+          "q90_dbfs": -71.99295952324351,
+          "q95_dbfs": -71.98948923801899,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.402,
+          "q95_relative_above_12db_fraction": 0.402,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.64176072990226,
+          "q90_dbfs": -71.99362172765802,
+          "q95_dbfs": -71.9904867858,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.402,
+          "q95_relative_above_12db_fraction": 0.402,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9983347686102,
+            "level_dbfs": -79.95766495260162,
+            "local_snr_db": 20.279231233335835,
+            "coh_err_bins": -0.0016652313897793647,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9986748367991,
+            "level_dbfs": -79.95763133683721,
+            "local_snr_db": 20.310910659880903,
+            "coh_err_bins": -0.0013251632009314562,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9972136349988,
+            "level_dbfs": -80.6993335452735,
+            "local_snr_db": 20.34036472892401,
+            "coh_err_bins": -0.0027863650011568097,
+            "warnings": [
+              "сдвиг тона -0.0028 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9978857080048,
+            "level_dbfs": -80.70197025091989,
+            "local_snr_db": 20.266367421893836,
+            "coh_err_bins": -0.002114291995212625,
+            "warnings": [
+              "сдвиг тона -0.0021 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 20.266367421893836,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "40pct_four_bursts",
+      "active_fraction": 0.4,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.2
+        ],
+        [
+          0.45,
+          0.65
+        ],
+        [
+          0.9,
+          1.1
+        ],
+        [
+          1.35,
+          1.55
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.08094493142429826,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9977870498096,
+            "ppm": -2.2129501903167537,
+            "level_dbfs": -74.43773335857684,
+            "snr_db": 24.43868080163082,
+            "coh_err_bins": -0.002212950190369156,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9978679947411,
+            "ppm": -2.1320052588924554,
+            "level_dbfs": -74.43760954578967,
+            "snr_db": 24.410452905006327,
+            "coh_err_bins": -0.002132005258886238,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора",
+          "L: сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0022 бина; допуск ±0.002)",
+          "R: сдвиг тона -0.0021 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0021 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.57229316909053,
+          "q90_dbfs": -71.99410538181951,
+          "q95_dbfs": -71.99017022446426,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.404,
+          "q95_relative_above_12db_fraction": 0.404,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.54613978937564,
+          "q90_dbfs": -71.99470402999958,
+          "q95_dbfs": -71.99055825536936,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.404,
+          "q95_relative_above_12db_fraction": 0.404,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9977662794942,
+            "level_dbfs": -74.39058292033816,
+            "local_snr_db": 24.310678668592764,
+            "coh_err_bins": -0.0022337205058420295,
+            "warnings": [
+              "сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9977371918596,
+            "level_dbfs": -74.39109441328154,
+            "local_snr_db": 24.234890822865896,
+            "coh_err_bins": -0.0022628081403581746,
+            "warnings": [
+              "сдвиг тона -0.0023 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9978083960387,
+            "level_dbfs": -74.48540132301628,
+            "local_snr_db": 24.33387478243604,
+            "coh_err_bins": -0.002191603961250621,
+            "warnings": [
+              "сдвиг тона -0.0022 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9980023808716,
+            "level_dbfs": -82.45734474910944,
+            "local_snr_db": 24.2970170196664,
+            "coh_err_bins": -0.001997619128360384,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 24.234890822865896,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_40ms_duty_40pct",
+      "active_fraction": 0.4000000000000003,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.016
+        ],
+        [
+          0.04,
+          0.056
+        ],
+        [
+          0.08,
+          0.096
+        ],
+        [
+          0.12,
+          0.136
+        ],
+        [
+          0.16,
+          0.176
+        ],
+        [
+          0.2,
+          0.21600000000000003
+        ],
+        [
+          0.24000000000000002,
+          0.256
+        ],
+        [
+          0.28,
+          0.29600000000000004
+        ],
+        [
+          0.32,
+          0.336
+        ],
+        [
+          0.36,
+          0.376
+        ],
+        [
+          0.39999999999999997,
+          0.416
+        ],
+        [
+          0.43999999999999995,
+          0.45599999999999996
+        ],
+        [
+          0.4799999999999999,
+          0.49599999999999994
+        ],
+        [
+          0.5199999999999999,
+          0.5359999999999999
+        ],
+        [
+          0.5599999999999999,
+          0.576
+        ],
+        [
+          0.6,
+          0.616
+        ],
+        [
+          0.64,
+          0.656
+        ],
+        [
+          0.68,
+          0.6960000000000001
+        ],
+        [
+          0.7200000000000001,
+          0.7360000000000001
+        ],
+        [
+          0.7600000000000001,
+          0.7760000000000001
+        ],
+        [
+          0.8000000000000002,
+          0.8160000000000002
+        ],
+        [
+          0.8400000000000002,
+          0.8560000000000002
+        ],
+        [
+          0.8800000000000002,
+          0.8960000000000002
+        ],
+        [
+          0.9200000000000003,
+          0.9360000000000003
+        ],
+        [
+          0.9600000000000003,
+          0.9760000000000003
+        ],
+        [
+          1.0000000000000002,
+          1.0160000000000002
+        ],
+        [
+          1.0400000000000003,
+          1.0560000000000003
+        ],
+        [
+          1.0800000000000003,
+          1.0960000000000003
+        ],
+        [
+          1.1200000000000003,
+          1.1360000000000003
+        ],
+        [
+          1.1600000000000004,
+          1.1760000000000004
+        ],
+        [
+          1.2000000000000004,
+          1.2160000000000004
+        ],
+        [
+          1.2400000000000004,
+          1.2560000000000004
+        ],
+        [
+          1.2800000000000005,
+          1.2960000000000005
+        ],
+        [
+          1.3200000000000005,
+          1.3360000000000005
+        ],
+        [
+          1.3600000000000005,
+          1.3760000000000006
+        ],
+        [
+          1.4000000000000006,
+          1.4160000000000006
+        ],
+        [
+          1.4400000000000006,
+          1.4560000000000006
+        ],
+        [
+          1.4800000000000006,
+          1.4960000000000007
+        ],
+        [
+          1.5200000000000007,
+          1.5360000000000007
+        ],
+        [
+          1.5600000000000007,
+          1.5760000000000007
+        ],
+        [
+          1.6000000000000008,
+          1.6160000000000008
+        ],
+        [
+          1.6400000000000008,
+          1.6560000000000008
+        ],
+        [
+          1.6800000000000008,
+          1.6960000000000008
+        ],
+        [
+          1.7200000000000009,
+          1.7360000000000009
+        ],
+        [
+          1.760000000000001,
+          1.776000000000001
+        ],
+        [
+          1.800000000000001,
+          1.816000000000001
+        ],
+        [
+          1.840000000000001,
+          1.856000000000001
+        ],
+        [
+          1.880000000000001,
+          1.896000000000001
+        ],
+        [
+          1.920000000000001,
+          1.936000000000001
+        ],
+        [
+          1.960000000000001,
+          1.976000000000001
+        ]
+      ],
+      "pulse_period_ms": 40,
+      "pulse_duty": 0.4,
+      "max_nominal_gap_ms": 24.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.1687553520257623,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000829063126,
+            "ppm": 0.08290631270391202,
+            "level_dbfs": -79.95878337140566,
+            "snr_db": 65.9332609343506,
+            "coh_err_bins": 8.290631262752868e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999141509606,
+            "ppm": -0.08584903932185028,
+            "level_dbfs": -79.9576284048367,
+            "snr_db": 65.62176039330703,
+            "coh_err_bins": -8.584903935116017e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.46405421023324,
+          "q90_dbfs": -71.99428160775561,
+          "q95_dbfs": -71.9904953313526,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.45,
+          "q95_relative_above_12db_fraction": 0.45,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.47829099928566,
+          "q90_dbfs": -71.9941772240592,
+          "q95_dbfs": -71.98959485162803,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.45,
+          "q95_relative_above_12db_fraction": 0.45,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999842101212,
+            "level_dbfs": -79.95957535180527,
+            "local_snr_db": 65.58659541951278,
+            "coh_err_bins": -1.5789878830219095e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999442831721,
+            "level_dbfs": -79.95848523934077,
+            "local_snr_db": 66.42018272296966,
+            "coh_err_bins": -5.5716827887408726e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0001815553475,
+            "level_dbfs": -79.95799146321234,
+            "local_snr_db": 66.50497325335512,
+            "coh_err_bins": 0.00018155534746711055,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9998840319283,
+            "level_dbfs": -79.95677165484817,
+            "local_snr_db": 65.09604747925246,
+            "coh_err_bins": -0.00011596807166824874,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 65.09604747925246,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_40ms_duty_60pct",
+      "active_fraction": 0.6000000000000004,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.024
+        ],
+        [
+          0.04,
+          0.064
+        ],
+        [
+          0.08,
+          0.10400000000000001
+        ],
+        [
+          0.12,
+          0.144
+        ],
+        [
+          0.16,
+          0.184
+        ],
+        [
+          0.2,
+          0.224
+        ],
+        [
+          0.24000000000000002,
+          0.264
+        ],
+        [
+          0.28,
+          0.30400000000000005
+        ],
+        [
+          0.32,
+          0.34400000000000003
+        ],
+        [
+          0.36,
+          0.384
+        ],
+        [
+          0.39999999999999997,
+          0.424
+        ],
+        [
+          0.43999999999999995,
+          0.46399999999999997
+        ],
+        [
+          0.4799999999999999,
+          0.5039999999999999
+        ],
+        [
+          0.5199999999999999,
+          0.5439999999999999
+        ],
+        [
+          0.5599999999999999,
+          0.584
+        ],
+        [
+          0.6,
+          0.624
+        ],
+        [
+          0.64,
+          0.664
+        ],
+        [
+          0.68,
+          0.7040000000000001
+        ],
+        [
+          0.7200000000000001,
+          0.7440000000000001
+        ],
+        [
+          0.7600000000000001,
+          0.7840000000000001
+        ],
+        [
+          0.8000000000000002,
+          0.8240000000000002
+        ],
+        [
+          0.8400000000000002,
+          0.8640000000000002
+        ],
+        [
+          0.8800000000000002,
+          0.9040000000000002
+        ],
+        [
+          0.9200000000000003,
+          0.9440000000000003
+        ],
+        [
+          0.9600000000000003,
+          0.9840000000000003
+        ],
+        [
+          1.0000000000000002,
+          1.0240000000000002
+        ],
+        [
+          1.0400000000000003,
+          1.0640000000000003
+        ],
+        [
+          1.0800000000000003,
+          1.1040000000000003
+        ],
+        [
+          1.1200000000000003,
+          1.1440000000000003
+        ],
+        [
+          1.1600000000000004,
+          1.1840000000000004
+        ],
+        [
+          1.2000000000000004,
+          1.2240000000000004
+        ],
+        [
+          1.2400000000000004,
+          1.2640000000000005
+        ],
+        [
+          1.2800000000000005,
+          1.3040000000000005
+        ],
+        [
+          1.3200000000000005,
+          1.3440000000000005
+        ],
+        [
+          1.3600000000000005,
+          1.3840000000000006
+        ],
+        [
+          1.4000000000000006,
+          1.4240000000000006
+        ],
+        [
+          1.4400000000000006,
+          1.4640000000000006
+        ],
+        [
+          1.4800000000000006,
+          1.5040000000000007
+        ],
+        [
+          1.5200000000000007,
+          1.5440000000000007
+        ],
+        [
+          1.5600000000000007,
+          1.5840000000000007
+        ],
+        [
+          1.6000000000000008,
+          1.6240000000000008
+        ],
+        [
+          1.6400000000000008,
+          1.6640000000000008
+        ],
+        [
+          1.6800000000000008,
+          1.7040000000000008
+        ],
+        [
+          1.7200000000000009,
+          1.7440000000000009
+        ],
+        [
+          1.760000000000001,
+          1.784000000000001
+        ],
+        [
+          1.800000000000001,
+          1.824000000000001
+        ],
+        [
+          1.840000000000001,
+          1.864000000000001
+        ],
+        [
+          1.880000000000001,
+          1.904000000000001
+        ],
+        [
+          1.920000000000001,
+          1.944000000000001
+        ],
+        [
+          1.960000000000001,
+          1.984000000000001
+        ]
+      ],
+      "pulse_period_ms": 40,
+      "pulse_duty": 0.6,
+      "max_nominal_gap_ms": 16.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.078145264037488,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000781462239,
+            "ppm": 0.0781462239363151,
+            "level_dbfs": -76.43652767182584,
+            "snr_db": 68.21604482504367,
+            "coh_err_bins": 7.814622392743331e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000000009599,
+            "ppm": 9.598988270909103e-07,
+            "level_dbfs": -76.43767319740259,
+            "snr_db": 70.8342857407268,
+            "coh_err_bins": 9.598579708836041e-10,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00970821509418,
+          "q90_dbfs": -71.99090828423734,
+          "q95_dbfs": -71.98817049764634,
+          "median_relative_above_12db_fraction": 0.65,
+          "q90_relative_above_12db_fraction": 0.65,
+          "q95_relative_above_12db_fraction": 0.65,
+          "median_relative_low_max_run_ms": 14.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00996164649094,
+          "q90_dbfs": -71.99297438424124,
+          "q95_dbfs": -71.99014293571366,
+          "median_relative_above_12db_fraction": 0.65,
+          "q90_relative_above_12db_fraction": 0.65,
+          "q95_relative_above_12db_fraction": 0.65,
+          "median_relative_low_max_run_ms": 14.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999621029659,
+            "level_dbfs": -76.43667754724433,
+            "local_snr_db": 67.87598391810515,
+            "coh_err_bins": -3.789703407619527e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999923234585,
+            "level_dbfs": -76.43772633157835,
+            "local_snr_db": 70.57269191747221,
+            "coh_err_bins": -7.676541486034694e-06,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.000194159935,
+            "level_dbfs": -76.4363777989934,
+            "local_snr_db": 68.18218790739388,
+            "coh_err_bins": 0.00019415993494931172,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000076802748,
+            "level_dbfs": -76.43762006355186,
+            "local_snr_db": 71.18834354050448,
+            "coh_err_bins": 7.680274848098634e-06,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 67.87598391810515,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 115200,
+        "active_fraction": 0.6,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_50ms_duty_50pct",
+      "active_fraction": 0.4999999999999992,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.025
+        ],
+        [
+          0.05,
+          0.07500000000000001
+        ],
+        [
+          0.1,
+          0.125
+        ],
+        [
+          0.15000000000000002,
+          0.17500000000000002
+        ],
+        [
+          0.2,
+          0.225
+        ],
+        [
+          0.25,
+          0.275
+        ],
+        [
+          0.3,
+          0.325
+        ],
+        [
+          0.35,
+          0.375
+        ],
+        [
+          0.39999999999999997,
+          0.425
+        ],
+        [
+          0.44999999999999996,
+          0.475
+        ],
+        [
+          0.49999999999999994,
+          0.5249999999999999
+        ],
+        [
+          0.5499999999999999,
+          0.575
+        ],
+        [
+          0.6,
+          0.625
+        ],
+        [
+          0.65,
+          0.675
+        ],
+        [
+          0.7000000000000001,
+          0.7250000000000001
+        ],
+        [
+          0.7500000000000001,
+          0.7750000000000001
+        ],
+        [
+          0.8000000000000002,
+          0.8250000000000002
+        ],
+        [
+          0.8500000000000002,
+          0.8750000000000002
+        ],
+        [
+          0.9000000000000002,
+          0.9250000000000003
+        ],
+        [
+          0.9500000000000003,
+          0.9750000000000003
+        ],
+        [
+          1.0000000000000002,
+          1.0250000000000001
+        ],
+        [
+          1.0500000000000003,
+          1.0750000000000002
+        ],
+        [
+          1.1000000000000003,
+          1.1250000000000002
+        ],
+        [
+          1.1500000000000004,
+          1.1750000000000003
+        ],
+        [
+          1.2000000000000004,
+          1.2250000000000003
+        ],
+        [
+          1.2500000000000004,
+          1.2750000000000004
+        ],
+        [
+          1.3000000000000005,
+          1.3250000000000004
+        ],
+        [
+          1.3500000000000005,
+          1.3750000000000004
+        ],
+        [
+          1.4000000000000006,
+          1.4250000000000005
+        ],
+        [
+          1.4500000000000006,
+          1.4750000000000005
+        ],
+        [
+          1.5000000000000007,
+          1.5250000000000006
+        ],
+        [
+          1.5500000000000007,
+          1.5750000000000006
+        ],
+        [
+          1.6000000000000008,
+          1.6250000000000007
+        ],
+        [
+          1.6500000000000008,
+          1.6750000000000007
+        ],
+        [
+          1.7000000000000008,
+          1.7250000000000008
+        ],
+        [
+          1.7500000000000009,
+          1.7750000000000008
+        ],
+        [
+          1.800000000000001,
+          1.8250000000000008
+        ],
+        [
+          1.850000000000001,
+          1.8750000000000009
+        ],
+        [
+          1.900000000000001,
+          1.925000000000001
+        ],
+        [
+          1.950000000000001,
+          1.975000000000001
+        ]
+      ],
+      "pulse_period_ms": 50,
+      "pulse_duty": 0.5,
+      "max_nominal_gap_ms": 25.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.05380518552922098,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9998935268903,
+            "ppm": -0.10647310966227508,
+            "level_dbfs": -78.02005806811505,
+            "snr_db": 68.18360396091573,
+            "coh_err_bins": -0.00010647310966760415,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999473320759,
+            "ppm": -0.0526679241330541,
+            "level_dbfs": -78.02033544578995,
+            "snr_db": 66.96031197114284,
+            "coh_err_bins": -5.266792413749499e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -75.01132998897938,
+          "q90_dbfs": -71.99206214274211,
+          "q95_dbfs": -71.98850117846601,
+          "median_relative_above_12db_fraction": 0.52,
+          "q90_relative_above_12db_fraction": 0.52,
+          "q95_relative_above_12db_fraction": 0.52,
+          "median_relative_low_max_run_ms": 24.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -75.0105754166326,
+          "q90_dbfs": -71.99293074502353,
+          "q95_dbfs": -71.98966720085907,
+          "median_relative_above_12db_fraction": 0.52,
+          "q90_relative_above_12db_fraction": 0.52,
+          "q95_relative_above_12db_fraction": 0.52,
+          "median_relative_low_max_run_ms": 24.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.999795857151,
+            "level_dbfs": -78.01991537850908,
+            "local_snr_db": 68.92720242684615,
+            "coh_err_bins": -0.0002041428490429098,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0001134770054,
+            "level_dbfs": -78.02029098474583,
+            "local_snr_db": 67.58504105003738,
+            "coh_err_bins": 0.00011347700535679905,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9999912200977,
+            "level_dbfs": -78.02020076006511,
+            "local_snr_db": 67.42453823066485,
+            "coh_err_bins": -8.779902259448136e-06,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9997811047467,
+            "level_dbfs": -78.02037990706168,
+            "local_snr_db": 68.66079863034861,
+            "coh_err_bins": -0.00021889525328333548,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 67.42453823066485,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 96000,
+        "active_fraction": 0.5,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_80ms_duty_40pct",
+      "active_fraction": 0.40000000000000024,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.032
+        ],
+        [
+          0.08,
+          0.112
+        ],
+        [
+          0.16,
+          0.192
+        ],
+        [
+          0.24,
+          0.272
+        ],
+        [
+          0.32,
+          0.352
+        ],
+        [
+          0.4,
+          0.43200000000000005
+        ],
+        [
+          0.48000000000000004,
+          0.512
+        ],
+        [
+          0.56,
+          0.5920000000000001
+        ],
+        [
+          0.64,
+          0.672
+        ],
+        [
+          0.72,
+          0.752
+        ],
+        [
+          0.7999999999999999,
+          0.832
+        ],
+        [
+          0.8799999999999999,
+          0.9119999999999999
+        ],
+        [
+          0.9599999999999999,
+          0.9919999999999999
+        ],
+        [
+          1.0399999999999998,
+          1.0719999999999998
+        ],
+        [
+          1.1199999999999999,
+          1.152
+        ],
+        [
+          1.2,
+          1.232
+        ],
+        [
+          1.28,
+          1.312
+        ],
+        [
+          1.36,
+          1.3920000000000001
+        ],
+        [
+          1.4400000000000002,
+          1.4720000000000002
+        ],
+        [
+          1.5200000000000002,
+          1.5520000000000003
+        ],
+        [
+          1.6000000000000003,
+          1.6320000000000003
+        ],
+        [
+          1.6800000000000004,
+          1.7120000000000004
+        ],
+        [
+          1.7600000000000005,
+          1.7920000000000005
+        ],
+        [
+          1.8400000000000005,
+          1.8720000000000006
+        ],
+        [
+          1.9200000000000006,
+          1.9520000000000006
+        ]
+      ],
+      "pulse_period_ms": 80,
+      "pulse_duty": 0.4,
+      "max_nominal_gap_ms": 48.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.0681530087920379,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000275509783,
+            "ppm": 0.02755097838758047,
+            "level_dbfs": -79.95888981754986,
+            "snr_db": 40.79025250180992,
+            "coh_err_bins": 2.7550978302315343e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000957039871,
+            "ppm": 0.09570398717961837,
+            "level_dbfs": -79.95887051294065,
+            "snr_db": 40.83676290050412,
+            "coh_err_bins": 9.570398708547145e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.5033433663771,
+          "q90_dbfs": -71.99488784072939,
+          "q95_dbfs": -71.99084155267518,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.425,
+          "q95_relative_above_12db_fraction": 0.425,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.51765679540128,
+          "q90_dbfs": -71.9951279115836,
+          "q95_dbfs": -71.99155496214557,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.425,
+          "q95_relative_above_12db_fraction": 0.425,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999762497594,
+            "level_dbfs": -79.68056847200069,
+            "local_snr_db": 40.74374518164531,
+            "coh_err_bins": -2.375024064349418e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0001254387747,
+            "level_dbfs": -79.68159454741868,
+            "local_snr_db": 40.86061612692673,
+            "coh_err_bins": 0.00012543877471671294,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0000788569718,
+            "level_dbfs": -80.24642546180792,
+            "local_snr_db": 40.795963797987895,
+            "coh_err_bins": 7.885697175424866e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000659716184,
+            "level_dbfs": -80.24529054559459,
+            "local_snr_db": 40.75183493014619,
+            "coh_err_bins": 6.597161836907617e-05,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 40.74374518164531,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_80ms_duty_60pct",
+      "active_fraction": 0.6000000000000003,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.048
+        ],
+        [
+          0.08,
+          0.128
+        ],
+        [
+          0.16,
+          0.20800000000000002
+        ],
+        [
+          0.24,
+          0.288
+        ],
+        [
+          0.32,
+          0.368
+        ],
+        [
+          0.4,
+          0.448
+        ],
+        [
+          0.48000000000000004,
+          0.528
+        ],
+        [
+          0.56,
+          0.6080000000000001
+        ],
+        [
+          0.64,
+          0.6880000000000001
+        ],
+        [
+          0.72,
+          0.768
+        ],
+        [
+          0.7999999999999999,
+          0.848
+        ],
+        [
+          0.8799999999999999,
+          0.9279999999999999
+        ],
+        [
+          0.9599999999999999,
+          1.0079999999999998
+        ],
+        [
+          1.0399999999999998,
+          1.0879999999999999
+        ],
+        [
+          1.1199999999999999,
+          1.168
+        ],
+        [
+          1.2,
+          1.248
+        ],
+        [
+          1.28,
+          1.328
+        ],
+        [
+          1.36,
+          1.4080000000000001
+        ],
+        [
+          1.4400000000000002,
+          1.4880000000000002
+        ],
+        [
+          1.5200000000000002,
+          1.5680000000000003
+        ],
+        [
+          1.6000000000000003,
+          1.6480000000000004
+        ],
+        [
+          1.6800000000000004,
+          1.7280000000000004
+        ],
+        [
+          1.7600000000000005,
+          1.8080000000000005
+        ],
+        [
+          1.8400000000000005,
+          1.8880000000000006
+        ],
+        [
+          1.9200000000000006,
+          1.9680000000000006
+        ]
+      ],
+      "pulse_period_ms": 80,
+      "pulse_duty": 0.6,
+      "max_nominal_gap_ms": 32.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.14865094088989395,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999690023949,
+            "ppm": -0.030997605149352125,
+            "level_dbfs": -76.43760279175223,
+            "snr_db": 44.380872404186945,
+            "coh_err_bins": -3.099760510849592e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0001176533357,
+            "ppm": 0.11765333574054182,
+            "level_dbfs": -76.43752217121704,
+            "snr_db": 44.45148973162567,
+            "coh_err_bins": 0.00011765333567836933,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00853257055807,
+          "q90_dbfs": -71.99274594193012,
+          "q95_dbfs": -71.98967621604437,
+          "median_relative_above_12db_fraction": 0.625,
+          "q90_relative_above_12db_fraction": 0.625,
+          "q95_relative_above_12db_fraction": 0.625,
+          "median_relative_low_max_run_ms": 30.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00855807014143,
+          "q90_dbfs": -71.9924427727378,
+          "q95_dbfs": -71.98912742126026,
+          "median_relative_above_12db_fraction": 0.625,
+          "q90_relative_above_12db_fraction": 0.625,
+          "q95_relative_above_12db_fraction": 0.625,
+          "median_relative_low_max_run_ms": 30.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999581945876,
+            "level_dbfs": -76.20833120796244,
+            "local_snr_db": 44.4114442083211,
+            "coh_err_bins": -4.18054123656475e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000704365137,
+            "level_dbfs": -76.20892308951565,
+            "local_snr_db": 44.206315527487156,
+            "coh_err_bins": 7.043651373805915e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9999798132685,
+            "level_dbfs": -76.67309065238739,
+            "local_snr_db": 44.11068051729505,
+            "coh_err_bins": -2.018673148995731e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0001648839796,
+            "level_dbfs": -76.67230062225131,
+            "local_snr_db": 44.711415748535686,
+            "coh_err_bins": 0.00016488397955072287,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 44.11068051729505,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 115200,
+        "active_fraction": 0.6,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_100ms_duty_40pct",
+      "active_fraction": 0.40000000000000024,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.04000000000000001
+        ],
+        [
+          0.1,
+          0.14
+        ],
+        [
+          0.2,
+          0.24000000000000002
+        ],
+        [
+          0.30000000000000004,
+          0.3400000000000001
+        ],
+        [
+          0.4,
+          0.44000000000000006
+        ],
+        [
+          0.5,
+          0.54
+        ],
+        [
+          0.6,
+          0.64
+        ],
+        [
+          0.7,
+          0.74
+        ],
+        [
+          0.7999999999999999,
+          0.84
+        ],
+        [
+          0.8999999999999999,
+          0.94
+        ],
+        [
+          0.9999999999999999,
+          1.0399999999999998
+        ],
+        [
+          1.0999999999999999,
+          1.14
+        ],
+        [
+          1.2,
+          1.24
+        ],
+        [
+          1.3,
+          1.34
+        ],
+        [
+          1.4000000000000001,
+          1.4400000000000002
+        ],
+        [
+          1.5000000000000002,
+          1.5400000000000003
+        ],
+        [
+          1.6000000000000003,
+          1.6400000000000003
+        ],
+        [
+          1.7000000000000004,
+          1.7400000000000004
+        ],
+        [
+          1.8000000000000005,
+          1.8400000000000005
+        ],
+        [
+          1.9000000000000006,
+          1.9400000000000006
+        ]
+      ],
+      "pulse_period_ms": 100,
+      "pulse_duty": 0.4,
+      "max_nominal_gap_ms": 60.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.21248445847277253,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999727804114,
+            "ppm": -0.027219588583093923,
+            "level_dbfs": -79.9584508522801,
+            "snr_db": 22.94540287052838,
+            "coh_err_bins": -2.7219588560001284e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0001852648699,
+            "ppm": 0.1852648698896786,
+            "level_dbfs": -79.95797040539033,
+            "snr_db": 23.008284676134597,
+            "coh_err_bins": 0.00018526486985592783,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.52593142016555,
+          "q90_dbfs": -71.9939411002523,
+          "q95_dbfs": -71.98957261533774,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.42,
+          "q95_relative_above_12db_fraction": 0.42,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.54955584590849,
+          "q90_dbfs": -71.99460096873433,
+          "q95_dbfs": -71.98970614245557,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.42,
+          "q95_relative_above_12db_fraction": 0.42,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.0001840764704,
+            "level_dbfs": -79.95833102736529,
+            "local_snr_db": 22.96095248500404,
+            "coh_err_bins": 0.00018407647041840391,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000651710297,
+            "level_dbfs": -79.95795149235744,
+            "local_snr_db": 23.000756803346558,
+            "coh_err_bins": 6.517102974612499e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9997614350364,
+            "level_dbfs": -79.95857067884795,
+            "local_snr_db": 22.9299051223042,
+            "coh_err_bins": -0.0002385649636380549,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0003053618639,
+            "level_dbfs": -79.95798931846439,
+            "local_snr_db": 23.015825817831818,
+            "coh_err_bins": 0.00030536186386598274,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 22.9299051223042,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_100ms_duty_60pct",
+      "active_fraction": 0.6000000000000002,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.06
+        ],
+        [
+          0.1,
+          0.16
+        ],
+        [
+          0.2,
+          0.26
+        ],
+        [
+          0.30000000000000004,
+          0.36000000000000004
+        ],
+        [
+          0.4,
+          0.46
+        ],
+        [
+          0.5,
+          0.56
+        ],
+        [
+          0.6,
+          0.6599999999999999
+        ],
+        [
+          0.7,
+          0.76
+        ],
+        [
+          0.7999999999999999,
+          0.8599999999999999
+        ],
+        [
+          0.8999999999999999,
+          0.96
+        ],
+        [
+          0.9999999999999999,
+          1.0599999999999998
+        ],
+        [
+          1.0999999999999999,
+          1.16
+        ],
+        [
+          1.2,
+          1.26
+        ],
+        [
+          1.3,
+          1.36
+        ],
+        [
+          1.4000000000000001,
+          1.4600000000000002
+        ],
+        [
+          1.5000000000000002,
+          1.5600000000000003
+        ],
+        [
+          1.6000000000000003,
+          1.6600000000000004
+        ],
+        [
+          1.7000000000000004,
+          1.7600000000000005
+        ],
+        [
+          1.8000000000000005,
+          1.8600000000000005
+        ],
+        [
+          1.9000000000000006,
+          1.9600000000000006
+        ]
+      ],
+      "pulse_period_ms": 100,
+      "pulse_duty": 0.6,
+      "max_nominal_gap_ms": 40.00000000000001,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.050154852049288934,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000224048597,
+            "ppm": 0.02240485974525086,
+            "level_dbfs": -76.43748379563048,
+            "snr_db": 26.512376486585158,
+            "coh_err_bins": 2.2404859691960155e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000725597117,
+            "ppm": 0.0725597117945398,
+            "level_dbfs": -76.43616158980456,
+            "snr_db": 26.50524887781185,
+            "coh_err_bins": 7.255971172526188e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00817679975663,
+          "q90_dbfs": -71.99229542625143,
+          "q95_dbfs": -71.98947917551477,
+          "median_relative_above_12db_fraction": 0.62,
+          "q90_relative_above_12db_fraction": 0.62,
+          "q95_relative_above_12db_fraction": 0.62,
+          "median_relative_low_max_run_ms": 38.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00712598970622,
+          "q90_dbfs": -71.99105983564912,
+          "q95_dbfs": -71.98814727430587,
+          "median_relative_above_12db_fraction": 0.62,
+          "q90_relative_above_12db_fraction": 0.62,
+          "q95_relative_above_12db_fraction": 0.62,
+          "median_relative_low_max_run_ms": 38.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.0001189329993,
+            "level_dbfs": -76.4366488423531,
+            "local_snr_db": 26.502982130886963,
+            "coh_err_bins": 0.00011893299927123735,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0001180287638,
+            "level_dbfs": -76.4367637272382,
+            "local_snr_db": 26.53643996099258,
+            "coh_err_bins": 0.00011802876383626426,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9999258678725,
+            "level_dbfs": -76.43831882917759,
+            "local_snr_db": 26.521792071686452,
+            "coh_err_bins": -7.413212745177589e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.000027094164,
+            "level_dbfs": -76.43555949411035,
+            "local_snr_db": 26.47428259048055,
+            "coh_err_bins": 2.7094164011032262e-05,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 26.47428259048055,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 115200,
+        "active_fraction": 0.6,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_120ms_duty_40pct",
+      "active_fraction": 0.40800000000000025,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.048
+        ],
+        [
+          0.12,
+          0.16799999999999998
+        ],
+        [
+          0.24,
+          0.288
+        ],
+        [
+          0.36,
+          0.408
+        ],
+        [
+          0.48,
+          0.528
+        ],
+        [
+          0.6,
+          0.648
+        ],
+        [
+          0.72,
+          0.768
+        ],
+        [
+          0.84,
+          0.888
+        ],
+        [
+          0.96,
+          1.008
+        ],
+        [
+          1.08,
+          1.1280000000000001
+        ],
+        [
+          1.2000000000000002,
+          1.2480000000000002
+        ],
+        [
+          1.3200000000000003,
+          1.3680000000000003
+        ],
+        [
+          1.4400000000000004,
+          1.4880000000000004
+        ],
+        [
+          1.5600000000000005,
+          1.6080000000000005
+        ],
+        [
+          1.6800000000000006,
+          1.7280000000000006
+        ],
+        [
+          1.8000000000000007,
+          1.8480000000000008
+        ],
+        [
+          1.9200000000000008,
+          1.9680000000000009
+        ]
+      ],
+      "pulse_period_ms": 120,
+      "pulse_duty": 0.4,
+      "max_nominal_gap_ms": 72.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.12717884967372584,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000519993196,
+            "ppm": 0.0519993195169377,
+            "level_dbfs": -79.787424097697,
+            "snr_db": 22.725792637695346,
+            "coh_err_bins": 5.1999319566675695e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0001791781692,
+            "ppm": 0.17917816919066354,
+            "level_dbfs": -79.78670634583901,
+            "snr_db": 22.75826169976999,
+            "coh_err_bins": 0.00017917816921908525,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.56049693773743,
+          "q90_dbfs": -71.99400506400119,
+          "q95_dbfs": -71.99008414902504,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.425,
+          "q95_relative_above_12db_fraction": 0.425,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.52132842880695,
+          "q90_dbfs": -71.99363875582111,
+          "q95_dbfs": -71.98954213541784,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.425,
+          "q95_relative_above_12db_fraction": 0.425,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.0002772441378,
+            "level_dbfs": -79.45335201715997,
+            "local_snr_db": 22.719131055581524,
+            "coh_err_bins": 0.0002772441378056101,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000705700697,
+            "level_dbfs": -79.45267068412306,
+            "local_snr_db": 22.717074896002313,
+            "coh_err_bins": 7.057006973809621e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9998267860371,
+            "level_dbfs": -80.13486081840239,
+            "local_snr_db": 22.732463502855715,
+            "coh_err_bins": -0.00017321396285296942,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0002877735687,
+            "level_dbfs": -80.13410367532472,
+            "local_snr_db": 22.799837927874776,
+            "coh_err_bins": 0.0002877735687434324,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 22.717074896002313,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 78336,
+        "active_fraction": 0.408,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_120ms_duty_60pct",
+      "active_fraction": 0.6120000000000002,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.072
+        ],
+        [
+          0.12,
+          0.192
+        ],
+        [
+          0.24,
+          0.312
+        ],
+        [
+          0.36,
+          0.432
+        ],
+        [
+          0.48,
+          0.5519999999999999
+        ],
+        [
+          0.6,
+          0.6719999999999999
+        ],
+        [
+          0.72,
+          0.7919999999999999
+        ],
+        [
+          0.84,
+          0.9119999999999999
+        ],
+        [
+          0.96,
+          1.032
+        ],
+        [
+          1.08,
+          1.1520000000000001
+        ],
+        [
+          1.2000000000000002,
+          1.2720000000000002
+        ],
+        [
+          1.3200000000000003,
+          1.3920000000000003
+        ],
+        [
+          1.4400000000000004,
+          1.5120000000000005
+        ],
+        [
+          1.5600000000000005,
+          1.6320000000000006
+        ],
+        [
+          1.6800000000000006,
+          1.7520000000000007
+        ],
+        [
+          1.8000000000000007,
+          1.8720000000000008
+        ],
+        [
+          1.9200000000000008,
+          1.9920000000000009
+        ]
+      ],
+      "pulse_period_ms": 120,
+      "pulse_duty": 0.6,
+      "max_nominal_gap_ms": 48.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.10803213201793227,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999706247847,
+            "ppm": -0.02937521526025222,
+            "level_dbfs": -76.2646739535066,
+            "snr_db": 26.28476155582556,
+            "coh_err_bins": -2.9375215262916754e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9998625926527,
+            "ppm": -0.1374073472781845,
+            "level_dbfs": -76.26579437761583,
+            "snr_db": 26.276964843822643,
+            "coh_err_bins": -0.00013740734732436977,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00615931153915,
+          "q90_dbfs": -71.99159494591717,
+          "q95_dbfs": -71.9882382054558,
+          "median_relative_above_12db_fraction": 0.629,
+          "q90_relative_above_12db_fraction": 0.629,
+          "q95_relative_above_12db_fraction": 0.629,
+          "median_relative_low_max_run_ms": 46.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00829957457728,
+          "q90_dbfs": -71.99202230664001,
+          "q95_dbfs": -71.98888528430788,
+          "median_relative_above_12db_fraction": 0.629,
+          "q90_relative_above_12db_fraction": 0.629,
+          "q95_relative_above_12db_fraction": 0.629,
+          "median_relative_low_max_run_ms": 46.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9998498712135,
+            "level_dbfs": -76.20757599148087,
+            "local_snr_db": 26.27006551103156,
+            "coh_err_bins": -0.00015012878645848104,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.999904251549,
+            "level_dbfs": -76.20918897447936,
+            "local_snr_db": 26.280923777944448,
+            "coh_err_bins": -9.574845103088592e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0000913909411,
+            "level_dbfs": -76.32214974238062,
+            "local_snr_db": 26.299509039924693,
+            "coh_err_bins": 9.139094106558332e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9998209320092,
+            "level_dbfs": -76.32277109580771,
+            "local_snr_db": 26.273009348322127,
+            "coh_err_bins": -0.00017906799075717572,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 26.27006551103156,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 117504,
+        "active_fraction": 0.612,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_200ms_duty_40pct",
+      "active_fraction": 0.40000000000000024,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.08000000000000002
+        ],
+        [
+          0.2,
+          0.28
+        ],
+        [
+          0.4,
+          0.48000000000000004
+        ],
+        [
+          0.6000000000000001,
+          0.6800000000000002
+        ],
+        [
+          0.8,
+          0.8800000000000001
+        ],
+        [
+          1.0,
+          1.08
+        ],
+        [
+          1.2,
+          1.28
+        ],
+        [
+          1.4,
+          1.48
+        ],
+        [
+          1.5999999999999999,
+          1.68
+        ],
+        [
+          1.7999999999999998,
+          1.88
+        ]
+      ],
+      "pulse_period_ms": 200,
+      "pulse_duty": 0.4,
+      "max_nominal_gap_ms": 120.0,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.14,
+      "run_warnings": [
+        "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+      ],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.07580186378586262,
+        "channels": {
+          "L": {
+            "f0_hz": 999.999628123305,
+            "ppm": -0.3718766949933894,
+            "level_dbfs": -79.95977565864135,
+            "snr_db": 21.9628111880821,
+            "coh_err_bins": -0.00037187669499871845,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9997039251688,
+            "ppm": -0.29607483120752676,
+            "level_dbfs": -79.959138765394,
+            "snr_db": 21.998972558124308,
+            "coh_err_bins": -0.0002960748312261785,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": [
+          "onset: узкополосный поиск не нашёл тон — начало найдено широкополосно; проверь частоту генератора"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.5997248721794,
+          "q90_dbfs": -71.99467689999749,
+          "q95_dbfs": -71.99077780047386,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.41,
+          "q95_relative_above_12db_fraction": 0.41,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -109.55870245564861,
+          "q90_dbfs": -71.99435318841397,
+          "q95_dbfs": -71.99062988306427,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 0.41,
+          "q95_relative_above_12db_fraction": 0.41,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9995959211635,
+            "level_dbfs": -79.96051895247767,
+            "local_snr_db": 21.992298435820807,
+            "coh_err_bins": -0.00040407883648185816,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9995345070766,
+            "level_dbfs": -79.95819979752844,
+            "local_snr_db": 21.983451628221186,
+            "coh_err_bins": -0.0004654929233538496,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.999660334342,
+            "level_dbfs": -79.95903242840684,
+            "local_snr_db": 21.93351761688263,
+            "coh_err_bins": -0.00033966565797527437,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9998734923405,
+            "level_dbfs": -79.96007783477548,
+            "local_snr_db": 22.01455839255639,
+            "coh_err_bins": -0.00012650765950183995,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 21.93351761688263,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 76800,
+        "active_fraction": 0.4,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "pulse_period_200ms_duty_80pct",
+      "active_fraction": 0.8000000000000003,
+      "active_intervals_s": [
+        [
+          0.0,
+          0.16000000000000003
+        ],
+        [
+          0.2,
+          0.36000000000000004
+        ],
+        [
+          0.4,
+          0.56
+        ],
+        [
+          0.6000000000000001,
+          0.7600000000000001
+        ],
+        [
+          0.8,
+          0.9600000000000001
+        ],
+        [
+          1.0,
+          1.1600000000000001
+        ],
+        [
+          1.2,
+          1.3599999999999999
+        ],
+        [
+          1.4,
+          1.56
+        ],
+        [
+          1.5999999999999999,
+          1.7599999999999998
+        ],
+        [
+          1.7999999999999998,
+          1.96
+        ]
+      ],
+      "pulse_period_ms": 200,
+      "pulse_duty": 0.8,
+      "max_nominal_gap_ms": 39.99999999999998,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.17782077121886175,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000012542305,
+            "ppm": 0.0012542304972384954,
+            "level_dbfs": -73.92716575737896,
+            "snr_db": 22.31846170291286,
+            "coh_err_bins": 1.2542304830276407e-06,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9998234334593,
+            "ppm": -0.17656654072162326,
+            "level_dbfs": -73.92744951627498,
+            "snr_db": 22.292227534879313,
+            "coh_err_bins": -0.0001765665407447159,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00212975448517,
+          "q90_dbfs": -71.98953789298618,
+          "q95_dbfs": -71.98620139626122,
+          "median_relative_above_12db_fraction": 0.801,
+          "q90_relative_above_12db_fraction": 0.801,
+          "q95_relative_above_12db_fraction": 0.801,
+          "median_relative_low_max_run_ms": 40.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00182083478163,
+          "q90_dbfs": -71.99081918914885,
+          "q95_dbfs": -71.98825923389563,
+          "median_relative_above_12db_fraction": 0.801,
+          "q90_relative_above_12db_fraction": 0.801,
+          "q95_relative_above_12db_fraction": 0.801,
+          "median_relative_low_max_run_ms": 40.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999921629384,
+            "level_dbfs": -73.91651874943437,
+            "local_snr_db": 22.324879410994136,
+            "coh_err_bins": -7.83706161655573e-06,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9998489136727,
+            "level_dbfs": -73.91626387495027,
+            "local_snr_db": 22.277407380726963,
+            "coh_err_bins": -0.0001510863272642382,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0000103442854,
+            "level_dbfs": -73.93782583225402,
+            "local_snr_db": 22.312054399224856,
+            "coh_err_bins": 1.0344285442442924e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.999797946344,
+            "level_dbfs": -73.93864958098393,
+            "local_snr_db": 22.30710277886745,
+            "coh_err_bins": -0.00020205365603942482,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 22.277407380726963,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": false,
+      "candidate_both_blocks_snr_ge_40db": false,
+      "candidate_both_channels_q90_occupancy_ge_90pct": false,
+      "candidate_both_channels_q90_occupancy_ge_95pct": false,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 153600,
+        "active_fraction": 0.8,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_-110ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": -110.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": false,
+        "clock_ok": false,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.1164317634527805,
+        "channels": {
+          "L": {
+            "f0_hz": 999.8899007287731,
+            "ppm": -110.09927122684893,
+            "level_dbfs": -72.00312926610592,
+            "snr_db": 74.96829356398655,
+            "coh_err_bins": -0.11009927122688623,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.8900171605366,
+            "ppm": -109.98283946339615,
+            "level_dbfs": -72.00271467965301,
+            "snr_db": 75.25453895109987,
+            "coh_err_bins": -0.10998283946344145,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: тон не когерентен окну (сдвиг -0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: относительное расхождение тактов -110.1 ppm превышает допуск ±100 ppm",
+          "L: тон некогерентен окну (сдвиг -0.1101 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг -0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: относительное расхождение тактов -110.0 ppm превышает допуск ±100 ppm",
+          "R: тон некогерентен окну (сдвиг -0.1100 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00251693388637,
+          "q90_dbfs": -71.99212127293399,
+          "q95_dbfs": -71.98917239932675,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.0022833787485,
+          "q90_dbfs": -71.9922492060647,
+          "q95_dbfs": -71.98927994078575,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.8899468343682,
+            "level_dbfs": -72.00334534321159,
+            "local_snr_db": 75.72818437860954,
+            "coh_err_bins": -0.11005316563182532,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.8901201075354,
+            "level_dbfs": -72.0029670136286,
+            "local_snr_db": 74.72312129281512,
+            "coh_err_bins": -0.10987989246461893,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.8898546277659,
+            "level_dbfs": -72.00291319975031,
+            "local_snr_db": 74.79002776064338,
+            "coh_err_bins": -0.1101453722341148,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.8899142254994,
+            "level_dbfs": -72.00246236033769,
+            "local_snr_db": 77.53447630468347,
+            "coh_err_bins": -0.11008577450058965,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.72312129281512,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": -110.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_-100ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": -100.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": false,
+        "clock_ok": false,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.008448719279755323,
+        "channels": {
+          "L": {
+            "f0_hz": 999.8999983675277,
+            "ppm": -100.00163247225746,
+            "level_dbfs": -72.00321907645996,
+            "snr_db": 75.08319685584405,
+            "coh_err_bins": -0.1000016324722992,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.8999899188085,
+            "ppm": -100.01008119153721,
+            "level_dbfs": -72.00340196878292,
+            "snr_db": 75.45771033269739,
+            "coh_err_bins": -0.10001008119149901,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: тон не когерентен окну (сдвиг -0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: относительное расхождение тактов -100.0 ppm превышает допуск ±100 ppm",
+          "L: тон некогерентен окну (сдвиг -0.1000 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг -0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: относительное расхождение тактов -100.0 ppm превышает допуск ±100 ppm",
+          "R: тон некогерентен окну (сдвиг -0.1000 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00311921534973,
+          "q90_dbfs": -71.99224166356471,
+          "q95_dbfs": -71.9890018608581,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00232511433725,
+          "q90_dbfs": -71.99218192461333,
+          "q95_dbfs": -71.98906869696387,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9000311897988,
+            "level_dbfs": -72.00316440944283,
+            "local_snr_db": 76.80360915292884,
+            "coh_err_bins": -0.09996881020117598,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9000983879653,
+            "level_dbfs": -72.00328849678543,
+            "local_snr_db": 75.48747354228549,
+            "coh_err_bins": -0.0999016120347278,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.89996554443,
+            "level_dbfs": -72.00327374416521,
+            "local_snr_db": 76.20443078223234,
+            "coh_err_bins": -0.10003445557003943,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.8998814439835,
+            "level_dbfs": -72.00351544374529,
+            "local_snr_db": 76.65526421680602,
+            "coh_err_bins": -0.10011855601646857,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 75.48747354228549,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": -100.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_-80ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": -80.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.02859059733407321,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9199708520443,
+            "ppm": -80.02914795568472,
+            "level_dbfs": -72.00332701888422,
+            "snr_db": 76.1640455291757,
+            "coh_err_bins": -0.0800291479556563,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9199994426416,
+            "ppm": -80.00055735835065,
+            "level_dbfs": -72.0037590783943,
+            "snr_db": 74.94631625105406,
+            "coh_err_bins": -0.08000055735840306,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: тон не когерентен окну (сдвиг -0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0800 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг -0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0800 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00230407493913,
+          "q90_dbfs": -71.99214023181933,
+          "q95_dbfs": -71.989304492302,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00254198755178,
+          "q90_dbfs": -71.99300489221203,
+          "q95_dbfs": -71.98975964296515,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9199523232621,
+            "level_dbfs": -72.00319841055597,
+            "local_snr_db": 76.03848063724324,
+            "coh_err_bins": -0.08004767673787683,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9200131353776,
+            "level_dbfs": -72.00397249991069,
+            "local_snr_db": 74.8837872860782,
+            "coh_err_bins": -0.07998686462235582,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9199893819244,
+            "level_dbfs": -72.0034556310211,
+            "local_snr_db": 77.93243839015298,
+            "coh_err_bins": -0.08001061807556198,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.919985751251,
+            "level_dbfs": -72.00354566736537,
+            "local_snr_db": 76.07201518029066,
+            "coh_err_bins": -0.08001424874896657,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.8837872860782,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": -80.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_-50ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": -50.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.1027373026651901,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9500410832482,
+            "ppm": -49.95891675185771,
+            "level_dbfs": -72.00306145769979,
+            "snr_db": 74.3665924868689,
+            "coh_err_bins": -0.04995891675184794,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 999.9499383459455,
+            "ppm": -50.0616540545229,
+            "level_dbfs": -72.00265221749002,
+            "snr_db": 75.12453918442594,
+            "coh_err_bins": -0.05006165405450247,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: сдвиг тона -0.0500 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг -0.0500 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг -0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг -0.0501 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00227142164765,
+          "q90_dbfs": -71.99236019875539,
+          "q95_dbfs": -71.98921122862757,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00225379015058,
+          "q90_dbfs": -71.99172238522961,
+          "q95_dbfs": -71.98818974509233,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9499980341346,
+            "level_dbfs": -72.00371575592305,
+            "local_snr_db": 75.00758565170885,
+            "coh_err_bins": -0.05000196586536276,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9499109123057,
+            "level_dbfs": -72.00278076063967,
+            "local_snr_db": 74.89679145372898,
+            "coh_err_bins": -0.050089087694345835,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9500841193939,
+            "level_dbfs": -72.00240725803675,
+            "local_snr_db": 74.88968194629204,
+            "coh_err_bins": -0.04991588060613594,
+            "warnings": [
+              "сдвиг тона -0.0499 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 999.9499657779605,
+            "level_dbfs": -72.0025236781449,
+            "local_snr_db": 76.81960928743653,
+            "coh_err_bins": -0.05003422203947139,
+            "warnings": [
+              "тон не когерентен окну (сдвиг -0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.88968194629204,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": -50.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_+0ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.09797193634142332,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999103508039,
+            "ppm": -0.08964919606668786,
+            "level_dbfs": -72.00022200689364,
+            "snr_db": 75.70236087862514,
+            "coh_err_bins": -8.964919607024058e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.0000083227403,
+            "ppm": 0.008322740274735452,
+            "level_dbfs": -72.00033240160644,
+            "snr_db": 75.38664961939305,
+            "coh_err_bins": 8.322740313815302e-06,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.99937924406538,
+          "q90_dbfs": -71.98989099681975,
+          "q95_dbfs": -71.98692282909876,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.99962235761451,
+          "q90_dbfs": -71.98904908633851,
+          "q95_dbfs": -71.98596129120975,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999137592148,
+            "level_dbfs": -71.9994179944715,
+            "local_snr_db": 75.67062844819476,
+            "coh_err_bins": -8.624078520824696e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000035143105,
+            "level_dbfs": -72.0007463166508,
+            "local_snr_db": 75.13875432905951,
+            "coh_err_bins": 3.5143104923918145e-06,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.999906940914,
+            "level_dbfs": -72.00102609374638,
+            "local_snr_db": 77.04372080716419,
+            "coh_err_bins": -9.305908599799295e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.000013131147,
+            "level_dbfs": -71.99991850628572,
+            "local_snr_db": 76.6790440835027,
+            "coh_err_bins": 1.3131147056810732e-05,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 75.13875432905951,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_+50ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 50.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.10185105714377585,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.049928363211,
+            "ppm": 49.92836321116023,
+            "level_dbfs": -72.00369845299478,
+            "snr_db": 74.89424197800729,
+            "coh_err_bins": 0.049928363211051874,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 1000.0500302142683,
+            "ppm": 50.03021426830401,
+            "level_dbfs": -72.00314215082787,
+            "snr_db": 73.145384869302,
+            "coh_err_bins": 0.05003021426830401,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: сдвиг тона +0.0499 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг +0.0499 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг +0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг +0.0500 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00257221518812,
+          "q90_dbfs": -71.99262826106188,
+          "q95_dbfs": -71.9893810983233,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.0024172464771,
+          "q90_dbfs": -71.99175055452822,
+          "q95_dbfs": -71.98952729202247,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.0499022787304,
+            "level_dbfs": -72.00341607862597,
+            "local_snr_db": 75.06206751010237,
+            "coh_err_bins": 0.04990227873042841,
+            "warnings": [
+              "сдвиг тона +0.0499 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.0500015489356,
+            "level_dbfs": -72.0027789707524,
+            "local_snr_db": 72.73532919191332,
+            "coh_err_bins": 0.050001548935597384,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0499544510837,
+            "level_dbfs": -72.0039808457245,
+            "local_snr_db": 76.04380478362336,
+            "coh_err_bins": 0.04995445108374952,
+            "warnings": [
+              "сдвиг тона +0.0500 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.0500588843959,
+            "level_dbfs": -72.00350536127692,
+            "local_snr_db": 75.57266391066291,
+            "coh_err_bins": 0.0500588843958667,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.05 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 72.73532919191332,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 50.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_+80ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 80.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.08784405269857132,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0800585123158,
+            "ppm": 80.05851231573935,
+            "level_dbfs": -72.00345694758573,
+            "snr_db": 74.43051420126359,
+            "coh_err_bins": 0.08005851231575889,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 1000.0799706682631,
+            "ppm": 79.97066826304078,
+            "level_dbfs": -72.00295374883937,
+            "snr_db": 74.92087052178677,
+            "coh_err_bins": 0.07997066826305854,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: тон не когерентен окну (сдвиг +0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг +0.0801 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг +0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: тон некогерентен окну (сдвиг +0.0800 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00222759587075,
+          "q90_dbfs": -71.99253972024825,
+          "q95_dbfs": -71.98993457399631,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00263774456003,
+          "q90_dbfs": -71.9923128746233,
+          "q95_dbfs": -71.98951789865689,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.0799451991624,
+            "level_dbfs": -72.0034382621085,
+            "local_snr_db": 74.7862479724326,
+            "coh_err_bins": 0.07994519916235276,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.0799861848069,
+            "level_dbfs": -72.00289132808788,
+            "local_snr_db": 74.87677363361152,
+            "coh_err_bins": 0.07998618480689856,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0801718264437,
+            "level_dbfs": -72.00347563314337,
+            "local_snr_db": 76.6994520871742,
+            "coh_err_bins": 0.08017182644368859,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.0799551512723,
+            "level_dbfs": -72.00301617048807,
+            "local_snr_db": 77.18750424135686,
+            "coh_err_bins": 0.07995515127231556,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.08 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.7862479724326,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 80.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_+100ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 100.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": false,
+        "clock_ok": false,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.03483473220988742,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0999868786805,
+            "ppm": 99.98687868040257,
+            "level_dbfs": -72.00361167576102,
+            "snr_db": 73.08081718388942,
+            "coh_err_bins": 0.09998687868051093,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 1000.1000217134125,
+            "ppm": 100.02171341261246,
+            "level_dbfs": -72.00273785713557,
+            "snr_db": 74.20756632208851,
+            "coh_err_bins": 0.10002171341250232,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: тон не когерентен окну (сдвиг +0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: тон некогерентен окну (сдвиг +0.1000 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг +0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: относительное расхождение тактов +100.0 ppm превышает допуск ±100 ppm",
+          "R: тон некогерентен окну (сдвиг +0.1000 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00234462151218,
+          "q90_dbfs": -71.99209338410844,
+          "q95_dbfs": -71.98872129100045,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.0020063585408,
+          "q90_dbfs": -71.99217855739207,
+          "q95_dbfs": -71.98958705112663,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.100053675482,
+            "level_dbfs": -72.003711009404,
+            "local_snr_db": 73.38307011924246,
+            "coh_err_bins": 0.10005367548194499,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.1000042144849,
+            "level_dbfs": -72.00313628231449,
+            "local_snr_db": 74.81956738649527,
+            "coh_err_bins": 0.1000042144848976,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0999200849354,
+            "level_dbfs": -72.00351234438999,
+            "local_snr_db": 74.33436938326223,
+            "coh_err_bins": 0.0999200849354338,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.1000392091302,
+            "level_dbfs": -72.00233946850514,
+            "local_snr_db": 75.01738302727414,
+            "coh_err_bins": 0.10003920913015918,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.10 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 73.38307011924246,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 100.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_frequency_offset_+110ppm",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 110.0,
+      "am_depth": 0.0,
+      "am_hz": 0.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": false,
+        "clock_ok": false,
+        "signal_ok": true,
+        "coherent": false,
+        "clock_channel_spread_ppm": 0.016622017984246895,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.1100589193129,
+            "ppm": 110.05891931281653,
+            "level_dbfs": -72.00337475000141,
+            "snr_db": 74.35297504055629,
+            "coh_err_bins": 0.11005891931290535,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          },
+          "R": {
+            "f0_hz": 1000.1100422972949,
+            "ppm": 110.04229729483228,
+            "level_dbfs": -72.00263451766186,
+            "snr_db": 74.50660239653968,
+            "coh_err_bins": 0.1100422972948536,
+            "clock_ok": false,
+            "signal_ok": true,
+            "coherent": false
+          }
+        },
+        "warnings": [
+          "L: тон не когерентен окну (сдвиг +0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "L: относительное расхождение тактов +110.1 ppm превышает допуск ±100 ppm",
+          "L: тон некогерентен окну (сдвиг +0.1101 бина; допуск ±0.002)",
+          "R: тон не когерентен окну (сдвиг +0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+          "R: относительное расхождение тактов +110.0 ppm превышает допуск ±100 ppm",
+          "R: тон некогерентен окну (сдвиг +0.1100 бина; допуск ±0.002)"
+        ]
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00218795234085,
+          "q90_dbfs": -71.9912237742129,
+          "q95_dbfs": -71.98849131945715,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00226855273434,
+          "q90_dbfs": -71.99209598205661,
+          "q95_dbfs": -71.98848229226277,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 1000.1101363236257,
+            "level_dbfs": -72.00314722361229,
+            "local_snr_db": 74.38630292168567,
+            "coh_err_bins": 0.11013632362573844,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.1099215658592,
+            "level_dbfs": -72.00258176714104,
+            "local_snr_db": 75.68831397111094,
+            "coh_err_bins": 0.10992156585916746,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.1099815068881,
+            "level_dbfs": -72.00360228831127,
+            "local_snr_db": 75.51159354042595,
+            "coh_err_bins": 0.10998150688806163,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          },
+          "R": {
+            "f0_hz": 1000.1101630316657,
+            "level_dbfs": -72.00268726882341,
+            "local_snr_db": 74.96376552904114,
+            "coh_err_bins": 0.11016303166570651,
+            "warnings": [
+              "тон не когерентен окну (сдвиг +0.11 бина): гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса"
+            ]
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.38630292168567,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 110.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0
+      }
+    },
+    {
+      "case": "steady_am_depth_0.2_at_5hz",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.2,
+      "am_hz": 5.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.007139267066413879,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9999226378442,
+            "ppm": -0.07736215579257077,
+            "level_dbfs": -71.99987329804584,
+            "snr_db": 75.53580299782598,
+            "coh_err_bins": -7.736215582099248e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999154985771,
+            "ppm": -0.08450142285898465,
+            "level_dbfs": -72.00041290102398,
+            "snr_db": 75.13073759366829,
+            "coh_err_bins": -8.450142286164919e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.99524455891626,
+          "q90_dbfs": -70.49008382382594,
+          "q95_dbfs": -70.43551078985743,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00193373736033,
+          "q90_dbfs": -70.49002836052743,
+          "q95_dbfs": -70.43342915907273,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.999864226316,
+            "level_dbfs": -71.9997910984903,
+            "local_snr_db": 75.70149253791429,
+            "coh_err_bins": -0.00013577368395090161,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999609927165,
+            "level_dbfs": -72.00021153354393,
+            "local_snr_db": 75.15357992576521,
+            "coh_err_bins": -3.9007283476166776e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9999810567359,
+            "level_dbfs": -71.99995549837931,
+            "local_snr_db": 75.5986459181461,
+            "coh_err_bins": -1.8943264080917288e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9998699938898,
+            "level_dbfs": -72.00061427317249,
+            "local_snr_db": 75.59830632218775,
+            "coh_err_bins": -0.00013000611022562225,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 75.15357992576521,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.2,
+        "am_hz": 5.0
+      }
+    },
+    {
+      "case": "steady_am_depth_0.5_at_5hz",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.5,
+      "am_hz": 5.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.11384132281300197,
+        "channels": {
+          "L": {
+            "f0_hz": 999.9998821592737,
+            "ppm": -0.11784072628806541,
+            "level_dbfs": -71.99989569129387,
+            "snr_db": 74.706171758169,
+            "coh_err_bins": -0.00011784072626142006,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 999.9999960005965,
+            "ppm": -0.0039994034750634455,
+            "level_dbfs": -71.99993540352925,
+            "snr_db": 75.9746778109984,
+            "coh_err_bins": -3.9994034750634455e-06,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -72.00148323439055,
+          "q90_dbfs": -68.63653991192419,
+          "q95_dbfs": -68.51647167150675,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.99897616854261,
+          "q90_dbfs": -68.63976719426786,
+          "q95_dbfs": -68.51508658538644,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999429750379,
+            "level_dbfs": -71.99977577207692,
+            "local_snr_db": 75.88516032822031,
+            "coh_err_bins": -5.702496207504737e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999526344104,
+            "level_dbfs": -71.99972986289227,
+            "local_snr_db": 75.20533239045035,
+            "coh_err_bins": -4.736558958029491e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 999.9998213420914,
+            "level_dbfs": -72.0000156121665,
+            "local_snr_db": 74.8562344804598,
+            "coh_err_bins": -0.0001786579085774065,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0000393699773,
+            "level_dbfs": -72.00014094903021,
+            "local_snr_db": 76.72164068753376,
+            "coh_err_bins": 3.936997734399483e-05,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 74.8562344804598,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.5,
+        "am_hz": 5.0
+      }
+    },
+    {
+      "case": "steady_am_depth_0.5_at_20hz",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.5,
+      "am_hz": 20.0,
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "error": null,
+      "onset_s": 0.135,
+      "run_warnings": [],
+      "clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": true,
+        "clock_channel_spread_ppm": 0.01701243679264053,
+        "channels": {
+          "L": {
+            "f0_hz": 1000.0000513455539,
+            "ppm": 0.05134555380870154,
+            "level_dbfs": -71.99995898868357,
+            "snr_db": 74.99768933351957,
+            "coh_err_bins": 5.134555385666317e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          },
+          "R": {
+            "f0_hz": 1000.000034333117,
+            "ppm": 0.03433311701606101,
+            "level_dbfs": -72.00004626434082,
+            "snr_db": 73.91280777887968,
+            "coh_err_bins": 3.433311701428465e-05,
+            "clock_ok": true,
+            "signal_ok": true,
+            "coherent": true
+          }
+        },
+        "warnings": []
+      },
+      "frame_occupancy": {
+        "L": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.99540714272189,
+          "q90_dbfs": -68.63027024035968,
+          "q95_dbfs": -68.53323691339878,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        },
+        "R": {
+          "frames": 1000,
+          "frame_ms": 2.0,
+          "median_dbfs": -71.99521058322726,
+          "q90_dbfs": -68.6274375411636,
+          "q95_dbfs": -68.53269944649539,
+          "median_relative_above_12db_fraction": 1.0,
+          "q90_relative_above_12db_fraction": 1.0,
+          "q95_relative_above_12db_fraction": 1.0,
+          "median_relative_low_max_run_ms": 0.0
+        }
+      },
+      "per_block_tone_analysis": {
+        "block_1": {
+          "L": {
+            "f0_hz": 999.9999886699968,
+            "level_dbfs": -71.99991777639177,
+            "local_snr_db": 75.16891911780465,
+            "coh_err_bins": -1.1330003189868876e-05,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 999.9999526229465,
+            "level_dbfs": -71.99980182642969,
+            "local_snr_db": 73.4038521270937,
+            "coh_err_bins": -4.737705353363708e-05,
+            "warnings": []
+          }
+        },
+        "block_2": {
+          "L": {
+            "f0_hz": 1000.0001140100363,
+            "level_dbfs": -72.0000002011709,
+            "local_snr_db": 76.31843058358955,
+            "coh_err_bins": 0.00011401003632727225,
+            "warnings": []
+          },
+          "R": {
+            "f0_hz": 1000.0001160713173,
+            "level_dbfs": -72.00029070913112,
+            "local_snr_db": 74.56477563506417,
+            "coh_err_bins": 0.00011607131727942033,
+            "warnings": []
+          }
+        }
+      },
+      "candidate_block_snr_min_db": 73.4038521270937,
+      "candidate_both_blocks_snr_ge_20db": true,
+      "candidate_both_blocks_snr_ge_30db": true,
+      "candidate_both_blocks_snr_ge_40db": true,
+      "candidate_both_channels_q90_occupancy_ge_90pct": true,
+      "candidate_both_channels_q90_occupancy_ge_95pct": true,
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.5,
+        "am_hz": 20.0
+      }
+    },
+    {
+      "case": "steady_am_depth_0.8_at_2hz",
+      "active_fraction": 1.0,
+      "active_intervals_s": [
+        [
+          0.0,
+          2.0
+        ]
+      ],
+      "pulse_period_ms": null,
+      "pulse_duty": null,
+      "max_nominal_gap_ms": null,
+      "frequency_offset_ppm_injected": 0.0,
+      "am_depth": 0.8,
+      "am_hz": 2.0,
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "error": "MeasureError: сегмент 1: канал L: провал 12.1 дБ длительностью 0.06 с — недостаточно устойчивого сигнала для анализа",
+      "onset_s": 0.135,
+      "run_error": "MeasureError: сегмент 1: канал L: провал 12.1 дБ длительностью 0.06 с — недостаточно устойчивого сигнала для анализа",
+      "capture": {
+        "capture_samples": 353952,
+        "program_samples": 235200,
+        "delay_samples": 13152,
+        "nominal_window_start_sample": 51552,
+        "nominal_window_samples": 192000,
+        "active_samples": 192000,
+        "active_fraction": 1.0,
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.8,
+        "am_hz": 2.0
+      }
+    }
+  ]
+}
