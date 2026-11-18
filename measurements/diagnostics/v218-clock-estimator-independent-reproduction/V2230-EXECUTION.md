@@ -11,8 +11,8 @@
 
 ## Questions under test
 
-1. Does a 10 ms narrowband demodulation envelope expose pilot-off intervals hidden by realistic broadband noise? Report each channel and each 1 s block separately, including occupancy relative to one global per-channel q95 reference and the longest low-envelope run. Also report an off-band demodulation noise proxy. The 0.97 occupancy and 50 ms maximum-run values are candidates only.
-2. What frequency-estimation bias is induced by the observed 1000 Hz leakage line at -109 dBFS (L) / -125 dBFS (R), with stress levels, for pilot candidates 1000, 997 and 1013 Hz? Compare each trial with a paired no-leak baseline. Keep AM/FM controls separate. A nearby/line detector hit is never an automatic rejection.
+1. Does a 10 ms narrowband demodulation envelope expose pilot-off intervals hidden by realistic broadband noise? The occupancy synthetic backend includes the observed −23.5 ppm baseline (999.9765 Hz) against the fixed 1000 Hz leakage line. Report each channel and each 1 s block separately, including occupancy relative to one global per-channel q95 reference and the longest low-envelope run. Also report an off-band demodulation noise proxy. The 0.97 occupancy and 50 ms maximum-run values are candidates only.
+2. What frequency-estimation bias is induced by the observed 1000 Hz leakage line at -109 dBFS (L) / -125 dBFS (R), with stress levels, for pilot candidates 1000, 997 and 1013 Hz? The result rows record channel-specific leakage amplitude, including −109 dBFS on L and −125 dBFS on R for the observed-level case. Compare each trial with a paired no-leak baseline. Keep AM/FM controls separate. A nearby/line detector hit is never an automatic rejection.
 3. Does the local-PSD CRLB estimate track frequency error on independent, non-overlapping noise realizations? Report L/R error correlation; do not infer that the channels are statistically independent.
 
 ## Execute unchanged, in order
