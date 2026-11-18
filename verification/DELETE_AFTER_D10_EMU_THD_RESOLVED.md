@@ -1482,3 +1482,76 @@ committed scripts, save the three complete JSON outputs, three full logs,
 and manifest, then commit only those seven result files. It must stop on
 the first failure. No hardware/playback/DUT/WAV, no production/main/PR #4,
 no clock-gate/threshold changes and no estimator edits are authorized.
+
+
+
+## 30. Independent repeat audit and external script package reviewed (18 Nov 2026)
+
+The user supplied the auditor's repeat-audit report and
+`audit-scripts.tar.gz`. Only the `valvebench-audit-scripts` directory was
+inspected; the unrelated `audit_package` directory was not opened.
+
+Review record:
+`measurements/diagnostics/v218-clock-estimator-independent-reproduction/COORDINATOR-REVIEW-EXTERNAL-AUDIT.md`.
+
+The selected archive contains 23 Python files, README, run script, and saved
+results. All 23 Python files pass `py_compile`. It contains no WAV or other
+real input data; real-data runs depend on external `AUDITOR-PACKAGE` and
+`ValveBench-for-audit` directories. The stored outputs have no traceback
+or failure marker. The runner's final exit code is not fail-fast: it logs
+per-script exit codes, continues after errors, and the final echo returns 0.
+
+GitHub compare independently confirms that between
+`02e9591d807a73e4d1229a1377be1137c79df36c` and the v2.22.0 pinned source
+`d42c6b4a3677c8f0521d41926b8782c6a4d23447` there are 36 commits and
+**zero changes under `valvebench/`**. The product code is unchanged; the
+progress to date is diagnostic knowledge and test material only.
+
+Accepted high-priority evidence:
+- The production median-referenced broadband RMS window gate misses
+  incomplete low-level pilot windows. Broadband q90 occupancy is also
+  masked by real broadband noise. Candidate validity checks must be
+  narrowband at the pilot frequency, per channel and per 1 s block, and
+  include maximum contiguous low-envelope run.
+- The independent LSQ prototype's broad line-QC flags a 120 Hz comb line
+  that is far from the 1 kHz pilot and has negligible frequency bias.
+  Distant lines should not automatically reject a clock estimate.
+- The nearby-tone probe is not safe as a simple hard gate: AM/FM controls
+  trigger it. The 0.3 Hz inner exclusion also leaves very-close components
+  uncharacterized.
+- The real capture contains a 1000.00 Hz leakage peak, about 0.0235 Hz from
+  the measured 999.9765 Hz pilot. It is inside the probe's excluded core;
+  quantify its pull and test alternative pilot frequencies such as 997/1013
+  before changing production.
+- Local-PSD CRLB uncertainty is theoretically plausible and fits the
+  supplied replay, but the 126 injected rows are based on 42 heavily
+  overlapping windows from seven captures; independent-data validation is
+  still needed.
+- The 60 Hz harmonic comb is observed, but its source and the 1/2/8 kHz
+  leakage source remain unknown.
+- Integer-output-length resampling quantization and its high-frequency
+  noise-transfer impact are credible production risks.
+
+New coordinator review also records methodological qualifications:
+- the v2.22 wideband q90 occupancy candidate is not suitable for real
+  low-level clock windows;
+- q90 occupancy ≥0.97 alone can still miss a short isolated gap;
+- direct xcheck uses an independent packaged demodulated/decimated LSQ
+  reference, not full-rate direct LSQ on all real windows;
+- near_far.py's printed `0.8*rho*Delta/f0` column does not describe the
+  measured large-offset LSQ trend;
+- the proposed `sigma <= 0.3 ppm` gate, hard nearby-line refusal,
+  997/1013 pilot change, and monitor/PSU interference attribution remain
+  proposals, not accepted changes.
+
+Engineering order is now:
+1. pilot-specific, per-channel/per-block window validity and max-gap tests;
+2. pilot-relative frequency-bias budget, <0.3 Hz component tests, and
+   AM/FM discrimination;
+3. independent-data calibration of local-PSD uncertainty and L/R covariance;
+4. measured tone start/end and safe window placement;
+5. fractional-ratio resampler / sample-time analysis;
+6. controlled isolation of 60 Hz and 1/2/8 kHz interference sources.
+
+No production, main, PR #4, pilot frequency, threshold, clock gate,
+estimator or resampler code is changed by this review.
