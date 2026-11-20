@@ -1,0 +1,3751 @@
+{
+  "summary": {
+    "task": "v2230 narrowband pilot occupancy diagnostics",
+    "cases": 34,
+    "fs_hz": 96000,
+    "window_s": 2.0,
+    "block_s": 1.0,
+    "demod_frame_ms": 10.0,
+    "demod_hop_ms": 2.0,
+    "offband_demod_offset_hz": 500.0,
+    "noise_dbfs_rms_sine_equiv": -80.0,
+    "noise_model": "broadband Gaussian, L/R rho=0.95",
+    "pilot_levels_dbfs": [
+      -66.0,
+      -72.0
+    ],
+    "pilot_true_hz_at_base": 999.9765000000001,
+    "observed_base_frequency_offset_ppm": -23.5,
+    "leakage_L_dbfs": -109.0,
+    "candidate_thresholds_are_not_approved": true,
+    "candidate_pilot_margin_db": 10.0,
+    "interpretation": "The q95-12 dB threshold uses a global per-channel reference to avoid each silent block self-normalizing. The off-band demodulation is only a diagnostic noise proxy at +500 Hz (5 exact cycles per frame), chosen to avoid carrier leakage from a +40 Hz demodulator offset. The 0.97 occupancy / 50 ms run criteria remain unvalidated candidates."
+  },
+  "per_case": [
+    {
+      "case": "steady_-66dBFS",
+      "config": {
+        "name": "steady_-66dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9768898044476,
+            "ppm": -23.110195552344948,
+            "level_dbfs": -65.95628859732238,
+            "snr_db": 51.97015514182448,
+            "coh_err_bins": -0.02311019555236271
+          },
+          "R": {
+            "f0": 999.9769283721854,
+            "ppm": -23.071627814563733,
+            "level_dbfs": -66.00628983286084,
+            "snr_db": 51.643690076835554,
+            "coh_err_bins": -0.023071627814601925
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.86249473775769,
+          "offband_q95_envelope_dbfs": -101.96042275213873,
+          "pilot_to_offband_margin_db": 36.09792801438104,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.03657052733692,
+              "envelope_q50_dbfs": -65.93854836529786
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.0357704875165,
+              "envelope_q50_dbfs": -65.95528003859991
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.91365135975244,
+          "offband_q95_envelope_dbfs": -101.7280588113626,
+          "pilot_to_offband_margin_db": 35.814407451610165,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.0893393452945,
+              "envelope_q50_dbfs": -65.99142208594051
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.08177363304202,
+              "envelope_q50_dbfs": -66.00429194579598
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "tail_gap_150ms_-66dBFS",
+      "config": {
+        "name": "tail_gap_150ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            1.85
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сегмент 1: канал L: провал 13.3 дБ длительностью 0.15 с — недостаточно устойчивого сигнала для анализа",
+      "clock_error": "MeasureError: сегмент 1: канал L: провал 13.3 дБ длительностью 0.15 с — недостаточно устойчивого сигнала для анализа",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.85295129463013,
+          "offband_q95_envelope_dbfs": -102.70218267902743,
+          "pilot_to_offband_margin_db": 36.8492313843973,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.03751996245143,
+              "envelope_q50_dbfs": -65.94438332593052
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8554216867469879,
+              "low_envelope_max_run_ms": 144.00000000000003,
+              "envelope_q05_dbfs": -106.81249276964571,
+              "envelope_q50_dbfs": -65.95865694143077
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.90295847387064,
+          "offband_q95_envelope_dbfs": -102.29619477646352,
+          "pilot_to_offband_margin_db": 36.39323630259288,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.09577736245595,
+              "envelope_q50_dbfs": -65.99774348908467
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8554216867469879,
+              "low_envelope_max_run_ms": 144.00000000000003,
+              "envelope_q05_dbfs": -111.51637437263271,
+              "envelope_q50_dbfs": -66.00759409375581
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "tail_gap_350ms_-66dBFS",
+      "config": {
+        "name": "tail_gap_350ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            1.65
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сегмент 1: канал L: провал 13.0 дБ длительностью 0.35 с — недостаточно устойчивого сигнала для анализа",
+      "clock_error": "MeasureError: сегмент 1: канал L: провал 13.0 дБ длительностью 0.35 с — недостаточно устойчивого сигнала для анализа",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.86447589798877,
+          "offband_q95_envelope_dbfs": -101.81096045647942,
+          "pilot_to_offband_margin_db": 35.94648455849065,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.03408313984986,
+              "envelope_q50_dbfs": -65.94443802637154
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6546184738955824,
+              "low_envelope_max_run_ms": 344.0,
+              "envelope_q05_dbfs": -114.17267547074619,
+              "envelope_q50_dbfs": -65.98772058926156
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.91679518387222,
+          "offband_q95_envelope_dbfs": -101.81958346449179,
+          "pilot_to_offband_margin_db": 35.90278828061956,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.09027185013554,
+              "envelope_q50_dbfs": -65.99680724503679
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6546184738955824,
+              "low_envelope_max_run_ms": 344.0,
+              "envelope_q05_dbfs": -114.9963239069924,
+              "envelope_q50_dbfs": -66.03230828839108
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "tail_gap_800ms_-66dBFS",
+      "config": {
+        "name": "tail_gap_800ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            1.2
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сегмент 1: канал L: провал 12.8 дБ длительностью 0.80 с — недостаточно устойчивого сигнала для анализа",
+      "clock_error": "MeasureError: сегмент 1: канал L: провал 12.8 дБ длительностью 0.80 с — недостаточно устойчивого сигнала для анализа",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.87195762536055,
+          "offband_q95_envelope_dbfs": -102.4065503911149,
+          "pilot_to_offband_margin_db": 36.534592765754354,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.02325304944698,
+              "envelope_q50_dbfs": -65.94472278632895
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.20281124497991967,
+              "low_envelope_max_run_ms": 794.0,
+              "envelope_q05_dbfs": -117.09006670628177,
+              "envelope_q50_dbfs": -104.71962429262257
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.92489874838965,
+          "offband_q95_envelope_dbfs": -102.00020179760432,
+          "pilot_to_offband_margin_db": 36.07530304921467,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -66.08133055541307,
+              "envelope_q50_dbfs": -66.00472537310704
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.20281124497991967,
+              "low_envelope_max_run_ms": 794.0,
+              "envelope_q05_dbfs": -119.04109858123199,
+              "envelope_q50_dbfs": -106.64457545116537
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "front_40pct_-66dBFS",
+      "config": {
+        "name": "front_40pct_-66dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            0.8
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9771586614625,
+            "ppm": -22.841338537582523,
+            "level_dbfs": -68.97275904053109,
+            "snr_db": 44.26435021797329,
+            "coh_err_bins": -0.022841338537546108
+          },
+          "R": {
+            "f0": 999.9763845363145,
+            "ppm": -23.61546368545575,
+            "level_dbfs": -69.01989237106542,
+            "snr_db": 44.28703991698459,
+            "coh_err_bins": -0.023615463685473514
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.89052338657567,
+          "offband_q95_envelope_dbfs": -101.76252286297363,
+          "pilot_to_offband_margin_db": 35.87199947639796,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8032128514056225,
+              "low_envelope_max_run_ms": 196.0,
+              "envelope_q05_dbfs": -112.71843013540187,
+              "envelope_q50_dbfs": -65.96830546322965
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.0,
+              "low_envelope_max_run_ms": 996.0,
+              "envelope_q05_dbfs": -116.98567123069549,
+              "envelope_q50_dbfs": -105.44525973446983
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.94144070429437,
+          "offband_q95_envelope_dbfs": -101.87264370522308,
+          "pilot_to_offband_margin_db": 35.93120300092872,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8032128514056225,
+              "low_envelope_max_run_ms": 196.0,
+              "envelope_q05_dbfs": -110.54645273614804,
+              "envelope_q50_dbfs": -66.01766188846949
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.0,
+              "low_envelope_max_run_ms": 996.0,
+              "envelope_q05_dbfs": -119.85796494202647,
+              "envelope_q50_dbfs": -108.415222533658
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "front_49pct_-66dBFS",
+      "config": {
+        "name": "front_49pct_-66dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            0.98
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9768356271477,
+            "ppm": -23.164372852324533,
+            "level_dbfs": -68.94662897318219,
+            "snr_db": 47.93961243548351,
+            "coh_err_bins": -0.02316437285230677
+          },
+          "R": {
+            "f0": 999.9768228667749,
+            "ppm": -23.17713322508297,
+            "level_dbfs": -68.99753101616763,
+            "snr_db": 47.33792649888276,
+            "coh_err_bins": -0.023177133225090074
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.86919021720992,
+          "offband_q95_envelope_dbfs": -102.33036370972204,
+          "pilot_to_offband_margin_db": 36.46117349251212,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9839357429718876,
+              "low_envelope_max_run_ms": 16.0,
+              "envelope_q05_dbfs": -66.0648648347138,
+              "envelope_q50_dbfs": -65.94075493661697
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.0,
+              "low_envelope_max_run_ms": 996.0,
+              "envelope_q05_dbfs": -117.42456088905652,
+              "envelope_q50_dbfs": -106.53263415663055
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.93152660648512,
+          "offband_q95_envelope_dbfs": -102.17577277068418,
+          "pilot_to_offband_margin_db": 36.244246164199055,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9839357429718876,
+              "low_envelope_max_run_ms": 16.0,
+              "envelope_q05_dbfs": -66.1118479032969,
+              "envelope_q50_dbfs": -65.99713220000488
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.0,
+              "low_envelope_max_run_ms": 996.0,
+              "envelope_q05_dbfs": -117.71973634698388,
+              "envelope_q50_dbfs": -107.98154505615605
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "split_40pct_-66dBFS",
+      "config": {
+        "name": "split_40pct_-66dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            0.4
+          ],
+          [
+            1.0,
+            1.4
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.88709235715618,
+          "offband_q95_envelope_dbfs": -102.38234840798052,
+          "pilot_to_offband_margin_db": 36.49525605082434,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.40160642570281124,
+              "low_envelope_max_run_ms": 596.0,
+              "envelope_q05_dbfs": -115.06342457542382,
+              "envelope_q50_dbfs": -102.53617990946623
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.4036144578313253,
+              "low_envelope_max_run_ms": 594.0,
+              "envelope_q05_dbfs": -112.76546478057668,
+              "envelope_q50_dbfs": -101.98093886001857
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.936505226907,
+          "offband_q95_envelope_dbfs": -102.70084111344823,
+          "pilot_to_offband_margin_db": 36.76433588654123,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.40160642570281124,
+              "low_envelope_max_run_ms": 596.0,
+              "envelope_q05_dbfs": -119.10600005950802,
+              "envelope_q50_dbfs": -103.65163335470986
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.4036144578313253,
+              "low_envelope_max_run_ms": 594.0,
+              "envelope_q05_dbfs": -118.10812778160273,
+              "envelope_q50_dbfs": -104.12843555228032
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "steady_-72dBFS",
+      "config": {
+        "name": "steady_-72dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9753988150957,
+            "ppm": -24.601184904327056,
+            "level_dbfs": -71.91126663337636,
+            "snr_db": 45.86977789151198,
+            "coh_err_bins": -0.024601184904327056
+          },
+          "R": {
+            "f0": 999.9752077304644,
+            "ppm": -24.792269535667266,
+            "level_dbfs": -72.01402247991317,
+            "snr_db": 44.987833919775575,
+            "coh_err_bins": -0.024792269535623745
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.73631682262389,
+          "offband_q95_envelope_dbfs": -101.53279458426726,
+          "pilot_to_offband_margin_db": 29.796477761643374,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.11165022119026,
+              "envelope_q50_dbfs": -71.89962393218114
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.05598093598091,
+              "envelope_q50_dbfs": -71.89957991003173
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.83166856719923,
+          "offband_q95_envelope_dbfs": -101.75877463172083,
+          "pilot_to_offband_margin_db": 29.927106064521595,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.19746893220757,
+              "envelope_q50_dbfs": -72.00678786768299
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.16861932466608,
+              "envelope_q50_dbfs": -71.99446661875186
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "tail_gap_150ms_-72dBFS",
+      "config": {
+        "name": "tail_gap_150ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            1.85
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9788168525032,
+            "ppm": -21.183147496772747,
+            "level_dbfs": -71.87120208387586,
+            "snr_db": 44.24091105440115,
+            "coh_err_bins": -0.021183147496799393
+          },
+          "R": {
+            "f0": 999.9775805966656,
+            "ppm": -22.419403334472676,
+            "level_dbfs": -71.97525287579953,
+            "snr_db": 45.143563800013354,
+            "coh_err_bins": -0.022419403334424715
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.70632504929603,
+          "offband_q95_envelope_dbfs": -101.3254241858587,
+          "pilot_to_offband_margin_db": 29.619099136562667,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.07638052720384,
+              "envelope_q50_dbfs": -71.86287368504999
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8554216867469879,
+              "low_envelope_max_run_ms": 144.00000000000003,
+              "envelope_q05_dbfs": -106.7217729023275,
+              "envelope_q50_dbfs": -71.94126275162223
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.80467738530592,
+          "offband_q95_envelope_dbfs": -101.49684805941799,
+          "pilot_to_offband_margin_db": 29.692170674112063,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.20085297017707,
+              "envelope_q50_dbfs": -71.9665503183079
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8554216867469879,
+              "low_envelope_max_run_ms": 144.00000000000003,
+              "envelope_q05_dbfs": -110.33893922498686,
+              "envelope_q50_dbfs": -72.03454204342458
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "tail_gap_350ms_-72dBFS",
+      "config": {
+        "name": "tail_gap_350ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            1.65
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9812707446498,
+            "ppm": -18.72925535018055,
+            "level_dbfs": -72.10770003764299,
+            "snr_db": 33.79714566091062,
+            "coh_err_bins": -0.018729255350194762
+          },
+          "R": {
+            "f0": 999.9809362878686,
+            "ppm": -19.063712131339727,
+            "level_dbfs": -72.21836804496617,
+            "snr_db": 34.14789519614606,
+            "coh_err_bins": -0.019063712131355715
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.73696703623611,
+          "offband_q95_envelope_dbfs": -101.7994121654443,
+          "pilot_to_offband_margin_db": 30.062445129208186,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.08590788559025,
+              "envelope_q50_dbfs": -71.89124837734371
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6546184738955824,
+              "low_envelope_max_run_ms": 344.0,
+              "envelope_q05_dbfs": -112.98360059592758,
+              "envelope_q50_dbfs": -72.00542020265544
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.8483708198053,
+          "offband_q95_envelope_dbfs": -101.42590251300808,
+          "pilot_to_offband_margin_db": 29.577531693202786,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.189291395787,
+              "envelope_q50_dbfs": -71.99747443036762
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6546184738955824,
+              "low_envelope_max_run_ms": 344.0,
+              "envelope_q05_dbfs": -113.52227694906894,
+              "envelope_q50_dbfs": -72.10595736181813
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "tail_gap_800ms_-72dBFS",
+      "config": {
+        "name": "tail_gap_800ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            1.2
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9781361604048,
+            "ppm": -21.863839595237522,
+            "level_dbfs": -74.91143398800078,
+            "snr_db": 41.3363230382389,
+            "coh_err_bins": -0.021863839595198442
+          },
+          "R": {
+            "f0": 999.9769455618886,
+            "ppm": -23.054438111458353,
+            "level_dbfs": -75.0074745686703,
+            "snr_db": 41.3856443046312,
+            "coh_err_bins": -0.023054438111444142
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.76465604493366,
+          "offband_q95_envelope_dbfs": -101.94010265261039,
+          "pilot_to_offband_margin_db": 30.175446607676733,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.05475454237583,
+              "envelope_q50_dbfs": -71.89672697018267
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.20281124497991967,
+              "low_envelope_max_run_ms": 794.0,
+              "envelope_q05_dbfs": -114.39893295370568,
+              "envelope_q50_dbfs": -103.95543697911327
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.86822781288008,
+          "offband_q95_envelope_dbfs": -102.2325013220469,
+          "pilot_to_offband_margin_db": 30.36427350916682,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.15140282974762,
+              "envelope_q50_dbfs": -71.99578836780233
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.20281124497991967,
+              "low_envelope_max_run_ms": 794.0,
+              "envelope_q05_dbfs": -116.5934088137745,
+              "envelope_q50_dbfs": -106.54383613728443
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "front_40pct_-72dBFS",
+      "config": {
+        "name": "front_40pct_-72dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            0.8
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9747580474992,
+            "ppm": -25.241952500754117,
+            "level_dbfs": -74.8998252488444,
+            "snr_db": 39.66407287885645,
+            "coh_err_bins": -0.025241952500778098
+          },
+          "R": {
+            "f0": 999.9749819248841,
+            "ppm": -25.01807511590126,
+            "level_dbfs": -74.99845731940356,
+            "snr_db": 39.68764459350164,
+            "coh_err_bins": -0.025018075115895044
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.75763350624673,
+          "offband_q95_envelope_dbfs": -102.06599870079091,
+          "pilot_to_offband_margin_db": 30.30836519454418,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7991967871485943,
+              "low_envelope_max_run_ms": 200.0,
+              "envelope_q05_dbfs": -111.42641592516196,
+              "envelope_q50_dbfs": -71.92285912599677
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.002008032128514056,
+              "low_envelope_max_run_ms": 994.0,
+              "envelope_q05_dbfs": -115.86393791337524,
+              "envelope_q50_dbfs": -106.92022304682038
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.87017160034813,
+          "offband_q95_envelope_dbfs": -101.6766128723279,
+          "pilot_to_offband_margin_db": 29.806441271979764,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7991967871485943,
+              "low_envelope_max_run_ms": 200.0,
+              "envelope_q05_dbfs": -113.48487940439833,
+              "envelope_q50_dbfs": -72.02679939405965
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.002008032128514056,
+              "low_envelope_max_run_ms": 994.0,
+              "envelope_q05_dbfs": -119.71862037130161,
+              "envelope_q50_dbfs": -107.6418230571791
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "front_49pct_-72dBFS",
+      "config": {
+        "name": "front_49pct_-72dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            0.98
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9761092399889,
+            "ppm": -23.89076001108048,
+            "level_dbfs": -74.90796951447012,
+            "snr_db": 41.803286887494444,
+            "coh_err_bins": -0.023890760011113343
+          },
+          "R": {
+            "f0": 999.9757570867483,
+            "ppm": -24.242913251648623,
+            "level_dbfs": -75.0184524670242,
+            "snr_db": 42.22647559626559,
+            "coh_err_bins": -0.02424291325166905
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.77128908024513,
+          "offband_q95_envelope_dbfs": -101.86414321045542,
+          "pilot_to_offband_margin_db": 30.0928541302103,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9799196787148594,
+              "low_envelope_max_run_ms": 20.0,
+              "envelope_q05_dbfs": -72.10493422919123,
+              "envelope_q50_dbfs": -71.8895154001813
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.002008032128514056,
+              "low_envelope_max_run_ms": 994.0,
+              "envelope_q05_dbfs": -115.80808439921348,
+              "envelope_q50_dbfs": -105.74245691031877
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.87409525243872,
+          "offband_q95_envelope_dbfs": -102.0777887911804,
+          "pilot_to_offband_margin_db": 30.203693538741675,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9799196787148594,
+              "low_envelope_max_run_ms": 20.0,
+              "envelope_q05_dbfs": -72.20648020467526,
+              "envelope_q50_dbfs": -71.99809708220442
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.002008032128514056,
+              "low_envelope_max_run_ms": 994.0,
+              "envelope_q05_dbfs": -119.4400819819588,
+              "envelope_q50_dbfs": -108.07098362226739
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "split_40pct_-72dBFS",
+      "config": {
+        "name": "split_40pct_-72dBFS",
+        "active_intervals_s": [
+          [
+            0,
+            0.4
+          ],
+          [
+            1.0,
+            1.4
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.76340114460903,
+          "offband_q95_envelope_dbfs": -101.62308930492026,
+          "pilot_to_offband_margin_db": 29.859688160311222,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.40160642570281124,
+              "low_envelope_max_run_ms": 596.0,
+              "envelope_q05_dbfs": -115.66544943294784,
+              "envelope_q50_dbfs": -101.84906643326438
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.4036144578313253,
+              "low_envelope_max_run_ms": 594.0,
+              "envelope_q05_dbfs": -114.7309454210567,
+              "envelope_q50_dbfs": -102.80440782054893
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.86209642816202,
+          "offband_q95_envelope_dbfs": -101.43314168936412,
+          "pilot_to_offband_margin_db": 29.5710452612021,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.40160642570281124,
+              "low_envelope_max_run_ms": 596.0,
+              "envelope_q05_dbfs": -117.19396952666312,
+              "envelope_q50_dbfs": -103.5556526180669
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.4036144578313253,
+              "low_envelope_max_run_ms": 594.0,
+              "envelope_q05_dbfs": -118.97716727385975,
+              "envelope_q50_dbfs": -104.54468455541983
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_20ms_-66dBFS",
+      "config": {
+        "name": "periodic_gap_20ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.18000000000000002
+          ],
+          [
+            0.2,
+            0.38
+          ],
+          [
+            0.4,
+            0.5800000000000001
+          ],
+          [
+            0.6000000000000001,
+            0.7800000000000001
+          ],
+          [
+            0.8,
+            0.9800000000000001
+          ],
+          [
+            1.0,
+            1.18
+          ],
+          [
+            1.2,
+            1.38
+          ],
+          [
+            1.4,
+            1.5799999999999998
+          ],
+          [
+            1.5999999999999999,
+            1.7799999999999998
+          ],
+          [
+            1.7999999999999998,
+            1.9799999999999998
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9774118350787,
+            "ppm": -22.5881649212889,
+            "level_dbfs": -66.77437342945137,
+            "snr_db": 23.737145353658256,
+            "coh_err_bins": -0.022588164921330645
+          },
+          "R": {
+            "f0": 999.9773688229214,
+            "ppm": -22.63117707856921,
+            "level_dbfs": -66.83268705993149,
+            "snr_db": 23.681589515257215,
+            "coh_err_bins": -0.022631177078551445
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.86910074100672,
+          "offband_q95_envelope_dbfs": -101.72240714321907,
+          "pilot_to_offband_margin_db": 35.853306402212354,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9196787148594378,
+              "low_envelope_max_run_ms": 16.0,
+              "envelope_q05_dbfs": -99.5309637068358,
+              "envelope_q50_dbfs": -65.96443587325815
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9236947791164659,
+              "low_envelope_max_run_ms": 16.0,
+              "envelope_q05_dbfs": -100.44795277046882,
+              "envelope_q50_dbfs": -65.96310029306366
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.92163985484993,
+          "offband_q95_envelope_dbfs": -101.56311949192906,
+          "pilot_to_offband_margin_db": 35.64147963707913,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9196787148594378,
+              "low_envelope_max_run_ms": 16.0,
+              "envelope_q05_dbfs": -101.82823009825579,
+              "envelope_q50_dbfs": -66.01404319303356
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.9236947791164659,
+              "low_envelope_max_run_ms": 16.0,
+              "envelope_q05_dbfs": -103.14380935623781,
+              "envelope_q50_dbfs": -66.01360440810332
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_40ms_-66dBFS",
+      "config": {
+        "name": "periodic_gap_40ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.16
+          ],
+          [
+            0.2,
+            0.36
+          ],
+          [
+            0.4,
+            0.56
+          ],
+          [
+            0.6000000000000001,
+            0.7600000000000001
+          ],
+          [
+            0.8,
+            0.9600000000000001
+          ],
+          [
+            1.0,
+            1.16
+          ],
+          [
+            1.2,
+            1.3599999999999999
+          ],
+          [
+            1.4,
+            1.5599999999999998
+          ],
+          [
+            1.5999999999999999,
+            1.7599999999999998
+          ],
+          [
+            1.7999999999999998,
+            1.9599999999999997
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.87096085700765,
+          "offband_q95_envelope_dbfs": -102.292675270908,
+          "pilot_to_offband_margin_db": 36.42171441390036,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8192771084337349,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -106.75640214033169,
+              "envelope_q50_dbfs": -65.97188503613322
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.821285140562249,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -108.62882914830705,
+              "envelope_q50_dbfs": -65.98079149036317
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.9156532098048,
+          "offband_q95_envelope_dbfs": -102.03450348363533,
+          "pilot_to_offband_margin_db": 36.11885027383053,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8192771084337349,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -109.99259541219351,
+              "envelope_q50_dbfs": -66.02436115206808
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.821285140562249,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -108.64511883133079,
+              "envelope_q50_dbfs": -66.02869418163141
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_50ms_-66dBFS",
+      "config": {
+        "name": "periodic_gap_50ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.15000000000000002
+          ],
+          [
+            0.2,
+            0.35000000000000003
+          ],
+          [
+            0.4,
+            0.55
+          ],
+          [
+            0.6000000000000001,
+            0.7500000000000001
+          ],
+          [
+            0.8,
+            0.9500000000000001
+          ],
+          [
+            1.0,
+            1.15
+          ],
+          [
+            1.2,
+            1.35
+          ],
+          [
+            1.4,
+            1.5499999999999998
+          ],
+          [
+            1.5999999999999999,
+            1.75
+          ],
+          [
+            1.7999999999999998,
+            1.9499999999999997
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.86424515355574,
+          "offband_q95_envelope_dbfs": -102.04680602533458,
+          "pilot_to_offband_margin_db": 36.18256087177883,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7690763052208835,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -111.38979566325575,
+              "envelope_q50_dbfs": -65.96653905249907
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7710843373493976,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -109.78180102531496,
+              "envelope_q50_dbfs": -65.98787045107932
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.91111562439477,
+          "offband_q95_envelope_dbfs": -101.99277030477822,
+          "pilot_to_offband_margin_db": 36.08165468038345,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7690763052208835,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -111.55595984096227,
+              "envelope_q50_dbfs": -66.0262824269453
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7710843373493976,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -113.49547565368451,
+              "envelope_q50_dbfs": -66.03588289220679
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_80ms_-66dBFS",
+      "config": {
+        "name": "periodic_gap_80ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.12000000000000001
+          ],
+          [
+            0.2,
+            0.32
+          ],
+          [
+            0.4,
+            0.52
+          ],
+          [
+            0.6000000000000001,
+            0.7200000000000001
+          ],
+          [
+            0.8,
+            0.92
+          ],
+          [
+            1.0,
+            1.12
+          ],
+          [
+            1.2,
+            1.32
+          ],
+          [
+            1.4,
+            1.52
+          ],
+          [
+            1.5999999999999999,
+            1.72
+          ],
+          [
+            1.7999999999999998,
+            1.92
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.88063792421278,
+          "offband_q95_envelope_dbfs": -101.96545105444889,
+          "pilot_to_offband_margin_db": 36.084813130236114,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6184738955823293,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -111.49711062293785,
+              "envelope_q50_dbfs": -66.0027320895556
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6204819277108434,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -110.75941480091808,
+              "envelope_q50_dbfs": -66.03600191751607
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.93275285513394,
+          "offband_q95_envelope_dbfs": -102.2712334953719,
+          "pilot_to_offband_margin_db": 36.33848064023796,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6184738955823293,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -114.07906066690245,
+              "envelope_q50_dbfs": -66.05476212226299
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6204819277108434,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -114.80369270767079,
+              "envelope_q50_dbfs": -66.08284346281573
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_100ms_-66dBFS",
+      "config": {
+        "name": "periodic_gap_100ms_-66dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.1
+          ],
+          [
+            0.2,
+            0.30000000000000004
+          ],
+          [
+            0.4,
+            0.5
+          ],
+          [
+            0.6000000000000001,
+            0.7000000000000001
+          ],
+          [
+            0.8,
+            0.9
+          ],
+          [
+            1.0,
+            1.1
+          ],
+          [
+            1.2,
+            1.3
+          ],
+          [
+            1.4,
+            1.5
+          ],
+          [
+            1.5999999999999999,
+            1.7
+          ],
+          [
+            1.7999999999999998,
+            1.9
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -66.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.87737939629238,
+          "offband_q95_envelope_dbfs": -101.51332725582537,
+          "pilot_to_offband_margin_db": 35.63594785953299,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5180722891566265,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -113.21934866047573,
+              "envelope_q50_dbfs": -73.73133895084888
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5200803212851406,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -112.10782598562665,
+              "envelope_q50_dbfs": -70.43405315608099
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -65.92447264899555,
+          "offband_q95_envelope_dbfs": -101.6019709864689,
+          "pilot_to_offband_margin_db": 35.67749833747335,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5180722891566265,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -117.17239407818084,
+              "envelope_q50_dbfs": -73.82832739340222
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5200803212851406,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -116.56227268137205,
+              "envelope_q50_dbfs": -70.53023695762596
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_20ms_-72dBFS",
+      "config": {
+        "name": "periodic_gap_20ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.18000000000000002
+          ],
+          [
+            0.2,
+            0.38
+          ],
+          [
+            0.4,
+            0.5800000000000001
+          ],
+          [
+            0.6000000000000001,
+            0.7800000000000001
+          ],
+          [
+            0.8,
+            0.9800000000000001
+          ],
+          [
+            1.0,
+            1.18
+          ],
+          [
+            1.2,
+            1.38
+          ],
+          [
+            1.4,
+            1.5799999999999998
+          ],
+          [
+            1.5999999999999999,
+            1.7799999999999998
+          ],
+          [
+            1.7999999999999998,
+            1.9799999999999998
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9737933692782,
+            "ppm": -26.20663072183671,
+            "level_dbfs": -72.72901653356166,
+            "snr_db": 23.23590538488658,
+            "coh_err_bins": -0.026206630721844704
+          },
+          "R": {
+            "f0": 999.9733489002168,
+            "ppm": -26.651099783170373,
+            "level_dbfs": -72.83596681447192,
+            "snr_db": 23.010625111726778,
+            "coh_err_bins": -0.026651099783180143
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.728082545696,
+          "offband_q95_envelope_dbfs": -96.6854190652103,
+          "pilot_to_offband_margin_db": 24.9573365195143,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.929718875502008,
+              "low_envelope_max_run_ms": 14.0,
+              "envelope_q05_dbfs": -93.82281492230274,
+              "envelope_q50_dbfs": -71.92443984095999
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.929718875502008,
+              "low_envelope_max_run_ms": 14.0,
+              "envelope_q05_dbfs": -92.93957606045997,
+              "envelope_q50_dbfs": -71.92759258636946
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.8266425054797,
+          "offband_q95_envelope_dbfs": -96.74384878639574,
+          "pilot_to_offband_margin_db": 24.917206280916048,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.929718875502008,
+              "low_envelope_max_run_ms": 14.0,
+              "envelope_q05_dbfs": -94.47120634358338,
+              "envelope_q50_dbfs": -72.01959750618579
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.929718875502008,
+              "low_envelope_max_run_ms": 14.0,
+              "envelope_q05_dbfs": -94.40453057360828,
+              "envelope_q50_dbfs": -72.02816960425103
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_40ms_-72dBFS",
+      "config": {
+        "name": "periodic_gap_40ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.16
+          ],
+          [
+            0.2,
+            0.36
+          ],
+          [
+            0.4,
+            0.56
+          ],
+          [
+            0.6000000000000001,
+            0.7600000000000001
+          ],
+          [
+            0.8,
+            0.9600000000000001
+          ],
+          [
+            1.0,
+            1.16
+          ],
+          [
+            1.2,
+            1.3599999999999999
+          ],
+          [
+            1.4,
+            1.5599999999999998
+          ],
+          [
+            1.5999999999999999,
+            1.7599999999999998
+          ],
+          [
+            1.7999999999999998,
+            1.9599999999999997
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.7234652969345,
+          "offband_q95_envelope_dbfs": -102.24600955928383,
+          "pilot_to_offband_margin_db": 30.522544262349328,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8192771084337349,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -107.97995243414876,
+              "envelope_q50_dbfs": -71.912450447777
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.821285140562249,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -108.21144462577759,
+              "envelope_q50_dbfs": -71.9606273936233
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.82143822076902,
+          "offband_q95_envelope_dbfs": -102.48503973115038,
+          "pilot_to_offband_margin_db": 30.663601510381355,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8192771084337349,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -108.6511178769467,
+              "envelope_q50_dbfs": -72.01257903052269
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.821285140562249,
+              "low_envelope_max_run_ms": 36.00000000000001,
+              "envelope_q05_dbfs": -109.89123960139504,
+              "envelope_q50_dbfs": -72.060465199366
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_50ms_-72dBFS",
+      "config": {
+        "name": "periodic_gap_50ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.15000000000000002
+          ],
+          [
+            0.2,
+            0.35000000000000003
+          ],
+          [
+            0.4,
+            0.55
+          ],
+          [
+            0.6000000000000001,
+            0.7500000000000001
+          ],
+          [
+            0.8,
+            0.9500000000000001
+          ],
+          [
+            1.0,
+            1.15
+          ],
+          [
+            1.2,
+            1.35
+          ],
+          [
+            1.4,
+            1.5499999999999998
+          ],
+          [
+            1.5999999999999999,
+            1.75
+          ],
+          [
+            1.7999999999999998,
+            1.9499999999999997
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.73972089578136,
+          "offband_q95_envelope_dbfs": -101.78014753993259,
+          "pilot_to_offband_margin_db": 30.040426644151225,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7690763052208835,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -111.32217805444483,
+              "envelope_q50_dbfs": -71.9537682410123
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7710843373493976,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -109.30692595375967,
+              "envelope_q50_dbfs": -71.97436796089683
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.84302569500088,
+          "offband_q95_envelope_dbfs": -102.3152641007292,
+          "pilot_to_offband_margin_db": 30.47223840572832,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7690763052208835,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -112.2874950956477,
+              "envelope_q50_dbfs": -72.06402581870034
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7710843373493976,
+              "low_envelope_max_run_ms": 46.0,
+              "envelope_q05_dbfs": -113.48665647553604,
+              "envelope_q50_dbfs": -72.08000798133482
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_80ms_-72dBFS",
+      "config": {
+        "name": "periodic_gap_80ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.12000000000000001
+          ],
+          [
+            0.2,
+            0.32
+          ],
+          [
+            0.4,
+            0.52
+          ],
+          [
+            0.6000000000000001,
+            0.7200000000000001
+          ],
+          [
+            0.8,
+            0.92
+          ],
+          [
+            1.0,
+            1.12
+          ],
+          [
+            1.2,
+            1.32
+          ],
+          [
+            1.4,
+            1.52
+          ],
+          [
+            1.5999999999999999,
+            1.72
+          ],
+          [
+            1.7999999999999998,
+            1.92
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.74318708462495,
+          "offband_q95_envelope_dbfs": -102.04118615392076,
+          "pilot_to_offband_margin_db": 30.297999069295813,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6184738955823293,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -112.1009905818201,
+              "envelope_q50_dbfs": -72.03127181843246
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6204819277108434,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -112.7004570932437,
+              "envelope_q50_dbfs": -72.02336186480576
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.8576746035473,
+          "offband_q95_envelope_dbfs": -101.81774800574108,
+          "pilot_to_offband_margin_db": 29.960073402193785,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6184738955823293,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -114.07675818323105,
+              "envelope_q50_dbfs": -72.13606455289019
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.6204819277108434,
+              "low_envelope_max_run_ms": 76.0,
+              "envelope_q05_dbfs": -114.87217537010346,
+              "envelope_q50_dbfs": -72.13363601592475
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "periodic_gap_100ms_-72dBFS",
+      "config": {
+        "name": "periodic_gap_100ms_-72dBFS",
+        "active_intervals_s": [
+          [
+            0.0,
+            0.1
+          ],
+          [
+            0.2,
+            0.30000000000000004
+          ],
+          [
+            0.4,
+            0.5
+          ],
+          [
+            0.6000000000000001,
+            0.7000000000000001
+          ],
+          [
+            0.8,
+            0.9
+          ],
+          [
+            1.0,
+            1.1
+          ],
+          [
+            1.2,
+            1.3
+          ],
+          [
+            1.4,
+            1.5
+          ],
+          [
+            1.5999999999999999,
+            1.7
+          ],
+          [
+            1.7999999999999998,
+            1.9
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.7652646674615,
+          "offband_q95_envelope_dbfs": -101.58692247606719,
+          "pilot_to_offband_margin_db": 29.821657808605693,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5180722891566265,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -112.9476221136956,
+              "envelope_q50_dbfs": -79.51179636581358
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5200803212851406,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -113.89509090897735,
+              "envelope_q50_dbfs": -76.50739609506779
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.87416866121282,
+          "offband_q95_envelope_dbfs": -101.78598432851423,
+          "pilot_to_offband_margin_db": 29.91181566730141,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5180722891566265,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -116.13985799868783,
+              "envelope_q50_dbfs": -79.71950708655433
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.5200803212851406,
+              "low_envelope_max_run_ms": 96.0,
+              "envelope_q05_dbfs": -116.10794582440552,
+              "envelope_q50_dbfs": -76.663467732238
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "AM_0.2_5Hz",
+      "config": {
+        "name": "AM_0.2_5Hz",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.2,
+        "am_hz": 5.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9786959298428,
+            "ppm": -21.304070157102117,
+            "level_dbfs": -71.83532682980419,
+            "snr_db": 45.01479255239935,
+            "coh_err_bins": -0.021304070157157184
+          },
+          "R": {
+            "f0": 999.9777684829577,
+            "ppm": -22.231517042281546,
+            "level_dbfs": -71.94053559840502,
+            "snr_db": 44.99802629458692,
+            "coh_err_bins": -0.022231517042314408
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -70.32782327395132,
+          "offband_q95_envelope_dbfs": -101.87221376484746,
+          "pilot_to_offband_margin_db": 31.544390490896134,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -73.85181445663466,
+              "envelope_q50_dbfs": -71.91207646303675
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -73.78157596047238,
+              "envelope_q50_dbfs": -71.87603222926379
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -70.41311835481274,
+          "offband_q95_envelope_dbfs": -102.28260394340737,
+          "pilot_to_offband_margin_db": 31.869485588594628,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -74.0002337541451,
+              "envelope_q50_dbfs": -72.01611559904651
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -73.91565407692295,
+              "envelope_q50_dbfs": -72.01333148804552
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "AM_0.5_5Hz",
+      "config": {
+        "name": "AM_0.5_5Hz",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.5,
+        "am_hz": 5.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9780928309056,
+            "ppm": -21.907169094448342,
+            "level_dbfs": -71.50938549124668,
+            "snr_db": 45.64636009002172,
+            "coh_err_bins": -0.021907169094447454
+          },
+          "R": {
+            "f0": 999.9776040036367,
+            "ppm": -22.39599636333356,
+            "level_dbfs": -71.60257582028241,
+            "snr_db": 45.2937930301302,
+            "coh_err_bins": -0.02239599636334333
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -68.47337747037342,
+          "offband_q95_envelope_dbfs": -102.30162438793893,
+          "pilot_to_offband_margin_db": 33.82824691756551,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.64890000754278,
+              "envelope_q50_dbfs": -71.80736086483289
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.70712588289962,
+              "envelope_q50_dbfs": -71.98398186036786
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -68.54920853647266,
+          "offband_q95_envelope_dbfs": -102.46268843679424,
+          "pilot_to_offband_margin_db": 33.913479900321576,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.87382588841463,
+              "envelope_q50_dbfs": -71.95493574630515
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.89563501862655,
+              "envelope_q50_dbfs": -72.07814180748662
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "AM_0.5_20Hz",
+      "config": {
+        "name": "AM_0.5_20Hz",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.5,
+        "am_hz": 20.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9782696763841,
+            "ppm": -21.73032361585392,
+            "level_dbfs": -71.89945823409057,
+            "snr_db": 44.840927783208926,
+            "coh_err_bins": -0.021730323615884117
+          },
+          "R": {
+            "f0": 999.9787930150503,
+            "ppm": -21.206984949673213,
+            "level_dbfs": -72.00140950559057,
+            "snr_db": 45.38899694746755,
+            "coh_err_bins": -0.021206984949685648
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -68.6407777153541,
+          "offband_q95_envelope_dbfs": -100.73613077998424,
+          "pilot_to_offband_margin_db": 32.09535306463013,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.21613370186542,
+              "envelope_q50_dbfs": -71.8885341742454
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.15102471683879,
+              "envelope_q50_dbfs": -71.9306680654185
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -68.69841631786811,
+          "offband_q95_envelope_dbfs": -100.92193172042047,
+          "pilot_to_offband_margin_db": 32.223515402552366,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.35671743645403,
+              "envelope_q50_dbfs": -72.02001843403795
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -77.37673604845911,
+              "envelope_q50_dbfs": -71.98006471048012
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "AM_0.8_2Hz",
+      "config": {
+        "name": "AM_0.8_2Hz",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.8,
+        "am_hz": 2.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -66.91959099892242,
+          "offband_q95_envelope_dbfs": -101.83628542015235,
+          "pilot_to_offband_margin_db": 34.916694421229934,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.748995983935743,
+              "low_envelope_max_run_ms": 128.0,
+              "envelope_q05_dbfs": -84.92333131338121,
+              "envelope_q50_dbfs": -71.93175151282388
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7469879518072289,
+              "low_envelope_max_run_ms": 128.0,
+              "envelope_q05_dbfs": -85.40186365626492,
+              "envelope_q50_dbfs": -71.93732647137364
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -66.98343378525969,
+          "offband_q95_envelope_dbfs": -102.24716622963612,
+          "pilot_to_offband_margin_db": 35.26373244437643,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": false,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7469879518072289,
+              "low_envelope_max_run_ms": 130.0,
+              "envelope_q05_dbfs": -85.45206356646256,
+              "envelope_q50_dbfs": -72.0004446029184
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.7369477911646586,
+              "low_envelope_max_run_ms": 132.0,
+              "envelope_q05_dbfs": -85.95265866911933,
+              "envelope_q50_dbfs": -72.04550620067005
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "clock_offset_-100ppm",
+      "config": {
+        "name": "clock_offset_-100ppm",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": -100.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": false,
+        "clock_ok": false,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.8753008205838,
+            "ppm": -124.69917941626551,
+            "level_dbfs": -71.9914492851254,
+            "snr_db": 44.93953592949304,
+            "coh_err_bins": -0.12469917941621134
+          },
+          "R": {
+            "f0": 999.8753130656136,
+            "ppm": -124.68693438638655,
+            "level_dbfs": -72.01748764795528,
+            "snr_db": 45.47990477400525,
+            "coh_err_bins": -0.12468693438643186
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.77896724963261,
+          "offband_q95_envelope_dbfs": -101.63661421873131,
+          "pilot_to_offband_margin_db": 29.857646969098695,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.12314352946339,
+              "envelope_q50_dbfs": -71.93575399917098
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.23861525153748,
+              "envelope_q50_dbfs": -72.03182739234425
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.82953362410814,
+          "offband_q95_envelope_dbfs": -101.49580338252568,
+          "pilot_to_offband_margin_db": 29.666269758417542,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.2000332243822,
+              "envelope_q50_dbfs": -72.00311197079506
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.21315382957128,
+              "envelope_q50_dbfs": -72.02717049744062
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -123.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "clock_offset_-50ppm",
+      "config": {
+        "name": "clock_offset_-50ppm",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": -50.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9272344801514,
+            "ppm": -72.76551984869428,
+            "level_dbfs": -71.92382640785388,
+            "snr_db": 45.4327328251998,
+            "coh_err_bins": -0.07276551984864454
+          },
+          "R": {
+            "f0": 999.9266705260576,
+            "ppm": -73.3294739424517,
+            "level_dbfs": -71.99605194479834,
+            "snr_db": 45.38527501495387,
+            "coh_err_bins": -0.07332947394240819
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.73137855005483,
+          "offband_q95_envelope_dbfs": -102.13163368726994,
+          "pilot_to_offband_margin_db": 30.40025513721511,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.11553210975657,
+              "envelope_q50_dbfs": -71.90685780242077
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.13120708495504,
+              "envelope_q50_dbfs": -71.97023249782728
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.81569864307045,
+          "offband_q95_envelope_dbfs": -102.35867536541286,
+          "pilot_to_offband_margin_db": 30.542976722342416,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.20283104742418,
+              "envelope_q50_dbfs": -71.99280324703395
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.19895399256272,
+              "envelope_q50_dbfs": -72.01835033212184
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -73.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "clock_offset_+0ppm",
+      "config": {
+        "name": "clock_offset_+0ppm",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 999.9766923303507,
+            "ppm": -23.307669649308416,
+            "level_dbfs": -71.89524130595882,
+            "snr_db": 44.42774567325324,
+            "coh_err_bins": -0.023307669649284435
+          },
+          "R": {
+            "f0": 999.9761095884581,
+            "ppm": -23.890411541827028,
+            "level_dbfs": -71.99428014289849,
+            "snr_db": 44.0284504137344,
+            "coh_err_bins": -0.023890411541856338
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.72097012081845,
+          "offband_q95_envelope_dbfs": -102.077833136025,
+          "pilot_to_offband_margin_db": 30.356863015206557,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.09857733350803,
+              "envelope_q50_dbfs": -71.89760241730093
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.07410784687907,
+              "envelope_q50_dbfs": -71.92742190374271
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.82634193554196,
+          "offband_q95_envelope_dbfs": -102.09725490062533,
+          "pilot_to_offband_margin_db": 30.27091296508337,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.18818518145966,
+              "envelope_q50_dbfs": -71.99840599405513
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.18307074355374,
+              "envelope_q50_dbfs": -72.02942318485964
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "clock_offset_+50ppm",
+      "config": {
+        "name": "clock_offset_+50ppm",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 50.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 1000.0261808798489,
+            "ppm": 26.180879848958227,
+            "level_dbfs": -71.89653567512127,
+            "snr_db": 44.77342993190107,
+            "coh_err_bins": 0.026180879848880068
+          },
+          "R": {
+            "f0": 1000.0272686538406,
+            "ppm": 27.268653840506474,
+            "level_dbfs": -72.00624891769992,
+            "snr_db": 45.0957167570467,
+            "coh_err_bins": 0.027268653840565094
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.70914067568228,
+          "offband_q95_envelope_dbfs": -101.3827805363427,
+          "pilot_to_offband_margin_db": 29.673639860660415,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.10172948440032,
+              "envelope_q50_dbfs": -71.9000662889485
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.04945844195451,
+              "envelope_q50_dbfs": -71.86717970378076
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.81545551304639,
+          "offband_q95_envelope_dbfs": -101.7352718166527,
+          "pilot_to_offband_margin_db": 29.91981630360631,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.20476914196576,
+              "envelope_q50_dbfs": -72.01410206599573
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.16995998363352,
+              "envelope_q50_dbfs": -71.98271368449537
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": 26.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "clock_offset_+100ppm",
+      "config": {
+        "name": "clock_offset_+100ppm",
+        "active_intervals_s": [
+          [
+            0.0,
+            2.0
+          ]
+        ],
+        "frequency_offset_ppm": 100.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "pass",
+      "clock_check": "returned",
+      "rig_warnings": [],
+      "production_clock_result": {
+        "ok": true,
+        "clock_ok": true,
+        "signal_ok": true,
+        "coherent": false,
+        "channels": {
+          "L": {
+            "f0": 1000.0764429842853,
+            "ppm": 76.44298428544083,
+            "level_dbfs": -71.87358767306708,
+            "snr_db": 46.08638881559231,
+            "coh_err_bins": 0.07644298428533602
+          },
+          "R": {
+            "f0": 1000.0774080769418,
+            "ppm": 77.40807694167628,
+            "level_dbfs": -71.96685818999586,
+            "snr_db": 45.781176102697934,
+            "coh_err_bins": 0.0774080769417651
+          }
+        }
+      },
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.7257877797274,
+          "offband_q95_envelope_dbfs": -102.04369167757041,
+          "pilot_to_offband_margin_db": 30.31790389784301,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.05475628204081,
+              "envelope_q50_dbfs": -71.87646188203618
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.09535635559327,
+              "envelope_q50_dbfs": -71.91738242666776
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -71.81581392606424,
+          "offband_q95_envelope_dbfs": -101.95944447731824,
+          "pilot_to_offband_margin_db": 30.143630551254006,
+          "candidate_pilot_margin_ge_10db": true,
+          "candidate_pilot_margin_ge_20db": true,
+          "candidate_each_block_occupancy_ge_0_97": true,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": true,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.17054283027042,
+              "envelope_q50_dbfs": -71.98706712631268
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 1.0,
+              "low_envelope_max_run_ms": 0.0,
+              "envelope_q05_dbfs": -72.17756893385895,
+              "envelope_q50_dbfs": -71.99367541930813
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": 76.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    },
+    {
+      "case": "noise_only",
+      "config": {
+        "name": "noise_only",
+        "active_intervals_s": [],
+        "frequency_offset_ppm": 0.0,
+        "am_depth": 0.0,
+        "am_hz": 0.0,
+        "noise_dbfs": -80.0,
+        "leakage_dbfs": -109.0,
+        "pilot_dbfs": -72.0
+      },
+      "rig_run": "reject",
+      "clock_check": "raised",
+      "rig_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "clock_error": "MeasureError: сигнал на входе не найден: проверь кабели, уровни и выбранные каналы",
+      "narrowband": {
+        "L": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -100.61892645884193,
+          "offband_q95_envelope_dbfs": -102.10911249967997,
+          "pilot_to_offband_margin_db": 1.49018604083804,
+          "candidate_pilot_margin_ge_10db": false,
+          "candidate_pilot_margin_ge_20db": false,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.893574297188755,
+              "low_envelope_max_run_ms": 18.000000000000004,
+              "envelope_q05_dbfs": -116.3226837052271,
+              "envelope_q50_dbfs": -105.89424879517517
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8453815261044176,
+              "low_envelope_max_run_ms": 10.0,
+              "envelope_q05_dbfs": -116.97273146752075,
+              "envelope_q50_dbfs": -106.60055425657501
+            }
+          }
+        },
+        "R": {
+          "frames": 996,
+          "global_q95_envelope_dbfs": -102.15857155573372,
+          "offband_q95_envelope_dbfs": -102.05793549995906,
+          "pilot_to_offband_margin_db": -0.1006360557746575,
+          "candidate_pilot_margin_ge_10db": false,
+          "candidate_pilot_margin_ge_20db": false,
+          "candidate_each_block_occupancy_ge_0_97": false,
+          "candidate_each_block_max_run_le_50ms": true,
+          "candidate_combined_margin10_occupancy97_run50": false,
+          "blocks": {
+            "block_1": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8373493975903614,
+              "low_envelope_max_run_ms": 18.000000000000004,
+              "envelope_q05_dbfs": -121.17294869550834,
+              "envelope_q50_dbfs": -108.05451318438632
+            },
+            "block_2": {
+              "frames": 498,
+              "occupancy_above_global_q95_minus_12db": 0.8172690763052208,
+              "low_envelope_max_run_ms": 10.0,
+              "envelope_q05_dbfs": -120.88138079085358,
+              "envelope_q50_dbfs": -108.59306268711404
+            }
+          }
+        }
+      },
+      "backend": {
+        "noise_dbfs": -80.0,
+        "noise_channel_correlation": 0.95,
+        "effective_frequency_offset_ppm": -23.5,
+        "leakage_L_dbfs": -109.0,
+        "leakage_R_dbfs": -125.0,
+        "delay_s": 0.137,
+        "program_window_start_s": 0.4
+      }
+    }
+  ],
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}

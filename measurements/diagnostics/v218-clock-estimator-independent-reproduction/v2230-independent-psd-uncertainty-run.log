@@ -1,0 +1,125 @@
+{
+  "task": "v2230 independent local-PSD uncertainty validation",
+  "fs_hz": 96000.0,
+  "pilot_nominal_hz": 1000.0,
+  "pilot_true_hz": 999.9765000000001,
+  "pilot_level_dbfs": -72.0,
+  "broadband_noise_rms_dbfs": -80.0,
+  "durations_s": [
+    2.0,
+    4.0,
+    6.0
+  ],
+  "noise_models": [
+    "white",
+    "colored"
+  ],
+  "independent_trials_per_duration_and_noise_model": 32,
+  "crlb": "sigma_f = sqrt(3*N0/(pi^2*A^2*T^3)); N0 is measured one-sided local PSD, A is peak amplitude",
+  "summary_by_cell": {
+    "2s colored": {
+      "independent_records": 32,
+      "channel_rows": 64,
+      "abs_error_over_crlb_median": 0.7655470739873758,
+      "abs_error_over_crlb_p90": 1.7713656524956172,
+      "abs_error_over_crlb_max": 2.5596736516511025,
+      "signed_error_mean_ppm": 0.24442218529020973,
+      "signed_error_std_ppm": 0.9922006657954919,
+      "L_R_error_correlation": 0.9635555653343687,
+      "estimator_status_counts": {
+        "ok": 64
+      }
+    },
+    "2s white": {
+      "independent_records": 32,
+      "channel_rows": 64,
+      "abs_error_over_crlb_median": 0.6375793891811307,
+      "abs_error_over_crlb_p90": 1.2940994708690634,
+      "abs_error_over_crlb_max": 1.7975322035372185,
+      "signed_error_mean_ppm": -0.00012481267608300747,
+      "signed_error_std_ppm": 0.20278118285126634,
+      "L_R_error_correlation": 0.9392350817177517,
+      "estimator_status_counts": {
+        "ok": 64
+      }
+    },
+    "4s colored": {
+      "independent_records": 32,
+      "channel_rows": 64,
+      "abs_error_over_crlb_median": 0.851006464726596,
+      "abs_error_over_crlb_p90": 1.403194831804339,
+      "abs_error_over_crlb_max": 2.109106776881591,
+      "signed_error_mean_ppm": 0.02181200699721159,
+      "signed_error_std_ppm": 0.33234859995803145,
+      "L_R_error_correlation": 0.9449353450873461,
+      "estimator_status_counts": {
+        "ok": 64
+      }
+    },
+    "4s white": {
+      "independent_records": 32,
+      "channel_rows": 64,
+      "abs_error_over_crlb_median": 0.7139884789244233,
+      "abs_error_over_crlb_p90": 1.7135273661577406,
+      "abs_error_over_crlb_max": 2.494775839490236,
+      "signed_error_mean_ppm": 0.003332003473405373,
+      "signed_error_std_ppm": 0.0910987902101517,
+      "L_R_error_correlation": 0.9711561484986773,
+      "estimator_status_counts": {
+        "ok": 64
+      }
+    },
+    "6s colored": {
+      "independent_records": 32,
+      "channel_rows": 64,
+      "abs_error_over_crlb_median": 0.7914343087041691,
+      "abs_error_over_crlb_p90": 1.463199867757481,
+      "abs_error_over_crlb_max": 2.258977408212654,
+      "signed_error_mean_ppm": -0.0539004239786455,
+      "signed_error_std_ppm": 0.16944243593424704,
+      "L_R_error_correlation": 0.9214786340659117,
+      "estimator_status_counts": {
+        "ok": 64
+      }
+    },
+    "6s white": {
+      "independent_records": 32,
+      "channel_rows": 64,
+      "abs_error_over_crlb_median": 0.6081445330292845,
+      "abs_error_over_crlb_p90": 1.7416570633770385,
+      "abs_error_over_crlb_max": 2.50926000527226,
+      "signed_error_mean_ppm": -0.006874169506714239,
+      "signed_error_std_ppm": 0.048346182260912134,
+      "L_R_error_correlation": 0.9450148445535483,
+      "estimator_status_counts": {
+        "ok": 64
+      }
+    }
+  },
+  "interpretation": "Noise records are independently regenerated per trial and do not overlap. L/R noise is intentionally correlated (rho=0.95 before normalization). This is a first validation sample, not a calibrated production confidence bound."
+}
+JSON: /home/vovans/.cache/valvebench-v2230-rerun-0a18994-run/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230-independent-psd-uncertainty.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230_independent_psd_uncertainty.py"
+	User time (seconds): 231.50
+	System time (seconds): 15.14
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 4:06.69
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 205688
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 7678690
+	Voluntary context switches: 9
+	Involuntary context switches: 2306
+	Swaps: 0
+	File system inputs: 240
+	File system outputs: 496
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0
