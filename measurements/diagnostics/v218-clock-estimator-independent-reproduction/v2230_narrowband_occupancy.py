@@ -144,7 +144,7 @@ def metrics_for_channel(x,fs,f):
     ref=float(np.percentile(db,95))
     threshold=ref-12.0
     # Independent off-band demodulation is a noise-only proxy, not a production estimator.
-    _,noise_env=envelope_frames(x,fs,f+40.0)
+    _,noise_env=envelope_frames(x,fs,f+OFFBAND_OFFSET_HZ)
     noise_q95=float(np.percentile(20*np.log10(np.maximum(noise_env,1e-15)),95)) if len(noise_env) else None
     blocks={}
     for idx,(lo,hi) in enumerate(((0.0,1.0),(1.0,2.0)),1):
@@ -161,11 +161,19 @@ def metrics_for_channel(x,fs,f):
     return {"frames":int(len(env)),"global_q95_envelope_dbfs":ref,
             "offband_q95_envelope_dbfs":noise_q95,
             "pilot_to_offband_margin_db":finite(ref-noise_q95) if noise_q95 is not None else None,
+            "candidate_pilot_margin_ge_10db":(ref-noise_q95)>=10.0 if noise_q95 is not None else False,
+            "candidate_pilot_margin_ge_20db":(ref-noise_q95)>=20.0 if noise_q95 is not None else False,
             "candidate_each_block_occupancy_ge_0_97":all(
                 b["occupancy_above_global_q95_minus_12db"] is not None and
                 b["occupancy_above_global_q95_minus_12db"]>=0.97 for b in blocks.values()),
             "candidate_each_block_max_run_le_50ms":all(
                 b["low_envelope_max_run_ms"]<=50.0 for b in blocks.values()),
+            "candidate_combined_margin10_occupancy97_run50":(
+                (ref-noise_q95)>=10.0 and
+                all(b["occupancy_above_global_q95_minus_12db"] is not None and
+                    b["occupancy_above_global_q95_minus_12db"]>=0.97 and
+                    b["low_envelope_max_run_ms"]<=50.0 for b in blocks.values())
+            ) if noise_q95 is not None else False,
             "blocks":blocks}
 
 
@@ -207,12 +215,12 @@ def main():
     rows=[run_case(c,i) for i,c in enumerate(CASES)]
     out={"summary":{"task":"v2230 narrowband pilot occupancy diagnostics",
       "cases":len(rows),"fs_hz":FS,"window_s":WINDOW_S,"block_s":1.0,
-      "demod_frame_ms":FRAME_S*1000,"demod_hop_ms":HOP_S*1000,
+      "demod_frame_ms":FRAME_S*1000,"demod_hop_ms":HOP_S*1000,"offband_demod_offset_hz":OFFBAND_OFFSET_HZ,
       "noise_dbfs_rms_sine_equiv":NOISE_DBFS,"noise_model":"broadband Gaussian, L/R rho=0.95",
       "pilot_levels_dbfs":list(PILOT_LEVELS),"pilot_true_hz_at_base":PILOT_HZ*(1.0+OBSERVED_BASE_PPM*1e-6),
       "observed_base_frequency_offset_ppm":OBSERVED_BASE_PPM,"leakage_L_dbfs":LEAKAGE_DBFS,
-      "candidate_thresholds_are_not_approved":True,
-      "interpretation":"The q95-12 dB threshold uses a global per-channel reference to avoid each silent block self-normalizing. The off-band demodulation is only a diagnostic noise proxy. The 0.97 occupancy / 50 ms run criteria remain unvalidated candidates."},
+      "candidate_thresholds_are_not_approved":True,"candidate_pilot_margin_db":10.0,
+      "interpretation":"The q95-12 dB threshold uses a global per-channel reference to avoid each silent block self-normalizing. The off-band demodulation is only a diagnostic noise proxy at +500 Hz (5 exact cycles per frame), chosen to avoid carrier leakage from a +40 Hz demodulator offset. The 0.97 occupancy / 50 ms run criteria remain unvalidated candidates."},
       "per_case":rows,"environment":{"python":platform.python_version(),"numpy":np.__version__,"scipy":scipy.__version__}}
     path=Path(__file__).with_name("v2230-narrowband-occupancy.json")
     path.write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
