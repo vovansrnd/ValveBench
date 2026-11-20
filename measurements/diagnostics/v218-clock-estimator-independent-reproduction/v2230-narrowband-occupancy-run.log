@@ -1,0 +1,39 @@
+Traceback (most recent call last):
+  File "/home/vovans/.cache/valvebench-v2230-2562f9a-run/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230_narrowband_occupancy.py", line 228, in <module>
+    if __name__=="__main__": main()
+                             ~~~~^^
+  File "/home/vovans/.cache/valvebench-v2230-2562f9a-run/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230_narrowband_occupancy.py", line 215, in main
+    rows=[run_case(c,i) for i,c in enumerate(CASES)]
+          ~~~~~~~~^^^^^
+  File "/home/vovans/.cache/valvebench-v2230-2562f9a-run/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230_narrowband_occupancy.py", line 209, in run_case
+    row["narrowband"]={ch:metrics_for_channel(win[:,c],FS,pilot_f) for c,ch in enumerate(("L","R"))}
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vovans/.cache/valvebench-v2230-2562f9a-run/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230_narrowband_occupancy.py", line 147, in metrics_for_channel
+    _,noise_env=envelope_frames(x,fs,f+OFFBAND_OFFSET_HZ)
+                                       ^^^^^^^^^^^^^^^^^
+NameError: name 'OFFBAND_OFFSET_HZ' is not defined
+Command exited with non-zero status 1
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2230_narrowband_occupancy.py"
+	User time (seconds): 1.79
+	System time (seconds): 0.21
+	Percent of CPU this job got: 92%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.17
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 180896
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 271
+	Minor (reclaiming a frame) page faults: 48414
+	Voluntary context switches: 1329
+	Involuntary context switches: 23
+	Swaps: 0
+	File system inputs: 99248
+	File system outputs: 43120
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1
+EXIT_STATUS=1
