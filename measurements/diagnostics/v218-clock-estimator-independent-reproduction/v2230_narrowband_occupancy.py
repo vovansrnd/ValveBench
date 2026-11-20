@@ -24,6 +24,7 @@ SETTLE_S = 0.4
 DELAY_S = 0.137
 FRAME_S = 0.010
 HOP_S = 0.002
+OFFBAND_OFFSET_HZ = 500.0     # five exact cycles per 10 ms demodulation frame
 NOISE_DBFS = -80.0             # sine-equivalent broadband RMS level
 LEAKAGE_DBFS = -109.0          # observed 1 kHz line in quiet L channel
 PILOT_LEVELS = (-66.0, -72.0)
