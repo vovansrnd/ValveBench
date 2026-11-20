@@ -1,14 +1,16 @@
-# v2.23.0 execution contract — coordinator-authored synthetic diagnostics
+# v2.23.0 rerun execution contract — coordinator-authored synthetic diagnostics
 
 ## Frozen source and scope
 
-- Source branch: `coordinator/v2230-narrowband-pilot-validation`
-- Frozen test-source commit: `2562f9a424a473bd6c355664b74af49f753016cf`
-- Task/contract branch: `coordinator/v2230-narrowband-pilot-validation`
-- Result branch: `agent/v2230-coordinator-authored-validation`
+- Source branch: `coordinator/v2230-narrowband-pilot-validation-rerun`
+- Frozen test-source commit: `0a18994ca96e5a04ec69323a9fef8625e735f1a8`
+- Task/contract branch: `coordinator/v2230-narrowband-pilot-validation-rerun`
+- Result branch: `agent/v2230-coordinator-authored-validation-rerun`
 - Frozen estimator: `v2188_estimators.py` (must not be edited)
 - Production module: imported for offline `Rig.run()` / `clock_check()` exercise only
 - No hardware, ALSA, playback, DUT, real capture, WAV input/output, or production edits
+
+This is a clean rerun after the first attempt correctly stopped on an undefined `OFFBAND_OFFSET_HZ`. The corrected source defines it as `500.0 Hz`; no other test logic or production code was changed. The previous failed-run evidence remains on the original result branch.
 
 ## Questions under test
 
