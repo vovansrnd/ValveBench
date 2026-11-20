@@ -49,7 +49,7 @@ Stop on the first nonzero exit status. Preserve the entire log and traceback. Do
 
 ## Required publication allowlist
 
-Commit only these seven generated artifacts:
+Commit only these eight generated artifacts:
 
 - `v2230-narrowband-occupancy.json`
 - `v2230-narrowband-occupancy-run.log`
