@@ -1,4 +1,4 @@
-# AGENT TASK — ValveBench v2.23.0
+# AGENT TASK — ValveBench v2.23.0 — clean rerun after coordinator test fix
 ## Offline execution of coordinator-authored pilot-validity diagnostics
 
 **Role:** executor and reporter. The coordinator authored and froze the tests. Execute them unchanged, preserve all raw output, publish results, and return an evidence-based report. Do not redesign or repair tests yourself.
@@ -7,15 +7,15 @@
 
 Repository: `https://github.com/vovansrnd/ValveBench.git`
 
-Task/contract branch: `coordinator/v2230-narrowband-pilot-validation`
+Task/contract branch: `coordinator/v2230-narrowband-pilot-validation-rerun`
 
 Frozen test-source SHA (the only commit at which tests may be run):
 
-`2562f9a424a473bd6c355664b74af49f753016cf`
+`0a18994ca96e5a04ec69323a9fef8625e735f1a8`
 
 Result branch:
 
-`agent/v2230-coordinator-authored-validation`
+`agent/v2230-coordinator-authored-validation-rerun`
 
 Read the current task and execution contract from the task branch first:
 
@@ -23,6 +23,8 @@ Read the current task and execution contract from the task branch first:
 - `measurements/diagnostics/v218-clock-estimator-independent-reproduction/V2230-EXECUTION.md`
 
 Then execute the three scripts from the exact frozen SHA. The task branch may contain later task-document-only commits; do not run tests from a moving branch head.
+
+The first attempt stopped correctly on a coordinator-authored `NameError` (`OFFBAND_OFFSET_HZ` was missing). That attempt and its failure evidence remain preserved on the original result branch; do not modify that branch. This rerun uses a new immutable source SHA and a separate result branch.
 
 ## 2. Machine and execution environment
 
@@ -32,13 +34,13 @@ Use the established compute host `lk` (the remote machine reached by the existin
 
 Do not use the user's ThinkPad clone for the computational run. Do not make changes to the user's working tree. Work in a detached, isolated Git worktree at the pinned SHA. Use a new worktree path such as:
 
-`~/.cache/valvebench-v2230-2562f9a-run`
+`~/.cache/valvebench-v2230-rerun-0a18994-run`
 
 Before creating it, inspect whether it already exists. If it does, verify its repository identity, HEAD and worktree status; never delete or overwrite an unknown directory. Reuse valid previous output only after checking the complete log, exit marker, JSON integrity, row count and source SHA. Never rerun a completed test merely because the SSH connection was interrupted.
 
 Set a Python bytecode cache outside the worktree, for example:
 
-`export PYTHONPYCACHEPREFIX="$HOME/.cache/valvebench-v2230-pycache"`
+`export PYTHONPYCACHEPREFIX="$HOME/.cache/valvebench-v2230-rerun-pycache"`
 
 This avoids untracked `__pycache__` files contaminating the publication check.
 
@@ -246,7 +248,7 @@ Only these eight files may be committed from the run:
 7. `V2230-EXECUTION-MANIFEST.md`
 8. `V2230-AGENT-REPORT.md`
 
-Publish on `agent/v2230-coordinator-authored-validation`.
+Publish on `agent/v2230-coordinator-authored-validation-rerun`.
 
 Before switching to that branch:
 - fetch it and confirm its local head equals origin; if it differs, stop and report—do not reset/rebase/force;
