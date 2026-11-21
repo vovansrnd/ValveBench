@@ -25,7 +25,7 @@ Task branch: coordinator/v2253-pilotband-noise-characterization
 
 Result branch: agent/v2253-pilotband-noise-characterization
 
-Pinned SHA is recorded in AGENT-TASK-v2253.md after freezing.
+Pinned source SHA: ae65d7caf41758c9275a3af5c0db68ff3f208dba
 
 Script:
 v2253_pilotband_noise_characterization.py
