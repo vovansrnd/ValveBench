@@ -39,6 +39,3 @@ P10k: сырой угол абс. кривой ≈14.1 Гц (RMS 0.18; вклю�
   P10k: coh≥0.50 → fc = 11.73 Гц, RMS 0.165 дБ (258 точек)
   P10k: coh≥0.70 → fc = 12.43 Гц, RMS 0.127 дБ (248 точек)
 
-
-
-Сохранено: /opt/MyApps/Adudio/ValveBench-subsonic-results/results/subsonic-experiment/analysis/outputs/switch_map.txt
