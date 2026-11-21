@@ -21,7 +21,7 @@ Task branch: `coordinator/v2254-pilotband-subband-distribution`
 Result branch: `agent/v2254-pilotband-subband-distribution`
 
 Pinned analyzer/source commit SHA (checkout this exact commit):
-`33bb041312d77ddc04dbc36edb805d91f67556f5`
+`a10e88f8c47751a2b12f504372ba8ee4005a8968`
 
 Analyzer:
 `measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2254_pilotband_subband_distribution.py`
@@ -73,6 +73,8 @@ If compile or runtime fails, preserve the full diagnostic and stop. Do not repai
 ## Analysis requirements
 
 The analyzer uses:
+- half-open frequency intervals [low, high) so adjacent sub-bands do not double-count edge bins;
+- bin-width integration (sum of PSD-bin densities multiplied by the uniform frequency step);
 - the full-record 10-second Hann periodogram (0.1 Hz spacing);
 - eight contiguous 8 Hz sub-bands: 968–976, 976–984, …, 1024–1032 Hz;
 - nine overlapping 2-second Hann-periodogram windows at 1-second hop (0.5 Hz spacing).
