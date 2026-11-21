@@ -22,7 +22,7 @@ if str(HERE) not in sys.path:
 from v2260_gainmatch_hardware_validation import (  # noqa: E402
     FS, FREQUENCIES, INJECT_DB, LEAD_SECONDS, TAIL_SECONDS,
     CAPTURE_TAIL_SECONDS, assess_series, add_d10_edge_guards,
-    inject_channel_attenuation, json_safe, sha256, write_json, _write_manifest,
+    inject_channel_attenuation, write_json, _write_manifest,
 )
 
 LEVELS_DBFS = (-24.0, -18.0)
@@ -87,6 +87,7 @@ def _summarize_level(loopback: dict, inject_r: dict | None,
         "passed": bool(not all_failures and inject_r is not None and inject_l is not None),
         "failures": all_failures,
         "loopback": {
+            "mixer_fingerprint_available": bool(loopback.get("mixer_fingerprint")),
             "failures": loopback_failures,
             "metrics": _series_metrics(loopback),
             "rows": [
@@ -304,9 +305,10 @@ def run(args: argparse.Namespace) -> int:
             (level for level in LEVELS_DBFS
              if summary["steps"][_level_tag(level)]["passed"]), None)
         summary["backend_notes_after"] = list(backend.notes)
-        summary["mixer_fingerprint_available"] = bool(
-            summary["steps"][_level_tag(LEVELS_DBFS[0])]["loopback"]["metrics"]
-            if summary["steps"][_level_tag(LEVELS_DBFS[0])].get("loopback") else False)
+        summary["mixer_fingerprint_available"] = any(
+            item.get("loopback", {}).get("mixer_fingerprint_available", False)
+            for item in summary["steps"].values()
+        )
         write_json(out_dir / "run-summary.json", summary)
         print(f"V2261_STATUS={summary['status']}")
         return 0 if any_level_pass else 2
