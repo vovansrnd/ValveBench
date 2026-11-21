@@ -12,7 +12,7 @@ Task branch: coordinator/v2253-pilotband-noise-characterization
 Result branch: agent/v2253-pilotband-noise-characterization
 
 Pinned SHA (only permitted analyzer/contract version):
-PINNED_SHA_TO_BE_FILLED
+ae65d7caf41758c9275a3af5c0db68ff3f208dba
 
 Script:
 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2253_pilotband_noise_characterization.py
