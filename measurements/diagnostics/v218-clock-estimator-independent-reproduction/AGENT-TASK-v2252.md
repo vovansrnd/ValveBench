@@ -12,7 +12,7 @@ Task branch: coordinator/v2252-raw-probe-transient
 Result branch: agent/v2252-raw-probe-transient
 
 Pinned SHA (script + execution contract):
-PINNED_SHA_TO_BE_FILLED
+c9fbaae7cf427934f71776bad097c1a892f1d1ae
 
 Script:
 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2252_raw_probe_transient_analysis.py
