@@ -4,7 +4,7 @@ Read `measurements/diagnostics/v218-clock-estimator-independent-reproduction/V22
 
 Task branch: `coordinator/v2254-pilotband-subband-distribution`
 
-Pinned analyzer SHA: `33bb041312d77ddc04dbc36edb805d91f67556f5`
+Pinned analyzer SHA: `a10e88f8c47751a2b12f504372ba8ee4005a8968`
 
 Analyzer: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2254_pilotband_subband_distribution.py`
 
