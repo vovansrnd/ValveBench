@@ -1,0 +1,28 @@
+{
+  "analysis": "valvebench-subsonic-filter-ab",
+  "results": [
+    {
+      "name": "filter-15Hz",
+      "reference": "results/subsonic-experiment/analysis/validation/synth/bypass.csv",
+      "filtered": "results/subsonic-experiment/analysis/validation/synth/filter-15Hz.csv",
+      "min_coherence": 0.8,
+      "fit_max_hz": 200.0,
+      "channels": {
+        "L": {
+          "valid_points": 1361,
+          "fit_points": 269,
+          "fc_fit_hz": 8.02371422304221,
+          "fit_rms_db": 0.3126221809080368,
+          "fc_measured_hz": 9.728825786324913
+        },
+        "R": {
+          "valid_points": 1361,
+          "fit_points": 269,
+          "fc_fit_hz": 8.023714223023275,
+          "fit_rms_db": 0.3126221809080367,
+          "fc_measured_hz": 9.728825786324913
+        }
+      }
+    }
+  ]
+}
