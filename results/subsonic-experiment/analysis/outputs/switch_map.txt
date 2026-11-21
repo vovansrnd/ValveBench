@@ -1,0 +1,3 @@
+=== rin10k: не хватает rin10k_P0.csv, rin10k_P47k.csv, rin10k_P22k.csv, rin10k_P10k.csv — серия пропущена ===
+
+=== rin33k: не хватает rin33k_P0.csv, rin33k_P47k.csv, rin33k_P22k.csv, rin33k_P10k.csv — серия пропущена ===
