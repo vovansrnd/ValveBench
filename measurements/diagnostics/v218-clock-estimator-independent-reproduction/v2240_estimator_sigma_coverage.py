@@ -235,9 +235,12 @@ def summarize_cell(rows):
         if len(left) > 2 and len(right) > 2
         else None
     )
-    err_est = [r["abs_error_over_estimator_sigma"] for r in valid]
-    err_oracle = [r["abs_error_over_oracle_psd_sigma"] for r in valid]
-    err_resid = [r["abs_error_over_residual_psd_sigma"] for r in valid]
+    err_est = [r["abs_error_over_estimator_sigma"] for r in valid
+               if r["abs_error_over_estimator_sigma"] is not None]
+    err_oracle = [r["abs_error_over_oracle_psd_sigma"] for r in valid
+                  if r["abs_error_over_oracle_psd_sigma"] is not None]
+    err_resid = [r["abs_error_over_residual_psd_sigma"] for r in valid
+                 if r["abs_error_over_residual_psd_sigma"] is not None]
 
     def med_ratio(key):
         return quantile([r[key] for r in valid], 50)
@@ -256,9 +259,18 @@ def summarize_cell(rows):
         "signed_error_mean_ppm": (
             float(np.mean([r["fit_error_ppm"] for r in valid])) if valid else None
         ),
+        "fit_error_mean_L_ppm": (
+            float(np.mean(left)) if left else None
+        ),
+        "fit_error_mean_R_ppm": (
+            float(np.mean(right)) if right else None
+        ),
         "signed_error_std_ppm": sample_std([r["fit_error_ppm"] for r in valid]),
         "fit_error_std_L_ppm": sample_std(left),
         "fit_error_std_R_ppm": sample_std(right),
+        "estimator_sigma_valid_rows": len(err_est),
+        "oracle_psd_sigma_valid_rows": len(err_oracle),
+        "residual_psd_sigma_valid_rows": len(err_resid),
         "L_R_error_correlation": correlation,
         "estimator_sigma_over_oracle_psd_sigma_median": med_ratio_ratio(
             valid, "estimator_sigma_ppm", "oracle_psd_sigma_ppm"
