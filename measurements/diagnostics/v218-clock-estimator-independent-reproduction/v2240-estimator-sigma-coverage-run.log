@@ -1,0 +1,303 @@
+{
+  "task": "v2240 empirical coverage of est_lsq uncertainty",
+  "fs_hz": 96000.0,
+  "pilot_nominal_hz": 1000.0,
+  "pilot_true_hz": 999.9765000000001,
+  "pilot_offset_ppm": -23.5,
+  "pilot_level_dbfs": -72.0,
+  "noise_rms_dbfs": -80.0,
+  "durations_s": [
+    2.0,
+    4.0,
+    6.0
+  ],
+  "noise_models": [
+    "white",
+    "colored_lp1400"
+  ],
+  "independent_pairs_per_cell": 128,
+  "channel_rows_expected": 1536,
+  "target_L_R_noise_correlation": 0.95,
+  "local_psd_band_hz": [
+    2.0,
+    32.0
+  ],
+  "welch_nperseg": 65536,
+  "crlb_formula": "sigma_f = sqrt(3*N0/(pi^2*A^2*T^3)); N0 is one-sided local PSD and A is sinusoidal peak amplitude",
+  "coverage_definition": "fraction of channel rows with abs(fit_error) <= k*sigma, reported for k=1,2,3; L/R rows are paired and correlated, not independent samples",
+  "summary_by_cell": {
+    "2s colored_lp1400": {
+      "independent_pairs": 128,
+      "channel_rows": 256,
+      "valid_fit_rows": 256,
+      "status_counts": {
+        "line_contaminated": 2,
+        "ok": 254
+      },
+      "signed_error_mean_ppm": 0.10077300136788384,
+      "fit_error_mean_L_ppm": 0.09589771584640644,
+      "fit_error_mean_R_ppm": 0.10564828688936122,
+      "signed_error_std_ppm": 0.9123720335532832,
+      "fit_error_std_L_ppm": 0.9232128419284229,
+      "fit_error_std_R_ppm": 0.9050028189246093,
+      "estimator_sigma_valid_rows": 256,
+      "oracle_psd_sigma_valid_rows": 256,
+      "residual_psd_sigma_valid_rows": 256,
+      "L_R_error_correlation": 0.9423155961244284,
+      "estimator_sigma_over_oracle_psd_sigma_median": 0.27252332083228176,
+      "residual_psd_over_oracle_psd_median": 0.9999926374474554,
+      "abs_error_over_estimator_sigma_median": 2.5638359626399847,
+      "abs_error_over_estimator_sigma_p90": 5.851788861986381,
+      "abs_error_over_estimator_sigma_max": 9.317612814495064,
+      "estimator_sigma_coverage_1": 0.19921875,
+      "estimator_sigma_coverage_2": 0.3984375,
+      "estimator_sigma_coverage_3": 0.5625,
+      "abs_error_over_oracle_psd_sigma_median": 0.6783619340652868,
+      "abs_error_over_oracle_psd_sigma_p90": 1.6550730601826782,
+      "oracle_psd_sigma_coverage_1": 0.68359375,
+      "oracle_psd_sigma_coverage_2": 0.96484375,
+      "oracle_psd_sigma_coverage_3": 1.0,
+      "abs_error_over_residual_psd_sigma_median": 0.678631186043824,
+      "abs_error_over_residual_psd_sigma_p90": 1.6581159493454098,
+      "residual_psd_sigma_coverage_1": 0.68359375,
+      "residual_psd_sigma_coverage_2": 0.96484375,
+      "residual_psd_sigma_coverage_3": 1.0,
+      "median_estimator_sigma_ppm": 0.25051351650875564,
+      "median_oracle_psd_sigma_ppm": 0.9198037106872412,
+      "median_residual_psd_sigma_ppm": 0.9204321936282294,
+      "median_oracle_local_psd_v2_per_hz": 1.4048772928706386e-12,
+      "median_residual_local_psd_v2_per_hz": 1.4055587048757783e-12
+    },
+    "2s white": {
+      "independent_pairs": 128,
+      "channel_rows": 256,
+      "valid_fit_rows": 256,
+      "status_counts": {
+        "ok": 256
+      },
+      "signed_error_mean_ppm": -0.0030132391899280143,
+      "fit_error_mean_L_ppm": -0.005674562287834076,
+      "fit_error_mean_R_ppm": -0.00035191609202195676,
+      "signed_error_std_ppm": 0.2773031377344974,
+      "fit_error_std_L_ppm": 0.27951699471836045,
+      "fit_error_std_R_ppm": 0.27614402341215327,
+      "estimator_sigma_valid_rows": 256,
+      "oracle_psd_sigma_valid_rows": 256,
+      "residual_psd_sigma_valid_rows": 256,
+      "L_R_error_correlation": 0.9647358651651193,
+      "estimator_sigma_over_oracle_psd_sigma_median": 1.0548160991673348,
+      "residual_psd_over_oracle_psd_median": 1.0000067577745173,
+      "abs_error_over_estimator_sigma_median": 0.7801206781454931,
+      "abs_error_over_estimator_sigma_p90": 1.7994460373839485,
+      "abs_error_over_estimator_sigma_max": 3.22903402500634,
+      "estimator_sigma_coverage_1": 0.59375,
+      "estimator_sigma_coverage_2": 0.94140625,
+      "estimator_sigma_coverage_3": 0.9921875,
+      "abs_error_over_oracle_psd_sigma_median": 0.8286165435162274,
+      "abs_error_over_oracle_psd_sigma_p90": 1.901851936832217,
+      "oracle_psd_sigma_coverage_1": 0.578125,
+      "oracle_psd_sigma_coverage_2": 0.92578125,
+      "oracle_psd_sigma_coverage_3": 0.98828125,
+      "abs_error_over_residual_psd_sigma_median": 0.8281142892934125,
+      "abs_error_over_residual_psd_sigma_p90": 1.900858665860807,
+      "residual_psd_sigma_coverage_1": 0.578125,
+      "residual_psd_sigma_coverage_2": 0.92578125,
+      "residual_psd_sigma_coverage_3": 0.98828125,
+      "median_estimator_sigma_ppm": 0.25056637068182513,
+      "median_oracle_psd_sigma_ppm": 0.2374938220574241,
+      "median_residual_psd_sigma_ppm": 0.23744607507812915,
+      "median_oracle_local_psd_v2_per_hz": 9.365968663357597e-14,
+      "median_residual_local_psd_v2_per_hz": 9.365734691421039e-14
+    },
+    "4s colored_lp1400": {
+      "independent_pairs": 128,
+      "channel_rows": 256,
+      "valid_fit_rows": 256,
+      "status_counts": {
+        "ok": 256
+      },
+      "signed_error_mean_ppm": 0.05767548318118258,
+      "fit_error_mean_L_ppm": 0.057254228074527,
+      "fit_error_mean_R_ppm": 0.05809673828783817,
+      "signed_error_std_ppm": 0.3319720125152377,
+      "fit_error_std_L_ppm": 0.32594575947063026,
+      "fit_error_std_R_ppm": 0.3391719291942508,
+      "estimator_sigma_valid_rows": 256,
+      "oracle_psd_sigma_valid_rows": 256,
+      "residual_psd_sigma_valid_rows": 256,
+      "L_R_error_correlation": 0.9441085408698793,
+      "estimator_sigma_over_oracle_psd_sigma_median": 0.2657684501703903,
+      "residual_psd_over_oracle_psd_median": 0.9994689894992522,
+      "abs_error_over_estimator_sigma_median": 2.331747047647782,
+      "abs_error_over_estimator_sigma_p90": 6.3765464870214785,
+      "abs_error_over_estimator_sigma_max": 11.916396562054626,
+      "estimator_sigma_coverage_1": 0.20703125,
+      "estimator_sigma_coverage_2": 0.4296875,
+      "estimator_sigma_coverage_3": 0.6171875,
+      "abs_error_over_oracle_psd_sigma_median": 0.6261878676550483,
+      "abs_error_over_oracle_psd_sigma_p90": 1.7273148051238754,
+      "oracle_psd_sigma_coverage_1": 0.734375,
+      "oracle_psd_sigma_coverage_2": 0.94140625,
+      "oracle_psd_sigma_coverage_3": 0.99609375,
+      "abs_error_over_residual_psd_sigma_median": 0.6226062609537173,
+      "abs_error_over_residual_psd_sigma_p90": 1.7302135870079325,
+      "residual_psd_sigma_coverage_1": 0.734375,
+      "residual_psd_sigma_coverage_2": 0.94140625,
+      "residual_psd_sigma_coverage_3": 0.99609375,
+      "median_estimator_sigma_ppm": 0.0886902758190164,
+      "median_oracle_psd_sigma_ppm": 0.3342834563728156,
+      "median_residual_psd_sigma_ppm": 0.33432174976581885,
+      "median_oracle_local_psd_v2_per_hz": 1.4844579252043079e-12,
+      "median_residual_local_psd_v2_per_hz": 1.4842550565055618e-12
+    },
+    "4s white": {
+      "independent_pairs": 128,
+      "channel_rows": 256,
+      "valid_fit_rows": 256,
+      "status_counts": {
+        "ok": 256
+      },
+      "signed_error_mean_ppm": -0.011069289905523694,
+      "fit_error_mean_L_ppm": -0.010698949073995483,
+      "fit_error_mean_R_ppm": -0.011439630737051903,
+      "signed_error_std_ppm": 0.08885898554528385,
+      "fit_error_std_L_ppm": 0.08875739246184579,
+      "fit_error_std_R_ppm": 0.08930767064544082,
+      "estimator_sigma_valid_rows": 256,
+      "oracle_psd_sigma_valid_rows": 256,
+      "residual_psd_sigma_valid_rows": 256,
+      "L_R_error_correlation": 0.9491245029882293,
+      "estimator_sigma_over_oracle_psd_sigma_median": 1.0194313940394926,
+      "residual_psd_over_oracle_psd_median": 0.9999286683395697,
+      "abs_error_over_estimator_sigma_median": 0.7448601865421562,
+      "abs_error_over_estimator_sigma_p90": 1.5549254215800303,
+      "abs_error_over_estimator_sigma_max": 2.9041493775584613,
+      "estimator_sigma_coverage_1": 0.69140625,
+      "estimator_sigma_coverage_2": 0.953125,
+      "estimator_sigma_coverage_3": 1.0,
+      "abs_error_over_oracle_psd_sigma_median": 0.7571238924025105,
+      "abs_error_over_oracle_psd_sigma_p90": 1.5812504192231902,
+      "oracle_psd_sigma_coverage_1": 0.6640625,
+      "oracle_psd_sigma_coverage_2": 0.953125,
+      "oracle_psd_sigma_coverage_3": 1.0,
+      "abs_error_over_residual_psd_sigma_median": 0.7569011676626569,
+      "abs_error_over_residual_psd_sigma_p90": 1.5826135662531635,
+      "residual_psd_sigma_coverage_1": 0.6640625,
+      "residual_psd_sigma_coverage_2": 0.953125,
+      "residual_psd_sigma_coverage_3": 1.0,
+      "median_estimator_sigma_ppm": 0.0887093007512531,
+      "median_oracle_psd_sigma_ppm": 0.08704066142156827,
+      "median_residual_psd_sigma_ppm": 0.08701000069157616,
+      "median_oracle_local_psd_v2_per_hz": 1.0064273716335097e-13,
+      "median_residual_local_psd_v2_per_hz": 1.0058615194583624e-13
+    },
+    "6s colored_lp1400": {
+      "independent_pairs": 128,
+      "channel_rows": 256,
+      "valid_fit_rows": 256,
+      "status_counts": {
+        "ok": 256
+      },
+      "signed_error_mean_ppm": -0.019430695277143303,
+      "fit_error_mean_L_ppm": -0.018934526012830615,
+      "fit_error_mean_R_ppm": -0.019926864541455976,
+      "signed_error_std_ppm": 0.1700728380798955,
+      "fit_error_std_L_ppm": 0.17565763399445034,
+      "fit_error_std_R_ppm": 0.1649884661916071,
+      "estimator_sigma_valid_rows": 256,
+      "oracle_psd_sigma_valid_rows": 256,
+      "residual_psd_sigma_valid_rows": 256,
+      "L_R_error_correlation": 0.9455368986512827,
+      "estimator_sigma_over_oracle_psd_sigma_median": 0.2640115863087762,
+      "residual_psd_over_oracle_psd_median": 0.9998938007307274,
+      "abs_error_over_estimator_sigma_median": 2.2374578006822823,
+      "abs_error_over_estimator_sigma_p90": 5.783378531478968,
+      "abs_error_over_estimator_sigma_max": 10.51086794832977,
+      "estimator_sigma_coverage_1": 0.21484375,
+      "estimator_sigma_coverage_2": 0.44921875,
+      "estimator_sigma_coverage_3": 0.625,
+      "abs_error_over_oracle_psd_sigma_median": 0.6013673120746604,
+      "abs_error_over_oracle_psd_sigma_p90": 1.509887559579815,
+      "oracle_psd_sigma_coverage_1": 0.734375,
+      "oracle_psd_sigma_coverage_2": 0.953125,
+      "oracle_psd_sigma_coverage_3": 1.0,
+      "abs_error_over_residual_psd_sigma_median": 0.601032548234729,
+      "abs_error_over_residual_psd_sigma_p90": 1.5065503317480298,
+      "residual_psd_sigma_coverage_1": 0.734375,
+      "residual_psd_sigma_coverage_2": 0.953125,
+      "residual_psd_sigma_coverage_3": 1.0,
+      "median_estimator_sigma_ppm": 0.04839493147308946,
+      "median_oracle_psd_sigma_ppm": 0.18317603161851986,
+      "median_residual_psd_sigma_ppm": 0.18301971910419565,
+      "median_oracle_local_psd_v2_per_hz": 1.5043508563750293e-12,
+      "median_residual_local_psd_v2_per_hz": 1.5044041756218523e-12
+    },
+    "6s white": {
+      "independent_pairs": 128,
+      "channel_rows": 256,
+      "valid_fit_rows": 256,
+      "status_counts": {
+        "ok": 256
+      },
+      "signed_error_mean_ppm": -0.013395363041628819,
+      "fit_error_mean_L_ppm": -0.013116152094782146,
+      "fit_error_mean_R_ppm": -0.013674573988475488,
+      "signed_error_std_ppm": 0.04429030962423621,
+      "fit_error_std_L_ppm": 0.044967470568028974,
+      "fit_error_std_R_ppm": 0.04377760176465431,
+      "estimator_sigma_valid_rows": 256,
+      "oracle_psd_sigma_valid_rows": 256,
+      "residual_psd_sigma_valid_rows": 256,
+      "L_R_error_correlation": 0.9483009345428836,
+      "estimator_sigma_over_oracle_psd_sigma_median": 1.0166652891643528,
+      "residual_psd_over_oracle_psd_median": 0.9999951132141709,
+      "abs_error_over_estimator_sigma_median": 0.6565808954753334,
+      "abs_error_over_estimator_sigma_p90": 1.5184600727093374,
+      "abs_error_over_estimator_sigma_max": 2.8019211927253314,
+      "estimator_sigma_coverage_1": 0.69921875,
+      "estimator_sigma_coverage_2": 0.96484375,
+      "estimator_sigma_coverage_3": 1.0,
+      "abs_error_over_oracle_psd_sigma_median": 0.6655906556793044,
+      "abs_error_over_oracle_psd_sigma_p90": 1.5759319044503757,
+      "oracle_psd_sigma_coverage_1": 0.69140625,
+      "oracle_psd_sigma_coverage_2": 0.95703125,
+      "oracle_psd_sigma_coverage_3": 1.0,
+      "abs_error_over_residual_psd_sigma_median": 0.6669419471075102,
+      "abs_error_over_residual_psd_sigma_p90": 1.5759520026144764,
+      "residual_psd_sigma_coverage_1": 0.69140625,
+      "residual_psd_sigma_coverage_2": 0.95703125,
+      "residual_psd_sigma_coverage_3": 1.0,
+      "median_estimator_sigma_ppm": 0.048396810953729046,
+      "median_oracle_psd_sigma_ppm": 0.04759938044785862,
+      "median_residual_psd_sigma_ppm": 0.047598377782474666,
+      "median_oracle_local_psd_v2_per_hz": 1.0158145520212249e-13,
+      "median_residual_local_psd_v2_per_hz": 1.0154556552025366e-13
+    }
+  },
+  "interpretation": "The oracle PSD uses injected noise, while the residual PSD is estimated after subtracting the fitted sine/DC. The estimator sigma is the frozen est_lsq residual-curvature field. This is diagnostic evidence only; no production change is proposed."
+}
+JSON: /home/vovans/.cache/valvebench-v2240-ea56562-run/measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2240-estimator-sigma-coverage.json
+	Command being timed: "python3 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2240_estimator_sigma_coverage.py"
+	User time (seconds): 978.79
+	System time (seconds): 64.24
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 17:23.22
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 228380
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 33526483
+	Voluntary context switches: 103
+	Involuntary context switches: 9691
+	Swaps: 0
+	File system inputs: 488
+	File system outputs: 38528
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+EXIT_STATUS=0
