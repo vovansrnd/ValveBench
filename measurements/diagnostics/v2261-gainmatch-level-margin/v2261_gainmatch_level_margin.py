@@ -22,7 +22,7 @@ if str(HERE) not in sys.path:
 from v2260_gainmatch_hardware_validation import (  # noqa: E402
     FS, FREQUENCIES, INJECT_DB, LEAD_SECONDS, TAIL_SECONDS,
     CAPTURE_TAIL_SECONDS, assess_series, add_d10_edge_guards,
-    inject_channel_attenuation, write_json, _write_manifest,
+    inject_channel_attenuation, write_json, _write_manifest, _git_head,
 )
 
 LEVELS_DBFS = (-24.0, -18.0)
@@ -197,7 +197,7 @@ def run(args: argparse.Namespace) -> int:
         "numpy": np.__version__,
         "scipy": scipy.__version__,
         "valvebench_version": __version__,
-        "git_head": None,
+        "git_head": _git_head(),
         "dac": args.dac,
         "adc": args.adc,
         "fs": FS,
