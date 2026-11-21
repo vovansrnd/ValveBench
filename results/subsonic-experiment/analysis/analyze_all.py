@@ -158,3 +158,49 @@ for f in (5.0, 10.0, 15.0, 20.0, 31.5):
     dl, _ = at(L, f)
     dlf, _ = at(deemph(flt, "L"), f)
     print(f"  {f:5.1f} Гц: без C2 {dl:+7.2f} дБ | с C2 {dlf:+7.2f} дБ | выигрыш {dlf - dl:+6.2f} дБ")
+
+# ---------- 6. Архитектура «выходной 1,0 мкФ + переключаемая нагрузка» ----------
+sec("6. ЗАМЕНА ШТАТНОГО C1 НА 1,0 мкФ: эффект шунта 10к (дифференциальный метод)")
+
+def diff_fit(path, shunted_ch, coh_min):
+    """D(f) = шунтированный − свободный; подгонка D = −10·log10(1+(fc/f)²).
+
+    Общий RIAA-цель и собственный полюс карты в разности сокращаются
+    (полюс карты общий для обоих каналов одного захвата).
+    """
+    ch = read(CAP / path)
+    other = "R" if shunted_ch == "L" else "L"
+    pts = []
+    for f, d1, c1 in ch[shunted_ch]:
+        d0 = next((dd for ff, dd, _ in ch[other] if ff == f), None)
+        if d0 is None:
+            continue
+        coh = min(c1, next((cc for ff, _, cc in ch[other] if ff == f), 0.0))
+        if 6.0 <= f <= 200.0 and coh >= coh_min:
+            pts.append((f, d1 - d0))
+    best = min(((sum((d - (-10 * math.log10(1 + (fc / f) ** 2))) ** 2
+                  for f, d in pts) / len(pts)), fc)
+               for fc in np.geomspace(0.5, 80.0, 4000))
+    return best[1], math.sqrt(best[0]), len(pts)
+
+captures = [("out1u-L10k_R120k.csv", "L", "№1: 10к в L, R без"),
+            ("out1u-swap_R10k.csv", "R", "№2 (своп): 10к в R, L без")]
+for fname, shunted, label in captures:
+    ch = read(CAP / fname)
+    Ld, Rd = deemph(ch, "L"), deemph(ch, "R")
+    print(f"\n--- {label} ({fname}) ---")
+    print(f"{'Гц':>6} | {'L':>8} | {'R':>8} | {'L−R':>8} | coh L/R")
+    for f in (5.0, 10.0, 15.0, 20.0, 31.5, 40.0, 80.0):
+        dl, cl = at(Ld, f); dr, cr = at(Rd, f)
+        d_sh = dl if shunted == "L" else dr
+        d_free = dr if shunted == "L" else dl
+        print(f"{f:6.1f} | {dl:+8.2f} | {dr:+8.2f} | {d_sh - d_free:+8.2f} | {cl:.2f}/{cr:.2f}")
+    for coh_min in (0.50, 0.70):
+        fc, rms, n = diff_fit(fname, shunted, coh_min)
+        print(f"  Дифф. подгонка (6–200 Гц, coh≥{coh_min:.2f}, {n} точек): "
+              f"fc = {fc:.2f} Гц, RMS = {rms:.3f} дБ")
+    for name, rows in (("L", Ld), ("R", Rd)):
+        pts = [(f, d) for f, d, coh in rows if 5.0 <= f <= 100.0 and coh >= 0.6]
+        fc, rms = fit_fc(pts)
+        print(f"  (сырой fit абсолютной кривой {name}: fc ≈ {fc:.1f} Гц, RMS {rms:.2f} — "
+              f"включает полюс карты, не физический угол цепи)")
