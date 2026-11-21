@@ -1,0 +1,49 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "captures/clock_preflight-01.npz": {
+      "size_bytes": 5552211,
+      "sha256": "1fba1f3856a10d197b9c526ce011faa0bc174080c30473e5a01a99d2a96aac73"
+    },
+    "captures/clock_preflight-02.npz": {
+      "size_bytes": 5983288,
+      "sha256": "41c5d4bc941e4e2a3a0c9b86d506699cec744239b77c3adbdd2288385b91a2ea"
+    },
+    "captures/inject_L-05.npz": {
+      "size_bytes": 51604884,
+      "sha256": "db8e7ed544b8ec8dcf6cb95d4dede0f06a1161b818b7bca304ae2e647abaaa29"
+    },
+    "captures/inject_R-04.npz": {
+      "size_bytes": 51502978,
+      "sha256": "d7d73915a81e7904159d3e02374292c4f3cbd68d7a9caa119cd0704e2d9cfec9"
+    },
+    "captures/loopback-03.npz": {
+      "size_bytes": 41805963,
+      "sha256": "8140a7ab543db10976523cd04d484bbfdcb0fb4de4a6c786f138393824a0ff59"
+    },
+    "clock-preflight.json": {
+      "size_bytes": 906,
+      "sha256": "9f2a43d31ef9f861441567dd208e5657c53501e9b1ff32dcfc450738b689d878"
+    },
+    "inject-L-series.json": {
+      "size_bytes": 47537,
+      "sha256": "453151e300846ee5fdf73851d6bd26bea478559edaa63f66100fd74c8ed668af"
+    },
+    "inject-R-series.json": {
+      "size_bytes": 47242,
+      "sha256": "adce6d8fa731354329662c149d4ab70d8345bd14c4d1867256320dd511e2864d"
+    },
+    "loopback-reference.json": {
+      "size_bytes": 1389,
+      "sha256": "1e902bd48ede0ca8a1e7ac051584212b51cc9745ad1847a19cfa9555e5d53ef0"
+    },
+    "loopback-series.json": {
+      "size_bytes": 47181,
+      "sha256": "1ddef4789dca639dad3b4a693e0b022d642803cbf08ac5d4635220e61c540f67"
+    },
+    "run-summary.json": {
+      "size_bytes": 4285,
+      "sha256": "65a668720b5c24fcef8aee198c637307fb5c4eeefaf5665e273ba66cca935da3"
+    }
+  }
+}

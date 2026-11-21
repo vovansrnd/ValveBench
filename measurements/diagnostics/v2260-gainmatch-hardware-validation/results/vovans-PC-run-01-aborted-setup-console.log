@@ -1,0 +1,2 @@
+V2260_SETUP_ERROR: FileExistsError: [Errno 17] File exists: 'measurements/diagnostics/v2260-gainmatch-hardware-validation/results/vovans-PC-run-01'
+EXIT_CODE=0

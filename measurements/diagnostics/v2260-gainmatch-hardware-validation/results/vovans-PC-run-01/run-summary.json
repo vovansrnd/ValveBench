@@ -1,0 +1,151 @@
+{
+  "stage": "v2.26.0",
+  "status": "FAIL",
+  "host": "vovans-PC",
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "numpy": "2.3.5",
+  "scipy": "1.16.3",
+  "valvebench_version": "0.1.21-dev4",
+  "git_head": "d6728469a724cfb80298149d69538e202a8648dc",
+  "dac": "hw:1,0",
+  "adc": "hw:2,0",
+  "fs": 192000,
+  "playback_format": "S32_LE",
+  "capture_format": "S24_3LE",
+  "playback_channels": 2,
+  "capture_channels": 2,
+  "channel_maps": {
+    "out": [
+      0,
+      1
+    ],
+    "in": [
+      0,
+      1
+    ]
+  },
+  "frequencies_hz": [
+    94.0,
+    994.0,
+    9994.0
+  ],
+  "generator_level_dbfs": -30.0,
+  "injected_attenuation_db": 6.020599913279624,
+  "edge_guard": {
+    "lead_s": 1.5,
+    "tail_s": 0.6,
+    "capture_tail_s": 0.8
+  },
+  "measurement": {
+    "blocks": 2,
+    "settle_s": 0.5,
+    "frequency_profile": "mains_avoidance_50",
+    "repeats": 3
+  },
+  "backend_notes_before": [],
+  "steps": {
+    "clock_preflight": {
+      "ok": true,
+      "test_level_dbfs": -30.0,
+      "channels": {
+        "L": {
+          "f0": 999.9764092340353,
+          "ppm": -23.590765964698335,
+          "level_dbfs": -58.15294444570111
+        },
+        "R": {
+          "f0": 999.9760809264245,
+          "ppm": -23.919073575462413,
+          "level_dbfs": -57.77415932209096
+        }
+      },
+      "warnings": [
+        "L: сдвиг тона -0.0236 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "R: сдвиг тона -0.0239 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "preflight: уровень поднят до -30 dBFS — шумовой пол линии выше штатного -72 dBFS"
+      ]
+    },
+    "loopback": {
+      "passed": true,
+      "rows": [
+        {
+          "frequency_hz": 94.0,
+          "delta_adc_db": -0.004523621760540664,
+          "repeat_spread_db": 0.006159529042754741
+        },
+        {
+          "frequency_hz": 994.0,
+          "delta_adc_db": -0.36848776725189936,
+          "repeat_spread_db": 0.0030221692633674024
+        },
+        {
+          "frequency_hz": 9994.0,
+          "delta_adc_db": -1.384928514110534,
+          "repeat_spread_db": 0.0006461302297111615
+        }
+      ]
+    },
+    "inject_R": {
+      "passed": true,
+      "expected_delta_gain_db": 6.020599913279624,
+      "failures": [],
+      "rows": [
+        {
+          "frequency_hz": 94.0,
+          "delta_adc_db": 6.0207284990692145,
+          "correction_db": -0.004523621760540664,
+          "delta_gain_db": 6.025252120829755
+        },
+        {
+          "frequency_hz": 994.0,
+          "delta_adc_db": 5.653110796091852,
+          "correction_db": -0.36848776725189936,
+          "delta_gain_db": 6.021598563343751
+        },
+        {
+          "frequency_hz": 9994.0,
+          "delta_adc_db": 4.635212853427795,
+          "correction_db": -1.384928514110534,
+          "delta_gain_db": 6.020141367538329
+        }
+      ]
+    },
+    "inject_L": {
+      "passed": false,
+      "expected_delta_gain_db": -6.020599913279624,
+      "failures": [
+        "94 Hz: row invalid (None)",
+        "994 Hz: row invalid (None)",
+        "9994 Hz: row invalid (None)"
+      ],
+      "rows": [
+        {
+          "frequency_hz": 94.0,
+          "delta_adc_db": -6.030482248108051,
+          "correction_db": -0.004523621760540664,
+          "delta_gain_db": -6.02595862634751
+        },
+        {
+          "frequency_hz": 994.0,
+          "delta_adc_db": -6.391185320012447,
+          "correction_db": -0.36848776725189936,
+          "delta_gain_db": -6.0226975527605475
+        },
+        {
+          "frequency_hz": 9994.0,
+          "delta_adc_db": -7.407164136144196,
+          "correction_db": -1.384928514110534,
+          "delta_gain_db": -6.022235622033662
+        }
+      ]
+    }
+  },
+  "failures": [
+    "94 Hz: row invalid (None)",
+    "994 Hz: row invalid (None)",
+    "9994 Hz: row invalid (None)"
+  ],
+  "backend_notes_after": [],
+  "mixer_fingerprint_available": true
+}
