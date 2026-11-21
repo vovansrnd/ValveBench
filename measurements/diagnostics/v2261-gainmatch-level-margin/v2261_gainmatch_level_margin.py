@@ -18,6 +18,9 @@ import scipy
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
+PREVIOUS_STAGE = HERE.parent / "v2260-gainmatch-hardware-validation"
+if PREVIOUS_STAGE.is_dir() and str(PREVIOUS_STAGE) not in sys.path:
+    sys.path.insert(0, str(PREVIOUS_STAGE))
 
 from v2260_gainmatch_hardware_validation import (  # noqa: E402
     FS, FREQUENCIES, INJECT_DB, LEAD_SECONDS, TAIL_SECONDS,
