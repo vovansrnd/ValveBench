@@ -189,6 +189,22 @@ def main():
     sine_l = best_sine_frequency(centered[:, 0], fs, common_frequency)
     sine_r = best_sine_frequency(centered[:, 1], fs, common_frequency)
 
+    # Two-second sliding fits, one-second hop, to quantify LF drift and
+    # amplitude variation without creating or acquiring new samples.
+    lf_windows = []
+    window_frames = int(2.0 * fs)
+    hop_frames = int(1.0 * fs)
+    for start in range(0, frames - window_frames + 1, hop_frames):
+        stop = start + window_frames
+        lf_windows.append({
+            "start_s": start / fs,
+            "end_s": stop / fs,
+            "L": best_sine_frequency(lf[start:stop, 0], fs, common_frequency),
+            "R": best_sine_frequency(lf[start:stop, 1], fs, common_frequency),
+            "search_center_hz": common_frequency,
+            "search_half_width_hz": 0.5,
+        })
+
     # Welch PSD close to the 1 kHz pilot band. No pilot was present in this
     # capture. Keep median and mean separately; neither identifies the source.
     pilot_noise = []
@@ -283,6 +299,7 @@ def main():
         },
         "refined_low_frequency_sine_L": sine_l,
         "refined_low_frequency_sine_R": sine_r,
+        "low_frequency_sliding_2s_windows_1s_hop": lf_windows,
         "8_20hz_filtered_LR_correlation": lf_corr,
         "coherence_at_joint_lf_peak": float(coh[coh_index]),
         "coherence_frequency_bin_hz": float(coh_f[coh_index]),
