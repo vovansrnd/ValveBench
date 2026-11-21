@@ -286,7 +286,7 @@ def main():
         "raw_2s_windows_1s_hop": two_sec_rows,
         "environment": {
             "python": platform.python_version(),
-            "numpy": np.__version(),
+            "numpy": np.__version__,
             "scipy": scipy.__version__,
             "platform": platform.platform(),
         },
