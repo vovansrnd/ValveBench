@@ -293,6 +293,7 @@ def main():
 
     fs, data, dtype_name, clipped = read_wav(wav_path)
     required_frames = int(FS * BLOCK_S * PAIRS)
+    frames_available = int(len(data))
     data = data[:required_frames]
     capture_sha = sha256_file(wav_path)
     capture_bytes = wav_path.stat().st_size
@@ -400,7 +401,7 @@ def main():
         "capture_dtype": dtype_name,
         "capture_frames_used": required_frames,
         "capture_seconds_used": required_frames / FS,
-        "capture_frames_available": int(len(data)),
+        "capture_frames_available": frames_available,
         "capture_clipped_samples": clipped,
         "pairs_per_cell": PAIRS,
         "durations_s": list(DURATIONS_S),
