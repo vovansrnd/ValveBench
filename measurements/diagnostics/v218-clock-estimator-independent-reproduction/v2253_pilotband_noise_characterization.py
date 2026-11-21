@@ -19,7 +19,7 @@ import numpy as np
 import scipy
 from scipy.io import wavfile
 from scipy.ndimage import median_filter
-from scipy.signal import find_peaks, periodogram, welch
+from scipy.signal import coherence, find_peaks, periodogram, welch
 
 FS_EXPECTED = 96000
 BAND_HZ = (968.0, 1032.0)
@@ -230,12 +230,12 @@ def main():
             window_psd.append((fw, pw))
             row[label] = band_summary(fw, pw)
             row[label]["prominent_peaks"] = prominent_peaks(fw, pw)
-            row[label]["band_time_rms"] = level_dbfs(win[:, ch])
+            row[label]["full_window_rms"] = level_dbfs(win[:, ch])
         windows.append(row)
 
     # L/R magnitude-squared coherence over the whole record; locate coherence
     # at each prominent full-record L/R peak frequency.
-    f_coh, coh = scipy.signal.coherence(
+    f_coh, coh = coherence(
         centered[:, 0], centered[:, 1], fs=fs,
         window="hann", nperseg=WELCH_NPERSEG,
         noverlap=WELCH_OVERLAP, detrend="constant",
