@@ -3,7 +3,7 @@
 ## Frozen source and scope
 
 - Source branch: `coordinator/v2240-estimator-sigma-coverage`
-- Frozen source SHA: `b63e60b8ec800342f9e244c885b4b89098277746`
+- Frozen source SHA: `ea5656280f385b172d60bffe750ff31b76f7a016`
 - Result branch: `agent/v2240-estimator-sigma-coverage`
 - Harness: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2240_estimator_sigma_coverage.py`
 - Frozen estimator: `measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2188_estimators.py` (unchanged)
