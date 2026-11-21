@@ -29,7 +29,7 @@ Result branch: agent/v2251-probe-characterization
 
 Pinned SHA (script and execution contract):
 
-8e530f8f4447f288ffa73cdcd5544ff70c610935
+a16675d060930d7a523ea2573fad5816a82aaaac
 
 Analysis script:
 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2251_probe_characterization.py
