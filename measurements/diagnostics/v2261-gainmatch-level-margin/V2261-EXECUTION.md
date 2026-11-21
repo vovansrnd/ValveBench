@@ -118,7 +118,7 @@ Production thresholds не менять:
 По инвентаризации указать текущие numeric индексы D10 Playback и E-MU Capture. Проверить ещё раз, что 192000 Hz объявлен общей частотой. Далее:
 
     D1=measurements/diagnostics/v2261-gainmatch-level-margin
-    mkdir -p "$D1/results-parent"
+    mkdir -p "$D1/results"
     PYTHONPATH=. python3 "$D1/v2261_gainmatch_level_margin.py" \
       --dac hw:D10_CARD,0 --adc hw:EMU_CARD,0 --fs 192000 \
       --out-dir "$D1/results/vovans-PC-run-01" \
