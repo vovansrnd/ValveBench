@@ -54,7 +54,6 @@ Compile:
 
 ~~~bash
 D=measurements/diagnostics/v218-clock-estimator-independent-reproduction
-export PYTHONPYCACH=True
 export PYTHONPYCACHEPREFIX="$HOME/.cache/valvebench-v2251-pycache"
 python3 -m py_compile "$D/v2251_probe_characterization.py"
 ~~~
