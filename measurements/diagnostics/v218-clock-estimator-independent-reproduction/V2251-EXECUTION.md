@@ -81,6 +81,7 @@ Use the JSON as the source of truth. Report:
 - L/R correlation in the 8–20 Hz filtered band and coherence at the common low-frequency peak;
 - harmonic-band peaks around multiples of the common low-frequency peak (descriptive only);
 - per 0.5-second block levels for full-band, 8–20 Hz, above 300 Hz, and 968–1032 Hz, L/R separately;
+- 2-second sliding low-frequency fits at 1-second hop, per-channel frequency/amplitude/phase variation;
 - median/mean/max PSD in 968–1032 Hz from the captured signal (no pilot is present);
 - any time variation, frequency drift, or channel asymmetry supported by the block and spectral data.
 
