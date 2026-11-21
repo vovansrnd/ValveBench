@@ -11,7 +11,7 @@ Task/contract branch: `coordinator/v2240-estimator-sigma-coverage`
 
 Frozen source SHA (the only commit at which the test may be run):
 
-`b63e60b8ec800342f9e244c885b4b89098277746`
+`ea5656280f385b172d60bffe750ff31b76f7a016`
 
 Result branch: `agent/v2240-estimator-sigma-coverage`
 
@@ -31,7 +31,7 @@ Use the established compute host `lk` and its existing clone:
 
 Do not use the user's ThinkPad clone. Create/use an isolated detached worktree at the pinned SHA, for example:
 
-`~/.cache/valvebench-v2240-b63e60b-run`
+`~/.cache/valvebench-v2240-ea56562-run`
 
 Before creating it, inspect whether it exists. Reuse it only after verifying repo identity, exact HEAD and status. Never delete or overwrite an unknown directory.
 
