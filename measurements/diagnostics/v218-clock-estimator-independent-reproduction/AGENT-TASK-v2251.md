@@ -12,7 +12,7 @@ Task branch: coordinator/v2251-probe-characterization
 Result branch: agent/v2251-probe-characterization
 
 Pinned source SHA (only permitted script/contract version):
-1dcacb6e645bb866e8ead6eea2b9b115c96ab83b
+a16675d060930d7a523ea2573fad5816a82aaaac
 
 Script:
 measurements/diagnostics/v218-clock-estimator-independent-reproduction/v2251_probe_characterization.py
@@ -45,7 +45,7 @@ If /tmp/v2250-probe.wav is absent or invalid, stop and publish a BLOCKED report.
 
 Use host lk and clone ~/ValveBench-compute/ValveBench. Never use the user's ThinkPad clone.
 
-Create an isolated detached worktree at exact SHA 1dcacb6e645bb866e8ead6eea2b9b115c96ab83b. Check whether the target worktree path exists; do not overwrite unknown directories. Set PYTHONPYCACHEPREFIX outside the worktree. Verify repository identity, HEAD and clean tracked state.
+Create an isolated detached worktree at exact SHA a16675d060930d7a523ea2573fad5816a82aaaac. Check whether the target worktree path exists; do not overwrite unknown directories. Set PYTHONPYCACHEPREFIX outside the worktree. Verify repository identity, HEAD and clean tracked state.
 
 First perform only metadata checks on the existing file:
 - test -f /tmp/v2250-probe.wav
@@ -99,6 +99,7 @@ The report must use actual JSON values and clearly separate observations from in
 - DC offset;
 - 8–20 Hz filtered level and dominant peak per channel;
 - refined low-frequency sinusoidal fit frequency, amplitude and phase per channel;
+- 2-second sliding low-frequency fits at 1-second hop, frequency/amplitude/phase per channel, search bounds and observed drift;
 - 8–20 Hz L/R correlation and coherence at the common peak;
 - harmonic-band peaks (descriptive only; do not infer source identity);
 - 0.5-second block level ranges and tables for full-band, 8–20 Hz, above 300 Hz and 968–1032 Hz, L/R separately;
