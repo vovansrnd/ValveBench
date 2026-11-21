@@ -64,12 +64,11 @@ def make_subbands() -> list[tuple[float, float]]:
 
 
 def band_stats(freq: np.ndarray, psd: np.ndarray,
-               lo_hz: float, hi_hz: float,
-               include_hi: bool = False) -> dict:
+               lo_hz: float, hi_hz: float) -> dict:
     f = np.asarray(freq, dtype=np.float64)
     p = np.asarray(psd, dtype=np.float64)
-    keep = (f >= lo_hz) & ((f <= hi_hz) if include_hi else (f < hi_hz))
-    keep &= np.isfinite(p) & (p > 0.0)
+    # Half-open intervals prevent adjacent sub-bands double-counting an edge bin.
+    keep = (f >= lo_hz) & (f < hi_hz) & np.isfinite(p) & (p > 0.0)
     fb, pb = f[keep], p[keep]
     if pb.size < 8:
         raise ValueError(
@@ -79,7 +78,10 @@ def band_stats(freq: np.ndarray, psd: np.ndarray,
     q10, q25, q50, q75, q90 = np.percentile(pb, [10, 25, 50, 75, 90])
     mean_value = float(np.mean(pb))
     max_index = int(np.argmax(pb))
-    integrated_power = float(np.trapezoid(pb, fb))
+    # Treat each periodogram sample as one frequency-bin density. The selected
+    # half-open grid has a uniform spacing; sum*df preserves the full bin width.
+    frequency_step = float(np.median(np.diff(fb)))
+    integrated_power = float(np.sum(pb) * frequency_step)
     median_db = db10(q50)
     db_bins = 10.0 * np.log10(pb)
     return {
@@ -110,12 +112,12 @@ def band_stats(freq: np.ndarray, psd: np.ndarray,
 
 def analyze_pair(freq: np.ndarray, psd_l: np.ndarray, psd_r: np.ndarray,
                  subbands: list[tuple[float, float]]) -> dict:
-    full_l = band_stats(freq, psd_l, BAND_LO_HZ, BAND_HI_HZ, include_hi=True)
-    full_r = band_stats(freq, psd_r, BAND_LO_HZ, BAND_HI_HZ, include_hi=True)
+    full_l = band_stats(freq, psd_l, BAND_LO_HZ, BAND_HI_HZ)
+    full_r = band_stats(freq, psd_r, BAND_LO_HZ, BAND_HI_HZ)
     rows = []
     for index, (lo, hi) in enumerate(subbands):
-        left = band_stats(freq, psd_l, lo, hi, include_hi=(index == len(subbands) - 1))
-        right = band_stats(freq, psd_r, lo, hi, include_hi=(index == len(subbands) - 1))
+        left = band_stats(freq, psd_l, lo, hi)
+        right = band_stats(freq, psd_r, lo, hi)
         rows.append({
             "band_hz": [lo, hi],
             "L": left,
@@ -225,6 +227,8 @@ def main() -> None:
             "band_hz": [BAND_LO_HZ, BAND_HI_HZ],
             "subband_width_hz": SUBBAND_WIDTH_HZ,
             "subband_count": len(subbands),
+            "band_interval_convention": "half-open [low_hz, high_hz)",
+            "integrated_power_method": "sum(PSD bins) * uniform frequency step",
             "full_record_periodogram_frequency_step_hz": float(
                 np.median(np.diff(full_spectra[0][0]))
             ),
