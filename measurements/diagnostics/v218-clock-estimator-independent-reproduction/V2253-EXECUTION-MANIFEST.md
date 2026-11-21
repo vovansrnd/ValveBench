@@ -1,34 +1,42 @@
-# v2.25.3 — execution manifest (agent run on vovans-PC)
+# v2.25.3 — execution manifest (исправлен по ревизии координатора v2.25.3)
 
-- Pinned source SHA: ae65d7caf41758c9275a3af5c0db68ff3f208dba
-  (branch coordinator/v2253-pilotband-noise-characterization; checkout --detach
-  в изолированном worktree /home/vovans/.cache/valvebench-v2253-ae65d7-run;
-  SHA сверен, tracked-дерево чистое; анализатор не редактировался)
-- Result branch: agent/v2253-pilotband-noise-characterization
+- Pinned analyzer/source SHA: ae65d7caf41758c9275a3af5c0db68ff3f208dba
+  (анализатор НЕ перезапускался; JSON и лог байт-в-байт из result
+  commit 79de22ba2ace66d6e888aeead098bf1e8a880fab)
+- Result branch: agent/v2253-report-corrections
+  (создан координатором от coordinator/v2253-report-corrections)
 - Host: vovans-PC; CPU AMD Ryzen 5 3600, 12 threads
 - OS/kernel (uname -a, дословно): Linux vovans-PC 7.0.0-43-generic #43-Ubuntu SMP PREEMPT_DYNAMIC Fri Oct 23 13:25:25 UTC 2026 x86_64 GNU/Linux
 - Дистрибутив (из /etc/os-release, дословно): NAME="Ubuntu"; VERSION="26.04.1 LTS (Resolute Raccoon)"
 - Python 3.14.4, NumPy 2.3.5, SciPy 1.16.3, Git 2.53.0
-- PYTHONPYCACHEPREFIX: /home/vovans/.cache/valvebench-v2253-pycache (вне worktree)
 
-## Входной файл (метаданные; только test/stat/file/sha256sum — без ALSA)
+## Входной WAV (метаданные при оформлении исправления; metadata-only проверка без ALSA)
 
-- /tmp/v2250-probe.wav: 5 760 044 байта
-- SHA-256: d1676fe55e822e703d89c34b1ee2f2fbb96143eb163540e18078081756282ca9
-- RIFF WAVE PCM 24 бит, стерео, 96 кГц; 960 000 кадров = 10.0 с; не менялся
+- /tmp/v2250-probe.wav: присутствует; 5 760 044 байта;
+  owner vovans, mode 0644; SHA-256
+  d1676fe55e822e703d89c34b1ee2f2fbb96143eb163540e18078081756282ca9;
+  RIFF WAVE PCM 24 бит, стерео, 96 кГц (заголовок из v2.25.0).
 
-## Команды и результаты
+## Опубликованный JSON (result commit 79de22b)
 
-| Команда | Exit | Wall | Max RSS |
-|---|---|---|---|
-| python3 -m py_compile v2253_pilotband_noise_characterization.py | 0 | — | — |
-| /usr/bin/time -v python3 v2253_pilotband_noise_characterization.py --wav /tmp/v2250-probe.wav --output $D | 0 | 0:02.29 | 262676 КБ |
+- v2253-pilotband-noise-characterization.json: **51 397 байт**,
+  **SHA-256 b763095d987cd314cf4e32f4953d229114622c9edc1cf5ed8681f1535843c4cd**
+  (получено из git-объекта коммита 79de22b; не пересчитывалось и не
+  менялось)
 
-## Валидация JSON
+## Исправление документации (этот commit)
 
-- v2253-pilotband-noise-characterization.json: валидный JSON; 96 кГц
-  стерео, 10.0 с ✓; source bytes/SHA-256 совпадают с preflight ✓;
-  9 двухсекундных окон с 1-с hop ✓; все числовые поля конечны ✓
-- Опубликованные файлы: v2253-pilotband-noise-characterization.json,
-  v2253-pilotband-noise-characterization-run.log,
-  V2253-EXECUTION-MANIFEST.md, V2253-AGENT-REPORT.md
+- Изменены ТОЛЬКО: V2253-AGENT-REPORT.md, V2253-EXECUTION-MANIFEST.md
+- git diff --check: чисто
+- Анализатор, JSON, лог, production — байт-в-байт без изменений;
+  анализатор НЕ перезапускался
+
+## Аттестация
+
+- Без ALSA/arecord/aplay/mixer/device opens/перечисления устройств.
+- Без записи, playback, синтетических сигналов, нового захвата.
+- Без взаимодействия с оборудованием или изменения его конфигурации.
+- Без изменений production, frozen estimator, анализатора.
+- Доступ к оборудованию отсутствовал; использован только metadata-only
+  доступ к существующему /tmp/v2250-probe.wav (stat/файл/SHA — без
+  открытия аудиоустройства).
