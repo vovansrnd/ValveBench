@@ -85,20 +85,30 @@ v2.26.1 harness. Каждый запуск самостоятельно выпо
 Затем выполнить три команды последовательно, подставив фактические текущие
 индексы в `hw:D10_CARD,0` и `hw:EMU_CARD,0`:
 
+Каждый запуск возвращает exit 0, если хотя бы один уровень прошёл, и exit 2,
+если оба уровня FAIL либо выполнение заблокировано. Поэтому не допускай, чтобы
+обычный QC FAIL автоматически оборвал остальные заранее запланированные
+сессии из-за shell `set -e`. Для каждой команды временно используй `set +e`,
+сразу сохрани код harness из `${PIPESTATUS[0]}`, затем верни `set -e` и
+прочитай `run-summary.json`. Если `status=FAIL`, но запуск завершил все
+серии штатно и нет fatal/clip/XRUN/ошибки устройства, продолжай следующую
+запланированную сессию. При `BLOCKED_OR_FAIL`, fatal/clip/XRUN или потере
+устройства — остановись.
+
+Пример оболочки для каждой из трёх команд (меняй RUN и LOG по номеру):
+
+    set +e
     PYTHONPATH=. python3 measurements/diagnostics/v2261-gainmatch-level-margin/v2261_gainmatch_level_margin.py \
       --dac hw:D10_CARD,0 --adc hw:EMU_CARD,0 --fs 192000 \
       --out-dir "$D2/results/vovans-PC-run-01" \
       2>&1 | tee "$D2/results/vovans-PC-run-01-console.log"
+    rc=${PIPESTATUS[0]}
+    set -e
+    printf 'HARNESS_EXIT=%s\\n' "$rc"
 
-    PYTHONPATH=. python3 measurements/diagnostics/v2261-gainmatch-level-margin/v2261_gainmatch_level_margin.py \
-      --dac hw:D10_CARD,0 --adc hw:EMU_CARD,0 --fs 192000 \
-      --out-dir "$D2/results/vovans-PC-run-02" \
-      2>&1 | tee "$D2/results/vovans-PC-run-02-console.log"
-
-    PYTHONPATH=. python3 measurements/diagnostics/v2261-gainmatch-level-margin/v2261_gainmatch_level_margin.py \
-      --dac hw:D10_CARD,0 --adc hw:EMU_CARD,0 --fs 192000 \
-      --out-dir "$D2/results/vovans-PC-run-03" \
-      2>&1 | tee "$D2/results/vovans-PC-run-03-console.log"
+Повтори ту же оболочку последовательно для `vovans-PC-run-02` и
+`vovans-PC-run-03`, изменив только номер каталога и лога. Не запускать
+следующий экземпляр, пока предыдущий не завершён и его summary не проверен.
 
 Каждый процесс должен быть завершён до следующего. Не использовать параллельный
 запуск и не повторять уже завершённую сессию. При fatal hardware event, XRUN,
