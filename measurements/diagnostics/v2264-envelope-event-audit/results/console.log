@@ -1,0 +1,23 @@
+[A_v2261r1/m18-inject_L-L-08.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[A_v2261r1/m18-inject_R-R-07.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[A_v2261r1/m18-loopback-none-06.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[A_v2261r1/m24-inject_L-L-05.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[A_v2261r1/m24-inject_R-R-04.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[A_v2261r1/m24-loopback-none-03.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[B_v2262run1/m18-inject_L-L-08.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[B_v2262run1/m18-inject_R-R-07.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[B_v2262run1/m18-loopback-none-06.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[B_v2262run1/m24-inject_L-L-05.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[B_v2262run1/m24-inject_R-R-04.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[B_v2262run1/m24-loopback-none-03.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[C_v2263run2/m20-inject_L-L-05.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[C_v2263run2/m20-inject_R-R-04.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[C_v2263run2/m20-loopback-none-03.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[D_v2263run3/m20-inject_L-L-05.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[D_v2263run3/m20-inject_R-R-04.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[D_v2263run3/m20-loopback-none-03.npz] windows recomputed: 18, JSON z-burst mismatches: 0
+[EVENT A_v2261r1] json_z=5.812315859641275 recomputed_capture_z=5.812316 match=True | submitted_z=0.000177 | pos subwin 3 (0.015%) neg 4 (0.009%)
+[EVENT B_v2262run1] json_z=5.016931495457868 recomputed_capture_z=5.016931 match=True | submitted_z=0.000056 | pos subwin 6 (0.003%) neg 12 (0.004%)
+[EVENT C_v2263run2] json_z=5.740410923409673 recomputed_capture_z=5.740411 match=True | submitted_z=0.000056 | pos subwin 16 (0.005%) neg 13 (0.015%)
+[EVENT D_v2263run3] json_z=5.234265736473323 recomputed_capture_z=5.234266 match=True | submitted_z=0.000298 | pos subwin 11 (0.007%) neg 8 (0.002%)
+DONE. errors: []
