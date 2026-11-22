@@ -1,0 +1,18 @@
+
+ЦАП / воспроизведение:
+  hw:0,3 — HDMI — HDA-Intel - HDA ATI HDMI, PCM 3 · advertised playback rates=stream0 не сообщает; проверять открытием
+  hw:0,7 — HDMI — HDA-Intel - HDA ATI HDMI, PCM 7 · advertised playback rates=stream0 не сообщает; проверять открытием
+  hw:0,8 — HDMI — HDA-Intel - HDA ATI HDMI, PCM 8 · advertised playback rates=stream0 не сообщает; проверять открытием
+  hw:0,9 — HDMI — HDA-Intel - HDA ATI HDMI, PCM 9 · advertised playback rates=stream0 не сообщает; проверять открытием
+  hw:0,10 — HDMI — HDA-Intel - HDA ATI HDMI, PCM 10 · advertised playback rates=stream0 не сообщает; проверять открытием
+  hw:1,0 — D10 — USB-Audio - SMSL D10, PCM 0 · advertised playback rates=44100,48000,88200,96000,176400,192000,352800,384000
+  hw:2,0 — USB — USB-Audio - E-MU 0404 | USB, PCM 0 · advertised playback rates=44100,48000,88200,96000,176400,192000
+  hw:2,1 — USB — USB-Audio - E-MU 0404 | USB, PCM 1 · advertised playback rates=44100,48000,88200,96000,176400,192000
+
+АЦП / запись:
+  hw:2,0 — USB — USB-Audio - E-MU 0404 | USB, PCM 0 · advertised capture rates=44100,48000,88200,96000,176400,192000
+
+Полный дуплекс на одном PCM:
+  hw:2,0 — USB — USB-Audio - E-MU 0404 | USB, PCM 0 · 44.1, 48, 88.2, 96, 176.4, 192 кГц
+
+ВНИМАНИЕ: номера card:N меняются после переподключения USB; перед опытом снова запусти cards/devices.
