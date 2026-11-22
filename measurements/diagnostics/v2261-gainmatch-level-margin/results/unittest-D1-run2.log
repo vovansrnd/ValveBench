@@ -1,0 +1,33 @@
+test_level_summary_fails_if_numeric_delta_is_wrong (test_v2261_gainmatch_level_margin.LevelContractTests.test_level_summary_fails_if_numeric_delta_is_wrong) ... ok
+test_level_summary_fails_if_one_polarity_fails (test_v2261_gainmatch_level_margin.LevelContractTests.test_level_summary_fails_if_one_polarity_fails) ... ok
+test_level_summary_passes_only_with_both_injection_directions_valid (test_v2261_gainmatch_level_margin.LevelContractTests.test_level_summary_passes_only_with_both_injection_directions_valid) ... ok
+test_series_metrics_keep_cr_sinad_and_headroom_separate (test_v2261_gainmatch_level_margin.LevelContractTests.test_series_metrics_keep_cr_sinad_and_headroom_separate) ... ok
+test_two_levels_are_pinned_and_six_db_apart (test_v2261_gainmatch_level_margin.LevelContractTests.test_two_levels_are_pinned_and_six_db_apart) ... ok
+test_both_injection_signs_pass_at_both_levels (test_v2261_gainmatch_level_margin.ProductionSimulatorIntegrationTests.test_both_injection_signs_pass_at_both_levels) ... FAIL
+
+======================================================================
+FAIL: test_both_injection_signs_pass_at_both_levels (test_v2261_gainmatch_level_margin.ProductionSimulatorIntegrationTests.test_both_injection_signs_pass_at_both_levels)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/vovans/.cache/valvebench-v2261-0a74ef2-run/measurements/diagnostics/v2261-gainmatch-level-margin/test_v2261_gainmatch_level_margin.py", line 136, in test_both_injection_signs_pass_at_both_levels
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+        harness.assess_series(inj_r, harness.INJECT_DB), [],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        f"R attenuation at {level} dBFS")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['94 Hz: corrected ΔG=+12.041 dB; expected[136 chars] dB'] != []
+
+First list contains 3 additional elements.
+First extra element 0:
+'94 Hz: corrected ΔG=+12.041 dB; expected +6.021 ±0.20 dB'
+
++ []
+- ['94 Hz: corrected ΔG=+12.041 dB; expected +6.021 ±0.20 dB',
+-  '994 Hz: corrected ΔG=+12.041 dB; expected +6.021 ±0.20 dB',
+-  '9994 Hz: corrected ΔG=+12.041 dB; expected +6.021 ±0.20 dB'] : R attenuation at -18.0 dBFS
+
+----------------------------------------------------------------------
+Ran 6 tests in 4.088s
+
+FAILED (failures=1)
