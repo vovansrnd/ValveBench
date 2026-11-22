@@ -184,7 +184,8 @@ mixer fingerprint identity, peak, clipped, fatal events, XRUN/backend notes
 Аудиомассивы submitted_to_backend и capture должны иметь 0 NaN / 0 Inf.
 
 Для каждого run независимо проверить SHA256 и размеры всех файлов по
-SHA256SUMS.json; ожидаются 18 файлов: 8 NPZ + 10 JSON.
+SHA256SUMS.json. Для v2263 (один уровень) ожидаются 11 файлов: 5 NPZ + 6 JSON.
+Число 18 (8 NPZ + 10 JSON) относится к двухуровневому v2261 harness.
 
 ## Публикация
 
