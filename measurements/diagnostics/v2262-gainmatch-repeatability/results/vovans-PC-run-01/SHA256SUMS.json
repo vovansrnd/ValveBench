@@ -1,0 +1,77 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "captures/m18-inject_L-L-08.npz": {
+      "size_bytes": 53409462,
+      "sha256": "e228a090ef131057fdd6c5435e4433a5f74c3f3e2854d92c9c1ee635581d5e3c"
+    },
+    "captures/m18-inject_R-R-07.npz": {
+      "size_bytes": 53371582,
+      "sha256": "834a0b8e2e88ab9bcb06b72b4372730ee85e8c15c23edd57cd9b8a5c895bfe82"
+    },
+    "captures/m18-loopback-none-06.npz": {
+      "size_bytes": 43698075,
+      "sha256": "7699575a681331e31a3c4781b2253626804891b6776d2b0a28ffa287d621064d"
+    },
+    "captures/m24-inject_L-L-05.npz": {
+      "size_bytes": 56035702,
+      "sha256": "8bd89bc434fe4f587e99673bf945cd282d73a7a1c3a1cc61e9efd48e46563f50"
+    },
+    "captures/m24-inject_R-R-04.npz": {
+      "size_bytes": 55985315,
+      "sha256": "2a8b03c6dbf687c930d75ce859a30c34e8e0c5e1107428572f2efe61ea84d41f"
+    },
+    "captures/m24-loopback-none-03.npz": {
+      "size_bytes": 42790996,
+      "sha256": "7dee74a08634e7859fc9b506a3af6e014e1d36938eacf9f3526e5c02f2bc070e"
+    },
+    "captures/preflight-clock_preflight-none-01.npz": {
+      "size_bytes": 5574154,
+      "sha256": "6b39ee30fd0c6b39eb4433923ad8c3a40ce19662b476bd4170dcccfda28d186e"
+    },
+    "captures/preflight-clock_preflight-none-02.npz": {
+      "size_bytes": 5993397,
+      "sha256": "b31a1a494bb604ceb93ef0ff46ab81e6bc71a3fe22fe986505065330bf484488"
+    },
+    "clock-preflight.json": {
+      "size_bytes": 906,
+      "sha256": "e0d723f3c56477e4899982e3cac256bbb804581e93a77f413035c63a267c345a"
+    },
+    "level_m18/inject-L-series.json": {
+      "size_bytes": 47335,
+      "sha256": "e388c5d951cd933f47c71fae6e9ce3551dc96d0786cb76b08a841d4455e9a4d5"
+    },
+    "level_m18/inject-R-series.json": {
+      "size_bytes": 47234,
+      "sha256": "81297811d3380b7158ddf51107d80050273b84a6df5310c9b82c402bfe0b376a"
+    },
+    "level_m18/loopback-reference.json": {
+      "size_bytes": 1390,
+      "sha256": "586b0b5c17691e0b7c070412553086ade2ae16d7f49609a79d54165136997da3"
+    },
+    "level_m18/loopback-series.json": {
+      "size_bytes": 47187,
+      "sha256": "36ebd06b4cc9bd1e99e38be4f6c90f9582cc0ca2de63de18c522b9f2f5bb6222"
+    },
+    "level_m24/inject-L-series.json": {
+      "size_bytes": 47262,
+      "sha256": "a08a69f2578db204b783633d8ef07ce8283ef6dffbfac518d8a5983b29108351"
+    },
+    "level_m24/inject-R-series.json": {
+      "size_bytes": 47256,
+      "sha256": "384c3721f36369bedaafcfb1bc9167175e55bdda92d4c2396a93857cd8803984"
+    },
+    "level_m24/loopback-reference.json": {
+      "size_bytes": 1388,
+      "sha256": "908095f3636f0b714f4bca141fc0855ce97e5edd484898fa903b01941dfd7643"
+    },
+    "level_m24/loopback-series.json": {
+      "size_bytes": 47196,
+      "sha256": "69f07f61f9fb62dcf423c0cd26527d529b6957771a652695571e87abc0d40acb"
+    },
+    "run-summary.json": {
+      "size_bytes": 10674,
+      "sha256": "c8990409b5ce800bc60a986207a8b27555a91c7f7f5da7718a3ce98de042b533"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+test_fatal_hardware_event_fails (test_v2260_gainmatch_hardware_validation.AcceptanceGateTests.test_fatal_hardware_event_fails) ... ok
+test_invalid_or_unstable_rows_fail (test_v2260_gainmatch_hardware_validation.AcceptanceGateTests.test_invalid_or_unstable_rows_fail) ... ok
+test_negative_six_db_expected_for_l_attenuation (test_v2260_gainmatch_hardware_validation.AcceptanceGateTests.test_negative_six_db_expected_for_l_attenuation) ... ok
+test_out_of_tolerance_fails (test_v2260_gainmatch_hardware_validation.AcceptanceGateTests.test_out_of_tolerance_fails) ... ok
+test_positive_six_db_expected_for_r_attenuation (test_v2260_gainmatch_hardware_validation.AcceptanceGateTests.test_positive_six_db_expected_for_r_attenuation) ... ok
+test_edge_guards_are_exact_silence_and_preserve_signal (test_v2260_gainmatch_hardware_validation.GuardAndInjectionTests.test_edge_guards_are_exact_silence_and_preserve_signal) ... ok
+test_l_attenuation_is_exact_and_does_not_touch_r (test_v2260_gainmatch_hardware_validation.GuardAndInjectionTests.test_l_attenuation_is_exact_and_does_not_touch_r) ... ok
+test_no_attenuation_is_copy (test_v2260_gainmatch_hardware_validation.GuardAndInjectionTests.test_no_attenuation_is_copy) ... ok
+test_r_attenuation_is_exact_and_does_not_touch_l (test_v2260_gainmatch_hardware_validation.GuardAndInjectionTests.test_r_attenuation_is_exact_and_does_not_touch_l) ... ok
+test_rejects_non_stereo_and_nan (test_v2260_gainmatch_hardware_validation.GuardAndInjectionTests.test_rejects_non_stereo_and_nan) ... ok
+test_gainmatch_loopback_reference_recovers_both_injected_signs (test_v2260_gainmatch_hardware_validation.ProductionSimulatorIntegrationTests.test_gainmatch_loopback_reference_recovers_both_injected_signs) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 2.546s
+
+OK
