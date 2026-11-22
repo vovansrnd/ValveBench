@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -37,9 +38,9 @@ def valid_series(delta: float | None = None) -> dict:
 
 class LevelContractTests(unittest.TestCase):
     def test_this_suite_imports_its_own_v2263_harness(self):
-        expected = __import__("pathlib").Path(__file__).with_name(
+        expected = Path(__file__).with_name(
             "v2263_gainmatch_operating_level.py").resolve()
-        self.assertEqual(__import__("pathlib").Path(harness.__file__).resolve(), expected)
+        self.assertEqual(Path(harness.__file__).resolve(), expected)
 
     def test_single_candidate_level_and_production_gates_are_pinned(self):
         self.assertEqual(harness.LEVELS_DBFS, (-20.0,))
