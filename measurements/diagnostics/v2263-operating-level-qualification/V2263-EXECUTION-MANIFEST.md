@@ -1,58 +1,72 @@
-# v2.26.3 — execution manifest (BLOCKED до железа: офлайн-гейт не пройден)
+# v2.26.3 — execution manifest (повтор r1)
 
-- Pinned coordinator SHA: 96da4c6f34a4e28def58d2dca942a5a52c93b439
-  ("v2.26.3: retain proven simulator seed for repeatable integration gate")
-- Result branch: agent/v2263-operating-level-qualification (создана от
-  pinned SHA)
-- Worktree: /home/vovans/.cache/valvebench-v2263-96da4c6-run
-  (отдельный detached worktree; HEAD = 96da4c6…; tracked state чист)
+- Pinned coordinator SHA: 74d71b3101d49f2b19ba70f3b8794af5106d8d7f
+  ("v2.26.3: review blocked import attempt and coordinator repair") —
+  исправлен только тест (импорт v2263 + identity-проверка); harness,
+  production, пороги не менялись.
+- Result branch: agent/v2263-operating-level-qualification-r1 (создана
+  от pinned SHA). BLOCKED-ветка agent/v2263-operating-level-qualification
+  (5e18ba1) не переписывалась.
+- Worktree: /home/vovans/.cache/valvebench-v2263-r1-74d71b3-run
+  (detached; HEAD = 74d71b3…; tracked state чист)
 - Host: vovans-PC; Ubuntu 26.04.1 LTS; kernel 7.0.0-43-generic
 - Python 3.14.4, NumPy 2.3.5, SciPy 1.16.3; valvebench 0.1.21-dev4
 
-## Офлайн-гейты
+## Офлайн-гейты (все пройдены до железа)
 
-1. py_compile всех 6 файлов (D0+D1+D3 harness/test): OK.
-2. unittest D0: **11/11 OK** (exit 0; integration выполнен, не skipped).
-3. unittest D1: **6/6 OK** (exit 0; integration выполнен, не skipped).
-4. unittest D3: **FAILED (failures=1), exit 1** —
-   test_single_candidate_level_and_production_gates_are_pinned;
-   ProductionSimulatorIntegrationTests D3 формально ok, но см. ниже.
-5. ./run.sh selftest: PASS, exit 0 (для полноты; гейт D3 уже не пройден).
+1. py_compile 6 файлов (D0+D1+D3): OK.
+2. unittest D0: 11/11 OK (integration не skipped).
+3. unittest D1: 6/6 OK (integration не skipped).
+4. unittest D3: **7/7 OK**, включая новый
+   test_this_suite_imports_its_own_v2263_harness (identity через
+   harness.__file__) и integration test_both_injection_signs_pass_at_candidate_level
+   против v2263-модуля на −20 dBFS (не skipped). Проверка агента:
+   v2263_gainmatch_operating_level.__file__ указывает на v2263 файл,
+   LEVELS_DBFS = (−20.0,).
+5. ./run.sh selftest: PASS, exit 0.
 
-По правилам V2263-EXECUTION.md («Все suites и selftest должны пройти.
-Иначе аппаратный этап запрещён», «При offline failure к устройствам не
-обращаться») аппаратная часть НЕ запускалась: ни inventory, ни
-preflight, ни записей.
+## Read-only inventory
 
-## Диагностика падения D3 (наблюдение агента, правок не вносилось)
+- devices-inventory.txt / cards-inventory.txt (exit 0 оба):
+  D10 playback = hw:1,0; E-MU 0404 capture = hw:2,0; 192000 Hz общий.
+- mixer_fingerprint доступен во всех трёх сессиях; mixer/кабели агент
+  не менял между сессиями.
 
-test_v2263_gainmatch_operating_level.py строка 10:
+## Аппаратное исполнение — ровно три последовательные сессии на −20 dBFS
 
-    import v2261_gainmatch_level_margin as harness
+Единая форма команды (по методике; out-dir не создавался заранее):
 
-Тестовый файл импортирует V2261-модуль вместо
-v2263_gainmatch_operating_level. Следствия:
+    cd /home/vovans/.cache/valvebench-v2263-r1-74d71b3-run
+    PYTHONPATH=. python3 measurements/diagnostics/v2263-operating-level-qualification/v2263_gainmatch_operating_level.py \
+      --dac hw:1,0 --adc hw:2,0 --fs 192000 \
+      --out-dir measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-NN \
+      > results/vovans-PC-run-NN-console.log 2>&1
 
-- harness.LEVELS_DBFS в тестах = (−24.0, −18.0) из v2261, а тест-контракт
-  требует (−20.0,) → FAIL
-  test_single_candidate_level_and_production_gates_are_pinned
-  (AssertionError: Tuples differ: (-24.0, -18.0) != (-20.0,)).
-- При этом сам v2263_gainmatch_operating_level.py строка 31 корректно
-  определяет LEVELS_DBFS = (-20.0,) — harness не проверялся этим
-  набором вовсе: ВСЕ 6 тестов D3 (включая
-  ProductionSimulatorIntegrationTests.test_both_injection_signs_pass_at_candidate_level,
-  который "ok") исполнялись против v2261-модуля, т.е. интеграционный
-  гейт v2263 фактически не валидировал v2263-harness.
+- run-01: штатно завершён; STATUS=PASS, EXIT_CODE=0.
+- run-02: запущен после проверки run-01; STATUS=FAIL, EXIT_CODE=2 —
+  штатный QC-FAIL (1 invalid repeat, envelope), fatal/clip/XRUN нет →
+  по методике продолжено.
+- run-03: запущен после проверки run-02; STATUS=FAIL, EXIT_CODE=2 —
+  штатный QC-FAIL (1 invalid repeat, envelope), fatal нет.
+- Параллельных запусков нет; сессии не повторялись; mixer/кабели между
+  сессиями не менялись.
 
-Вероятное исправление координатора: строка 10 тест-файла →
-`import v2263_gainmatch_operating_level as harness` (и проверка, что
-остальные ассерты contract-теста соответствуют v2263-константам).
-После ревизии теста и нового pinned SHA готов исполнить v2.26.3
-полностью.
+## Проверка артефактов (независимая)
+
+- SHA256SUMS.json каждой сессии: **11/11 ok ×3** (пересчитаны sha256 и
+  размеры). Замечание к инструкции: v2263-harness с ОДНИМ уровнем
+  сохраняет 11 файлов (5 NPZ + 6 JSON) на сессию, а не 18 (8+10) — 18
+  соответствуют двухуровневому v2261; несоответствие не является
+  недостачей: все присутствующие файлы верифицированы.
+- Аудиомассивы submitted_to_backend и capture во всех 15 captures:
+  **0 NaN / 0 Inf**. Метаполе generator_level_dbfs preflight-NPZ:
+  NaN-sentinel (2 на сессию), как ожидаемо инструкцией.
+- Max |sample|: 0.100000 (−20.0 dBFS peak, m20 loopback) — клипа нет.
+- git diff --check: чисто; production/source/test diff отсутствует.
 
 ## Аттестация
 
-- Код, тесты, критерии не изменялись; production не тронут.
-- Ни одного обращения к аудиоустройствам: без ALSA, записей, playback,
-  mixer; кабели/настройки не менялись.
-- Артефакты: три unittest-лога + selftest.log (текстовые).
+- Кабели не отсоединялись/не переставлялись; DUT не подключался.
+- ALSA mixer, громкость, gain, routing, sample rate не менялись; без
+  Setup-калибровок/passport/mixer writes; config.json не читался.
+- В инъекциях только программное ослабление одного канала 0.5×.

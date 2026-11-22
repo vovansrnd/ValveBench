@@ -1,0 +1,49 @@
+{
+  "kind": "gain_match_loopback_reference",
+  "schema": 2,
+  "created": "2026-11-22 09:21:56",
+  "device_key": "pair:2b09b2c8daed266ab202bf15",
+  "device": "hw:1,0 → hw:2,0",
+  "backend": "alsa",
+  "mixer_fingerprint": {
+    "dac": "c9bb2776d7d0bf5317635a182e797f6f2e971267cd4481f1199d7019f2463bba",
+    "adc": "5ead4bffe32d032b6df82194cae85e072eecf6e8da74a9b8997c430d1a723b50"
+  },
+  "fs": 192000,
+  "generator_level_dbfs": -20.0,
+  "riaa_compensated": false,
+  "repeatability": "assessed",
+  "repeats": 3,
+  "frequencies_hz": [
+    94.0,
+    994.0,
+    9994.0
+  ],
+  "rows": [
+    {
+      "frequency_hz": 94.0,
+      "delta_adc_db": -0.005900692420503617,
+      "repeat_spread_db": 0.0014238792703338277,
+      "snr_l_db": 42.035890643568806,
+      "snr_r_db": 60.47028809349855,
+      "valid": true
+    },
+    {
+      "frequency_hz": 994.0,
+      "delta_adc_db": -0.3662876832235753,
+      "repeat_spread_db": 0.0007274575777174164,
+      "snr_l_db": 41.69733963941714,
+      "snr_r_db": 60.50574260887467,
+      "valid": true
+    },
+    {
+      "frequency_hz": 9994.0,
+      "delta_adc_db": -1.3873883783879606,
+      "repeat_spread_db": 0.0006374951897782921,
+      "snr_l_db": 40.61717305097007,
+      "snr_r_db": 60.4904937998596,
+      "valid": true
+    }
+  ],
+  "instruction": "Direct DAC L→ADC L and DAC R→ADC R loop; repeat after mixer, cable, device or rate changes."
+}

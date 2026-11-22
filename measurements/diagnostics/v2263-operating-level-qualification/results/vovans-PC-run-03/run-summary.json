@@ -1,0 +1,220 @@
+{
+  "stage": "v2.26.3",
+  "status": "FAIL",
+  "host": "vovans-PC",
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "numpy": "2.3.5",
+  "scipy": "1.16.3",
+  "valvebench_version": "0.1.21-dev4",
+  "git_head": "74d71b3101d49f2b19ba70f3b8794af5106d8d7f",
+  "dac": "hw:1,0",
+  "adc": "hw:2,0",
+  "fs": 192000,
+  "playback_format": "S32_LE",
+  "capture_format": "S24_3LE",
+  "playback_channels": 2,
+  "capture_channels": 2,
+  "channel_maps": {
+    "out": [
+      0,
+      1
+    ],
+    "in": [
+      0,
+      1
+    ]
+  },
+  "frequencies_hz": [
+    94.0,
+    994.0,
+    9994.0
+  ],
+  "levels_dbfs": [
+    -20.0
+  ],
+  "injected_attenuation_db": 6.020599913279624,
+  "edge_guard": {
+    "lead_s": 1.5,
+    "tail_s": 0.6,
+    "capture_tail_s": 0.8
+  },
+  "measurement": {
+    "blocks": 2,
+    "settle_s": 0.5,
+    "frequency_profile": "mains_avoidance_50",
+    "repeats": 3
+  },
+  "production_qc": {
+    "carrier_residual_min_db": 30.0,
+    "corrected_delta_tolerance_db": 0.2,
+    "production_code_modified": false
+  },
+  "backend_notes_before": [],
+  "steps": {
+    "clock_preflight": {
+      "ok": true,
+      "test_level_dbfs": -30.0,
+      "channels": {
+        "L": {
+          "f0": 999.9762945800493,
+          "ppm": -23.705419950670326,
+          "level_dbfs": -58.11284591660016
+        },
+        "R": {
+          "f0": 999.9756652277866,
+          "ppm": -24.334772213419065,
+          "level_dbfs": -57.76581647380024
+        }
+      },
+      "warnings": [
+        "L: сдвиг тона -0.0237 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "R: сдвиг тона -0.0243 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "preflight: уровень поднят до -30 dBFS — шумовой пол линии выше штатного -72 dBFS"
+      ]
+    },
+    "m20": {
+      "passed": false,
+      "failures": [
+        "inject-L: 9994 Hz: row invalid (None)"
+      ],
+      "loopback": {
+        "mixer_fingerprint_available": true,
+        "failures": [],
+        "metrics": {
+          "min_carrier_residual_db": 40.4947323999256,
+          "min_sinad_db": 40.49456800684687,
+          "max_peak_dbfs": -47.0778955431945,
+          "min_peak_headroom_db": 47.0778955431945,
+          "invalid_repeats": []
+        },
+        "rows": [
+          {
+            "frequency_hz": 94.0,
+            "delta_adc_db": -0.005900692420503617,
+            "repeat_spread_db": 0.0014238792703338277,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 994.0,
+            "delta_adc_db": -0.3662876832235753,
+            "repeat_spread_db": 0.0007274575777174164,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 9994.0,
+            "delta_adc_db": -1.3873883783879606,
+            "repeat_spread_db": 0.0006374951897782921,
+            "valid": true,
+            "repeat_stable": true
+          }
+        ]
+      },
+      "inject_R": {
+        "expected_delta_gain_db": 6.020599913279624,
+        "failures": [],
+        "metrics": {
+          "min_carrier_residual_db": 40.142807872075565,
+          "min_sinad_db": 40.142299915504154,
+          "max_peak_dbfs": -46.83503227979163,
+          "min_peak_headroom_db": 46.83503227979163,
+          "invalid_repeats": []
+        },
+        "rows": [
+          {
+            "frequency_hz": 94.0,
+            "delta_adc_db": 6.015009935999949,
+            "correction_db": -0.005900692420503617,
+            "delta_gain_db": 6.020910628420452,
+            "repeat_spread_db": 0.0015350525552833005,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 994.0,
+            "delta_adc_db": 5.654736281373076,
+            "correction_db": -0.3662876832235753,
+            "delta_gain_db": 6.021023964596651,
+            "repeat_spread_db": 0.001433081517490109,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 9994.0,
+            "delta_adc_db": 4.6334171068915495,
+            "correction_db": -1.3873883783879606,
+            "delta_gain_db": 6.02080548527951,
+            "repeat_spread_db": 0.000410858591372687,
+            "valid": true,
+            "repeat_stable": true
+          }
+        ]
+      },
+      "inject_L": {
+        "expected_delta_gain_db": -6.020599913279624,
+        "failures": [
+          "9994 Hz: row invalid (None)"
+        ],
+        "metrics": {
+          "min_carrier_residual_db": 34.305921620021486,
+          "min_sinad_db": 34.30559787940089,
+          "max_peak_dbfs": -47.246283728813516,
+          "min_peak_headroom_db": 47.246283728813516,
+          "invalid_repeats": [
+            {
+              "frequency_hz": 9994.0,
+              "channel": "R",
+              "repeat": 3,
+              "reasons": [
+                "unstable_carrier"
+              ],
+              "carrier_residual_db": 60.30968821654719,
+              "sinad_db": 60.308275092981376,
+              "envelope": {
+                "trend_span": 2.3502477802927448e-05,
+                "z_burst": 5.234265736473323,
+                "subwindows": 20
+              }
+            }
+          ]
+        },
+        "rows": [
+          {
+            "frequency_hz": 94.0,
+            "delta_adc_db": -6.028146352613916,
+            "correction_db": -0.005900692420503617,
+            "delta_gain_db": -6.022245660193413,
+            "repeat_spread_db": 0.0009203654419138729,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 994.0,
+            "delta_adc_db": -6.386204443891657,
+            "correction_db": -0.3662876832235753,
+            "delta_gain_db": -6.019916760668082,
+            "repeat_spread_db": 0.002792790411660917,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 9994.0,
+            "delta_adc_db": -7.408606018596068,
+            "correction_db": -1.3873883783879606,
+            "delta_gain_db": -6.021217640208107,
+            "repeat_spread_db": 0.0010081990272610142,
+            "valid": false,
+            "repeat_stable": true
+          }
+        ]
+      },
+      "level_dbfs": -20.0
+    }
+  },
+  "any_level_passed": false,
+  "lowest_passing_test_level_dbfs": null,
+  "backend_notes_after": [],
+  "mixer_fingerprint_available": true
+}

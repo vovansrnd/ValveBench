@@ -11,6 +11,6 @@ test_rejects_non_stereo_and_nan (test_v2260_gainmatch_hardware_validation.GuardA
 test_gainmatch_loopback_reference_recovers_both_injected_signs (test_v2260_gainmatch_hardware_validation.ProductionSimulatorIntegrationTests.test_gainmatch_loopback_reference_recovers_both_injected_signs) ... ok
 
 ----------------------------------------------------------------------
-Ran 11 tests in 3.432s
+Ran 11 tests in 3.430s
 
 OK

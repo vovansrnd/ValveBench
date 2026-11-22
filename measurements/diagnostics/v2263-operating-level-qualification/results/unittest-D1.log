@@ -6,6 +6,6 @@ test_two_levels_are_pinned_and_six_db_apart (test_v2261_gainmatch_level_margin.L
 test_both_injection_signs_pass_at_both_levels (test_v2261_gainmatch_level_margin.ProductionSimulatorIntegrationTests.test_both_injection_signs_pass_at_both_levels) ... ok
 
 ----------------------------------------------------------------------
-Ran 6 tests in 4.823s
+Ran 6 tests in 4.849s
 
 OK

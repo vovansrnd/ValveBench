@@ -1,0 +1,200 @@
+{
+  "stage": "v2.26.3",
+  "status": "PASS",
+  "host": "vovans-PC",
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "numpy": "2.3.5",
+  "scipy": "1.16.3",
+  "valvebench_version": "0.1.21-dev4",
+  "git_head": "74d71b3101d49f2b19ba70f3b8794af5106d8d7f",
+  "dac": "hw:1,0",
+  "adc": "hw:2,0",
+  "fs": 192000,
+  "playback_format": "S32_LE",
+  "capture_format": "S24_3LE",
+  "playback_channels": 2,
+  "capture_channels": 2,
+  "channel_maps": {
+    "out": [
+      0,
+      1
+    ],
+    "in": [
+      0,
+      1
+    ]
+  },
+  "frequencies_hz": [
+    94.0,
+    994.0,
+    9994.0
+  ],
+  "levels_dbfs": [
+    -20.0
+  ],
+  "injected_attenuation_db": 6.020599913279624,
+  "edge_guard": {
+    "lead_s": 1.5,
+    "tail_s": 0.6,
+    "capture_tail_s": 0.8
+  },
+  "measurement": {
+    "blocks": 2,
+    "settle_s": 0.5,
+    "frequency_profile": "mains_avoidance_50",
+    "repeats": 3
+  },
+  "production_qc": {
+    "carrier_residual_min_db": 30.0,
+    "corrected_delta_tolerance_db": 0.2,
+    "production_code_modified": false
+  },
+  "backend_notes_before": [],
+  "steps": {
+    "clock_preflight": {
+      "ok": true,
+      "test_level_dbfs": -30.0,
+      "channels": {
+        "L": {
+          "f0": 999.9766102547762,
+          "ppm": -23.389745223756364,
+          "level_dbfs": -58.15574360546256
+        },
+        "R": {
+          "f0": 999.9761637427547,
+          "ppm": -23.836257245335446,
+          "level_dbfs": -57.772818995703865
+        }
+      },
+      "warnings": [
+        "L: сдвиг тона -0.0234 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "R: сдвиг тона -0.0238 бина превышает допуск 0.002: гармоники рассчитаны по усреднённым мощностям окон Блэкмана–Харриса",
+        "preflight: уровень поднят до -30 dBFS — шумовой пол линии выше штатного -72 dBFS"
+      ]
+    },
+    "m20": {
+      "passed": true,
+      "failures": [],
+      "loopback": {
+        "mixer_fingerprint_available": true,
+        "failures": [],
+        "metrics": {
+          "min_carrier_residual_db": 40.7069724788964,
+          "min_sinad_db": 40.70656346059824,
+          "max_peak_dbfs": -47.05640390061494,
+          "min_peak_headroom_db": 47.05640390061494,
+          "invalid_repeats": []
+        },
+        "rows": [
+          {
+            "frequency_hz": 94.0,
+            "delta_adc_db": -0.006156521216496458,
+            "repeat_spread_db": 0.002952553714422379,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 994.0,
+            "delta_adc_db": -0.36564477928018135,
+            "repeat_spread_db": 0.00045447971161394207,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 9994.0,
+            "delta_adc_db": -1.3869263656321849,
+            "repeat_spread_db": 0.0005049078662153761,
+            "valid": true,
+            "repeat_stable": true
+          }
+        ]
+      },
+      "inject_R": {
+        "expected_delta_gain_db": 6.020599913279624,
+        "failures": [],
+        "metrics": {
+          "min_carrier_residual_db": 40.90080550773608,
+          "min_sinad_db": 40.90056058270412,
+          "max_peak_dbfs": -46.9205159107888,
+          "min_peak_headroom_db": 46.9205159107888,
+          "invalid_repeats": []
+        },
+        "rows": [
+          {
+            "frequency_hz": 94.0,
+            "delta_adc_db": 6.014259120397909,
+            "correction_db": -0.006156521216496458,
+            "delta_gain_db": 6.020415641614406,
+            "repeat_spread_db": 0.0025463972784152133,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 994.0,
+            "delta_adc_db": 5.655706971413267,
+            "correction_db": -0.36564477928018135,
+            "delta_gain_db": 6.021351750693448,
+            "repeat_spread_db": 0.00037241464831794246,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 9994.0,
+            "delta_adc_db": 4.634331719708037,
+            "correction_db": -1.3869263656321849,
+            "delta_gain_db": 6.0212580853402216,
+            "repeat_spread_db": 0.0011080771004046142,
+            "valid": true,
+            "repeat_stable": true
+          }
+        ]
+      },
+      "inject_L": {
+        "expected_delta_gain_db": -6.020599913279624,
+        "failures": [],
+        "metrics": {
+          "min_carrier_residual_db": 34.67572397871922,
+          "min_sinad_db": 34.67529540976489,
+          "max_peak_dbfs": -47.227702749982534,
+          "min_peak_headroom_db": 47.227702749982534,
+          "invalid_repeats": []
+        },
+        "rows": [
+          {
+            "frequency_hz": 94.0,
+            "delta_adc_db": -6.02697853546573,
+            "correction_db": -0.006156521216496458,
+            "delta_gain_db": -6.020822014249234,
+            "repeat_spread_db": 0.0020470928477323014,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 994.0,
+            "delta_adc_db": -6.3856379611895875,
+            "correction_db": -0.36564477928018135,
+            "delta_gain_db": -6.019993181909406,
+            "repeat_spread_db": 0.004240501762062365,
+            "valid": true,
+            "repeat_stable": true
+          },
+          {
+            "frequency_hz": 9994.0,
+            "delta_adc_db": -7.407704878847028,
+            "correction_db": -1.3869263656321849,
+            "delta_gain_db": -6.020778513214843,
+            "repeat_spread_db": 0.0001253373852350137,
+            "valid": true,
+            "repeat_stable": true
+          }
+        ]
+      },
+      "level_dbfs": -20.0
+    }
+  },
+  "any_level_passed": true,
+  "lowest_passing_test_level_dbfs": -20.0,
+  "backend_notes_after": [],
+  "mixer_fingerprint_available": true
+}

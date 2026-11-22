@@ -2,30 +2,11 @@ test_level_summary_fails_if_numeric_delta_is_wrong (test_v2263_gainmatch_operati
 test_level_summary_fails_if_one_polarity_fails (test_v2263_gainmatch_operating_level.LevelContractTests.test_level_summary_fails_if_one_polarity_fails) ... ok
 test_level_summary_passes_only_with_both_injection_directions_valid (test_v2263_gainmatch_operating_level.LevelContractTests.test_level_summary_passes_only_with_both_injection_directions_valid) ... ok
 test_series_metrics_keep_cr_sinad_and_headroom_separate (test_v2263_gainmatch_operating_level.LevelContractTests.test_series_metrics_keep_cr_sinad_and_headroom_separate) ... ok
-test_single_candidate_level_and_production_gates_are_pinned (test_v2263_gainmatch_operating_level.LevelContractTests.test_single_candidate_level_and_production_gates_are_pinned) ... FAIL
+test_single_candidate_level_and_production_gates_are_pinned (test_v2263_gainmatch_operating_level.LevelContractTests.test_single_candidate_level_and_production_gates_are_pinned) ... ok
+test_this_suite_imports_its_own_v2263_harness (test_v2263_gainmatch_operating_level.LevelContractTests.test_this_suite_imports_its_own_v2263_harness) ... ok
 test_both_injection_signs_pass_at_candidate_level (test_v2263_gainmatch_operating_level.ProductionSimulatorIntegrationTests.test_both_injection_signs_pass_at_candidate_level) ... ok
 
-======================================================================
-FAIL: test_single_candidate_level_and_production_gates_are_pinned (test_v2263_gainmatch_operating_level.LevelContractTests.test_single_candidate_level_and_production_gates_are_pinned)
 ----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/vovans/.cache/valvebench-v2263-96da4c6-run/measurements/diagnostics/v2263-operating-level-qualification/test_v2263_gainmatch_operating_level.py", line 40, in test_single_candidate_level_and_production_gates_are_pinned
-    self.assertEqual(harness.LEVELS_DBFS, (-20.0,))
-    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: Tuples differ: (-24.0, -18.0) != (-20.0,)
+Ran 7 tests in 2.548s
 
-First differing element 0:
--24.0
--20.0
-
-First tuple contains 1 additional elements.
-First extra element 1:
--18.0
-
-- (-24.0, -18.0)
-+ (-20.0,)
-
-----------------------------------------------------------------------
-Ran 6 tests in 4.825s
-
-FAILED (failures=1)
+OK
