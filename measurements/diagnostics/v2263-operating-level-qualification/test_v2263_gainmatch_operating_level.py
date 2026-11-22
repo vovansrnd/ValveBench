@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 
-import v2261_gainmatch_level_margin as harness
+import v2263_gainmatch_operating_level as harness
 
 
 def valid_series(delta: float | None = None) -> dict:
@@ -36,6 +36,11 @@ def valid_series(delta: float | None = None) -> dict:
 
 
 class LevelContractTests(unittest.TestCase):
+    def test_this_suite_imports_its_own_v2263_harness(self):
+        expected = __import__("pathlib").Path(__file__).with_name(
+            "v2263_gainmatch_operating_level.py").resolve()
+        self.assertEqual(__import__("pathlib").Path(harness.__file__).resolve(), expected)
+
     def test_single_candidate_level_and_production_gates_are_pinned(self):
         self.assertEqual(harness.LEVELS_DBFS, (-20.0,))
         self.assertEqual(harness.FREQUENCIES, (94.0, 994.0, 9994.0))
