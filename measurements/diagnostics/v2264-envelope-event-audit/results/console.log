@@ -20,4 +20,6 @@
 [EVENT B_v2262run1] json_z=5.016931495457868 recomputed_capture_z=5.016931 match=True | submitted_z=0.000056 | pos subwin 6 (0.003%) neg 12 (0.004%)
 [EVENT C_v2263run2] json_z=5.740410923409673 recomputed_capture_z=5.740411 match=True | submitted_z=0.000056 | pos subwin 16 (0.005%) neg 13 (0.015%)
 [EVENT D_v2263run3] json_z=5.234265736473323 recomputed_capture_z=5.234266 match=True | submitted_z=0.000298 | pos subwin 11 (0.007%) neg 8 (0.002%)
-DONE. errors: []
+JSON inventory: 30 unique files hashed
+TOTALS: rows=324 (expect 324) z>=4.0=6 (expect 6) all_z_match=True npz_hash_ok=26/26
+DONE. errors: 0 (fail-closed clean)

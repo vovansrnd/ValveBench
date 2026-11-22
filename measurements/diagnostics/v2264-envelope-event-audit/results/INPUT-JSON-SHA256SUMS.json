@@ -1,0 +1,126 @@
+{
+ "pinned_commit": "357be1f3ca508e213e0ab59f3ee7f7afe76a36f5",
+ "description": "all unique JSON files actually read by audit script",
+ "files": {
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/SHA256SUMS.json": {
+   "size_bytes": 2909,
+   "sha256": "8cee38c5035dcd79e5d97b772027e58516d4df03250f282899c8fdcda1d70b2f"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/clock-preflight.json": {
+   "size_bytes": 907,
+   "sha256": "449218c0e7e1eee4ee7e90982efa68c8c7e7cd8c6eab84962878413b745bae4b"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/level_m18/inject-L-series.json": {
+   "size_bytes": 47238,
+   "sha256": "c3c9835896417fe0e0ce8919fa2869fedae35d3767555dddd26cd10ac8d8e165"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/level_m18/inject-R-series.json": {
+   "size_bytes": 47328,
+   "sha256": "4ba158ac7ed3a3e13d700c8fc0c339bfadb3b03b4e6f1f15160b2555eeb947ba"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/level_m18/loopback-series.json": {
+   "size_bytes": 47163,
+   "sha256": "e93678cb1aadd815f2d4ddf1b06de31125671bc281272e6a5527ae6a618cb213"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/level_m24/inject-L-series.json": {
+   "size_bytes": 46807,
+   "sha256": "4057a9e986e91435aad5d788714f7ce42d0ff81e77613bda112047cfee21c170"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/level_m24/inject-R-series.json": {
+   "size_bytes": 47248,
+   "sha256": "44b62f3245983b68af5212f3bd9b0e8a4d18d25ba437c11abebd98f450d36879"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/level_m24/loopback-series.json": {
+   "size_bytes": 47190,
+   "sha256": "dd7f063c8e32f61520a8bf40a26db0039aedf7378544dc09e1478d734befcf84"
+  },
+  "measurements/diagnostics/v2261-gainmatch-level-margin/results/vovans-PC-run-01/run-summary.json": {
+   "size_bytes": 10663,
+   "sha256": "ba5a13a3ea990b4143436c0d09a76e2be3e6e4cda1f2095e66db0a2f3bcf5cac"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/SHA256SUMS.json": {
+   "size_bytes": 2909,
+   "sha256": "a119093edeecd303a9ca4b3c10712aceca1a11b05a6b3e3aaf70a0968b53e21f"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/clock-preflight.json": {
+   "size_bytes": 906,
+   "sha256": "e0d723f3c56477e4899982e3cac256bbb804581e93a77f413035c63a267c345a"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/level_m18/inject-L-series.json": {
+   "size_bytes": 47335,
+   "sha256": "e388c5d951cd933f47c71fae6e9ce3551dc96d0786cb76b08a841d4455e9a4d5"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/level_m18/inject-R-series.json": {
+   "size_bytes": 47234,
+   "sha256": "81297811d3380b7158ddf51107d80050273b84a6df5310c9b82c402bfe0b376a"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/level_m18/loopback-series.json": {
+   "size_bytes": 47187,
+   "sha256": "36ebd06b4cc9bd1e99e38be4f6c90f9582cc0ca2de63de18c522b9f2f5bb6222"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/level_m24/inject-L-series.json": {
+   "size_bytes": 47262,
+   "sha256": "a08a69f2578db204b783633d8ef07ce8283ef6dffbfac518d8a5983b29108351"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/level_m24/inject-R-series.json": {
+   "size_bytes": 47256,
+   "sha256": "384c3721f36369bedaafcfb1bc9167175e55bdda92d4c2396a93857cd8803984"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/level_m24/loopback-series.json": {
+   "size_bytes": 47196,
+   "sha256": "69f07f61f9fb62dcf423c0cd26527d529b6957771a652695571e87abc0d40acb"
+  },
+  "measurements/diagnostics/v2262-gainmatch-repeatability/results/vovans-PC-run-01/run-summary.json": {
+   "size_bytes": 10674,
+   "sha256": "c8990409b5ce800bc60a986207a8b27555a91c7f7f5da7718a3ce98de042b533"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-02/SHA256SUMS.json": {
+   "size_bytes": 1795,
+   "sha256": "0d571f75fabb5b6fbdf7247bcf1ce7b2dc0e38375f5fd4889ffe3ae0705a2f84"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-02/clock-preflight.json": {
+   "size_bytes": 904,
+   "sha256": "df9b5d96dbba62c14c695dac245aea7fd9b6f46f09787b4325b3c91f671b2fa1"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-02/level_m20/inject-L-series.json": {
+   "size_bytes": 47366,
+   "sha256": "544fccb1230dd179ce9b8df6224a2772507aeb016ac9e3e5d5441f1a73da5c52"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-02/level_m20/inject-R-series.json": {
+   "size_bytes": 47239,
+   "sha256": "18a0fbbe0ca0b2c998e1fe700e90d1506d90b67418912062a3e57638d72becb7"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-02/level_m20/loopback-series.json": {
+   "size_bytes": 47173,
+   "sha256": "87e87f7facd68e927239cae212b76e504dda75443d1f39c093a06989c98ec719"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-02/run-summary.json": {
+   "size_bytes": 6753,
+   "sha256": "4a407d62808909bdc5532c6d2f807d86d21cf1106908aea9fd838b2e63ad82ac"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-03/SHA256SUMS.json": {
+   "size_bytes": 1795,
+   "sha256": "d543853b5cae7d224cea2568c4515d3a82bfb18711fbff009f5c90e21be49f5f"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-03/clock-preflight.json": {
+   "size_bytes": 906,
+   "sha256": "28928634c67944cc8d18ccd7ae876a9ea1be197ee8c72f4fdf0cb3e1a5e99b38"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-03/level_m20/inject-L-series.json": {
+   "size_bytes": 47363,
+   "sha256": "b067025c45186b14521668884784884c850474523f0cdea913e83b51f3bfc66a"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-03/level_m20/inject-R-series.json": {
+   "size_bytes": 47235,
+   "sha256": "3fc1104c64c1abf7dc650dbd4b404c1985cef39c2a34db4497a046e265d33cac"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-03/level_m20/loopback-series.json": {
+   "size_bytes": 47178,
+   "sha256": "8f90381a1b075b06abbd4ab537000a727f4bc0bbccaa209d34145e05e2883b38"
+  },
+  "measurements/diagnostics/v2263-operating-level-qualification/results/vovans-PC-run-03/run-summary.json": {
+   "size_bytes": 6763,
+   "sha256": "11a9d401ce19be2c5189046baaf68741d3fcc1f6acd8d4f0eac9c2621befb698"
+  }
+ }
+}

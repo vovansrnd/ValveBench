@@ -42,6 +42,9 @@ EVENTS = {
                         series_json="level_m20/inject-L-series.json", freq=9994.0, rep=3, chan="R"),
 }
 
+HEAD_SHA = "357be1f3ca508e213e0ab59f3ee7f7afe76a36f5"
+JSON_READS = []
+
 rig = Rig(SimBackend(SimChannel(gain=0.5, a2=1e-5, a3=1e-5, riaa=False, noise_dbfs=-140),
                      SimChannel(gain=0.5, a2=1e-5, a3=1e-5, riaa=False, noise_dbfs=-140),
                      seed=1), Calibration(), fs=FS, df=DF, blocks=BLOCKS, settle=SETTLE)
@@ -60,10 +63,12 @@ def sha256_of(path):
     return h.hexdigest()
 
 
-def verify_inputs(out, used_files):
+def verify_inputs(out):
     manifest = []
     for tag, run in RUNS.items():
-        sums = json.load(open(os.path.join(run, "SHA256SUMS.json")))
+        sj = os.path.join(run, "SHA256SUMS.json")
+        JSON_READS.append(sj)
+        sums = json.load(open(sj))
         for fp, meta in sums["files"].items():
             if not fp.endswith(".npz"):
                 continue
@@ -123,25 +128,48 @@ def json_repeat(series, freq, rep, chan):
     return None, None, None
 
 
-def recover_windows(npz_path):
+def fail(out, msg):
+    out["errors"].append(msg)
+    raise RuntimeError(msg)
+
+
+def recover_windows(npz_path, out):
     z = np.load(npz_path)
+    for key in ("submitted_to_backend", "capture", "fs", "lead_seconds"):
+        if key not in z.files:
+            fail(out, "npz %s missing key %s" % (npz_path, key))
     submitted = np.asarray(z["submitted_to_backend"], dtype=np.float64)
     capture = np.asarray(z["capture"], dtype=np.float64)
-    fs_npz = int(z["fs"]) if "fs" in z.files else FS
-    lead_n = int(round(float(z["lead_seconds"]) * fs_npz)) if "lead_seconds" in z.files else 0
+    if capture.ndim != 2 or capture.shape[1] != 2:
+        fail(out, "npz %s capture shape %s not (N,2)" % (npz_path, capture.shape))
+    if submitted.ndim != 2 or submitted.shape[1] != 2:
+        fail(out, "npz %s submitted shape %s not (N,2)" % (npz_path, submitted.shape))
+    for name, arr in (("capture", capture), ("submitted", submitted)):
+        if not np.isfinite(arr).all():
+            fail(out, "npz %s %s has NaN/Inf" % (npz_path, name))
+    fs_npz = int(z["fs"])
+    if fs_npz != FS:
+        fail(out, "npz %s fs=%d != %d" % (npz_path, fs_npz, FS))
+    lead_n = int(round(float(z["lead_seconds"]) * fs_npz))
     d = rig._onset(capture, tone_hz=FREQS[0])
     cap_wins, sub_wins = [], []
     for i in range(REPEATS * len(FREQS)):
         a = d + i * SEGN + SETTLE_N
         b = a + WIN_N
         if b > capture.shape[0]:
-            raise RuntimeError("capture window %d out of range" % i)
-        cap_wins.append(capture[a:b, :])
+            fail(out, "npz %s capture window %d out of range" % (npz_path, i))
+        w = capture[a:b, :]
+        if w.shape != (WIN_N, 2) or not np.isfinite(w).all():
+            fail(out, "npz %s capture window %d bad shape/finiteness" % (npz_path, i))
+        cap_wins.append(w)
         ai = lead_n + i * SEGN + SETTLE_N
         bi = ai + WIN_N
         if bi > submitted.shape[0]:
-            raise RuntimeError("submitted window %d out of range" % i)
-        sub_wins.append(submitted[ai:bi, :])
+            fail(out, "npz %s submitted window %d out of range" % (npz_path, i))
+        ws = submitted[ai:bi, :]
+        if ws.shape != (WIN_N, 2) or not np.isfinite(ws).all():
+            fail(out, "npz %s submitted window %d bad shape/finiteness" % (npz_path, i))
+        sub_wins.append(ws)
     return dict(onset=d, lead_n=lead_n, fs=fs_npz, cap_wins=cap_wins, sub_wins=sub_wins,
                 capture=capture, submitted=submitted)
 
@@ -187,7 +215,7 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
     out = dict(errors=[], events={}, global_z=[], dir=args.out_dir)
-    manifest = verify_inputs(out, RUNS)
+    manifest = verify_inputs(out)
 
     # ---- global recompute over all non-preflight captures of the four runs
     captures = {}
@@ -206,7 +234,8 @@ def main():
             else:
                 out["errors"].append("unclassified npz %s" % fp); continue
             series = series_for_npz(run, level, sname)
-            w = recover_windows(os.path.join(run, fp))
+            JSON_READS.append(os.path.join(run, "level_%s" % level, "%s-series.json" % sname))
+            w = recover_windows(os.path.join(run, fp), out)
             captures[(tag, base)] = w
             rows = []
             for i in range(REPEATS * len(FREQS)):
@@ -225,7 +254,9 @@ def main():
             mism = [r for r in rows if r["json_z"] is None or abs(r["prod_z"] - r["json_z"]) > 1e-6]
             print("[%s/%s] windows recomputed: %d, JSON z-burst mismatches: %d" %
                   (tag, base, len(rows), len(mism)), flush=True)
-            for r in mism[:4]:
+            for r in mism:
+                out["errors"].append("z mismatch %s/%s seg%d %s %.0fHz rep%d: prod=%.6f json=%s" % (
+                    tag, base, r["seg_index"], r["chan"], r["freq"], r["rep"], r["prod_z"], r["json_z"]))
                 print("   MISMATCH seg%d %s %.0f Hz rep%d: prod_z=%.6f json_z=%s" %
                       (r["seg_index"], r["chan"], r["freq"], r["rep"], r["prod_z"], r["json_z"]), flush=True)
             out["events"].setdefault(tag, {}).setdefault("series", {})[base] = rows
@@ -236,6 +267,8 @@ def main():
         w = captures.get((tag, ev["npz"]))
         series = series_for_npz(run, ev["level"], ev["series"])
         i = [j for j in range(REPEATS * len(FREQS)) if order_of(j) == (ev["freq"], ev["rep"])][0]
+        JSON_READS.append(os.path.join(run, "clock-preflight.json"))
+        JSON_READS.append(os.path.join(run, "run-summary.json"))
         ci = 1 if ev["chan"] == "R" else 0
         jrow, jchan, jrep = json_repeat(series, ev["freq"], ev["rep"], ev["chan"])
         cap_rec = analyze_window(w["cap_wins"][i], ci, ev["freq"], series, ev["rep"], ev["chan"])
@@ -280,7 +313,7 @@ def main():
 
     # ---- CSV: event subwindow amplitudes (capture + submitted)
     with open(os.path.join(args.out_dir, "EVENT-SUBWINDOW-AMPLITUDES.csv"), "w", newline="") as fh:
-        wr = csv.writer(fh)
+        wr = csv.writer(fh, lineterminator="\n")
         wr.writerow(["event", "source", "subwindow", "amplitude", "mean_amp"])
         for tag, ev in out["events"].items():
             card = ev["event"]
@@ -291,7 +324,7 @@ def main():
 
     # ---- CSV: control matrix rows (all recomputed windows)
     with open(os.path.join(args.out_dir, "CONTROL-MATRIX.csv"), "w", newline="") as fh:
-        wr = csv.writer(fh)
+        wr = csv.writer(fh, lineterminator="\n")
         wr.writerow(["run", "npz", "level", "series", "seg", "freq", "rep", "chan",
                      "prod_z", "prod_trend", "json_z", "z_match", "json_valid", "json_reasons",
                      "json_cr", "json_sinad", "pos_dev_pct", "neg_dev_pct"])
@@ -306,8 +339,37 @@ def main():
                                  r["json_cr"], r["json_sinad"],
                                  "%.4f" % r["detail"]["pos_dev_pct"], "%.4f" % r["detail"]["neg_dev_pct"]])
 
+    seen = {}
+    for jp in sorted(set(JSON_READS)):
+        seen[jp] = dict(size_bytes=os.path.getsize(jp), sha256=sha256_of(jp))
+    json.dump(dict(pinned_commit=HEAD_SHA, description="all unique JSON files actually read by audit script",
+                   files=seen),
+              open(os.path.join(args.out_dir, "INPUT-JSON-SHA256SUMS.json"), "w"), indent=1)
+    print("JSON inventory: %d unique files hashed" % len(seen), flush=True)
+
+    n_rows = len(out["global_z"])
+    n_z4 = sum(1 for g in out["global_z"] if g["z"] >= 4.0)
+    all_match = all(g["match"] for g in out["global_z"])
+    n_npz_checked = sum(1 for m in manifest if m["file"].endswith(".npz"))
+    n_npz_ok = sum(1 for m in manifest if m["file"].endswith(".npz") and m["manifest_ok"])
+    print("TOTALS: rows=%d (expect 324) z>=4.0=%d (expect 6) all_z_match=%s npz_hash_ok=%d/%d" %
+          (n_rows, n_z4, all_match, n_npz_ok, n_npz_checked), flush=True)
+    if n_rows != 324:
+        out["errors"].append("row count %d != 324" % n_rows)
+    if n_z4 != 6:
+        out["errors"].append("z>=4.0 count %d != 6" % n_z4)
+    if not all_match:
+        out["errors"].append("not all z_match")
+    if n_npz_ok != 26 or n_npz_checked != 26:
+        out["errors"].append("npz hash checks %d/%d != 26" % (n_npz_ok, n_npz_checked))
+    if out["errors"]:
+        for e in out["errors"]:
+            print("ERROR:", e, flush=True)
+        print("FAIL-CLOSED: %d errors -> exit 1" % len(out["errors"]), flush=True)
+        json.dump(out, open(os.path.join(args.out_dir, "audit-results.json"), "w"), indent=1, default=float)
+        sys.exit(1)
     json.dump(out, open(os.path.join(args.out_dir, "audit-results.json"), "w"), indent=1, default=float)
-    print("DONE. errors:", out["errors"], flush=True)
+    print("DONE. errors: 0 (fail-closed clean)", flush=True)
 
 
 if __name__ == "__main__":

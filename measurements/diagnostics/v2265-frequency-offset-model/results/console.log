@@ -1,0 +1,32 @@
+[A_v2261r1/m18-inject_L-L-08.npz] done
+[A_v2261r1/m18-inject_R-R-07.npz] done
+[A_v2261r1/m18-loopback-none-06.npz] done
+[A_v2261r1/m24-inject_L-L-05.npz] done
+[A_v2261r1/m24-inject_R-R-04.npz] done
+[A_v2261r1/m24-loopback-none-03.npz] done
+[B_v2262run1/m18-inject_L-L-08.npz] done
+[B_v2262run1/m18-inject_R-R-07.npz] done
+[B_v2262run1/m18-loopback-none-06.npz] done
+[B_v2262run1/m24-inject_L-L-05.npz] done
+[B_v2262run1/m24-inject_R-R-04.npz] done
+[B_v2262run1/m24-loopback-none-03.npz] done
+[C_v2263run2/m20-inject_L-L-05.npz] done
+[C_v2263run2/m20-inject_R-R-04.npz] done
+[C_v2263run2/m20-loopback-none-03.npz] done
+[D_v2263run3/m20-inject_L-L-05.npz] done
+[D_v2263run3/m20-inject_R-R-04.npz] done
+[D_v2263run3/m20-loopback-none-03.npz] done
+[SENS] A_v2261r1 inject-L 9994Hz L rep1: phase z min/med/max=0.929/1.084/1.192 frac>=5=0.00 | segshift z=[0.938, 0.919, 1.35, 1.203]
+[SENS] A_v2261r1 inject-R 94Hz R rep2: phase z min/med/max=1.035/1.125/1.138 frac>=5=0.00 | segshift z=[1.138, 1.053, 1.096, 0.96]
+[SENS] B_v2262run1 inject-L 9994Hz R rep1: phase z min/med/max=0.922/1.084/1.201 frac>=5=0.00 | segshift z=[0.929, 0.935, 1.137, 1.366]
+[SENS] C_v2263run2 inject-L 94Hz R rep1: phase z min/med/max=1.037/1.125/1.138 frac>=5=0.00 | segshift z=[0.969, 1.111, 1.068, 0.868]
+[SENS] C_v2263run2 loopback 9994Hz R rep1: phase z min/med/max=0.900/1.094/1.227 frac>=5=0.00 | segshift z=[0.836, 0.967, 1.238, 1.25]
+[SENS] D_v2263run3 inject-L 9994Hz R rep3: phase z min/med/max=0.959/1.100/1.214 frac>=5=0.00 | segshift z=[1.23, 1.262, 1.002, 0.832]
+[RESID] A_v2261r1 inject-L 9994Hz L rep1: off=-0.2469Hz rms_resid_rel=4.4054% max=24.784% z: actual=4.643 pure=0.938 resid_added=2.799
+[RESID] A_v2261r1 inject-R 94Hz R rep2: off=-0.0024Hz rms_resid_rel=2.2418% max=10.861% z: actual=5.812 pure=1.138 resid_added=5.203
+[RESID] B_v2262run1 inject-L 9994Hz R rep1: off=-0.2463Hz rms_resid_rel=1.1130% max=5.290% z: actual=5.017 pure=0.929 resid_added=1.320
+[RESID] C_v2263run2 inject-L 94Hz R rep1: off=-0.0023Hz rms_resid_rel=1.4097% max=7.105% z: actual=5.740 pure=0.969 resid_added=5.631
+[RESID] C_v2263run2 loopback 9994Hz R rep1: off=-0.2446Hz rms_resid_rel=1.4112% max=6.591% z: actual=4.089 pure=0.836 resid_added=1.481
+[RESID] D_v2263run3 inject-L 9994Hz R rep3: off=-0.2496Hz rms_resid_rel=1.4173% max=6.444% z: actual=5.234 pure=1.230 resid_added=1.541
+TOTALS: rows=324 z>=4=6 npz_ok=26/26 json_unique=41
+DONE fail-closed clean

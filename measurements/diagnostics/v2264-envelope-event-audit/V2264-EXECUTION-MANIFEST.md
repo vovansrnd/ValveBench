@@ -34,9 +34,11 @@
 
 ## Целостность входов
 
-- INPUT-SHA256SUMS.json: все NPZ четырёх run-каталогов (22 capture +
-  8 preflight NPZ) — sha256 и размеры пересчитаны независимо, все
-  совпали с их SHA256SUMS.json; JSON серий взяты из git-объектов pinned
-  tree (тексты не менялись).
+- INPUT-SHA256SUMS.json: все NPZ четырёх run-каталогов —
+  **26 NPZ = 18 measurement captures + 8 preflight** (A=8, B=8, C=5,
+  D=5); sha256 и размеры пересчитаны независимо, все совпали с их
+  SHA256SUMS.json. Исправлено по ревизии координатора (было ошибочно
+  22+8). JSON-инвентарь прочитанных файлов — INPUT-JSON-SHA256SUMS.json
+  (v2.26.5).
 - git diff --check: чисто; в diff нет valvebench/, harness v2260–v2263,
   тестов, исходных результатов/captures.
