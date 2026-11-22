@@ -1,0 +1,11 @@
+test_level_summary_fails_if_numeric_delta_is_wrong (test_v2261_gainmatch_level_margin.LevelContractTests.test_level_summary_fails_if_numeric_delta_is_wrong) ... ok
+test_level_summary_fails_if_one_polarity_fails (test_v2261_gainmatch_level_margin.LevelContractTests.test_level_summary_fails_if_one_polarity_fails) ... ok
+test_level_summary_passes_only_with_both_injection_directions_valid (test_v2261_gainmatch_level_margin.LevelContractTests.test_level_summary_passes_only_with_both_injection_directions_valid) ... ok
+test_series_metrics_keep_cr_sinad_and_headroom_separate (test_v2261_gainmatch_level_margin.LevelContractTests.test_series_metrics_keep_cr_sinad_and_headroom_separate) ... ok
+test_two_levels_are_pinned_and_six_db_apart (test_v2261_gainmatch_level_margin.LevelContractTests.test_two_levels_are_pinned_and_six_db_apart) ... ok
+test_both_injection_signs_pass_at_both_levels (test_v2261_gainmatch_level_margin.ProductionSimulatorIntegrationTests.test_both_injection_signs_pass_at_both_levels) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 4.823s
+
+OK
