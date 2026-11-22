@@ -43,8 +43,9 @@ Pinned coordinator SHA этого задания передаётся в соо�
 
 Использовать все 324 ADC measurement windows из v2264 (18 captures ×9 segments ×2 channels), не только четыре известных invalid. Использовать v2264 event/card data и CONTROL-MATRIX для сопоставления. Не анализировать preflight NPZ как measurement window, но их JSON использовать как clock metadata.
 
-Для каждого окна получить:
+Для каждого окна получить (read-only из существующих JSON):
 - run, capture, level, injection/loopback mode, frequency, repeat, channel;
+- соответствующие run-level `clock-preflight.json` и `run-summary.json`, чтобы сопоставить measured f0 с clock preflight и acquisition metadata; включить все прочитанные JSON в SHA256 input inventory;
 - commanded actual_f (generator frequency exactly as passed into production analysis);
 - measured `analysis["f0"]` и frequency offset (Hz и ppm);
 - production z/trend с commanded f;
