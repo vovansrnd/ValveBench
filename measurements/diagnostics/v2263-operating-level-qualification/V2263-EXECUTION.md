@@ -1,4 +1,30 @@
 # v2.26.3 — квалификация кандидата Gain Match −20 dBFS
+ 
+## Предыдущая попытка — BLOCKED до аппаратного этапа
+
+Первая попытка на SHA `96da4c6f34a4e28def58d2dca942a5a52c93b439`
+остановлена корректно до inventory и любых обращений к аудиоустройствам.
+В тестовом файле D3 ошибочно импортировался модуль
+`v2261_gainmatch_level_margin`, поэтому большая часть D3 suite, включая
+интеграционный тест, фактически проверяла не v2263 harness.
+
+В текущей ревизии исправлен только
+`test_v2263_gainmatch_operating_level.py`:
+- импортируется `v2263_gainmatch_operating_level`;
+- отдельный контрактный тест сравнивает `harness.__file__` с путём к
+  `v2263_gainmatch_operating_level.py`, чтобы исключить импорт не того этапа;
+- production harness, production package, уровни, measurement plan и QC
+  thresholds не менялись.
+
+**Повторное исполнение разрешено только на новом полном pinned SHA,
+переданном координатором.** Не использовать старый SHA `96da4c6...`.
+Сначала заново выполнить все offline gates. D3 suite теперь содержит 7 тестов;
+обязательны 7/7 OK, включая ProductionSimulatorIntegrationTests, который
+должен реально выполниться, не skipped. Затем только допускается hardware.
+
+Результаты повторной попытки публиковать в новой ветке
+`agent/v2263-operating-level-qualification-r1`; предыдущую BLOCKED-ветку
+не переписывать.
 
 ## Цель
 
@@ -18,11 +44,13 @@ unstable_carrier события на R на разных частотах. Их 
 
 - Исполнять точный pinned SHA, переданный координатором вместе с заданием.
 - Новая отдельная detached worktree.
-- Результатная ветка: agent/v2263-operating-level-qualification,
-  созданная от pinned SHA.
+- Результатная ветка: agent/v2263-operating-level-qualification-r1,
+  созданная от pinned SHA. Предыдущую BLOCKED-ветку не переписывать.
 - Harness: measurements/diagnostics/v2263-operating-level-qualification/v2263_gainmatch_operating_level.py
 - Tests: measurements/diagnostics/v2263-operating-level-qualification/test_v2263_gainmatch_operating_level.py
 - В harness зафиксирован один уровень: −20.0 dBFS.
+- D3 suite должен пройти 7/7; тест identity обязан подтвердить, что импортирован
+  именно файл v2263_gainmatch_operating_level.py.
 - Не менять harness, tests, production valvebench/, QC thresholds,
   calibration, UI, hardware routing или ALSA mixer.
 - Не менять исходники v2260/v2261. При offline failure к устройствам не обращаться.
