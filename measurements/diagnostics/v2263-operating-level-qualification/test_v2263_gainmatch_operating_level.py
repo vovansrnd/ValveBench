@@ -108,7 +108,7 @@ class ProductionSimulatorIntegrationTests(unittest.TestCase):
                        noise_dbfs=-115, hum50_dbfs=-125, hum100_dbfs=-130),
             SimChannel(gain=0.52, a2=8e-4, a3=7e-4, riaa=False,
                        noise_dbfs=-115, hum50_dbfs=-125, hum100_dbfs=-130),
-            seed=2263,
+            seed=2261,
         )
         backend.open(fs)
         rig = Rig(backend, Calibration(), fs=fs, df=1.0,
