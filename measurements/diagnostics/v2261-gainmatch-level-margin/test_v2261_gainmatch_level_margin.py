@@ -114,9 +114,11 @@ class ProductionSimulatorIntegrationTests(unittest.TestCase):
         rig = Rig(backend, Calibration(), fs=fs, df=1.0,
                   blocks=harness.BLOCKS, settle=harness.SETTLE_SECONDS)
         state = {"channel": None}
+        applied_channels = []
         original = backend.play_record
 
         def guarded(signal, tail=0.8):
+            applied_channels.append(state["channel"])
             prepared = harness.inject_channel_attenuation(
                 signal, state["channel"], harness.INJECT_DB)
             prepared = harness.add_d10_edge_guards(prepared, fs=fs)
@@ -124,10 +126,20 @@ class ProductionSimulatorIntegrationTests(unittest.TestCase):
 
         backend.play_record = guarded
         for level in harness.LEVELS_DBFS:
+            # Every level gets a genuinely unattenuated loopback reference;
+            # do not inherit the previous level's final L injection.
+            state["channel"] = None
+            loopback_call_start = len(applied_channels)
             kwargs = dict(frequencies=harness.FREQUENCIES,
                           level_dbfs=level, repeats=harness.REPEATS,
                           frequency_profile=harness.FREQUENCY_PROFILE)
             loop = measure_series(rig, purpose="loopback", **kwargs)
+            loopback_channels = applied_channels[loopback_call_start:]
+            self.assertTrue(loopback_channels, "loopback made no backend play_record calls")
+            self.assertTrue(
+                all(channel is None for channel in loopback_channels),
+                f"loopback at {level} dBFS must be unattenuated; "
+                f"observed channel states={loopback_channels}")
             self.assertEqual(harness.assess_series(loop, None), [])
             reference = build_loopback_reference(loop)
 
