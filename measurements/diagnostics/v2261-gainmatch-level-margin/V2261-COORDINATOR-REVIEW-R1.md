@@ -79,8 +79,11 @@ should preferably represent "not applicable" with an explicit applicability
 flag rather than a NaN sentinel. Do not rewrite this completed run's evidence.
 
 The agent reports 18/18 manifest entries independently verified. The committed
-SHA256 manifest contains 18 file entries; the binary capture payloads were not
-recomputed by this coordinator review.
+SHA256 manifest contains 18 file entries: 8 capture NPZ files plus 10 JSON
+files. The agent report says "all 11 captures"; that count does not match the
+committed manifest, which contains **8** capture NPZs. The finite-array claim
+should therefore be read as applying to those 8 files. The binary capture
+payloads were not recomputed by this coordinator review.
 
 ## Next step
 
