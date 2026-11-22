@@ -168,7 +168,7 @@ Production thresholds не менять:
 
 ## Публикация
 
-- Создать \`agent/v2261-gainmatch-level-margin\` от pinned coordinator SHA.
+- Создать новую ветку \`agent/v2261-gainmatch-level-margin-r1\` от pinned coordinator SHA. Предыдущую ветку с BLOCKED-отчётом не переписывать.
 - Коммитить только inventory, results, console log, manifest и report. Source/test/task/review files не менять.
 - \`git diff --check\` чисто; SHA256 manifest подтверждён; production diff отсутствует.
 - Обычный commit + fast-forward push; без force push, reset, rebase, clean.
